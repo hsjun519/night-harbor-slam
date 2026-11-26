@@ -6,7 +6,7 @@
 ## 실행
 
 - **플레이:** `dist/index.html`을 더블클릭하면 됩니다(인터넷 연결 불필요).
-- **개발용 서버:** `node serve.mjs` → <http://127.0.0.1:4390/> (모듈 원본) 또는 <http://127.0.0.1:4390/dist/index.html> (빌드본)
+- **개발용 서버:** `node serve.mjs` → <http://127.0.0.1:4390/dev.html> (모듈 원본) 또는 <http://127.0.0.1:4390/> (빌드본)
 - **빌드:** `node build.mjs` → `dist/index.html` 하나로 묶습니다.
 - **테스트:** `node tests/sim.mjs 36` (AI 대 AI 전 모드), `node tests/scripted.mjs` (사람 입력 시나리오), `node tests/ladder.mjs 18` (난이도 사다리)
 

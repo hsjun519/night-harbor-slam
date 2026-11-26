@@ -88,6 +88,8 @@ document.getElementById('boot').remove();
 </html>
 `;
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
+// GitHub Pages serves the folder root: put the built game there too.
+fs.writeFileSync(path.join(ROOT, 'index.html'), html);
 // Page body for a hosted copy: the host supplies the document skeleton, so only title, style and body content.
 const hosted = `<title>밤항구 슬램</title>
 <meta name="claude:viewport-fit-sides" content="cover">
