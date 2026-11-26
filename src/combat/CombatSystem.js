@@ -71,7 +71,7 @@ export class CombatSystem {
     }
     // guard
     if (v.st === 'GUARD' && facing && !d.unblock && !d.floorOnly) {
-      if (v.guardT <= B.perfectGuard && !d.dive) {
+      if (v.guardT <= B.perfectGuard && (!d.dive || d.topStand)) {
         a.atk.connected = false;
         this.addFin(v, B.finPerfect); v.perfects++;
         if (d.run || d.air) this.launch(a, -dir * 190, -130, dir * 4, null);

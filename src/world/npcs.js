@@ -133,6 +133,7 @@ export function talk(id, c, W) {
         S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아. 나머지 반은 내 잔소리로 채우게 될 거다.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐. 약점은 숨기는 게 아니라 메우는 거야.`),
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
+          { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },
           { label: '조언', go: [S(pick(tips))] },

@@ -18,7 +18,7 @@ function run(name, cfg, steps, expect, o = {}) {
   const h = m.fighters[0], v = m.fighters[1];
   if (v.ai && (o.foeCtrl || 'dummy') === 'dummy') v.ai.behavior = o.behavior || 'idle';
   const ev = {};
-  for (const k of ['propSnatch', 'propReach', 'chairShrug', 'chairHit', 'propPick', 'propCatch', 'propSteal', 'propThrow', 'chairBreak', 'dive', 'perchDeny', 'cameoIn', 'cameoThrow', 'swing', 'down', 'eliminated', 'deny', 'moveStart', 'dashStart', 'dashSig']) m.on(k, e => { (ev[k] = ev[k] || []).push(e); });
+  for (const k of ['parry', 'propSnatch', 'propReach', 'chairShrug', 'chairHit', 'propPick', 'propCatch', 'propSteal', 'propThrow', 'chairBreak', 'dive', 'perchDeny', 'cameoIn', 'cameoThrow', 'swing', 'down', 'eliminated', 'deny', 'moveStart', 'dashStart', 'dashSig']) m.on(k, e => { (ev[k] = ev[k] || []).push(e); });
   let t = 0;
   try {
     for (const s of steps) {
@@ -159,6 +159,17 @@ run('dash move refused without gauge', {}, [{ t: .05, fn: (m, h) => { h.fin = 0;
   (m, h, v, ev) => ((ev.deny || []).length > 0 && !(ev.moveStart || []).some(e => e.a === h)) || `deny=${(ev.deny || []).length}`);
 run('heavy wrestlers spear', {}, [{ t: .05, fn: (m, h) => { h.fin = 40; } }, ...dashIn, { t: .05, press: ['grab'] }, { t: 2.2 }],
   (m, h, v, ev) => ((ev.moveStart || []).some(e => e.a === h && e.mv.id === 'spear')) || `moves=${(ev.moveStart || []).map(e => e.mv.id)}`, { me: 'mandeok' });
+
+// 10b. from the top of the corner onto a standing foe: missile dropkick; a guard raised at the last moment parries it
+const climbLeft = [{ t: .05, fn: (m, h, v) => { v.x = m.arena.ropeL + 150; } }, { t: 3, mx: -1, until: (m, h) => m.arena.nearRope(h.x).dist < 20 }, { t: .05, mx: -1, press: ['jump'] }, { t: .7 }];
+run('missile dropkick onto a standing foe', {}, [...climbLeft, { t: .05, press: ['atk'] }, { t: 1.6 }],
+  (m, h, v, ev) => ((ev.dive || []).some(e => e.stand && e.id === 'missileDropkick') && v.dmgTaken > 0) || `dives=${JSON.stringify((ev.dive || []).map(e => e.id || 'plain'))} dmg=${v.dmgTaken | 0}`);
+run('a last-moment guard parries the corner dropkick', {}, [...climbLeft, { t: .05, press: ['atk'] },
+  { t: 1.6, fn: (m, h, v) => { if (h.st === 'AIR_ATTACK' && Math.abs(h.x - v.x) < 72 && v.ai.behavior !== 'guard') { v.ai.behavior = 'guard'; v.face = Math.sign(h.x - v.x) || 1; v.set('GUARD', { force: true }); v.guardT = 0; } } }],
+  (m, h, v, ev) => ((ev.parry || []).length > 0 && v.dmgTaken === 0) || `parry=${(ev.parry || []).length} dmg=${v.dmgTaken | 0}`);
+run('dash move parried by a last-moment guard', {}, [{ t: .05, fn: (m, h) => { h.fin = 40; } }, ...dashIn,
+  { t: .05, fn: (m, h, v, i, I) => { v.face = Math.sign(h.x - v.x) || 1; v.set('GUARD', { force: true }); v.guardT = 0; I.grab = true; } }, { t: 1 }],
+  (m, h, v, ev) => ((ev.parry || []).length > 0 && !(ev.moveStart || []).some(e => e.a === h)) || `parry=${(ev.parry || []).length} moves=${(ev.moveStart || []).map(e => e.mv.id)}`);
 
 // 11. computer vs computer with chairs lying around: they use them and nothing breaks
 for (let g = 0; g < 6; g++) {

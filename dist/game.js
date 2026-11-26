@@ -2537,7 +2537,7 @@ const CHARACTERS = {
     lines: { intro: '자, 하역 시작한다.', win: '오늘 물량, 끝!', lose: '허리가… 나갔나.' },
   },
   haneul: {
-    name: '윤하늘', nick: '갈매기', style: 'air', look: LOOKS.haneul, stance: 'air', color: '#3aa6e8',
+    name: '윤하늘', nick: '갈매기', style: 'air', look: LOOKS.haneul, stance: 'air', color: '#3aa6e8', topStand: 'topCrossbody',
     stats: { hp: 86, stun: 92, atk: .94, grp: .92, spd: 1.17, jump: 1.26, rec: 1.1, down: 1.1, fin: 1.12, weight: 70, lift: 1, kbr: .82 },
     chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', ground: 'elbowdrop',
     moves: { front: front('headDrop', 'irishWhip', 'suplex', 'bellyToBelly', 'ddt'), rear: front('bulldog', 'ringOut', 'backdropDriver', 'atomic', 'german'), catch: 'backBody', counter: 'armDrag' },
@@ -2658,7 +2658,7 @@ const CHARACTERS = {
     lines: { intro: '이 동네는 우리 구역이야!', win: '지갑은 놓고 가라~', lose: '다, 다음엔 진짜 안 봐준다!' },
   },
   myeolchi: {
-    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1,
+    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1, topStand: 'topCrossbody',
     stats: { hp: 76, stun: 84, atk: .9, grp: .9, spd: 1.14, jump: 1.16, rec: 1.02, down: 1.05, fin: 1.05, weight: 62, lift: 1.1, kbr: .9 },
     chain: ['jab', 'jab', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveKick', ground: 'stomp',
     moves: { front: front('armDrag', 'irishWhip', 'suplex', 'ddt', 'headDrop'), rear: front('bulldog', 'ringOut', 'german', 'atomic', 'backdropDriver'), catch: 'backBody', counter: 'armDrag' },
@@ -2778,6 +2778,9 @@ const ATTACKS = {
   diveQuake: { name: '낙하 방석', startup: .12, active: 1.2, recover: .8, reach: 42, low: -20, high: 40, hp: 13, stun: 40, kb: 100, up: 120, hs: .8, stop: .18, lv: 4, air: 1, dive: 1, ground: 1, quake: 110, wind: 'sp0 hd-10 a150/20 b156/20 t60/90 u50/90', hit: 'sp-6 hd-6 a120/10 b126/10 t96/20 u100/26', sfx: 'belly', fallSit: 1 },
   diveKick: { name: '다이빙 킥', startup: .1, active: 1.2, recover: .5, reach: 42, low: -14, high: 50, hp: 9, stun: 30, kb: 260, up: 100, hs: .7, stop: .13, lv: 4, air: 1, dive: 1, ground: 1, wind: 'sp30 hd0 a40/60 b50/60 t100/110 u96/110', hit: 'r-50 sp10 hd14 a-20/40 b60/40 t96/2 u30/80', sfx: 'kick2', fallBack: 1 },
   // against a downed body
+  // from the top of the corner onto a standing foe (topStand); a perfectly timed guard parries them
+  missileDropkick: { name: '미사일 드롭킥', startup: .08, active: 1.1, recover: .5, reach: 40, low: 8, high: 74, hp: 9, stun: 36, kb: 300, up: 120, hs: .6, stop: .14, lv: 4, air: 1, dive: 1, topStand: 1, wind: 'sp-8 hd-6 a110/40 b100/40 t50/30 u40/30', hit: 'r-70 sp-24 hd-10 a150/20 b140/20 t100/4 u96/8', sfx: 'kick2', fallBack: 1 },
+  topCrossbody: { name: '플라잉 크로스바디', startup: .08, active: 1.1, recover: .55, reach: 44, low: 0, high: 72, hp: 10, stun: 40, kb: 210, up: 90, hs: .7, stop: .15, lv: 4, air: 1, dive: 1, topStand: 1, wind: 'sp-10 hd-6 a150/30 b140/30 t40/40 u30/40', hit: 'r-84 sp0 hd-6 a90/20 b100/20 t20/10 u14/10', sfx: 'belly', fallFront: 1 },
   stomp: { name: '짓밟기', startup: .24, active: .07, recover: .26, reach: 34, low: -8, high: 30, hp: 1.8, stun: 0, kb: 0, hs: .2, stop: .06, lv: 1, ground: 1, floorOnly: 1, clip: 'stomp', sfx: 'kick1' },
   elbowdrop: { name: '엘보 드롭', startup: .42, active: .08, recover: .42, reach: 38, low: -8, high: 30, hp: 3.6, stun: 0, kb: 0, hs: .25, stop: .09, lv: 2, ground: 1, floorOnly: 1, clip: 'elbowdrop', sfx: 'belly' },
 };
@@ -3534,7 +3537,7 @@ ATTACKS.chairShot = { id: 'chairShot', name: '체어샷', startup: .3, active: .
 ATTACKS.chairToss = { id: 'chairToss', name: '의자 던지기', startup: .16, active: .02, recover: .3, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp-12 hd-4 a170/30 b160/30 t10/10 u-14/10', hit: 'sp18 hd4 a100/10 b96/10 t26/20 u-20/12' };
 ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .32, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
 
-const CHAIR = { uses: 3, pickR: 34, catchR: 48, throwV: 340, half: 18 };
+const CHAIR = { uses: 3, pickR: 40, catchR: 52, throwV: 340, half: 24 };
 // States in which a wrestler keeps hold of a chair; any other state drops it.
 const KEEP = new Set(['IDLE', 'MOVE', 'ATTACK', 'GUARD', 'JUMP', 'FALL', 'TAUNT', 'ROPE', 'WIN', 'INTRO', 'ENTER_RING', 'EXIT_RING', 'APRON']);
 const keepsProp = st => KEEP.has(st);
@@ -3591,8 +3594,8 @@ class PropSystem {
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
       const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
       // swinging: the chair follows the arms; carrying: held upright in front of the chest
-      if (swing) { p.x = hx + Math.cos(a) * 20; p.y = hy + Math.sin(a) * 20; p.rot = a + Math.PI / 2; }
-      else { p.x = hx + f.face * 2; p.y = hy - 20; p.rot = -.32 * f.face; }   // held high overhead by the legs
+      if (swing) { p.x = hx + Math.cos(a) * 30; p.y = hy + Math.sin(a) * 30; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 2; p.y = hy - 30; p.rot = -.18 * f.face; }   // folded, held high overhead by the legs
       p.face = f.face; p.side = f.side;
     }
   }
@@ -4061,7 +4064,7 @@ const CONTROL = {
     if (Math.abs(I.mx) > .3 && sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.emit('perchTurn', { f, out: f.face === out }); }
     if (f.t < .12) return;
     if (f.consume('atk')) {
-      if (f.face !== out) { dive(f, I); return; }
+      if (f.face !== out) { const pk = topPick(f); if (pk.kind === 'stand') topStand(f, I, pk.t); else dive(f, I); return; }
       if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
       diveOut(f, I, out); return;
     }
@@ -4152,6 +4155,20 @@ function air(f, I, dt) {
     if (startAttack(f, d)) { f.vx = f.face * Math.max(Math.abs(f.vx), d.push * 1.1) + f.face * d.push * .35; f.vy = Math.min(f.vy, -60) + (f.vy > 60 ? 0 : -30); }
   }
 }
+// What a J from the corner would do right now, by the state of the foe in front.
+function topPick(f) {
+  const t = f.nearestFoe(250, o => o.side === f.side && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 18);
+  if (!t) return { kind: 'none' };
+  if (t.st === 'DOWN' || t.st === 'PINNED' || (t.st === 'HITSTUN' && t.hsKind === 'lie')) return { kind: 'down', t };
+  if (t.st === 'GET_UP') return { kind: 'rising', t };
+  if (t.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK', 'TAUNT', 'STAGGER', 'HITSTUN', 'WHIPPED', 'ROPE')) return { kind: 'stand', t };
+  return { kind: 'none', t };
+}
+function topStand(f, I, t) {
+  const d = ATTACKS[f.char.topStand] || ATTACKS.missileDropkick, dx = Math.max(0, Math.abs(t.x - f.x) - 18), T = .6;
+  f.vy = -230; f.vx = f.face * clamp(dx / T, 70, 320); f.ground = false;
+  if (startAttack(f, d)) f.match.emit('dive', { f, stand: true, id: d.id });
+}
 function dive(f, I) {
   const d = ATTACKS[f.char.dive], n = f.nearestFoe(330, o => Math.abs(o.x - f.x) > 20 && sgn(o.x - f.x) === f.face);
   const dx = n ? Math.abs(n.x - f.x) : 130;
@@ -4201,7 +4218,7 @@ function standUp(f, wait = 0, lie) {
   if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }
 }
 
-return { newIntent, Fighter, startAttack, beginEnter, tryBurst, settle, standUp, CONTROL };
+return { newIntent, Fighter, startAttack, beginEnter, tryBurst, topPick, settle, standUp, CONTROL };
 })();
 // ---- combat/PhysicsSystem.js
 __m["combat/PhysicsSystem.js"] = (function () {
@@ -4373,7 +4390,7 @@ class CombatSystem {
     }
     // guard
     if (v.st === 'GUARD' && facing && !d.unblock && !d.floorOnly) {
-      if (v.guardT <= B.perfectGuard && !d.dive) {
+      if (v.guardT <= B.perfectGuard && (!d.dive || d.topStand)) {
         a.atk.connected = false;
         this.addFin(v, B.finPerfect); v.perfects++;
         if (d.run || d.air) this.launch(a, -dir * 190, -130, dir * 4, null);
@@ -4591,6 +4608,7 @@ class GrappleSystem {
     if (inc) return P.catchProp(f, inc);
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);
+    if (dv && dv.st === 'GUARD' && dv.guardT <= B.perfectGuard && dv.face === -f.face) { f.dash = false; this.m.combat.stagger(f, .8, dv); f.vx = -f.face * 120; this.m.combat.addFin(dv, B.finPerfect); dv.perfects++; m.hitstop(.11); m.emit('parry', { a: f, v: dv, x: (f.x + dv.x) / 2, y: dv.y - 60 }); return true; }
     if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);
@@ -6443,6 +6461,7 @@ class TitleScene {
       ...(this.hasSave ? [{ label: '새 커리어', act: () => this.onCareer && this.onCareer('new') }] : []),
       { label: '빠른 경기', act: () => this.game.go(() => new QuickScene(this.game, 'quick')) },
       { label: '연습 모드', act: () => this.game.go(() => new QuickScene(this.game, 'practice')) },
+      { label: '기초 훈련 (튜토리얼)', act: () => this.game.playTutorial && this.game.playTutorial(null, () => this.game.toTitle()) },
       { label: '설정', act: () => this.game.openSettings && this.game.openSettings() },
       { label: '조작법', act: () => this.game.showControls() },
     ];
@@ -7093,6 +7112,8 @@ const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { MODES } = __m["combat/MatchManager.js"];
 const { chainAllow } = __m["combat/WrestlingMoveSystem.js"];
+const { topPick } = __m["combat/CharacterController.js"];
+const { ATTACKS } = __m["data/balance.js"];
 const { J } = __m["anim/skeleton.js"];
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 class HUD {
@@ -7262,7 +7283,10 @@ class HUD {
     if (f.dash && f.fsm.is('IDLE', 'MOVE') && !f.prop) { const c = m.grapple.dashCheck(f), mv = MOVES[c.id]; P.push([[inp.label('atk')], '돌진 공격'], [[inp.label('grab')], c.ok ? `${mv.name} (게이지 ${B.dashSigCost})` : `${mv.name}: ${c.why}`]); }
     if (f.st === 'PERCH') {
       const out = f.face === (f.climbDir || (f.x < ar.mid ? -1 : 1)), elim = m.rules.ringOut === 'elim';
-      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], out ? (elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!') : '다이빙'], [[inp.label('down')], '내려오기']);
+      let jl = '다이빙';
+      if (out) jl = elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!';
+      else { const pk = topPick(f), st = ATTACKS[f.char.topStand] || ATTACKS.missileDropkick, dv = ATTACKS[f.char.dive]; jl = pk.kind === 'stand' ? `${st.name} (서 있는 상대)` : pk.kind === 'down' ? `${dv.name} (누운 상대)` : pk.kind === 'rising' ? `${dv.name} (일어나는 상대: 타이밍!)` : '다이빙 (사거리 밖)'; }
+      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], jl], [[inp.label('down')], '내려오기']);
     }
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
@@ -7270,8 +7294,10 @@ class HUD {
     if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], '코너 오르기']);
     if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && Math.abs(f.x - (f.team === 0 ? ar.ropeL : ar.ropeR)) < B.tagRange) P.push([[inp.label('down')], '교대']);
     if ((f.st === 'HITSTUN' || f.st === 'DOWN' || f.st === 'STAGGER') && f.burstCd <= 0 && f.fin >= B.burstCost) P.push([[inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출']);
-    let px = 320 - (P.length - 1) * 60;
-    for (const [k, t] of P.slice(0, 3)) { prompt(g, k, t, px, 338, { align: 'c', bg: 1 }); px += 120; }
+    // laid out by their real widths, centred, so long labels never run into each other
+    const PL = P.slice(0, 3), ww = PL.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
+    let px = 320 - (ww.reduce((s, w) => s + w, 0) + (PL.length - 1) * 8) / 2;
+    PL.forEach(([k, t], i) => { prompt(g, k, t, Math.round(px + ww[i] / 2), 338, { align: 'c', bg: 1 }); px += ww[i] + 8; });
     // status line (bottom left): states only
     const parts = [];
     if (f.downs) parts.push(`다운 ${f.downs}회`);
@@ -7348,49 +7374,49 @@ __m["render/PropRenderer.js"] = (function () {
 const { ellipse } = __m["render/painter.js"];
 const SPR = new Map();
 const mk = (w, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h }));
-// 40x52, side view: backrest and back legs on the left, the seat reaching right, front legs under it.
+// 44x80, front view of a folded folding chair: backrest with a handle slot on top, the seat folded flat against the
+// frame, two pairs of legs and a foot bar.
 function chairSprite(dent) {
   let c = SPR.get(dent);
   if (c) return c;
-  c = mk(40, 52);
+  c = mk(44, 80);
   const g = c.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  const O = '#05060f', M = dent >= 2 ? '#8b93ab' : '#a2acc6', L = '#eef2ff', D = '#5a6584', DD = '#3a4258';
-  const parts = [[5, 1, 12, 21], [8, 21, 5, 29], [9, 25, 27, 5], [29, 30, 5, 20], [12, 40, 19, 3]];
-  for (const [x, y, w, h] of parts) R(x - 1, y - 1, w + 2, h + 2, O);
-  // backrest panel with a red stripe and rivets
-  R(5, 1, 12, 21, M); R(5, 1, 12, 2, L); R(5, 1, 2, 21, L); R(15, 1, 2, 21, D); R(5, 20, 12, 2, D);
-  R(8, 6, 6, 4, '#c2333f'); R(8, 6, 6, 1, '#ff6b78'); R(7, 13, 8, 1, DD); R(7, 16, 8, 1, DD);
-  R(6, 3, 1, 1, DD); R(15, 3, 1, 1, O); R(6, 19, 1, 1, DD);
-  // back post running down into the back leg
-  R(8, 21, 5, 29, M); R(8, 21, 1, 29, L); R(12, 21, 1, 29, D);
-  // seat
-  R(9, 25, 27, 5, M); R(9, 25, 27, 2, L); R(9, 29, 27, 1, D); R(11, 27, 23, 1, '#c4ccdf');
-  // front leg and the cross brace
-  R(29, 30, 5, 20, M); R(29, 30, 1, 20, L); R(33, 30, 1, 20, D);
-  R(12, 40, 19, 3, D); R(12, 40, 19, 1, M);
-  // rubber feet
-  R(6, 49, 8, 3, O); R(27, 49, 8, 3, O);
-  if (dent >= 1) { R(19, 26, 4, 1, DD); R(9, 10, 3, 1, DD); R(30, 36, 1, 3, DD); }
-  if (dent >= 2) { R(23, 25, 3, 2, O); R(6, 12, 4, 1, O); R(10, 31, 1, 4, O); R(26, 41, 2, 2, O); }
+  const O = '#05060f', F = dent >= 2 ? '#9aa2ba' : '#b9c2dc', FL = '#eef2ff', FD = '#5a6584', P = '#3a4258', PL = '#5e6884', PD = '#262c3e';
+  // outline
+  R(3, 0, 38, 20, O); R(1, 2, 42, 16, O); R(1, 16, 6, 64, O); R(37, 16, 6, 64, O); R(5, 17, 34, 44, O); R(7, 56, 6, 24, O); R(31, 56, 6, 24, O); R(1, 73, 42, 6, O);
+  // backrest with the handle slot
+  R(4, 1, 36, 18, P); R(2, 3, 40, 14, P); R(4, 1, 36, 2, PL); R(2, 3, 2, 12, PL); R(40, 3, 2, 12, PD); R(4, 17, 36, 2, PD);
+  R(12, 5, 20, 5, O); R(13, 6, 18, 3, '#141824');
+  R(6, 12, 6, 3, '#c2333f');
+  // outer frame tubes
+  R(2, 17, 4, 62, F); R(2, 17, 1, 62, FL); R(5, 17, 1, 62, FD); R(38, 17, 4, 62, F); R(38, 17, 1, 62, FL); R(41, 17, 1, 62, FD);
+  // the seat folded up flat
+  R(6, 18, 32, 42, P); R(6, 18, 32, 2, PL); R(6, 18, 2, 42, PL); R(36, 18, 2, 42, PD); R(6, 58, 32, 2, PD); R(10, 24, 24, 1, PL); R(10, 50, 24, 1, PD);
+  // inner legs and the foot bar
+  R(8, 57, 4, 22, F); R(8, 57, 1, 22, FL); R(32, 57, 4, 22, F); R(35, 57, 1, 22, FD);
+  R(2, 74, 40, 4, F); R(2, 74, 40, 1, FL); R(2, 77, 40, 1, FD);
+  if (dent >= 1) { R(15, 33, 6, 1, PD); R(22, 40, 4, 2, PD); R(39, 40, 2, 3, FD); }
+  if (dent >= 2) { R(12, 28, 3, 3, O); R(26, 46, 4, 2, O); R(2, 50, 2, 4, FD); R(18, 2, 5, 2, O); }
   SPR.set(dent, c);
   return c;
 }
-// Folded flat, as it lies on the floor.
+// Lying on the floor, folded flat: seen from the side, a long low shape.
 let FOLD = null;
 function foldedSprite() {
   if (FOLD) return FOLD;
-  FOLD = mk(46, 11);
+  FOLD = mk(80, 12);
   const g = FOLD.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  R(0, 1, 46, 9, '#05060f'); R(1, 0, 44, 1, '#05060f');
-  R(1, 1, 44, 7, '#a2acc6'); R(1, 1, 44, 2, '#eef2ff'); R(1, 7, 44, 1, '#5a6584'); R(2, 4, 42, 1, '#7a84a0');
-  R(5, 2, 10, 3, '#c2333f');
-  R(0, 9, 5, 2, '#05060f'); R(41, 9, 5, 2, '#05060f'); R(20, 9, 6, 1, '#05060f');
+  R(0, 2, 80, 9, '#05060f'); R(2, 0, 18, 2, '#05060f');
+  R(1, 3, 78, 7, '#b9c2dc'); R(1, 3, 78, 1, '#eef2ff'); R(1, 9, 78, 1, '#5a6584');
+  R(3, 1, 16, 4, '#3a4258'); R(22, 4, 44, 4, '#3a4258'); R(22, 4, 44, 1, '#5e6884');
+  R(8, 2, 6, 2, '#c2333f');
+  R(0, 10, 4, 2, '#05060f'); R(76, 10, 4, 2, '#05060f');
   return FOLD;
 }
 function drawChairAt(g, x, y, rot = 0, face = 1, dent = 0) {
   g.save(); g.translate(Math.round(x), Math.round(y)); g.rotate(rot); if (face < 0) g.scale(-1, 1);
   g.imageSmoothingEnabled = false;
-  g.drawImage(chairSprite(dent | 0), -20, -26);
+  g.drawImage(chairSprite(dent | 0), -22, -40);
   g.restore();
 }
 function drawProps(g, m, camX) {
@@ -7400,9 +7426,9 @@ function drawProps(g, m, camX) {
     if (x < -40 || x > 680) continue;
     if (p.state !== 'held') {
       const gy = ar.ground(p.x, p.y + 10, p.side), k = Math.max(.25, 1 - (gy - p.y) / 160);
-      g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(18 * k), 2); g.globalAlpha = 1;
+      g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(26 * k), 2); g.globalAlpha = 1;
     }
-    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 23), Math.round(p.y + 1)); continue; }
+    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 40), Math.round(p.y)); continue; }
     drawChairAt(g, x, p.y, p.rot || 0, p.face || 1, p.dent);
   }
 }
@@ -7773,6 +7799,14 @@ const LEARNABLE = [
 const SHOP_ITEMS = [
   { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
   { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
+  // books: learn a grapple move, or change the move used from the top of the corner
+  { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
+  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
+  { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
+  { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
+  { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
+  { id: 'bookMoonsault', name: '기술의 서: 문설트', price: 32000, desc: '코너 위에서 누운 상대에게: 뒤로 돌아 덮친다.', kind: 'book', top: 'down', move: 'diveMoon' },
+  { id: 'bookSplash', name: '기술의 서: 바디 스플래시', price: 26000, desc: '코너 위에서 누운 상대에게: 배로 내리찍는다.', kind: 'book', top: 'down', move: 'diveSplash' },
   { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
   { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
   { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
@@ -7826,6 +7860,8 @@ const RARE_ITEMS = [
   { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
   { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
   { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
+  { id: 'bookChoke', name: '기술의 서: 초크슬램', price: 40000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'chokeslam' },
+  { id: 'bookPile', name: '기술의 서: 파일드라이버', price: 44000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'piledriver' },
   { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
 ];
 const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
@@ -7897,9 +7933,9 @@ class Career {
   }
   // Fighter options for a match.
   entrant(ctrl = 'human') {
-    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue;
+    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -8169,6 +8205,7 @@ function talk(id, c, W) {
         S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아. 나머지 반은 내 잔소리로 채우게 될 거다.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐. 약점은 숨기는 게 아니라 메우는 거야.`),
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
+          { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },
           { label: '조언', go: [S(pick(tips))] },
@@ -8383,6 +8420,135 @@ class Dialogue {
 
 return { Dialogue };
 })();
+// ---- scenes/Tutorial.js
+__m["scenes/Tutorial.js"] = (function () {
+// 백 관장's basics: a practice match in the gym ring with one goal at a time. Each step listens to match events
+// (or polls the state) and moves on when the player has actually done the thing. Esc offers skipping.
+const { VIEW_W, pick } = __m["core/util.js"];
+const { drawText, wrapText } = __m["render/pixelfont.js"];
+const { panel, gauge, prompt } = __m["render/ui.js"];
+const { rect } = __m["render/painter.js"];
+const { drawPortrait } = __m["render/head.js"];
+const { UI } = __m["render/palette.js"];
+const { LOOKS } = __m["data/looks.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const fresh = v => { v.hp = v.maxHp; v.stun = v.maxStun; };
+const TUTORIAL = [
+  { say: '좋아, 링에 올라왔군. 먼저 몸부터 풀자. {y}A{/}·{y}D{/}로 좌우로 움직여 봐.', goal: '좌우로 움직이기', need: 1.5,
+    check: (m, h, v, T, dt) => (Math.abs(h.vx) > 40 ? dt : 0) },
+  { say: '같은 방향을 {y}두 번 빠르게{/} 누르고 그대로 꾹 누르고 있으면 {y}돌진{/}이다. 돌진해서 로프에 몸을 튕겨 봐!', goal: '돌진해서 로프에 튕기기', need: 1,
+    on: { rope: (e, h) => e.f === h } },
+  { say: '{y}W{/}는 점프다. 두 번 뛰어 봐. 링 바닥이 꺼지진 않으니 걱정 말고.', goal: '점프 두 번', need: 2,
+    on: { jump: (e, h) => e.f === h } },
+  { say: '이제 상대다. 도현아, 신입 상대 좀 해 줘라! …{y}J{/}를 연타하면 3단 콤보야. 3연타를 끝까지 맞혀 봐.', goal: 'J 3연타 맞히기', need: 1,
+    setup: (m, h, v) => { v.ai.behavior = 'idle'; fresh(v); m.practice.stunLock = false; },
+    on: { hit: (e, h) => e.a === h && e.combo >= 3 }, check: (m, h, v) => { if (v.stun < v.maxStun * .4) v.stun = v.maxStun; return 0; } },
+  { say: '이번엔 도현이가 때린다. {y}S{/}를 누르고 막아. 맞는 바로 그 순간에 누르면 {y}패리{/}야. 상대가 휘청하지!', goal: '막기 2번 (패리는 2번으로 쳐 준다)', need: 2,
+    setup: (m, h, v) => { v.ai.behavior = 'attack'; v.ctrl = 'dummy'; fresh(v); },
+    on: { block: (e, h) => (e.v === h ? 1 : 0), parry: (e, h) => (e.v === h ? 2 : 0) } },
+  { say: '{y}L{/}은 회피다. 공격이 날아오는 순간 누르면 피하면서 그대로 던져 버리지. 한 번 피해 봐.', goal: '공격 피하기 또는 반격', need: 1,
+    on: { dodge: (e, h) => e.f === h, counter: (e, h) => e.f === h } },
+  { say: '계속 때려서 노란 {y}기절 저항{/} 줄을 다 깎으면 상대가 쓰러진다. 쓰러진 상대에게 다가가 {y}K{/}로 잡아!', goal: '쓰러뜨리고 K로 잡기', need: 1,
+    setup: (m, h, v) => { v.ai.behavior = 'idle'; fresh(v); v.stun = v.maxStun * .35; },
+    on: { grab: (e, h) => e.a === h } },
+  { say: '잡은 다음 {y}K{/}만 누르면 기본기, {y}→+K{/}·{y}←+K{/}·{y}W+K{/}·{y}S+K{/}마다 기술이 다르다. 레슬링 기술을 두 번 걸어 봐.', goal: '레슬링 기술 2번', need: 2,
+    setup: (m, h, v) => { m.practice.stunLock = true; },
+    on: { moveStart: (e, h) => e.a === h && !e.fin } },
+  { say: '쓰러진 상대 옆에서 {y}S{/}를 누르면 {y}핀폴{/}이다. 심판이 바닥을 두 번 칠 때까지 눌러 봐.', goal: '핀폴 카운트 2', need: 1,
+    setup: (m, h, v) => { m.practice.stunLock = true; },
+    on: { count: (e, h, v, m) => { if (e.pin && e.a === h && e.n >= 2) { m.breakPin('let'); return true; } return false; } } },
+  { say: '이제 하늘을 날아 보자. 로프 끝 코너 앞에서 {y}W{/}로 올라가. 위에서 {y}A·D{/}로 방향을 고르고 {y}J{/}로 다이빙!', goal: '코너에서 다이빙', need: 1,
+    setup: (m) => { m.practice.stunLock = true; },
+    on: { dive: (e, h) => e.f === h } },
+  { say: '돌진하다가 서 있는 상대에게 {y}K{/}! 돌진 기술이다. 게이지가 조금 필요한데, 오늘은 내가 채워 주마.', goal: '돌진 중 K로 돌진 기술', need: 1,
+    setup: (m, h, v) => { m.practice.stunLock = false; fresh(v); h.fin = Math.max(h.fin, 40); h.sigCd = 0; },
+    check: (m, h) => { if (h.fin < B.dashSigCost) h.fin = 40; return 0; },
+    on: { dashSig: (e, h) => e.f === h } },
+  { say: '마지막이다. 게이지가 가득 차면 {y}Space{/}로 {y}피니셔{/}! 이번만 공짜로 채워 주지.', goal: '피니셔 쓰기', need: 1,
+    setup: (m, h, v) => { h.fin = B.finMax; fresh(v); },
+    check: (m, h) => { if (h.fin < B.finMax && !h.finPhase && h.st !== 'FINISHER') h.fin = B.finMax; return 0; },
+    on: { finisherStart: (e, h) => e.f === h } },
+];
+const EVENTS = ['rope', 'jump', 'hit', 'block', 'parry', 'dodge', 'counter', 'grab', 'moveStart', 'count', 'dive', 'dashSig', 'finisherStart'];
+
+class Tutorial {
+  constructor(scene) {
+    this.s = scene; this.m = scene.m; this.i = -1; this.n = 0; this.doneT = 0; this.t = 0; this.text = ''; this.finished = false; this.endT = 0;
+    for (const k of EVENTS) this.m.on(k, e => this.event(k, e));
+    this.begin(0);
+  }
+  get h() { return this.m.human; }
+  get v() { return this.m.fighters.find(f => f !== this.h); }
+  get step() { return TUTORIAL[this.i]; }
+  begin(i) {
+    this.i = i; this.n = 0; this.doneT = 0;
+    const st = this.step;
+    if (!st) { this.text = '합격이다! 이 정도면 링에 올라도 창피하진 않겠군. 나머지는 실전에서 배워라.'; this.endT = 2.6; this.s.game.audio.sfx('good'); return; }
+    this.text = st.say;
+    if (st.setup) st.setup(this.m, this.h, this.v, this);
+    this.s.game.audio.sfx('ui');
+  }
+  event(k, e) {
+    const st = this.step;
+    if (!st || this.doneT > 0 || !st.on || !st.on[k]) return;
+    const r = st.on[k](e, this.h, this.v, this.m);
+    if (r) this.progress(r === true ? 1 : r);
+  }
+  progress(k) {
+    const st = this.step;
+    this.n = Math.min(st.need, this.n + k);
+    if (this.n >= st.need) { this.doneT = 1.4; this.text = pick(['좋아! 바로 그거야.', '그렇지! 몸이 기억하는군.', '훌륭해. 다음으로 가자.', '오, 제법인데?']); this.s.game.audio.sfx('good'); }
+  }
+  skip() { if (this.step) this.begin(this.i + 1); }
+  update(dt) {
+    this.t += dt;
+    if (this.endT > 0) { this.endT -= dt; if (this.endT <= 0 && !this.finished) { this.finished = true; this.s.tutorialDone(true); } return; }
+    const st = this.step;
+    if (!st) return;
+    if (st.check && this.doneT <= 0) { const r = st.check(this.m, this.h, this.v, this, dt); if (r) this.progress(r === true ? 1 : r); }
+    if (this.doneT > 0) { this.doneT -= dt; if (this.doneT <= 0) this.begin(this.i + 1); }
+  }
+  draw(u) {
+    const x = 60, y = 62, w = VIEW_W - 120, h = 62, st = this.step;
+    panel(u, x, y, w, h, { accent: '#ff8a2b', bg: '#0e1330', alpha: .94 });
+    rect(u, '#05060f', x + 6, y + 6, 50, 50); rect(u, '#1b2450', x + 7, y + 7, 48, 48);
+    drawPortrait(u, LOOKS.trainer, this.doneT > 0 || this.endT > 0 ? 'happy' : 'neutral', x + 7, y + 7, 48, { px: 2, dy: 6 });
+    drawText(u, '백 관장', x + 64, y + 4, { size: 11, color: '#ff8a2b' });
+    drawText(u, `기초 훈련 ${Math.min(this.i + 1, TUTORIAL.length)}/${TUTORIAL.length}`, x + w - 8, y + 4, { size: 11, align: 'r', color: UI.dim });
+    wrapText(this.text, w - 76, 11).slice(0, 2).forEach((l, k) => drawText(u, l, x + 64, y + 18 + k * 14, { size: 11, color: '#eef2ff' }));
+    if (st && this.doneT <= 0) {
+      drawText(u, '목표: ' + st.goal, x + 64, y + 47, { size: 11, color: '#ffd65a' });
+      gauge(u, x + w - 128, y + 50, 120, 5, this.n / st.need, 'fin', { col: '#6be38a' });
+    }
+    drawText(u, `${this.s.game.input.label('pause')} 건너뛰기`, x + w - 8, y + h + 3, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
+  }
+}
+
+// Asked once right after a new wrestler is made: take the basics or skip them.
+class TutorialOffer {
+  constructor(game, onYes, onNo) { this.game = game; this.onYes = onYes; this.onNo = onNo; this.sel = 0; this.t = 0; game.audio.music('gym'); }
+  update(dt) {
+    this.t += dt;
+    const inp = this.game.input, A = this.game.audio;
+    if (inp.pressed('up') || inp.pressed('down') || inp.pressed('left') || inp.pressed('right')) { this.sel ^= 1; A.sfx('ui'); }
+    if (this.t > .3 && inp.menuPressed('confirm')) { A.sfx('ok'); (this.sel === 0 ? this.onYes : this.onNo)(); }
+    else if (this.t > .3 && inp.menuPressed('cancel')) { A.sfx('back'); this.onNo(); }
+  }
+  draw(w, u) {
+    rect(w, '#0b0f22', 0, 0, VIEW_W, 360);
+    u.clearRect(0, 0, VIEW_W, 360);
+    panel(u, 110, 70, 420, 220, { accent: '#ff8a2b' });
+    rect(u, '#05060f', 128, 92, 82, 82); rect(u, '#1b2450', 129, 93, 80, 80);
+    drawPortrait(u, LOOKS.trainer, 'neutral', 129, 93, 80, { px: 3, dy: 10 });
+    drawText(u, '백 관장', 222, 92, { color: '#ff8a2b', bold: true });
+    wrapText('링에 오르기 전에 기초부터 배우고 가라. 이동, 공격, 막기, 잡기, 기술, 핀폴, 다이빙, 피니셔까지. 5분이면 된다.', 290, 11).forEach((l, i) => drawText(u, l, 222, 114 + i * 15, { size: 11, color: '#eef2ff' }));
+    ['기초 훈련 받기 (추천)', '건너뛰기 (훈련장 관장에게 나중에 받을 수 있다)'].forEach((t, i) => { const on = this.sel === i, y = 200 + i * 26; rect(u, on ? '#3a2a1a' : '#141a36', 140, y, 360, 22); if (on) rect(u, '#ff8a2b', 140, y, 2, 22); drawText(u, (on ? '▶ ' : '  ') + t, 150, y + 5, { size: 11, color: on ? '#ffffff' : UI.dim }); });
+    prompt(u, ['↑↓'], '고르기', 250, 262, {}); prompt(u, ['Enter'], '결정', 330, 262, {});
+  }
+}
+
+return { Tutorial, TutorialOffer, TUTORIAL };
+})();
 // ---- scenes/MatchScene.js
 __m["scenes/MatchScene.js"] = (function () {
 // A match on screen: simulation + camera + effects + sound + HUD + pause + results.
@@ -8400,6 +8566,7 @@ const { drawBody } = __m["render/body.js"];
 const { Actor } = __m["world/Actor.js"];
 const { FLOOR } = __m["world/locations.js"];
 const { Dialogue } = __m["world/Dialogue.js"];
+const { Tutorial } = __m["scenes/Tutorial.js"];
 const { rect } = __m["render/painter.js"];
 const { panel, menuList, fade, prompt } = __m["render/ui.js"];
 const { BALANCE: B } = __m["data/balance.js"];
@@ -8422,6 +8589,7 @@ class MatchScene {
     this.pre = cfg.preTalk && cfg.career && !cfg.skipIntro ? cfg.preTalk : null; this.talk = null;
     if (this.pre) this.m.holdIntro = true;
     this.wire();
+    this.tut = cfg.tutorial ? new Tutorial(this) : null; this.tutDone = false;
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
@@ -8569,6 +8737,7 @@ class MatchScene {
     if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
     if (this.paused) { this.pauseInput(); return; }
     if (this.pre && m.phase === 'intro' && m.introT > (m.cfg.introTime || 3.2) - .15) this.startPreTalk();
+    if (this.talk && m.phase !== 'intro') { this.talk.close(); }   // never let the talk outlive the intro
     if (this.talk) { this.talk.update(dt); m.update(dt); this.hud.update(dt, m); this.ar.update(dt, m.hype); this.camera(dt); return; }
     if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
     // human input
@@ -8576,6 +8745,7 @@ class MatchScene {
     if (h && m.phase === 'fight') inp.fillIntent(h.intent);
     if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
     m.update(dt);
+    if (this.tut) this.tut.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
     for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
     this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
@@ -8624,7 +8794,9 @@ class MatchScene {
     if (inp.menuPressed('cancel') || inp.pressed('pause')) { this.paused = false; A.sfx('back'); this.game.input.clear(); return; }
     if (inp.menuPressed('confirm')) { A.sfx('ok'); if (it.act) it.act(); }
   }
+  tutorialDone(completed) { this.tutDone = !!completed; this.finish(true); }
   pauseItems() {
+    if (this.tut) return [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '이 단계 건너뛰기', act: () => { this.tut.skip(); this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '기초 훈련 끝내기', act: () => this.tutorialDone(false) }];
     const P = this.m.practice;
     const items = [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '디버그 표시', value: this.debug ? '켬' : '끔', act: () => { this.debug = !this.debug; }, cycle: () => { this.debug = !this.debug; } }];
     if (P) {
@@ -8646,7 +8818,7 @@ class MatchScene {
     this.game.screen.resetFx();
     const r = this.m.result || { forfeit: true, quit };
     const summary = this.m.summary(), h = this.human;
-    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m });
+    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone });
   }
   // ---- drawing ----
   draw(w, u) {
@@ -8666,6 +8838,7 @@ class MatchScene {
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
     this.drawBubbles(u, cam);
+    if (this.tut && !this.paused) this.tut.draw(u);
     if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
     if (this.paused) this.drawPause(u);
@@ -8675,6 +8848,7 @@ class MatchScene {
     const P = this.pre, m = this.m, h = this.human, foe = m.fighters.find(f => f.charId === P.opp) || m.fighters.find(f => h && f.isFoe(h));
     this.pre = null;
     if (!h || !foe) { m.holdIntro = false; return; }
+    m.holdIntro = true;
     const steps = [...P.lines, { prompt: '어떻게 받아칠까?', choice: P.choices.map(ch => ({ label: ch.label, go: [{ who: P.opp, text: ch.reply, expr: ch.fx === 'taunt' ? 'fierce' : 'neutral' }, { act: () => this.applyPre(ch.fx, h, foe) }] })) }];
     this.talk = new Dialogue(this.game, steps, { player: { look: h.look, name: h.name }, onEnd: () => { this.talk = null; m.holdIntro = false; m.introT = 99; } });
     for (const f of m.fighters) f.spot = f === h || f === foe;
@@ -8705,7 +8879,7 @@ class MatchScene {
       bc.begin(tmp.x(0), tmp.y(0) - 4);
       drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
       bc.finish(); bc.drawTo(w);
-      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 20, -.5 * c.face, c.face, 0);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 30, -.4 * c.face, c.face, 0);
     }
   }
   drawBubbles(u, cam) {
@@ -8842,6 +9016,7 @@ const { panel, gauge, icon, keycap, prompt, fade, menuList } = __m["render/ui.js
 const { drawPortrait } = __m["render/head.js"];
 const { CHARACTERS } = __m["data/characters.js"];
 const { MOVES, FINISHERS } = __m["data/moves.js"];
+const { ATTACKS } = __m["data/balance.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { MODES } = __m["combat/MatchManager.js"];
 const { ARENAS } = __m["combat/arena.js"];
@@ -8945,16 +9120,17 @@ class ArenaMenu extends Menu {
 // ---- shop ----
 class ShopMenu extends Menu {
   constructor(W) { super(W); this.tab = 0; }
-  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
+  list() { const k = ['item', 'gear', 'outfit', 'book'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
   price(it) { return it.kind === 'item' ? salePrice(this.c.d, it.price) : it.price; }
   update(dt) {
     super.update(dt);
     const inp = this.game.input, A = this.game.audio, c = this.c, d = c.d, L = this.list();
-    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 2 : 1)) % 3; this.sel = 0; A.sfx('ui'); }
+    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 3 : 1)) % 4; this.sel = 0; A.sfx('ui'); }
     this.nav(L.length);
     if (this.back()) return;
     if (this.ok() && L[this.sel]) {
       const it = L[this.sel];
+      if (it.kind === 'book') { this.book(it); return; }
       if (it.kind !== 'item' && d.owned.includes(it.id)) { this.equip(it); return; }
       if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
       A.sfx('buy');
@@ -8962,6 +9138,16 @@ class ShopMenu extends Menu {
       else { d.owned.push(it.id); this.equip(it); }
       c.save();
     }
+  }
+  bookOwned(it) { const d = this.c.d; return it.learn ? d.known.includes(it.learn) : it.free || d.owned.includes(it.id); }
+  bookInUse(it) { const m = this.c.d.moves; return it.top === 'stand' ? (m.topStand || 'missileDropkick') === it.move : it.top === 'down' ? m.topDown === it.move : false; }
+  book(it) {
+    const c = this.c, d = c.d, A = this.game.audio;
+    if (it.learn && d.known.includes(it.learn)) { A.sfx('deny'); this.W.toast('이미 배운 기술이다. Tab → 기술에서 장착하자.'); return; }
+    if (!this.bookOwned(it)) { if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; } A.sfx('buy'); if (!it.learn) d.owned.push(it.id); }
+    if (it.learn) { c.learn(it.learn); this.W.toast(`${MOVES[it.learn].name} 습득! Tab → 기술에서 장착`, '#6be38a'); }
+    else { if (it.top === 'stand') d.moves.topStand = it.move; else d.moves.topDown = it.move; A.sfx('good'); this.W.toast(`코너 기술 변경: ${ATTACKS[it.move].name} (${it.top === 'stand' ? '서 있는 상대' : '누운 상대'})`, '#6be38a'); }
+    c.save();
   }
   equip(it) {
     const d = this.c.d, A = this.game.audio;
@@ -8972,17 +9158,19 @@ class ShopMenu extends Menu {
   draw(u) {
     const d = this.c.d, L = this.list();
     this.frame(u, '돛대 상회', 60, 30, 520, 296, '#ffb347');
-    ['소모품', '장비', '의상'].forEach((t, i) => { const x = 170 + i * 100, on = i === this.tab; rect(u, on ? '#5a3a1a' : '#1a1a2a', x - 40, 50, 80, 16); drawText(u, t, x, 52, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
+    ['소모품', '장비', '의상', '기술의 서'].forEach((t, i) => { const x = 140 + i * 100, on = i === this.tab; rect(u, on ? '#5a3a1a' : '#1a1a2a', x - 40, 50, 80, 16); drawText(u, t, x, 52, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
     drawText(u, '소지금 ' + this.c.money(), 568, 52, { size: 11, align: 'r', color: UI.money });
     L.forEach((it, i) => {
       const y = 74 + i * 30, on = i === this.sel, own = d.owned.includes(it.id), worn = (d.gear[it.slot] === it.id) || (d.outfit || []).includes(it.id);
       rect(u, on ? '#3a2a1a' : '#141a36', 72, y, 496, 27); if (on) rect(u, '#ffb347', 72, y, 2, 27);
-      drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
+      const bk = it.kind === 'book', bOwn = bk && this.bookOwned(it), bUse = bk && this.bookInUse(it);
+      drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : bk ? (bUse ? ' [사용 중]' : bOwn ? (it.learn ? ' [습득]' : ' [보유]') : '') : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
       drawText(u, it.desc, 80, y + 15, { size: 11, color: UI.dim });
-      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
+      if (bk) drawText(u, bOwn ? (it.learn ? '' : bUse ? '' : '바꾸기') : fmtMoney(it.price), 560, y + 6, { align: 'r', color: bOwn ? '#6be38a' : UI.money });
+      else drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
     });
     if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 소모품 30% 할인', 320, 296, { size: 11, align: 'c', color: '#ff8fc4' });
-    this.foot(u, '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
+    this.foot(u, this.tab === 3 ? '←→ 분류 · Enter 사기/바꾸기 · 배운 잡기 기술은 Tab → 기술에서 장착' : '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
   }
 }
 
@@ -9047,6 +9235,7 @@ class MerchantMenu extends Menu {
       if (it.buff) Object.assign(d.buffs, it.buff);
       if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
       if (it.give) d.items[it.give] = (d.items[it.give] || 0) + 1;
+      if (it.learnMove) c.learn(it.learnMove);
       A.sfx('buy'); this.W.toast(`${it.name} 구입! ${it.desc}`, '#9be36b'); c.save();
     }
   }
@@ -9218,6 +9407,7 @@ class InfoMenu extends Menu {
       drawText(u, '잡은 뒤 입력별 기술. Enter로 바꾸기 (배운 기술 중에서)', 44, 136, { size: 11, color: UI.dim });
       this.rows().forEach((r, i) => { const x = r.pos === 'front' ? 44 : 330, y = 168 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 26, on = i === this.sel && !this.pick; if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 152, { size: 11, color: '#ffd65a' }); rect(u, on ? '#26315f' : '#141a36', x, y, 268, 22); keycap(u, SLOT_KEYS[r.s], x + 4, y + 5); const m = MOVES[d.moves[r.pos][r.s]]; drawText(u, m ? m.name : '-', x + 60, y + 5, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); });
       drawText(u, `받아치기: ${MOVES[d.moves.catch].name} · 반격: ${MOVES[d.moves.counter].name}`, 44, 302, { size: 11, color: UI.dim });
+      drawText(u, `코너 위 — 서 있는 상대: ${(ATTACKS[d.moves.topStand] || ATTACKS.missileDropkick).name} · 누운 상대: ${(ATTACKS[d.moves.topDown || this.c.styleDef.dive] || {}).name || '-'} (돛대 상회 '기술의 서'로 바꾼다)`, 44, 288, { size: 11, color: '#ffd65a' });
       if (this.pick) { const P = this.pick; panel(u, 180, 100, 280, 210, { accent: '#ffd65a' }); drawText(u, `${POS_NAMES[P.pos]} ${SLOT_KEYS[P.s]}`, 320, 108, { size: 11, align: 'c', color: '#ffd65a' }); P.list.slice(0, 11).forEach((id, i) => { const on = i === P.i; rect(u, on ? '#3a3a7a' : '#141a36', 190, 124 + i * 16, 260, 15); drawText(u, MOVES[id].name, 196, 126 + i * 16, { size: 11, color: on ? '#ffffff' : UI.dim }); }); const m = MOVES[P.list[P.i]]; if (m) drawText(u, m.desc, 320, 300, { size: 11, align: 'c', color: '#c9d4ff' }); }
     } else {
       const R = this.rows();
@@ -9287,6 +9477,7 @@ class ResultMenu extends Menu {
       if (this.W.checkGameOver()) return;
       const d = this.c.d;
       if (this.sum.ups.length) this.W.toast(`레벨 업! Lv ${d.level} — 능력치 포인트 +${this.sum.ups.length * 2} (Tab)`, '#6be38a');
+      if (this.W.lesson && this.c.injuryLevel !== 'danger') { const L = this.W.lesson; this.W.lesson = null; this.W.say(L); }
       if (this.c.injuryLevel === 'danger') this.W.say([{ who: 'me', text: `몸이 비명을 지른다… 부상 ${Math.round(d.injury)}%. 이대로는 위험하다. 항구의원에 가야 해.`, expr: 'hurt' }]);
       else if (this.c.injuryLevel === 'warn' && this.sum.injury > 0) this.W.toast(`부상 주의: ${Math.round(d.injury)}%`, '#ffb347');
     }
@@ -9629,6 +9820,7 @@ const { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip } = __m["anim/c
 const { updateTails } = __m["anim/AnimationSystem.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { CHARACTERS } = __m["data/characters.js"];
+const { MOVES } = __m["data/moves.js"];
 const { LOCATIONS, bakeLocation, drawWindows, streetFar, FLOOR } = __m["world/locations.js"];
 const { NPCS, peopleAt, talk, roomBanter, preFightLine, PRE } = __m["world/npcs.js"];
 const { Dialogue } = __m["world/Dialogue.js"];
@@ -9645,7 +9837,7 @@ class WorldScene {
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
     if (o.intro) {
       const K = a => game.input.label(a);
-      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` },
+      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
         { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
         { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
         { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
@@ -9814,6 +10006,7 @@ class WorldScene {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
     const foe = id => ({ char: id, ctrl: 'ai', difficulty: lv });
+    if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
     if (kind === 'brawl') return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), { char: 'galchi', ctrl: 'ai', difficulty: d.season >= 2 ? 'hard' : 'normal', team: 1 }, { char: 'myeolchi', ctrl: 'ai', difficulty: 'easy', team: 1 }], career: 1, title: '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }], introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
@@ -9823,6 +10016,7 @@ class WorldScene {
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
+    if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) { c.d.flags['dojo_' + offer.opp] = 1; }
@@ -9832,6 +10026,15 @@ class WorldScene {
       else if (!res.quit) { const st = Math.min(12000, c.d.money); if (st > 0) { c.pay(st); this.toast(`악동단이 지갑을 털어 갔다… -${fmtMoney(st)}`, '#ff8a8a'); } }
     }
     if (kind === 'revenge') { c.d.revenge = null; this.toast(res.won ? '지하의 리벤지를 짓밟았다! 판돈을 챙겼다.' : '지하에서 졌다… 소문이 금방 퍼질 거다.', res.won ? '#9be36b' : '#ff8a8a'); }
+    // a beaten wrestler may teach one of their moves the first time you beat them
+    if (res.won && offer && CHARACTERS[offer.opp] && !CHARACTERS[offer.opp].thug && !c.d.flags['taught_' + offer.opp] && offer.opp !== 'fogking') {
+      const ch = CHARACTERS[offer.opp], pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((id, i, a) => MOVES[id] && !c.d.known.includes(id) && a.indexOf(id) === i);
+      if (pool.length && Math.random() < .6) {
+        const id = pool[Math.floor(Math.random() * pool.length)], mv = MOVES[id];
+        c.d.flags['taught_' + offer.opp] = 1;
+        this.lesson = [{ who: offer.opp, text: pick([`…좋은 경기였다. 너라면 써도 되겠지. 내 기술 '${mv.name}', 가르쳐 주마.`, `흥, 졌다. 대신 이건 알아 둬. '${mv.name}'은 이렇게 거는 거다.`, `다음엔 안 진다. 그래도… 내 '${mv.name}', 한 번 보여 주지.`]) }, { act: () => { c.learn(id); c.save(); this.toast(`새 기술 습득: ${mv.name} (Tab → 기술에서 장착)`, '#6be38a'); this.game.audio.sfx('good'); } }];
+      }
+    }
     // a beaten wrestler may come back for revenge a few days later
     if (res.won && (kind === 'official' || kind === 'free' || kind === 'dojo') && offer && CHARACTERS[offer.opp] && offer.opp !== 'fogking' && !c.d.revenge && Math.random() < (c.d.flags.revengeSeen ? .4 : .8)) { c.d.flags.revengeSeen = 1; c.d.revenge = { opp: offer.opp, oppName: offer.oppName || CHARACTERS[offer.opp].name, day: c.d.day + 2, until: c.d.day + 7, invited: false }; }
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
@@ -10375,14 +10578,24 @@ const { SettingsOverlay } = __m["scenes/SettingsScene.js"];
 const { Career, hasCareer } = __m["world/CareerManager.js"];
 const { WorldScene } = __m["world/WorldScene.js"];
 const { CreateScene } = __m["world/CreateScene.js"];
+const { TutorialOffer } = __m["scenes/Tutorial.js"];
 const canvas = document.getElementById('game');
 const game = new GameManager(canvas);
 game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: hasCareer(1), onCareer: kind => startCareer(kind) }));
 game.playMatch = (cfg, after) => game.go(() => new MatchScene(game, cfg, res => after && after(res)));
 game.openSettings = () => game.push(new SettingsOverlay(game));
+// 백 관장's basics in the gym ring; c may be null (from the title, with the rookie)
+function playTutorial(c, after) {
+  game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? c.entrant('human') : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
+}
+game.playTutorial = playTutorial;
 function startCareer(kind, given) {
   if (kind === 'continue') { const c = given || Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
-  game.go(() => new CreateScene(game, look => { const c = Career.create(1, look); game.career = c; game.go(() => new WorldScene(game, c, { intro: true })); }));
+  game.go(() => new CreateScene(game, look => {
+    const c = Career.create(1, look); game.career = c;
+    const toTown = o => game.go(() => new WorldScene(game, c, Object.assign({ intro: true }, o)));
+    game.go(() => new TutorialOffer(game, () => playTutorial(c, res => { if (res.completed) { c.d.flags.tutored = 1; c.save(); } toTown({ tutored: res.completed }); }), () => toTown({})));
+  }));
 }
 game.startCareer = startCareer;
 game.toTitle();

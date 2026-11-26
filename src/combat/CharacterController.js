@@ -343,7 +343,7 @@ export const CONTROL = {
     if (Math.abs(I.mx) > .3 && sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.emit('perchTurn', { f, out: f.face === out }); }
     if (f.t < .12) return;
     if (f.consume('atk')) {
-      if (f.face !== out) { dive(f, I); return; }
+      if (f.face !== out) { const pk = topPick(f); if (pk.kind === 'stand') topStand(f, I, pk.t); else dive(f, I); return; }
       if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
       diveOut(f, I, out); return;
     }
@@ -433,6 +433,20 @@ function air(f, I, dt) {
     const d = ATTACKS[f.char.air];
     if (startAttack(f, d)) { f.vx = f.face * Math.max(Math.abs(f.vx), d.push * 1.1) + f.face * d.push * .35; f.vy = Math.min(f.vy, -60) + (f.vy > 60 ? 0 : -30); }
   }
+}
+// What a J from the corner would do right now, by the state of the foe in front.
+export function topPick(f) {
+  const t = f.nearestFoe(250, o => o.side === f.side && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 18);
+  if (!t) return { kind: 'none' };
+  if (t.st === 'DOWN' || t.st === 'PINNED' || (t.st === 'HITSTUN' && t.hsKind === 'lie')) return { kind: 'down', t };
+  if (t.st === 'GET_UP') return { kind: 'rising', t };
+  if (t.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK', 'TAUNT', 'STAGGER', 'HITSTUN', 'WHIPPED', 'ROPE')) return { kind: 'stand', t };
+  return { kind: 'none', t };
+}
+function topStand(f, I, t) {
+  const d = ATTACKS[f.char.topStand] || ATTACKS.missileDropkick, dx = Math.max(0, Math.abs(t.x - f.x) - 18), T = .6;
+  f.vy = -230; f.vx = f.face * clamp(dx / T, 70, 320); f.ground = false;
+  if (startAttack(f, d)) f.match.emit('dive', { f, stand: true, id: d.id });
 }
 function dive(f, I) {
   const d = ATTACKS[f.char.dive], n = f.nearestFoe(330, o => Math.abs(o.x - f.x) > 20 && sgn(o.x - f.x) === f.face);

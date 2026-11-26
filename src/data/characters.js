@@ -31,7 +31,7 @@ export const CHARACTERS = {
     lines: { intro: '자, 하역 시작한다.', win: '오늘 물량, 끝!', lose: '허리가… 나갔나.' },
   },
   haneul: {
-    name: '윤하늘', nick: '갈매기', style: 'air', look: LOOKS.haneul, stance: 'air', color: '#3aa6e8',
+    name: '윤하늘', nick: '갈매기', style: 'air', look: LOOKS.haneul, stance: 'air', color: '#3aa6e8', topStand: 'topCrossbody',
     stats: { hp: 86, stun: 92, atk: .94, grp: .92, spd: 1.17, jump: 1.26, rec: 1.1, down: 1.1, fin: 1.12, weight: 70, lift: 1, kbr: .82 },
     chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', ground: 'elbowdrop',
     moves: { front: front('headDrop', 'irishWhip', 'suplex', 'bellyToBelly', 'ddt'), rear: front('bulldog', 'ringOut', 'backdropDriver', 'atomic', 'german'), catch: 'backBody', counter: 'armDrag' },
@@ -152,7 +152,7 @@ export const CHARACTERS = {
     lines: { intro: '이 동네는 우리 구역이야!', win: '지갑은 놓고 가라~', lose: '다, 다음엔 진짜 안 봐준다!' },
   },
   myeolchi: {
-    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1,
+    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1, topStand: 'topCrossbody',
     stats: { hp: 76, stun: 84, atk: .9, grp: .9, spd: 1.14, jump: 1.16, rec: 1.02, down: 1.05, fin: 1.05, weight: 62, lift: 1.1, kbr: .9 },
     chain: ['jab', 'jab', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveKick', ground: 'stomp',
     moves: { front: front('armDrag', 'irishWhip', 'suplex', 'ddt', 'headDrop'), rear: front('bulldog', 'ringOut', 'german', 'atomic', 'backdropDriver'), catch: 'backBody', counter: 'armDrag' },

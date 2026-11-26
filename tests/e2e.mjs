@@ -93,8 +93,11 @@ try {
   r = await st(); log('   row before start', r.row);
   for (let i = 0; i < 20 && r.row !== 15; i++) { await tap('ArrowDown'); r = await st(); }
   await tap('Enter'); await step(70);
+  r = await st(); check(r.scene === 'TutorialOffer', 'a new wrestler is offered the basics', JSON.stringify(r));
+  await p.shot('e2e_03a_offer');
+  await tap('ArrowDown'); await tap('Enter'); await step(70);
   r = await st();
-  check(r.scene === 'WorldScene' && r.loc === 'lobby' && r.dialog, 'start -> lobby with the janitor intro', JSON.stringify(r));
+  check(r.scene === 'WorldScene' && r.loc === 'lobby' && r.dialog, 'skipping the basics -> lobby with the janitor intro', JSON.stringify(r));
   await p.shot('e2e_03_intro');
   r = await advanceDialog();
   check(!r.dialog, 'intro dialogue closes with E', JSON.stringify(r));
@@ -152,6 +155,10 @@ try {
   r = await walk('KeyD', q => q.prompt && q.prompt.includes('경기장'), 2400);
   await tap('KeyE'); await step(50);
   r = await st(); check(r.loc === 'arena', 'E on a door also goes through', JSON.stringify(r));
+  for (let i = 0; i < 60 && !r.dialog; i++) { await step(10); r = await st(); }
+  check(r.dialog && /상대라고/.test(r.dlg || ''), 'the next opponent walks over in the waiting room', JSON.stringify(r));
+  await p.shot('e2e_10a_banter');
+  r = await advanceDialog();
   r = await walk('KeyD', q => q.prompt && q.prompt.startsWith('npc:진행요원'), 1200);
   check(r.prompt === 'npc:진행요원 도진', 'staff prompt in the arena', JSON.stringify(r));
   await tap('Enter'); await step(3);
@@ -161,6 +168,15 @@ try {
   await p.shot('e2e_10_arena_list');
   await tap('Enter'); await step(80);
   r = await st(); check(r.scene === 'MatchScene', 'contract match starts', JSON.stringify(r));
+  for (let i = 0; i < 40; i++) { if (await ev(`return !!__NHS.game.scene.talk`)) break; await step(10); }
+  check(await ev(`return !!__NHS.game.scene.talk`), 'face to face in the ring: the opponent talks before the bell', '');
+  await p.shot('e2e_10b_ringtalk');
+  for (let i = 0; i < 12; i++) { const c = await ev(`const t=__NHS.game.scene.talk; return t && t.cur && t.cur.choice ? 1 : t ? 0 : -1`); if (c !== 0) break; await tap('KeyE'); await step(2); }
+  const fin0 = await ev(`return __NHS.game.scene.m.human.fin`);
+  await tap('Enter'); await step(3);
+  for (let i = 0; i < 6; i++) { if (!(await ev(`return !!__NHS.game.scene.talk`))) break; await tap('KeyE'); await step(3); }
+  const fin1 = await ev(`return __NHS.game.scene.m.human.fin`);
+  check(fin1 >= fin0 + 14, 'answering with a taunt fills the gauge', `${fin0} -> ${fin1}`);
   // let an AI play our side
   await ev(`const m=__NHS.game.scene.m, h=m.human; h.ai=new __m['combat/AIController.js'].AIController(h,'expert',m.rng); return 1`);
   for (let i = 0; i < 60; i++) { const q = await ev(`__NHS.step(300,1/60); const sc=__NHS.game.scene; return sc.m ? sc.m.phase+(sc.resultShown?'R':'') : sc.constructor.name`); if (/R$/.test(q)) { await p.shot('e2e_11_match_result'); await tap('Enter'); await step(10); await tap('Enter'); await step(80); break; } if (!/fight|intro|ready|end/.test(q)) break; }
@@ -224,6 +240,7 @@ try {
   const kept = await ev(`return JSON.parse(localStorage.getItem('nhs.save1')).name`);
   check(!r.ask && r.scene === 'CreateScene' && kept === saved.name, 'default 아니요 keeps the old save', JSON.stringify(r) + ' kept=' + kept);
   await tap('Enter'); await tap('ArrowLeft'); await tap('Enter'); await step(70);
+  await tap('ArrowDown'); await tap('Enter'); await step(70);
   r = await st();
   const now = await ev(`return __NHS.game.scene.c && __NHS.game.scene.c.d.name`);
   check(r.scene === 'WorldScene' && now === '등대' && r.money === 60000, '예 starts the new career', JSON.stringify(r) + ' name=' + now);
@@ -239,6 +256,106 @@ try {
   check(r.scene === 'WorldScene' && r.injury < 100, 'restart from the last morning checkpoint', JSON.stringify(r));
   const back = await ev(`return JSON.parse(localStorage.getItem('nhs.save1')).injury`);
   check(back < 100, 'the restored state is what is saved now', 'saved injury=' + back);
+  r = await advanceDialog();
+
+  // helpers for the town events
+  const throughDoor = async (label) => { r = await walk(r.x < 700 ? 'KeyD' : 'KeyA', q => q.prompt && q.prompt.includes(label), 3000); await tap('KeyF'); await step(50); return st(); };
+  const aiPlays = async (shot) => {
+    await ev(`const m=__NHS.game.scene.m, h=m.human; h.ai=new __m['combat/AIController.js'].AIController(h,'expert',m.rng); const sc=__NHS.game.scene; sc.pre=null; if (sc.talk) { sc.talk.close(); } m.holdIntro=false; return 1`);
+    for (let i = 0; i < 80; i++) { const q = await ev(`__NHS.step(240,1/60); const sc=__NHS.game.scene; return sc.m ? sc.m.phase+(sc.resultShown?'R':'') : sc.constructor.name`); if (/R$/.test(q)) { if (shot) await p.shot(shot); await tap('Enter'); await step(90); break; } if (!/fight|intro|ready|end/.test(q)) break; }
+    return st();
+  };
+  // ---- lobby raid: pay them off
+  await ev(`const W=__NHS.game.scene; W.c.d.day=3; W.c.d.flags.gangDay=0; W.c.d.flags.gangSeen=0; W.c.d.money=60000; W.c.d.revenge=null; return 1`);
+  r = await throughDoor('사장실');
+  r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1200); await tap('KeyF'); await step(50);
+  r = await st(); check(r.loc === 'lobby', 'back in the lobby for the raid', JSON.stringify(r));
+  for (let i = 0; i < 40 && !r.dialog; i++) { await step(10); r = await st(); }
+  check(r.dialog, 'the dock gang walks up and talks', JSON.stringify(r));
+  await p.shot('e2e_17_gang');
+  for (let i = 0; i < 12; i++) { r = await st(); if (r.dlg === '[choice]') break; await tap('KeyE'); await step(2); }
+  await tap('ArrowUp'); await tap('Enter'); await step(3); r = await advanceDialog();
+  check(r.money === 52000 && !r.dialog, 'paying them off costs money and ends the raid', JSON.stringify(r));
+  await step(120);
+  const gone = await ev(`return __NHS.game.scene.npcs.filter(n=>n.id==='galchi'||n.id==='myeolchi').length`);
+  check(gone === 0, 'the gang leaves the lobby', 'left=' + gone);
+  // ---- lobby raid: fight them in the lobby
+  await ev(`const W=__NHS.game.scene; W.c.d.flags.gangDay=0; W.c.d.flags.gangSeen=0; return 1`);
+  r = await throughDoor('사장실');
+  r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1200); await tap('KeyF'); await step(50);
+  r = await st(); for (let i = 0; i < 40 && !r.dialog; i++) { await step(10); r = await st(); }
+  for (let i = 0; i < 12; i++) { r = await st(); if (r.dlg === '[choice]') break; await tap('KeyE'); await step(2); }
+  await tap('Enter'); await step(80);
+  r = await st(); check(r.scene === 'MatchScene', 'the lobby turns into a fight', JSON.stringify(r));
+  const arena = await ev(`return __NHS.game.scene.m.arenaDef.id + ':' + __NHS.game.scene.m.fighters.length`);
+  check(arena === 'lobby:3', 'lobby arena, one against two', arena);
+  r = await aiPlays('e2e_18_brawl_result');
+  check(r.scene === 'WorldScene' && r.loc === 'lobby', 'after the brawl the lobby is a lobby again', JSON.stringify(r));
+  await step(50); await tap('Enter'); await step(6); r = await advanceDialog();
+  // ---- revenge in the basement
+  await ev(`const W=__NHS.game.scene; W.c.d.revenge={opp:'baeksang', oppName:'백상', day:W.c.d.day, until:W.c.d.day+5, invited:false}; W.c.d.flags.gangDay=W.c.d.day; return 1`);
+  r = await throughDoor('사장실');
+  r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1200); await tap('KeyF'); await step(50);
+  r = await walk('KeyD', q => q.dialog, 3000);
+  r = await st(); for (let i = 0; i < 60 && !r.dialog; i++) { await step(10); r = await st(); }
+  check(r.dialog, 'a beaten wrestler waits in the lobby and talks', JSON.stringify(r));
+  for (let i = 0; i < 12; i++) { r = await st(); if (r.dlg === '[choice]') break; await tap('KeyE'); await step(2); }
+  await tap('Enter'); await step(70);
+  r = await st(); check(r.loc === 'basement', 'following them down to the basement', JSON.stringify(r));
+  await p.shot('e2e_19_basement');
+  r = await walk('KeyD', q => q.prompt && q.prompt.startsWith('npc:'), 1200);
+  await tap('KeyE'); await step(3);
+  for (let i = 0; i < 12; i++) { r = await st(); if (r.dlg === '[choice]') break; await tap('KeyE'); await step(2); }
+  await tap('Enter'); await step(80);
+  const where = await ev(`const sc=__NHS.game.scene; return sc.m ? sc.m.arenaDef.id : sc.constructor.name`);
+  check(where === 'basement', 'the revenge match is in the basement ring', where);
+  r = await aiPlays();
+  const rv = await ev(`return JSON.stringify(__NHS.game.scene.c.d.revenge)`);
+  check(r.scene === 'WorldScene' && r.loc === 'basement' && rv === 'null', 'after the revenge match: back in the basement, revenge settled', JSON.stringify(r) + ' ' + rv);
+  await step(50); await tap('Enter'); await step(6); r = await advanceDialog();
+  // ---- vending machine: three a day
+  r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1500); await tap('KeyF'); await step(50);
+  await ev(`const W=__NHS.game.scene; W.c.d.fatigue=60; W.c.d.money=60000; W.c.d.flags.vend=null; return 1`);
+  r = await st();
+  r = await walk(r.x > 647 ? 'KeyA' : 'KeyD', q => q.prompt && q.prompt.includes('자판기'), 3000);
+  await tap('KeyE'); await step(3);
+  r = await st(); check(r.wov.includes('VendingMenu'), 'the vending machine has a menu', JSON.stringify(r));
+  for (let i = 0; i < 4; i++) { await tap('Enter'); await step(3); }
+  const vend = await ev(`const d=__NHS.game.scene.c.d; return JSON.stringify({ f: d.fatigue, m: d.money, n: d.flags.vend && d.flags.vend.n })`).then(JSON.parse);
+  check(vend.f === 60 - 36 && vend.m === 60000 - 9000 && vend.n === 3, 'three drinks a day, the fourth is refused', JSON.stringify(vend));
+  await tap('Escape'); await step(3);
+  // ---- the travelling merchant
+  await ev(`const W=__NHS.game.scene, d=W.c.d; for (let k=0;k<10;k++){ if ((d.day + d.season) % 5 === 2) break; d.day++; } d.money=90000; d.flags.newsDay=0; return d.day`);
+  r = await st(); if (r.wov.length) { await tap('Escape'); await step(3); }
+  r = await walk('KeyA', q => q.prompt && q.prompt.includes('건물 밖'), 3000); await tap('KeyF'); await step(50);
+  r = await walk('KeyD', q => q.prompt && q.prompt.startsWith('npc:떠돌이'), 6000);
+  check(r.prompt === 'npc:떠돌이 상인 보부', 'the merchant is on the street today', JSON.stringify(r));
+  await tap('KeyE'); await step(3); for (let i = 0; i < 6; i++) { r = await st(); if (r.wov.includes('MerchantMenu')) break; await tap('KeyE'); await step(2); }
+  check(r.wov.includes('MerchantMenu'), 'the merchant opens a stall', JSON.stringify(r));
+  await p.shot('e2e_20_merchant');
+  await tap('Enter'); await step(3);
+  const bought = await ev(`const d=__NHS.game.scene.c.d; return JSON.stringify({ m: d.money, ids: d.flags.merchant && d.flags.merchant.ids, buffs: d.buffs, items: d.items })`).then(JSON.parse);
+  check(bought.m < 90000 && bought.ids && bought.ids.length === 1, 'bought one rare item', JSON.stringify(bought));
+  await tap('Escape'); await step(3);
+  // ---- the basics from the title: a few steps by hand, the rest skipped from the pause menu
+  await ev(`__NHS.game.toTitle(); return 1`); await step(50);
+  for (let i = 0; i < 4; i++) await tap('ArrowDown');
+  await tap('Enter'); await step(70);
+  const tut = () => ev(`const sc=__NHS.game.scene; return sc.tut ? JSON.stringify({ i: sc.tut.i, n: sc.tut.n }) : JSON.stringify({ scene: sc.constructor.name })`).then(JSON.parse);
+  let T = await tut(); check(T.i === 0, 'the basics start from the title', JSON.stringify(T));
+  await kd('KeyD'); await step(130); await ku('KeyD'); await step(100);
+  T = await tut(); check(T.i === 1, 'basics: moving clears step 1', JSON.stringify(T));
+  await kd('KeyA'); await step(3); await ku('KeyA'); await step(3); await kd('KeyA'); await step(120); await ku('KeyA'); await step(110);
+  T = await tut(); check(T.i === 2, 'basics: a dash into the ropes clears step 2', JSON.stringify(T));
+  await p.shot('e2e_21_basics');
+  for (let i = 0; i < 2; i++) { await tap('KeyW'); await step(50); }
+  await step(90); T = await tut(); check(T.i === 3, 'basics: two jumps clear step 3', JSON.stringify(T));
+  await kd('KeyD'); for (let i = 0; i < 90; i++) { await step(2); if (await ev(`const m=__NHS.game.scene.m; return Math.abs(m.fighters[0].x-m.fighters[1].x) < 46`)) break; } await ku('KeyD');
+  for (let k = 0; k < 4; k++) { for (let i = 0; i < 3; i++) { await tap('KeyJ', 2); await step(6); } await step(60); if ((await tut()).i === 4) break; }
+  await step(90); T = await tut(); check(T.i === 4, 'basics: a three-hit string clears step 4', JSON.stringify(T));
+  for (let i = 0; i < 9; i++) { await tap('Escape'); await tap('ArrowDown'); await tap('Enter'); await step(4); }
+  await step(200);
+  r = await st(); check(r.scene === 'TitleScene', 'skipping the rest of the basics returns to the title', JSON.stringify(r));
 } catch (e) { fails.push('exception ' + e.message); console.log('ERR', e.stack); }
 const errs = p.logs.filter(l => /EXC|error/i.test(l) && !l.includes('favicon'));
 if (errs.length) { console.log(errs.slice(0, 10).join('\n')); fails.push('page errors'); }

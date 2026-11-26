@@ -27,6 +27,7 @@ export class GrappleSystem {
     if (inc) return P.catchProp(f, inc);
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);
+    if (dv && dv.st === 'GUARD' && dv.guardT <= B.perfectGuard && dv.face === -f.face) { f.dash = false; this.m.combat.stagger(f, .8, dv); f.vx = -f.face * 120; this.m.combat.addFin(dv, B.finPerfect); dv.perfects++; m.hitstop(.11); m.emit('parry', { a: f, v: dv, x: (f.x + dv.x) / 2, y: dv.y - 60 }); return true; }
     if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);

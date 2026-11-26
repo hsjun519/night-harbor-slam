@@ -7,6 +7,7 @@ import { panel, gauge, icon, keycap, prompt, fade, menuList } from '../render/ui
 import { drawPortrait } from '../render/head.js';
 import { CHARACTERS } from '../data/characters.js';
 import { MOVES, FINISHERS } from '../data/moves.js';
+import { ATTACKS } from '../data/balance.js';
 import { BALANCE as B } from '../data/balance.js';
 import { MODES } from '../combat/MatchManager.js';
 import { ARENAS } from '../combat/arena.js';
@@ -111,16 +112,17 @@ export class ArenaMenu extends Menu {
 // ---- shop ----
 export class ShopMenu extends Menu {
   constructor(W) { super(W); this.tab = 0; }
-  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
+  list() { const k = ['item', 'gear', 'outfit', 'book'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
   price(it) { return it.kind === 'item' ? salePrice(this.c.d, it.price) : it.price; }
   update(dt) {
     super.update(dt);
     const inp = this.game.input, A = this.game.audio, c = this.c, d = c.d, L = this.list();
-    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 2 : 1)) % 3; this.sel = 0; A.sfx('ui'); }
+    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 3 : 1)) % 4; this.sel = 0; A.sfx('ui'); }
     this.nav(L.length);
     if (this.back()) return;
     if (this.ok() && L[this.sel]) {
       const it = L[this.sel];
+      if (it.kind === 'book') { this.book(it); return; }
       if (it.kind !== 'item' && d.owned.includes(it.id)) { this.equip(it); return; }
       if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
       A.sfx('buy');
@@ -128,6 +130,16 @@ export class ShopMenu extends Menu {
       else { d.owned.push(it.id); this.equip(it); }
       c.save();
     }
+  }
+  bookOwned(it) { const d = this.c.d; return it.learn ? d.known.includes(it.learn) : it.free || d.owned.includes(it.id); }
+  bookInUse(it) { const m = this.c.d.moves; return it.top === 'stand' ? (m.topStand || 'missileDropkick') === it.move : it.top === 'down' ? m.topDown === it.move : false; }
+  book(it) {
+    const c = this.c, d = c.d, A = this.game.audio;
+    if (it.learn && d.known.includes(it.learn)) { A.sfx('deny'); this.W.toast('이미 배운 기술이다. Tab → 기술에서 장착하자.'); return; }
+    if (!this.bookOwned(it)) { if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; } A.sfx('buy'); if (!it.learn) d.owned.push(it.id); }
+    if (it.learn) { c.learn(it.learn); this.W.toast(`${MOVES[it.learn].name} 습득! Tab → 기술에서 장착`, '#6be38a'); }
+    else { if (it.top === 'stand') d.moves.topStand = it.move; else d.moves.topDown = it.move; A.sfx('good'); this.W.toast(`코너 기술 변경: ${ATTACKS[it.move].name} (${it.top === 'stand' ? '서 있는 상대' : '누운 상대'})`, '#6be38a'); }
+    c.save();
   }
   equip(it) {
     const d = this.c.d, A = this.game.audio;
@@ -138,17 +150,19 @@ export class ShopMenu extends Menu {
   draw(u) {
     const d = this.c.d, L = this.list();
     this.frame(u, '돛대 상회', 60, 30, 520, 296, '#ffb347');
-    ['소모품', '장비', '의상'].forEach((t, i) => { const x = 170 + i * 100, on = i === this.tab; rect(u, on ? '#5a3a1a' : '#1a1a2a', x - 40, 50, 80, 16); drawText(u, t, x, 52, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
+    ['소모품', '장비', '의상', '기술의 서'].forEach((t, i) => { const x = 140 + i * 100, on = i === this.tab; rect(u, on ? '#5a3a1a' : '#1a1a2a', x - 40, 50, 80, 16); drawText(u, t, x, 52, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
     drawText(u, '소지금 ' + this.c.money(), 568, 52, { size: 11, align: 'r', color: UI.money });
     L.forEach((it, i) => {
       const y = 74 + i * 30, on = i === this.sel, own = d.owned.includes(it.id), worn = (d.gear[it.slot] === it.id) || (d.outfit || []).includes(it.id);
       rect(u, on ? '#3a2a1a' : '#141a36', 72, y, 496, 27); if (on) rect(u, '#ffb347', 72, y, 2, 27);
-      drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
+      const bk = it.kind === 'book', bOwn = bk && this.bookOwned(it), bUse = bk && this.bookInUse(it);
+      drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : bk ? (bUse ? ' [사용 중]' : bOwn ? (it.learn ? ' [습득]' : ' [보유]') : '') : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
       drawText(u, it.desc, 80, y + 15, { size: 11, color: UI.dim });
-      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
+      if (bk) drawText(u, bOwn ? (it.learn ? '' : bUse ? '' : '바꾸기') : fmtMoney(it.price), 560, y + 6, { align: 'r', color: bOwn ? '#6be38a' : UI.money });
+      else drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
     });
     if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 소모품 30% 할인', 320, 296, { size: 11, align: 'c', color: '#ff8fc4' });
-    this.foot(u, '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
+    this.foot(u, this.tab === 3 ? '←→ 분류 · Enter 사기/바꾸기 · 배운 잡기 기술은 Tab → 기술에서 장착' : '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
   }
 }
 
@@ -213,6 +227,7 @@ export class MerchantMenu extends Menu {
       if (it.buff) Object.assign(d.buffs, it.buff);
       if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
       if (it.give) d.items[it.give] = (d.items[it.give] || 0) + 1;
+      if (it.learnMove) c.learn(it.learnMove);
       A.sfx('buy'); this.W.toast(`${it.name} 구입! ${it.desc}`, '#9be36b'); c.save();
     }
   }
@@ -384,6 +399,7 @@ export class InfoMenu extends Menu {
       drawText(u, '잡은 뒤 입력별 기술. Enter로 바꾸기 (배운 기술 중에서)', 44, 136, { size: 11, color: UI.dim });
       this.rows().forEach((r, i) => { const x = r.pos === 'front' ? 44 : 330, y = 168 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 26, on = i === this.sel && !this.pick; if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 152, { size: 11, color: '#ffd65a' }); rect(u, on ? '#26315f' : '#141a36', x, y, 268, 22); keycap(u, SLOT_KEYS[r.s], x + 4, y + 5); const m = MOVES[d.moves[r.pos][r.s]]; drawText(u, m ? m.name : '-', x + 60, y + 5, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); });
       drawText(u, `받아치기: ${MOVES[d.moves.catch].name} · 반격: ${MOVES[d.moves.counter].name}`, 44, 302, { size: 11, color: UI.dim });
+      drawText(u, `코너 위 — 서 있는 상대: ${(ATTACKS[d.moves.topStand] || ATTACKS.missileDropkick).name} · 누운 상대: ${(ATTACKS[d.moves.topDown || this.c.styleDef.dive] || {}).name || '-'} (돛대 상회 '기술의 서'로 바꾼다)`, 44, 288, { size: 11, color: '#ffd65a' });
       if (this.pick) { const P = this.pick; panel(u, 180, 100, 280, 210, { accent: '#ffd65a' }); drawText(u, `${POS_NAMES[P.pos]} ${SLOT_KEYS[P.s]}`, 320, 108, { size: 11, align: 'c', color: '#ffd65a' }); P.list.slice(0, 11).forEach((id, i) => { const on = i === P.i; rect(u, on ? '#3a3a7a' : '#141a36', 190, 124 + i * 16, 260, 15); drawText(u, MOVES[id].name, 196, 126 + i * 16, { size: 11, color: on ? '#ffffff' : UI.dim }); }); const m = MOVES[P.list[P.i]]; if (m) drawText(u, m.desc, 320, 300, { size: 11, align: 'c', color: '#c9d4ff' }); }
     } else {
       const R = this.rows();
@@ -453,6 +469,7 @@ export class ResultMenu extends Menu {
       if (this.W.checkGameOver()) return;
       const d = this.c.d;
       if (this.sum.ups.length) this.W.toast(`레벨 업! Lv ${d.level} — 능력치 포인트 +${this.sum.ups.length * 2} (Tab)`, '#6be38a');
+      if (this.W.lesson && this.c.injuryLevel !== 'danger') { const L = this.W.lesson; this.W.lesson = null; this.W.say(L); }
       if (this.c.injuryLevel === 'danger') this.W.say([{ who: 'me', text: `몸이 비명을 지른다… 부상 ${Math.round(d.injury)}%. 이대로는 위험하다. 항구의원에 가야 해.`, expr: 'hurt' }]);
       else if (this.c.injuryLevel === 'warn' && this.sum.injury > 0) this.W.toast(`부상 주의: ${Math.round(d.injury)}%`, '#ffb347');
     }

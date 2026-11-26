@@ -9,6 +9,8 @@ import { BALANCE as B } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 import { MODES } from '../combat/MatchManager.js';
 import { chainAllow } from '../combat/WrestlingMoveSystem.js';
+import { topPick } from '../combat/CharacterController.js';
+import { ATTACKS } from '../data/balance.js';
 import { J } from '../anim/skeleton.js';
 
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
@@ -179,7 +181,10 @@ export class HUD {
     if (f.dash && f.fsm.is('IDLE', 'MOVE') && !f.prop) { const c = m.grapple.dashCheck(f), mv = MOVES[c.id]; P.push([[inp.label('atk')], '돌진 공격'], [[inp.label('grab')], c.ok ? `${mv.name} (게이지 ${B.dashSigCost})` : `${mv.name}: ${c.why}`]); }
     if (f.st === 'PERCH') {
       const out = f.face === (f.climbDir || (f.x < ar.mid ? -1 : 1)), elim = m.rules.ringOut === 'elim';
-      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], out ? (elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!') : '다이빙'], [[inp.label('down')], '내려오기']);
+      let jl = '다이빙';
+      if (out) jl = elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!';
+      else { const pk = topPick(f), st = ATTACKS[f.char.topStand] || ATTACKS.missileDropkick, dv = ATTACKS[f.char.dive]; jl = pk.kind === 'stand' ? `${st.name} (서 있는 상대)` : pk.kind === 'down' ? `${dv.name} (누운 상대)` : pk.kind === 'rising' ? `${dv.name} (일어나는 상대: 타이밍!)` : '다이빙 (사거리 밖)'; }
+      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], jl], [[inp.label('down')], '내려오기']);
     }
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
@@ -187,8 +192,10 @@ export class HUD {
     if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], '코너 오르기']);
     if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && Math.abs(f.x - (f.team === 0 ? ar.ropeL : ar.ropeR)) < B.tagRange) P.push([[inp.label('down')], '교대']);
     if ((f.st === 'HITSTUN' || f.st === 'DOWN' || f.st === 'STAGGER') && f.burstCd <= 0 && f.fin >= B.burstCost) P.push([[inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출']);
-    let px = 320 - (P.length - 1) * 60;
-    for (const [k, t] of P.slice(0, 3)) { prompt(g, k, t, px, 338, { align: 'c', bg: 1 }); px += 120; }
+    // laid out by their real widths, centred, so long labels never run into each other
+    const PL = P.slice(0, 3), ww = PL.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
+    let px = 320 - (ww.reduce((s, w) => s + w, 0) + (PL.length - 1) * 8) / 2;
+    PL.forEach(([k, t], i) => { prompt(g, k, t, Math.round(px + ww[i] / 2), 338, { align: 'c', bg: 1 }); px += ww[i] + 8; });
     // status line (bottom left): states only
     const parts = [];
     if (f.downs) parts.push(`다운 ${f.downs}회`);

@@ -91,6 +91,9 @@ export const ATTACKS = {
   diveQuake: { name: '낙하 방석', startup: .12, active: 1.2, recover: .8, reach: 42, low: -20, high: 40, hp: 13, stun: 40, kb: 100, up: 120, hs: .8, stop: .18, lv: 4, air: 1, dive: 1, ground: 1, quake: 110, wind: 'sp0 hd-10 a150/20 b156/20 t60/90 u50/90', hit: 'sp-6 hd-6 a120/10 b126/10 t96/20 u100/26', sfx: 'belly', fallSit: 1 },
   diveKick: { name: '다이빙 킥', startup: .1, active: 1.2, recover: .5, reach: 42, low: -14, high: 50, hp: 9, stun: 30, kb: 260, up: 100, hs: .7, stop: .13, lv: 4, air: 1, dive: 1, ground: 1, wind: 'sp30 hd0 a40/60 b50/60 t100/110 u96/110', hit: 'r-50 sp10 hd14 a-20/40 b60/40 t96/2 u30/80', sfx: 'kick2', fallBack: 1 },
   // against a downed body
+  // from the top of the corner onto a standing foe (topStand); a perfectly timed guard parries them
+  missileDropkick: { name: '미사일 드롭킥', startup: .08, active: 1.1, recover: .5, reach: 40, low: 8, high: 74, hp: 9, stun: 36, kb: 300, up: 120, hs: .6, stop: .14, lv: 4, air: 1, dive: 1, topStand: 1, wind: 'sp-8 hd-6 a110/40 b100/40 t50/30 u40/30', hit: 'r-70 sp-24 hd-10 a150/20 b140/20 t100/4 u96/8', sfx: 'kick2', fallBack: 1 },
+  topCrossbody: { name: '플라잉 크로스바디', startup: .08, active: 1.1, recover: .55, reach: 44, low: 0, high: 72, hp: 10, stun: 40, kb: 210, up: 90, hs: .7, stop: .15, lv: 4, air: 1, dive: 1, topStand: 1, wind: 'sp-10 hd-6 a150/30 b140/30 t40/40 u30/40', hit: 'r-84 sp0 hd-6 a90/20 b100/20 t20/10 u14/10', sfx: 'belly', fallFront: 1 },
   stomp: { name: '짓밟기', startup: .24, active: .07, recover: .26, reach: 34, low: -8, high: 30, hp: 1.8, stun: 0, kb: 0, hs: .2, stop: .06, lv: 1, ground: 1, floorOnly: 1, clip: 'stomp', sfx: 'kick1' },
   elbowdrop: { name: '엘보 드롭', startup: .42, active: .08, recover: .42, reach: 38, low: -8, high: 30, hp: 3.6, stun: 0, kb: 0, hs: .25, stop: .09, lv: 2, ground: 1, floorOnly: 1, clip: 'elbowdrop', sfx: 'belly' },
 };

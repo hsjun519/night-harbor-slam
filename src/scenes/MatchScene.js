@@ -13,6 +13,7 @@ import { drawBody } from '../render/body.js';
 import { Actor } from '../world/Actor.js';
 import { FLOOR } from '../world/locations.js';
 import { Dialogue } from '../world/Dialogue.js';
+import { Tutorial } from './Tutorial.js';
 import { rect } from '../render/painter.js';
 import { panel, menuList, fade, prompt } from '../render/ui.js';
 import { BALANCE as B } from '../data/balance.js';
@@ -37,6 +38,7 @@ export class MatchScene {
     this.pre = cfg.preTalk && cfg.career && !cfg.skipIntro ? cfg.preTalk : null; this.talk = null;
     if (this.pre) this.m.holdIntro = true;
     this.wire();
+    this.tut = cfg.tutorial ? new Tutorial(this) : null; this.tutDone = false;
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
@@ -184,6 +186,7 @@ export class MatchScene {
     if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
     if (this.paused) { this.pauseInput(); return; }
     if (this.pre && m.phase === 'intro' && m.introT > (m.cfg.introTime || 3.2) - .15) this.startPreTalk();
+    if (this.talk && m.phase !== 'intro') { this.talk.close(); }   // never let the talk outlive the intro
     if (this.talk) { this.talk.update(dt); m.update(dt); this.hud.update(dt, m); this.ar.update(dt, m.hype); this.camera(dt); return; }
     if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
     // human input
@@ -191,6 +194,7 @@ export class MatchScene {
     if (h && m.phase === 'fight') inp.fillIntent(h.intent);
     if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
     m.update(dt);
+    if (this.tut) this.tut.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
     for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
     this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
@@ -239,7 +243,9 @@ export class MatchScene {
     if (inp.menuPressed('cancel') || inp.pressed('pause')) { this.paused = false; A.sfx('back'); this.game.input.clear(); return; }
     if (inp.menuPressed('confirm')) { A.sfx('ok'); if (it.act) it.act(); }
   }
+  tutorialDone(completed) { this.tutDone = !!completed; this.finish(true); }
   pauseItems() {
+    if (this.tut) return [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '이 단계 건너뛰기', act: () => { this.tut.skip(); this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '기초 훈련 끝내기', act: () => this.tutorialDone(false) }];
     const P = this.m.practice;
     const items = [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '디버그 표시', value: this.debug ? '켬' : '끔', act: () => { this.debug = !this.debug; }, cycle: () => { this.debug = !this.debug; } }];
     if (P) {
@@ -261,7 +267,7 @@ export class MatchScene {
     this.game.screen.resetFx();
     const r = this.m.result || { forfeit: true, quit };
     const summary = this.m.summary(), h = this.human;
-    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m });
+    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone });
   }
   // ---- drawing ----
   draw(w, u) {
@@ -281,6 +287,7 @@ export class MatchScene {
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
     this.drawBubbles(u, cam);
+    if (this.tut && !this.paused) this.tut.draw(u);
     if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
     if (this.paused) this.drawPause(u);
@@ -290,6 +297,7 @@ export class MatchScene {
     const P = this.pre, m = this.m, h = this.human, foe = m.fighters.find(f => f.charId === P.opp) || m.fighters.find(f => h && f.isFoe(h));
     this.pre = null;
     if (!h || !foe) { m.holdIntro = false; return; }
+    m.holdIntro = true;
     const steps = [...P.lines, { prompt: '어떻게 받아칠까?', choice: P.choices.map(ch => ({ label: ch.label, go: [{ who: P.opp, text: ch.reply, expr: ch.fx === 'taunt' ? 'fierce' : 'neutral' }, { act: () => this.applyPre(ch.fx, h, foe) }] })) }];
     this.talk = new Dialogue(this.game, steps, { player: { look: h.look, name: h.name }, onEnd: () => { this.talk = null; m.holdIntro = false; m.introT = 99; } });
     for (const f of m.fighters) f.spot = f === h || f === foe;
@@ -320,7 +328,7 @@ export class MatchScene {
       bc.begin(tmp.x(0), tmp.y(0) - 4);
       drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
       bc.finish(); bc.drawTo(w);
-      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 20, -.5 * c.face, c.face, 0);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 30, -.4 * c.face, c.face, 0);
     }
   }
   drawBubbles(u, cam) {

@@ -11,6 +11,7 @@ import { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip } from '../ani
 import { updateTails } from '../anim/AnimationSystem.js';
 import { BALANCE as B } from '../data/balance.js';
 import { CHARACTERS } from '../data/characters.js';
+import { MOVES } from '../data/moves.js';
 import { LOCATIONS, bakeLocation, drawWindows, streetFar, FLOOR } from './locations.js';
 import { NPCS, peopleAt, talk, roomBanter, preFightLine, PRE } from './npcs.js';
 import { Dialogue } from './Dialogue.js';
@@ -28,7 +29,7 @@ export class WorldScene {
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
     if (o.intro) {
       const K = a => game.input.label(a);
-      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` },
+      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
         { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
         { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
         { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
@@ -197,6 +198,7 @@ export class WorldScene {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
     const foe = id => ({ char: id, ctrl: 'ai', difficulty: lv });
+    if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
     if (kind === 'brawl') return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), { char: 'galchi', ctrl: 'ai', difficulty: d.season >= 2 ? 'hard' : 'normal', team: 1 }, { char: 'myeolchi', ctrl: 'ai', difficulty: 'easy', team: 1 }], career: 1, title: '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }], introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
@@ -206,6 +208,7 @@ export class WorldScene {
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
+    if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) { c.d.flags['dojo_' + offer.opp] = 1; }
@@ -215,6 +218,15 @@ export class WorldScene {
       else if (!res.quit) { const st = Math.min(12000, c.d.money); if (st > 0) { c.pay(st); this.toast(`악동단이 지갑을 털어 갔다… -${fmtMoney(st)}`, '#ff8a8a'); } }
     }
     if (kind === 'revenge') { c.d.revenge = null; this.toast(res.won ? '지하의 리벤지를 짓밟았다! 판돈을 챙겼다.' : '지하에서 졌다… 소문이 금방 퍼질 거다.', res.won ? '#9be36b' : '#ff8a8a'); }
+    // a beaten wrestler may teach one of their moves the first time you beat them
+    if (res.won && offer && CHARACTERS[offer.opp] && !CHARACTERS[offer.opp].thug && !c.d.flags['taught_' + offer.opp] && offer.opp !== 'fogking') {
+      const ch = CHARACTERS[offer.opp], pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((id, i, a) => MOVES[id] && !c.d.known.includes(id) && a.indexOf(id) === i);
+      if (pool.length && Math.random() < .6) {
+        const id = pool[Math.floor(Math.random() * pool.length)], mv = MOVES[id];
+        c.d.flags['taught_' + offer.opp] = 1;
+        this.lesson = [{ who: offer.opp, text: pick([`…좋은 경기였다. 너라면 써도 되겠지. 내 기술 '${mv.name}', 가르쳐 주마.`, `흥, 졌다. 대신 이건 알아 둬. '${mv.name}'은 이렇게 거는 거다.`, `다음엔 안 진다. 그래도… 내 '${mv.name}', 한 번 보여 주지.`]) }, { act: () => { c.learn(id); c.save(); this.toast(`새 기술 습득: ${mv.name} (Tab → 기술에서 장착)`, '#6be38a'); this.game.audio.sfx('good'); } }];
+      }
+    }
     // a beaten wrestler may come back for revenge a few days later
     if (res.won && (kind === 'official' || kind === 'free' || kind === 'dojo') && offer && CHARACTERS[offer.opp] && offer.opp !== 'fogking' && !c.d.revenge && Math.random() < (c.d.flags.revengeSeen ? .4 : .8)) { c.d.flags.revengeSeen = 1; c.d.revenge = { opp: offer.opp, oppName: offer.oppName || CHARACTERS[offer.opp].name, day: c.d.day + 2, until: c.d.day + 7, invited: false }; }
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }

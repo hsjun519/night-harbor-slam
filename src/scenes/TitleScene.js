@@ -66,6 +66,7 @@ export class TitleScene {
       ...(this.hasSave ? [{ label: '새 커리어', act: () => this.onCareer && this.onCareer('new') }] : []),
       { label: '빠른 경기', act: () => this.game.go(() => new QuickScene(this.game, 'quick')) },
       { label: '연습 모드', act: () => this.game.go(() => new QuickScene(this.game, 'practice')) },
+      { label: '기초 훈련 (튜토리얼)', act: () => this.game.playTutorial && this.game.playTutorial(null, () => this.game.toTitle()) },
       { label: '설정', act: () => this.game.openSettings && this.game.openSettings() },
       { label: '조작법', act: () => this.game.showControls() },
     ];

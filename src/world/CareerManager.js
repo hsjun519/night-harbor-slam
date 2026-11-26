@@ -26,6 +26,14 @@ export const LEARNABLE = [
 export const SHOP_ITEMS = [
   { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
   { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
+  // books: learn a grapple move, or change the move used from the top of the corner
+  { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
+  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
+  { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
+  { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
+  { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
+  { id: 'bookMoonsault', name: '기술의 서: 문설트', price: 32000, desc: '코너 위에서 누운 상대에게: 뒤로 돌아 덮친다.', kind: 'book', top: 'down', move: 'diveMoon' },
+  { id: 'bookSplash', name: '기술의 서: 바디 스플래시', price: 26000, desc: '코너 위에서 누운 상대에게: 배로 내리찍는다.', kind: 'book', top: 'down', move: 'diveSplash' },
   { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
   { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
   { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
@@ -79,6 +87,8 @@ export const RARE_ITEMS = [
   { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
   { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
   { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
+  { id: 'bookChoke', name: '기술의 서: 초크슬램', price: 40000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'chokeslam' },
+  { id: 'bookPile', name: '기술의 서: 파일드라이버', price: 44000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'piledriver' },
   { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
 ];
 export const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
@@ -150,9 +160,9 @@ export class Career {
   }
   // Fighter options for a match.
   entrant(ctrl = 'human') {
-    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue;
+    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }

@@ -10,7 +10,7 @@ ATTACKS.chairShot = { id: 'chairShot', name: '체어샷', startup: .3, active: .
 ATTACKS.chairToss = { id: 'chairToss', name: '의자 던지기', startup: .16, active: .02, recover: .3, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp-12 hd-4 a170/30 b160/30 t10/10 u-14/10', hit: 'sp18 hd4 a100/10 b96/10 t26/20 u-20/12' };
 ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .32, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
 
-export const CHAIR = { uses: 3, pickR: 34, catchR: 48, throwV: 340, half: 18 };
+export const CHAIR = { uses: 3, pickR: 40, catchR: 52, throwV: 340, half: 24 };
 // States in which a wrestler keeps hold of a chair; any other state drops it.
 const KEEP = new Set(['IDLE', 'MOVE', 'ATTACK', 'GUARD', 'JUMP', 'FALL', 'TAUNT', 'ROPE', 'WIN', 'INTRO', 'ENTER_RING', 'EXIT_RING', 'APRON']);
 export const keepsProp = st => KEEP.has(st);
@@ -67,8 +67,8 @@ export class PropSystem {
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
       const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
       // swinging: the chair follows the arms; carrying: held upright in front of the chest
-      if (swing) { p.x = hx + Math.cos(a) * 20; p.y = hy + Math.sin(a) * 20; p.rot = a + Math.PI / 2; }
-      else { p.x = hx + f.face * 2; p.y = hy - 20; p.rot = -.32 * f.face; }   // held high overhead by the legs
+      if (swing) { p.x = hx + Math.cos(a) * 30; p.y = hy + Math.sin(a) * 30; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 2; p.y = hy - 30; p.rot = -.18 * f.face; }   // folded, held high overhead by the legs
       p.face = f.face; p.side = f.side;
     }
   }
