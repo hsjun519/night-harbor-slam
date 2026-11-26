@@ -6,7 +6,7 @@ export const BALANCE = {
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
-  downTimes: [1.5, 2.0, 2.5, 3.0, 3.5], moveDownTime: 1.05, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
   hitstunScale: .94, strikeStun: 1.22,

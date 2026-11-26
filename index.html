@@ -2682,7 +2682,7 @@ const BALANCE = {
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
-  downTimes: [1.5, 2.0, 2.5, 3.0, 3.5], moveDownTime: 1.05, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
   hitstunScale: .94, strikeStun: 1.22,
@@ -3930,7 +3930,7 @@ function standUp(f, wait = 0, lie) {
   const wasDown = f.st === 'DOWN' || f.st === 'PINNED';
   f.set('GET_UP', { force: true });
   f.inv = Math.max(f.inv, .6);
-  if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; }
+  if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }
 }
 
 return { newIntent, Fighter, startAttack, beginEnter, tryBurst, settle, standUp, CONTROL };
@@ -4537,7 +4537,7 @@ class WrestlingMoveSystem {
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
-      power: a.stats.grp * stale * (o.power || 1), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
+      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
     };
     a.link = v.link = L;
     m.links.push(L);
@@ -4708,7 +4708,14 @@ class WrestlingMoveSystem {
       const broke = L.stunAlive && v.stun <= 0;
       v.downClock = 0;
       if (broke && !L.fin) { v.downs++; v.downTime = m.stun.downTime(v); v.grabImm = 0; v.postMove = false; }
-      else { v.postMove = true; v.grabImm = 60; v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 2.1 : 1); if (L.fin) v.downs++; }
+      else {
+        // one down can carry a short chain of moves; after the last one the body is left alone until it stands
+        v.postMove = true; v.moveChain = (v.moveChain || 0) + 1;
+        const more = !L.fin && v.moveChain < B.moveChainMax;
+        v.grabImm = more ? .45 : 60;
+        v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 1.6 : 1);
+        if (L.fin) v.downs++;
+      }
       v.set('DOWN', { force: true });
       v.ragdoll(a.face * vel[0] * k, vel[1], vel[2] * a.face, ringout);
       if (ringout) { v.rag.over = true; v.thrownOut = { by: a, t: m.time }; }
@@ -6694,7 +6701,7 @@ class HUD {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
     const slots = [['u', 0, -26], ['b', -f.face * 70, 0], ['n', 0, 0], ['f', f.face * 70, 0], ['d', 0, 26]];
     panel(g, x - 104, y - 40, 208, 92, { alpha: .82, cut: 3, accent: f.char.color });
-    drawText(g, L.pos === 'front' ? '정면 잡기' : '뒤 잡기', x - 98, y - 37, { size: 11, color: '#ffd65a' });
+    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${B.moveChainMax}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
     gauge(g, x + 6, y - 35, 90, 3, L.hold / (B.grabHold * (.8 + .2 * f.stats.grp)), 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
     gauge(g, x + 6, y - 29, 90, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
     for (const [s, dx, dy] of slots) {

@@ -451,5 +451,5 @@ export function standUp(f, wait = 0, lie) {
   const wasDown = f.st === 'DOWN' || f.st === 'PINNED';
   f.set('GET_UP', { force: true });
   f.inv = Math.max(f.inv, .6);
-  if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; }
+  if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }
 }

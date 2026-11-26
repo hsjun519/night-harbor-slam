@@ -26,7 +26,7 @@ export class WrestlingMoveSystem {
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
-      power: a.stats.grp * stale * (o.power || 1), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
+      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
     };
     a.link = v.link = L;
     m.links.push(L);
@@ -197,7 +197,14 @@ export class WrestlingMoveSystem {
       const broke = L.stunAlive && v.stun <= 0;
       v.downClock = 0;
       if (broke && !L.fin) { v.downs++; v.downTime = m.stun.downTime(v); v.grabImm = 0; v.postMove = false; }
-      else { v.postMove = true; v.grabImm = 60; v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 2.1 : 1); if (L.fin) v.downs++; }
+      else {
+        // one down can carry a short chain of moves; after the last one the body is left alone until it stands
+        v.postMove = true; v.moveChain = (v.moveChain || 0) + 1;
+        const more = !L.fin && v.moveChain < B.moveChainMax;
+        v.grabImm = more ? .45 : 60;
+        v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 1.6 : 1);
+        if (L.fin) v.downs++;
+      }
       v.set('DOWN', { force: true });
       v.ragdoll(a.face * vel[0] * k, vel[1], vel[2] * a.face, ringout);
       if (ringout) { v.rag.over = true; v.thrownOut = { by: a, t: m.time }; }
