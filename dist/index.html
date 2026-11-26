@@ -4199,6 +4199,12 @@ class CombatSystem {
   }
 }
 
+return { CombatSystem };
+})();
+// ---- combat/StunSystem.js
+__m["combat/StunSystem.js"] = (function () {
+// STUN gauge: regeneration after a quiet moment, and the knock-down when it runs out.
+const { BALANCE: B } = __m["data/balance.js"];
 class StunSystem {
   constructor(match) { this.m = match; }
   update(dt) {
@@ -4224,7 +4230,7 @@ class StunSystem {
   }
 }
 
-return { CombatSystem, StunSystem };
+return { StunSystem };
 })();
 // ---- combat/GrappleSystem.js
 __m["combat/GrappleSystem.js"] = (function () {
@@ -5436,7 +5442,8 @@ const { CHARACTERS } = __m["data/characters.js"];
 const { Arena, ARENAS } = __m["combat/arena.js"];
 const { Fighter, beginEnter, standUp } = __m["combat/CharacterController.js"];
 const { PhysicsSystem } = __m["combat/PhysicsSystem.js"];
-const { CombatSystem, StunSystem } = __m["combat/CombatSystem.js"];
+const { CombatSystem } = __m["combat/CombatSystem.js"];
+const { StunSystem } = __m["combat/StunSystem.js"];
 const { GrappleSystem } = __m["combat/GrappleSystem.js"];
 const { WrestlingMoveSystem } = __m["combat/WrestlingMoveSystem.js"];
 const { FinisherSystem } = __m["combat/FinisherSystem.js"];
@@ -6552,9 +6559,12 @@ class HUD {
   }
   smallPanels(g, m) {
     const list = m.fighters.filter(f => !f.gone);
-    const n = list.length, w = Math.min(126, Math.floor((628 - 4 * (n - 1)) / n));
+    // two groups so the clock in the middle stays clear
+    const n = list.length, left = Math.ceil(n / 2), right = n - left, per = Math.max(left, right);
+    const w = Math.min(126, Math.floor((280 - 4 * (per - 1)) / per));
     list.forEach((f, i) => {
-      const x = 6 + i * (w + 4), y = 4, dead = f.eliminated || f.st === 'KO';
+      const side = i < left ? 0 : 1, k = side ? i - left : i, cnt = side ? right : left;
+      const x = side ? 634 - (cnt - k) * (w + 4) + 4 : 6 + k * (w + 4), y = 4, dead = f.eliminated || f.st === 'KO';
       panel(g, x, y, w, 30, { accent: f.char.color, alpha: dead ? .5 : .92, cut: 3 });
       this.portrait(g, f, x + 3, y + 3, 24, false);
       drawText(g, f.name, x + 30, y + 2, { size: 11, color: dead ? UI.faint : f.ctrl === 'human' ? '#ffd65a' : '#ffffff' });
@@ -7243,6 +7253,12 @@ class Career {
     let third = pick(r.int(0, 2));
     for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
     out.push(mk(third, 'stip', r.chance(.5) ? { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' } : { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }));
+    // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
+    const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
+    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
+      const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
+      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n }));
+    }
     // events
     if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
     if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
@@ -7250,7 +7266,7 @@ class Career {
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
-  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; this.save(); }
+  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
   // ---- after a match ----
   applyResult(kind, res, info = {}) {
     const d = this.d, h = res.human, won = res.won, draw = res.draw;
@@ -7703,6 +7719,7 @@ function talk(id, c, W) {
       if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대는 줄을 섰다네.', { expr: 'happy' }));
       else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군.' : `1위라니 대단해. 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네.`));
       if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게.`));
+      else if (Math.abs(c.rankOf('dohyun') - rank) <= 3 && d.day - (d.flags.rivalDay || -9) >= 5) out.push(S('그리고… 서도현이 자네와 붙고 싶다더군. 둘이 순위가 붙어 있으니 관중이 좋아할 거야. 제안 목록에 넣어 뒀네.'));
       out.push(S('그래, 무슨 일인가?'));
       out.push({ choice: [
         { label: '경기 제안 보기', act: () => W.openOffers() },
@@ -7955,7 +7972,7 @@ class OffersMenu extends Menu {
       rect(u, on ? '#26315f' : '#141a36', 52, y, 536, 52); if (on) rect(u, '#ffd65a', 52, y, 2, 52);
       rect(u, '#05060f', 58, y + 4, 44, 44);
       if (ch) drawPortrait(u, ch.look, 'smug', 58, y + 4, 44, { px: 1, dy: 4 }); else { drawText(u, o.mode === 'rumble' ? '럼블' : '태그', 80, y + 18, { size: 11, align: 'c', color: '#ffd65a' }); }
-      const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀' }[o.kind];
+      const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀', rival: '라이벌' }[o.kind];
       drawText(u, `[${tag}] ${o.oppName}${o.rank ? ` (${o.rank}위)` : ''}`, 110, y + 4, { color: o.kind === 'title' ? '#ffd65a' : '#ffffff' });
       drawText(u, `${MODES[o.mode].name} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
       drawText(u, o.desc, 110, y + 35, { size: 11, color: '#c9d4ff' });
@@ -8712,7 +8729,7 @@ class WorldScene {
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
     if (o && o.mode === 'tag') return { mode: 'tag', arena: o.arena || 'pier', entrants: [me, { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('dueok'), foe('baeksang')], career: 1, title: '항구 태그 대전' };
-    return { mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : null };
+    return { mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;

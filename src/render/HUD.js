@@ -76,9 +76,12 @@ export class HUD {
   }
   smallPanels(g, m) {
     const list = m.fighters.filter(f => !f.gone);
-    const n = list.length, w = Math.min(126, Math.floor((628 - 4 * (n - 1)) / n));
+    // two groups so the clock in the middle stays clear
+    const n = list.length, left = Math.ceil(n / 2), right = n - left, per = Math.max(left, right);
+    const w = Math.min(126, Math.floor((280 - 4 * (per - 1)) / per));
     list.forEach((f, i) => {
-      const x = 6 + i * (w + 4), y = 4, dead = f.eliminated || f.st === 'KO';
+      const side = i < left ? 0 : 1, k = side ? i - left : i, cnt = side ? right : left;
+      const x = side ? 634 - (cnt - k) * (w + 4) + 4 : 6 + k * (w + 4), y = 4, dead = f.eliminated || f.st === 'KO';
       panel(g, x, y, w, 30, { accent: f.char.color, alpha: dead ? .5 : .92, cut: 3 });
       this.portrait(g, f, x + 3, y + 3, 24, false);
       drawText(g, f.name, x + 30, y + 2, { size: 11, color: dead ? UI.faint : f.ctrl === 'human' ? '#ffd65a' : '#ffffff' });
