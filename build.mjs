@@ -88,4 +88,21 @@ document.getElementById('boot').remove();
 </html>
 `;
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
+// Page body for a hosted copy: the host supplies the document skeleton, so only title, style and body content.
+const hosted = `<title>밤항구 슬램</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+html,body{height:100%;margin:0;background:#05060f;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;color:#c9d4ff}
+canvas{display:block;image-rendering:pixelated;outline:none}
+#focusHint{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font:13px sans-serif;background:rgba(5,6,15,.82);border:1px solid #3a4a8c;padding:6px 12px;border-radius:4px;pointer-events:none}
+</style>
+<canvas id="game" tabindex="0" aria-label="밤항구 슬램 게임 화면"></canvas>
+<div id="focusHint">화면을 한 번 클릭하면 키보드로 조작할 수 있습니다 · PC 키보드·게임패드용</div>
+<script>
+${js.replace(/<\/script/gi, '<\/script')}
+(function(){var c=document.getElementById('game'),h=document.getElementById('focusHint');function go(){c.focus();if(h){h.remove();h=null;}}c.addEventListener('pointerdown',go);window.addEventListener('keydown',function(){if(h){h.remove();h=null;}});c.focus();})();
+</script>
+`;
+fs.writeFileSync(path.join(OUT, 'hosted.html'), hosted);
 console.log(`dist/index.html ${(html.length / 1024).toFixed(0)} KB, ${order.length} modules`);
