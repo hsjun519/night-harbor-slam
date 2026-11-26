@@ -31,7 +31,7 @@ export class Ragdoll {
   push(i, vx, vy) { this.px[i] -= vx * this.lastDt; this.py[i] -= vy * this.lastDt; }
   vel(i = 0) { return [(this.x[i] - this.px[i]) / this.lastDt, (this.y[i] - this.py[i]) / this.lastDt]; }
   step(dt, arena, gravity) {
-    if (dt <= 0) return;
+    if (dt < 1e-4) return;
     const steps = dt > 1 / 90 ? 2 : 1, h = dt / steps;
     for (let s = 0; s < steps; s++) this.sub(h, arena, gravity);
     this.t += dt;
@@ -41,7 +41,8 @@ export class Ragdoll {
   }
   sub(h, arena, G) {
     const { x, y, px, py, r, m } = this;
-    const k = h / this.lastDt; this.lastDt = h;
+    // Verlet keeps velocity as a position difference; rescale it for this step, but never by a wild ratio.
+    const k = Math.min(3, Math.max(1 / 3, h / (this.lastDt || h))); this.lastDt = h;
     const damp = this.ground ? .985 : .998;
     for (let i = 0; i < N; i++) {
       const vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;

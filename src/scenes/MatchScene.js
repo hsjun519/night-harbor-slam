@@ -99,7 +99,7 @@ export class MatchScene {
     m.on('end', r => this.onMatchEnd(r));
     m.on('whip', () => A.sfx('whoosh'));
     m.on('sweep', e => { A.sfx('punch2'); fx.spark(e.o.x, e.o.y - 40, 1); });
-    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name));
+    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name, JSON.stringify(e.info || {})));
   }
   moveEvent(e) {
     const { k, o, a, v, move } = e, A = this.game.audio, fx = this.fx, S = this.game.screen, fin = e.fin;

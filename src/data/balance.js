@@ -8,8 +8,8 @@ export const BALANCE = {
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
   downTimes: [1.5, 2.0, 2.5, 3.0, 3.5], moveDownTime: 1.05, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
   // attack bookkeeping
-  inputBuffer: .16, comboWindow: 1.0, comboStep: .1, comboMin: .5, comboBreak: 7, staleMemory: 6, staleStep: .13, staleMin: .52, counterHit: 1.25, repeatRecover: 1.25,
-  hitstunScale: .94,
+  inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
+  hitstunScale: .94, strikeStun: 1.32,
   // guard, dodge, counter
   guardHp: .18, guardStun: .36, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
@@ -46,7 +46,7 @@ export const ATTACKS = {
   spinkick: { name: '돌려차기', startup: .23, active: .08, recover: .36, reach: 50, low: 34, high: 88, hp: 3.7, stun: 20, kb: 200, up: 60, hs: .46, stop: .09, lv: 3, spin: 1, wind: 'sp10 hd-6 a30/60 b40/60 t30/60 u-10/20', hit: 'sp-34 hd16 a-30/30 b30/60 t112/2 u-6/8', follow: 'sp-26 hd10 a-24/34 b34/60 t96/10 u-6/8', sfx: 'kick2' },
   knee: { name: '니킥', startup: .13, active: .07, recover: .26, reach: 32, low: 28, high: 64, hp: 2.6, stun: 14, kb: 80, hs: .34, stop: .065, lv: 2, wind: 'sp14 hd-6 a70/40 b76/40 t-10/60 u-6/10', hit: 'sp-2 hd-6 a20/60 b24/60 t96/116 u-12/8 lift3', sfx: 'kick1' },
   headbutt: { name: '박치기', startup: .19, active: .06, recover: .36, reach: 34, low: 50, high: 86, hp: 3.4, stun: 23, kb: 90, hs: .44, stop: .1, lv: 3, armor: 1, wind: 'sp-18 hd-18 a-30/50 b-20/50 t16/14 u-24/16', hit: 'sp40 hd18 a-24/50 b-14/50 t36/34 u-30/10 ox9', sfx: 'punch3' },
-  belly: { name: '배치기', startup: .2, active: .1, recover: .34, reach: 36, low: 20, high: 70, hp: 2.8, stun: 17, kb: 300, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
+  belly: { name: '배치기', startup: .2, active: .1, recover: .34, reach: 38, low: 20, high: 70, hp: 2.8, stun: 18, kb: 220, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
   slap: { name: '따귀', startup: .11, active: .06, recover: .2, reach: 38, low: 48, high: 82, hp: 1.5, stun: 13.5, kb: 40, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp-8 hd-4 a-64/10 b56/70 t18/18 u-22/16', hit: 'sp14 hd-6 a100/0 b50/70 t26/22 u-24/10', follow: 'sp20 hd-6 a136/16 b46/70 t28/22 u-24/10', sfx: 'slap' },
   backhand: { name: '손등 따귀', startup: .1, active: .06, recover: .24, reach: 38, low: 48, high: 82, hp: 1.7, stun: 14, kb: 60, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp18 hd-6 a140/40 b46/70 t28/22 u-24/10', hit: 'sp4 hd-4 a84/0 b50/70 t22/20 u-22/12', follow: 'sp-6 hd-4 a20/10 b54/70 t18/18 u-22/14', sfx: 'slap' },
   elbow: { name: '팔꿈치', startup: .11, active: .06, recover: .22, reach: 32, low: 46, high: 80, hp: 2.2, stun: 12.5, kb: 70, hs: .32, stop: .06, lv: 2, wind: 'sp-4 hd-4 a20/130 b40/90 t18/18 u-22/16', hit: 'sp24 hd-8 a92/128 b10/90 t36/24 u-30/8 ox5', sfx: 'punch2' },
@@ -56,7 +56,7 @@ export const ATTACKS = {
   whipA: { name: '촉수 채찍', startup: .13, active: .07, recover: .2, reach: 52, low: 30, high: 76, hp: 1.6, stun: 10, kb: 40, hs: .28, stop: .045, lv: 1, hand: 'open', wind: 'sp-6 hd-4 a120/60 b40/60 t18/20 u-22/18', hit: 'sp20 hd-8 a88/0 b20/80 t34/22 u-30/8 ox4', sfx: 'whip' },
   spinback: { name: '스핀 블로', startup: .2, active: .07, recover: .32, reach: 44, low: 46, high: 84, hp: 3, stun: 18, kb: 160, hs: .42, stop: .085, lv: 3, spin: 1, wind: 'sp10 hd-6 a-40/60 b60/60 t20/24 u-20/20', hit: 'sp8 hd-8 a96/0 b-40/40 t30/22 u-28/10 ox4', follow: 'sp2 hd-4 a130/10 b-40/40 t24/20 u-24/12 ox4', sfx: 'punch2' },
   capoeira: { name: '풍차 발차기', startup: .2, active: .1, recover: .32, reach: 50, low: 10, high: 78, hp: 3.2, stun: 19, kb: 170, up: 70, hs: .44, stop: .08, lv: 3, spin: 1, wind: 'sp50 hd-10 a30/60 b40/60 t60/90 u20/70', hit: 'r-90 sp-10 hd0 a160/10 b120/20 t96/4 u40/30', follow: 'r-70 sp-10 hd0 a160/10 b120/20 t80/10 u30/40', sfx: 'kick2' },
-  sumoPush: { name: '밀어치기', startup: .12, active: .07, recover: .2, reach: 38, low: 36, high: 78, hp: 1.7, stun: 11, kb: 130, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
+  sumoPush: { name: '밀어치기', startup: .12, active: .07, recover: .2, reach: 40, low: 36, high: 78, hp: 1.7, stun: 11.5, kb: 70, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
   // running
   lariat: { name: '래리어트', startup: .09, active: .18, recover: .34, reach: 40, low: 50, high: 86, hp: 4.4, stun: 24, kb: 230, up: 150, hs: .6, stop: .11, lv: 4, run: 1, carry: .9, wind: 'sp6 hd-4 a30/20 b50/60 t40/40 u-30/30', hit: 'sp16 hd-8 a96/4 b-40/60 t46/20 u-40/30', follow: 'sp26 hd-12 a120/10 b-30/60 t50/24 u-40/20', sfx: 'punch3' },
   shoulder: { name: '숄더 태클', startup: .07, active: .2, recover: .34, reach: 32, low: 30, high: 76, hp: 4, stun: 22, kb: 300, up: 110, hs: .55, stop: .1, lv: 4, run: 1, carry: 1, armor: 1, wind: 'sp30 hd-16 a30/100 b30/90 t40/40 u-30/30', hit: 'sp46 hd-32 a34/116 b24/90 t56/44 u-42/20', sfx: 'punch3' },

@@ -90,10 +90,11 @@ export class CombatSystem {
     const counterHit = (v.st === 'ATTACK' || v.st === 'AIR_ATTACK' || v.st === 'TAUNT' || v.st === 'FINISHER') && !(v.atk && v.atk.t > v.atk.def.startup + v.atk.def.active);
     if (v.combo.t <= 0) v.combo.n = 0;
     v.combo.n++; v.combo.t = B.comboWindow; v.combo.by = a;
-    const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1));
+    // Long strings lose health damage fast but keep most of their stun damage: the stun gauge is the road to a grab.
+    const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1)), stunScale = Math.max(.72, 1 - .035 * (v.combo.n - 1));
     const stale = this.stale(a, d.id);
-    const pow = scale * stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
-    const hp = d.hp * a.stats.atk * pow, st = d.stun * (.5 + .5 * a.stats.atk) * pow;
+    const k = stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
+    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k;
     a.atk.connected = true; a.hitsLanded++; v.combo.dmg += hp;
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
@@ -122,7 +123,7 @@ export class CombatSystem {
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
     if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak || (v.rag && v.st === 'HITSTUN')) {
       this.launch(v, dir * kb * (onPerch ? .9 : 1), -(d.up || 90) / Math.sqrt(v.stats.kbr), dir * (d.up > 180 ? 5.5 : 3.2), a);
-      if (v.combo.n >= B.comboBreak) v.inv = .7;
+      if (v.combo.n >= B.comboBreak) { v.inv = .55; v.combo.n = 0; }
       return;
     }
     v.hs = d.hs * B.hitstunScale * (counterHit ? 1.2 : 1) * Math.max(.72, 1 - (v.combo.n - 1) * .05);

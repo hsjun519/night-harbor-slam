@@ -85,7 +85,7 @@ export class PhysicsSystem {
   }
   // Last line of defence: no NaN, nobody outside the hall, nobody under the floor.
   safety(f, ar) {
-    if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) { this.m.emit('fault', { f, why: 'nan' }); f.rag = null; f.x = ar.mid; f.y = ar.matY; f.vx = f.vy = 0; f.side = 'in'; if (!f.link) f.set('IDLE', { force: true }); }
+    if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) { this.m.emit('fault', { f, why: 'nan', info: { st: f.st, prev: f.fsm.prev, x: f.x, y: f.y, vx: f.vx, vy: f.vy, rag: !!f.rag, ragx: f.rag && f.rag.x[0], hs: f.hsKind, link: f.link && f.link.kind, atk: f.atk && f.atk.def.id, t: f.t, clock: this.m.clock } }); f.rag = null; f.x = ar.mid; f.y = ar.matY; f.vx = f.vy = 0; f.side = 'in'; if (!f.link) f.set('IDLE', { force: true }); }
     f.x = clamp(f.x, ar.x0 + 8, ar.x1 - 8);
     if (f.y > ar.floorY) f.y = ar.floorY;
   }

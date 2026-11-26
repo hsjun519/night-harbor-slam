@@ -97,7 +97,7 @@ function makeCanvas(w, h) {
 }
 function ctxOf(c, opts) { const g = c.getContext('2d', opts); g.imageSmoothingEnabled = false; return g; }
 
-return { VIEW_W, TAU, clamp, clamp01, lerp, invLerp, approach, damp, sgn, pick, wrapAngle, EASE, RNG, Emitter, hashStr, deepClone, fmtMoney, fmtTime, josa, makeCanvas, ctxOf };
+return { RNG, Emitter, josa, makeCanvas, ctxOf, VIEW_W, VIEW_H, TAU, DEG, clamp, clamp01, lerp, invLerp, approach, damp, sgn, pick, wrapAngle, EASE, hashStr, deepClone, fmtMoney, fmtTime };
 })();
 // ---- render/screen.js
 __m["render/screen.js"] = (function () {
@@ -332,7 +332,7 @@ class InputManager {
   clear() { this.held.clear(); this.downNow.clear(); this.upNow.clear(); }
 }
 
-return { ACTIONS, DEFAULT_KEYS, keyLabel, InputManager };
+return { keyLabel, InputManager, ACTIONS, DEFAULT_KEYS };
 })();
 // ---- core/AudioManager.js
 __m["core/AudioManager.js"] = (function () {
@@ -586,7 +586,7 @@ class AudioManager {
   }
 }
 
-return { TRACKS, JINGLES, AudioManager };
+return { AudioManager, TRACKS, JINGLES };
 })();
 // ---- core/SaveManager.js
 __m["core/SaveManager.js"] = (function () {
@@ -611,7 +611,7 @@ const DEFAULT_SETTINGS = { master: .8, music: .55, sfx: .85, shake: 1, flash: 1,
 function loadSettings() { return Object.assign({}, DEFAULT_SETTINGS, Save.get('settings', {})); }
 function saveSettings(s) { Save.set('settings', s); }
 
-return { Save, DEFAULT_SETTINGS, loadSettings, saveSettings };
+return { loadSettings, saveSettings, Save, DEFAULT_SETTINGS };
 })();
 // ---- render/palette.js
 __m["render/palette.js"] = (function () {
@@ -674,7 +674,7 @@ const UI = {
 };
 function lightness(hex) { const [r, g, b] = hexRGB(hex); return clamp01((r * .3 + g * .59 + b * .11) / 255); }
 
-return { hexRGB, rgbHex, packRGB, packHex, mixHex, shade, rampHex, ramp, SKINS, skinRamp, skinHex, OUTLINE_HEX, OUTLINE, UI, lightness };
+return { hexRGB, rgbHex, packHex, mixHex, shade, rampHex, ramp, skinRamp, lightness, packRGB, SKINS, skinHex, OUTLINE_HEX, OUTLINE, UI };
 })();
 // ---- render/pixelfont.js
 __m["render/pixelfont.js"] = (function () {
@@ -1043,7 +1043,7 @@ function sliceTagged(str, n) {
 }
 const visLen = s => [...stripTags(s)].length;
 
-return { stripTags, textWidth, drawText, wrapText, sliceTagged, visLen };
+return { textWidth, drawText, wrapText, sliceTagged, stripTags, visLen };
 })();
 // ---- render/painter.js
 __m["render/painter.js"] = (function () {
@@ -1065,11 +1065,11 @@ function line(g, c, x0, y0, x1, y1, w = 1) {
   dx = Math.abs(x1 - x0); dy = -Math.abs(y1 - y0); e = dx + dy;
   for (let i = 0; i < 2000; i++) { g.fillRect(x0, y0, w, w); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } }
 }
-function ellipse(g, c, cx, cy, rx, ry) { g.fillStyle = c; for (let y = -ry; y <= ry; y++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); g.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1); } }
+function ellipse(g, c, cx, cy, rx, ry) { if (!Number.isFinite(cx + cy + rx + ry)) return; g.fillStyle = c; for (let y = -ry; y <= ry; y++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); g.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1); } }
 function poly(g, c, pts) { g.fillStyle = c; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fill(); }
 // Soft light: radial glow added on top (used on a separate light layer).
-function glow(g, x, y, r, col, a = .5) { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); g.restore(); }
-function cone(g, x, y, w0, w1, h, col, a = .22) { const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.beginPath(); g.moveTo(x - w0 / 2, y); g.lineTo(x + w0 / 2, y); g.lineTo(x + w1 / 2, y + h); g.lineTo(x - w1 / 2, y + h); g.closePath(); g.fill(); g.restore(); }
+function glow(g, x, y, r, col, a = .5) { if (!Number.isFinite(x + y + r) || r <= 0) return; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); g.restore(); }
+function cone(g, x, y, w0, w1, h, col, a = .22) { if (!Number.isFinite(x + y + h)) return; const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.save(); g.globalAlpha = a; g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.beginPath(); g.moveTo(x - w0 / 2, y); g.lineTo(x + w0 / 2, y); g.lineTo(x + w1 / 2, y + h); g.lineTo(x - w1 / 2, y + h); g.closePath(); g.fill(); g.restore(); }
 // Neon text: dark tube shadow, glow halo, bright core.
 function neon(g, text, x, y, col, o = {}) {
   const sc = o.scale || 2, w = textWidth(text, 14, sc, true);
@@ -1337,7 +1337,8 @@ class GameManager {
   frame(ts) {
     const dt = this.last ? clamp((ts - this.last) / 1000, 0, 1 / 20) : 1 / 60;
     this.last = ts;
-    this.step(dt);
+    // one bad frame must not stop the loop
+    try { this.step(dt); } catch (e) { if (!this.errT || this.time - this.errT > 2) { this.errT = this.time; console.error(e); } this.input.endFrame(); }
   }
   step(dt) {
     this.time += dt; this.frames++; this.fpsT += dt;
@@ -1602,7 +1603,7 @@ class BodyCanvas {
   }
 }
 
-return { BODY_W, BodyCanvas };
+return { BodyCanvas, BODY_W, BODY_H };
 })();
 // ---- anim/skeleton.js
 __m["anim/skeleton.js"] = (function () {
@@ -1770,7 +1771,7 @@ function ik2(P, ri, mi, ei, tx, ty, L1, L2, bend) {
   P[ei * 2] = rx + dx; P[ei * 2 + 1] = ry + dy;
 }
 
-return { PF, POSE_N, pose, poseLerp, poseAdd, J, JN, BUILDS, dimsFor, Joints, solveFK, toWorld, ik2 };
+return { pose, poseLerp, poseAdd, dimsFor, Joints, solveFK, toWorld, ik2, PF, POSE_N, J, JN, BUILDS };
 })();
 // ---- render/head.js
 __m["render/head.js"] = (function () {
@@ -2049,7 +2050,7 @@ function portraitCanvas(t, w, h) {
 }
 void OUTLINE_HEX;
 
-return { EXPRS, headTexture, HAIR_STYLES, drawPortrait };
+return { headTexture, drawPortrait, EXPRS, HAIR_STYLES, BEARD_STYLES, MASK_STYLES, HAT_STYLES, FACE_STYLES };
 })();
 // ---- render/body.js
 __m["render/body.js"] = (function () {
@@ -2294,7 +2295,7 @@ function skirt(bc, P, dims, sk, fx, fy, ux, uy, grp, back, o) {
 }
 const FLASH_WHITE = packHex('#ffffff');
 
-return { EMBLEMS, drawBody, FLASH_WHITE };
+return { drawBody, EMBLEMS, FLASH_WHITE };
 })();
 // ---- anim/clips.js
 __m["anim/clips.js"] = (function () {
@@ -2446,7 +2447,7 @@ function attackPose(atk, t, stance, out) {
   return poseLerp(f, stance, EASE.io(clamp01((t - S - A - hold) / (R - hold || .01))), out);
 }
 
-return { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip, attackPose };
+return { stancePose, gaitPose, clip, sampleClip, attackPose, STANCES, hasClip };
 })();
 // ---- data/looks.js
 __m["data/looks.js"] = (function () {
@@ -2652,7 +2653,7 @@ function statBar(c, key) { // 0..1 for UI bars
   }
 }
 
-return { STYLES, CHARACTERS, ROSTER_IDS, STAT_INFO, statBar };
+return { statBar, STYLES, CHARACTERS, ROSTER_IDS, STAT_INFO };
 })();
 // ---- data/balance.js
 __m["data/balance.js"] = (function () {
@@ -2666,8 +2667,8 @@ const BALANCE = {
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
   downTimes: [1.5, 2.0, 2.5, 3.0, 3.5], moveDownTime: 1.05, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
   // attack bookkeeping
-  inputBuffer: .16, comboWindow: 1.0, comboStep: .1, comboMin: .5, comboBreak: 7, staleMemory: 6, staleStep: .13, staleMin: .52, counterHit: 1.25, repeatRecover: 1.25,
-  hitstunScale: .94,
+  inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
+  hitstunScale: .94, strikeStun: 1.32,
   // guard, dodge, counter
   guardHp: .18, guardStun: .36, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
@@ -2704,7 +2705,7 @@ const ATTACKS = {
   spinkick: { name: '돌려차기', startup: .23, active: .08, recover: .36, reach: 50, low: 34, high: 88, hp: 3.7, stun: 20, kb: 200, up: 60, hs: .46, stop: .09, lv: 3, spin: 1, wind: 'sp10 hd-6 a30/60 b40/60 t30/60 u-10/20', hit: 'sp-34 hd16 a-30/30 b30/60 t112/2 u-6/8', follow: 'sp-26 hd10 a-24/34 b34/60 t96/10 u-6/8', sfx: 'kick2' },
   knee: { name: '니킥', startup: .13, active: .07, recover: .26, reach: 32, low: 28, high: 64, hp: 2.6, stun: 14, kb: 80, hs: .34, stop: .065, lv: 2, wind: 'sp14 hd-6 a70/40 b76/40 t-10/60 u-6/10', hit: 'sp-2 hd-6 a20/60 b24/60 t96/116 u-12/8 lift3', sfx: 'kick1' },
   headbutt: { name: '박치기', startup: .19, active: .06, recover: .36, reach: 34, low: 50, high: 86, hp: 3.4, stun: 23, kb: 90, hs: .44, stop: .1, lv: 3, armor: 1, wind: 'sp-18 hd-18 a-30/50 b-20/50 t16/14 u-24/16', hit: 'sp40 hd18 a-24/50 b-14/50 t36/34 u-30/10 ox9', sfx: 'punch3' },
-  belly: { name: '배치기', startup: .2, active: .1, recover: .34, reach: 36, low: 20, high: 70, hp: 2.8, stun: 17, kb: 300, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
+  belly: { name: '배치기', startup: .2, active: .1, recover: .34, reach: 38, low: 20, high: 70, hp: 2.8, stun: 18, kb: 220, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
   slap: { name: '따귀', startup: .11, active: .06, recover: .2, reach: 38, low: 48, high: 82, hp: 1.5, stun: 13.5, kb: 40, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp-8 hd-4 a-64/10 b56/70 t18/18 u-22/16', hit: 'sp14 hd-6 a100/0 b50/70 t26/22 u-24/10', follow: 'sp20 hd-6 a136/16 b46/70 t28/22 u-24/10', sfx: 'slap' },
   backhand: { name: '손등 따귀', startup: .1, active: .06, recover: .24, reach: 38, low: 48, high: 82, hp: 1.7, stun: 14, kb: 60, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp18 hd-6 a140/40 b46/70 t28/22 u-24/10', hit: 'sp4 hd-4 a84/0 b50/70 t22/20 u-22/12', follow: 'sp-6 hd-4 a20/10 b54/70 t18/18 u-22/14', sfx: 'slap' },
   elbow: { name: '팔꿈치', startup: .11, active: .06, recover: .22, reach: 32, low: 46, high: 80, hp: 2.2, stun: 12.5, kb: 70, hs: .32, stop: .06, lv: 2, wind: 'sp-4 hd-4 a20/130 b40/90 t18/18 u-22/16', hit: 'sp24 hd-8 a92/128 b10/90 t36/24 u-30/8 ox5', sfx: 'punch2' },
@@ -2714,7 +2715,7 @@ const ATTACKS = {
   whipA: { name: '촉수 채찍', startup: .13, active: .07, recover: .2, reach: 52, low: 30, high: 76, hp: 1.6, stun: 10, kb: 40, hs: .28, stop: .045, lv: 1, hand: 'open', wind: 'sp-6 hd-4 a120/60 b40/60 t18/20 u-22/18', hit: 'sp20 hd-8 a88/0 b20/80 t34/22 u-30/8 ox4', sfx: 'whip' },
   spinback: { name: '스핀 블로', startup: .2, active: .07, recover: .32, reach: 44, low: 46, high: 84, hp: 3, stun: 18, kb: 160, hs: .42, stop: .085, lv: 3, spin: 1, wind: 'sp10 hd-6 a-40/60 b60/60 t20/24 u-20/20', hit: 'sp8 hd-8 a96/0 b-40/40 t30/22 u-28/10 ox4', follow: 'sp2 hd-4 a130/10 b-40/40 t24/20 u-24/12 ox4', sfx: 'punch2' },
   capoeira: { name: '풍차 발차기', startup: .2, active: .1, recover: .32, reach: 50, low: 10, high: 78, hp: 3.2, stun: 19, kb: 170, up: 70, hs: .44, stop: .08, lv: 3, spin: 1, wind: 'sp50 hd-10 a30/60 b40/60 t60/90 u20/70', hit: 'r-90 sp-10 hd0 a160/10 b120/20 t96/4 u40/30', follow: 'r-70 sp-10 hd0 a160/10 b120/20 t80/10 u30/40', sfx: 'kick2' },
-  sumoPush: { name: '밀어치기', startup: .12, active: .07, recover: .2, reach: 38, low: 36, high: 78, hp: 1.7, stun: 11, kb: 130, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
+  sumoPush: { name: '밀어치기', startup: .12, active: .07, recover: .2, reach: 40, low: 36, high: 78, hp: 1.7, stun: 11.5, kb: 70, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
   // running
   lariat: { name: '래리어트', startup: .09, active: .18, recover: .34, reach: 40, low: 50, high: 86, hp: 4.4, stun: 24, kb: 230, up: 150, hs: .6, stop: .11, lv: 4, run: 1, carry: .9, wind: 'sp6 hd-4 a30/20 b50/60 t40/40 u-30/30', hit: 'sp16 hd-8 a96/4 b-40/60 t46/20 u-40/30', follow: 'sp26 hd-12 a120/10 b-30/60 t50/24 u-40/20', sfx: 'punch3' },
   shoulder: { name: '숄더 태클', startup: .07, active: .2, recover: .34, reach: 32, low: 30, high: 76, hp: 4, stun: 22, kb: 300, up: 110, hs: .55, stop: .1, lv: 4, run: 1, carry: 1, armor: 1, wind: 'sp30 hd-16 a30/100 b30/90 t40/40 u-30/30', hit: 'sp46 hd-32 a34/116 b24/90 t56/44 u-42/20', sfx: 'punch3' },
@@ -3253,7 +3254,7 @@ class Ragdoll {
   push(i, vx, vy) { this.px[i] -= vx * this.lastDt; this.py[i] -= vy * this.lastDt; }
   vel(i = 0) { return [(this.x[i] - this.px[i]) / this.lastDt, (this.y[i] - this.py[i]) / this.lastDt]; }
   step(dt, arena, gravity) {
-    if (dt <= 0) return;
+    if (dt < 1e-4) return;
     const steps = dt > 1 / 90 ? 2 : 1, h = dt / steps;
     for (let s = 0; s < steps; s++) this.sub(h, arena, gravity);
     this.t += dt;
@@ -3263,7 +3264,8 @@ class Ragdoll {
   }
   sub(h, arena, G) {
     const { x, y, px, py, r, m } = this;
-    const k = h / this.lastDt; this.lastDt = h;
+    // Verlet keeps velocity as a position difference; rescale it for this step, but never by a wild ratio.
+    const k = Math.min(3, Math.max(1 / 3, h / (this.lastDt || h))); this.lastDt = h;
     const damp = this.ground ? .985 : .998;
     for (let i = 0; i < N; i++) {
       const vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;
@@ -3451,7 +3453,7 @@ class StateMachine {
   reads(action) { return this.def.input.includes(action); }
 }
 
-return { STATES, REACTIONS, StateMachine };
+return { StateMachine, STATES, REACTIONS };
 })();
 // ---- combat/CharacterController.js
 __m["combat/CharacterController.js"] = (function () {
@@ -3909,7 +3911,7 @@ function standUp(f, wait = 0, lie) {
   if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; }
 }
 
-return { newIntent, Fighter, startAttack, beginEnter, tryBurst, CONTROL, settle, standUp };
+return { newIntent, Fighter, startAttack, beginEnter, tryBurst, settle, standUp, CONTROL };
 })();
 // ---- combat/PhysicsSystem.js
 __m["combat/PhysicsSystem.js"] = (function () {
@@ -3999,7 +4001,7 @@ class PhysicsSystem {
   }
   // Last line of defence: no NaN, nobody outside the hall, nobody under the floor.
   safety(f, ar) {
-    if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) { this.m.emit('fault', { f, why: 'nan' }); f.rag = null; f.x = ar.mid; f.y = ar.matY; f.vx = f.vy = 0; f.side = 'in'; if (!f.link) f.set('IDLE', { force: true }); }
+    if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) { this.m.emit('fault', { f, why: 'nan', info: { st: f.st, prev: f.fsm.prev, x: f.x, y: f.y, vx: f.vx, vy: f.vy, rag: !!f.rag, ragx: f.rag && f.rag.x[0], hs: f.hsKind, link: f.link && f.link.kind, atk: f.atk && f.atk.def.id, t: f.t, clock: this.m.clock } }); f.rag = null; f.x = ar.mid; f.y = ar.matY; f.vx = f.vy = 0; f.side = 'in'; if (!f.link) f.set('IDLE', { force: true }); }
     f.x = clamp(f.x, ar.x0 + 8, ar.x1 - 8);
     if (f.y > ar.floorY) f.y = ar.floorY;
   }
@@ -4100,10 +4102,11 @@ class CombatSystem {
     const counterHit = (v.st === 'ATTACK' || v.st === 'AIR_ATTACK' || v.st === 'TAUNT' || v.st === 'FINISHER') && !(v.atk && v.atk.t > v.atk.def.startup + v.atk.def.active);
     if (v.combo.t <= 0) v.combo.n = 0;
     v.combo.n++; v.combo.t = B.comboWindow; v.combo.by = a;
-    const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1));
+    // Long strings lose health damage fast but keep most of their stun damage: the stun gauge is the road to a grab.
+    const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1)), stunScale = Math.max(.72, 1 - .035 * (v.combo.n - 1));
     const stale = this.stale(a, d.id);
-    const pow = scale * stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
-    const hp = d.hp * a.stats.atk * pow, st = d.stun * (.5 + .5 * a.stats.atk) * pow;
+    const k = stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
+    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k;
     a.atk.connected = true; a.hitsLanded++; v.combo.dmg += hp;
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
@@ -4132,7 +4135,7 @@ class CombatSystem {
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
     if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak || (v.rag && v.st === 'HITSTUN')) {
       this.launch(v, dir * kb * (onPerch ? .9 : 1), -(d.up || 90) / Math.sqrt(v.stats.kbr), dir * (d.up > 180 ? 5.5 : 3.2), a);
-      if (v.combo.n >= B.comboBreak) v.inv = .7;
+      if (v.combo.n >= B.comboBreak) { v.inv = .55; v.combo.n = 0; }
       return;
     }
     v.hs = d.hs * B.hitstunScale * (counterHit ? 1.2 : 1) * Math.max(.72, 1 - (v.combo.n - 1) * .05);
@@ -5050,10 +5053,10 @@ const { clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const DIFFICULTY = {
-  easy: { name: '쉬움', react: .44, err: .34, guard: .14, dodge: .05, counter: 0, rev: .03, mash: 3.4, hang: .12, plan: .78, aggr: .72, combo: .35, pick: .45, pinKick: .55, spacing: 1.25 },
-  normal: { name: '보통', react: .3, err: .18, guard: .32, dodge: .13, counter: .04, rev: .1, mash: 5.6, hang: .32, plan: .5, aggr: .9, combo: .65, pick: .7, pinKick: .75, spacing: 1.05 },
-  hard: { name: '어려움', react: .2, err: .09, guard: .5, dodge: .24, counter: .14, rev: .22, mash: 8, hang: .55, plan: .34, aggr: 1, combo: .85, pick: .88, pinKick: .88, spacing: 1 },
-  expert: { name: '전문가', react: .145, err: .04, guard: .62, dodge: .34, counter: .3, rev: .36, mash: 10.5, hang: .74, plan: .24, aggr: 1.06, combo: .95, pick: .97, pinKick: .95, spacing: .95 },
+  easy: { name: '쉬움', punish: .06, react: .48, err: .38, guard: .12, dodge: .05, counter: 0, rev: .03, mash: 3.2, hang: .12, plan: .9, aggr: .62, combo: .3, pick: .45, pinKick: .55, spacing: 1.25 },
+  normal: { name: '보통', punish: .3, react: .3, err: .18, guard: .32, dodge: .13, counter: .04, rev: .1, mash: 5.6, hang: .32, plan: .5, aggr: .9, combo: .65, pick: .7, pinKick: .75, spacing: 1.05 },
+  hard: { name: '어려움', punish: .66, react: .2, err: .09, guard: .38, dodge: .27, counter: .14, rev: .22, mash: 8, hang: .55, plan: .34, aggr: 1, combo: .85, pick: .88, pinKick: .88, spacing: 1 },
+  expert: { name: '전문가', punish: .88, react: .145, err: .04, guard: .46, dodge: .36, counter: .3, rev: .36, mash: 10.5, hang: .74, plan: .24, aggr: 1.06, combo: .95, pick: .97, pinKick: .95, spacing: .95 },
 };
 
 class AIController {
@@ -5070,7 +5073,7 @@ class AIController {
       if (o === this.f) continue;
       let h = this.mem.get(o);
       if (!h) { h = []; this.mem.set(o, h); }
-      h.push({ t: now, x: o.x, y: o.y, st: o.st, face: o.face, atk: o.atk ? { id: o.atk.def.id, t: o.atk.t, d: o.atk.def } : null, vx: o.vx, side: o.side, fin: o.fin, finPhase: o.finPhase ? o.finPhase.stage : null });
+      h.push({ t: now, x: o.x, y: o.y, st: o.st, face: o.face, atk: o.atk ? { id: o.atk.def.id, t: o.atk.t, d: o.atk.def, hit: o.atk.connected } : null, vx: o.vx, side: o.side, fin: o.fin, finPhase: o.finPhase ? o.finPhase.stage : null });
       while (h.length > 2 && now - h[1].t > this.D.react) h.shift();
     }
   }
@@ -5105,9 +5108,20 @@ class AIController {
     const f = this.f, D = this.D;
     if (this.guardT > 0) { this.guardT -= dt; f.intent.down = true; this.faceTo(this.lastThreat); if (this.guardT <= 0) this.lastThreat = null; return true; }
     if (!f.fsm.is('IDLE', 'MOVE', 'GUARD')) return false;
+    const myReach = ATTACKS[f.chain[0]].reach * (f.dims.reach / 35) + 10;
     for (const o of f.match.fighters) {
       if (!f.isFoe(o) || !o.alive) continue;
       const s = this.seen(o);
+      // a whiffed blow leaves a window: step in and hit while they recover
+      if (s.atk && !s.atk.hit && s.atk.t > s.atk.d.startup + s.atk.d.active && Math.abs(s.x - f.x) < myReach + 24 && s.side === f.side) {
+        const key = 'p' + o.idx + ':' + s.atk.id + ':' + Math.round(s.t * 2);
+        if (this.lastPunish !== key) { this.lastPunish = key; if (this.rng.chance(D.punish)) { this.guardT = 0; f.face = Math.sign(o.x - f.x) || f.face; if (Math.abs(o.x - f.x) > myReach - 6) f.intent.mx = f.face; this.tap('atk'); this.note = '헛친 틈 응징'; return true; } }
+      }
+      if (s.atk && s.atk.d.shove && Math.abs(s.x - f.x) < 70 && s.side === f.side) {
+        const key = 's' + o.idx + ':' + Math.round(s.t * 4);
+        if (this.lastShove !== key) { this.lastShove = key; if (this.rng.chance(D.punish * .8)) { this.guardT = 0; f.face = Math.sign(o.x - f.x) || f.face; this.tap('atk'); this.note = '밀치기 끊기'; return true; } }
+        continue;
+      }
       if (!s.atk || s.atk.d.ground || s.side !== f.side) continue;
       const d = s.atk.d, dist = Math.abs(s.x - f.x), toward = sgn(f.x - s.x) === s.face;
       if (!toward || dist > d.reach + 40 + (d.run ? 120 : 0) + (d.air ? 60 : 0)) continue;
@@ -5115,10 +5129,12 @@ class AIController {
       if (this.lastSeenAtk === key) continue;
       this.lastSeenAtk = key;
       const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
-      const left = d.startup - s.atk.t - D.react * .0;
-      if (r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) && !d.air && !d.run && left > -.02 && f.dodgeCd <= 0) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
+      // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
+      const left = d.startup - s.atk.t - D.react;
+      const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
+      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
-      if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .12 + this.rng.next() * .2; this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
+      if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
     }
     // finisher coming in
     for (const o of f.match.fighters) {
@@ -5392,7 +5408,7 @@ class AIController {
   }
 }
 
-return { DIFFICULTY, AIController };
+return { AIController, DIFFICULTY };
 })();
 // ---- combat/MatchManager.js
 __m["combat/MatchManager.js"] = (function () {
@@ -5513,6 +5529,13 @@ class MatchManager extends Emitter {
     this.rulesTick(dt);
     this.refTick(dt);
     this.anim.update(dt);
+    // keep broken numbers from spreading: report once and put the body back together
+    for (const f of this.fighters) {
+      const P = f.joints.p;
+      let bad = false;
+      for (let i = 0; i < P.length; i++) if (!Number.isFinite(P[i])) { bad = true; break; }
+      if (bad) { this.emit('fault', { f, why: 'joints', info: { st: f.st, prev: f.fsm.prev, rag: !!f.rag, link: f.link && f.link.kind, move: f.link && f.link.move && f.link.move.id, clip: f.clipName, hs: f.hsKind, x: f.x, y: f.y } }); f.rag = null; f.blend = null; if (!f.link) { f.x = Number.isFinite(f.x) ? f.x : this.arena.mid; f.y = this.arena.ground(f.x, f.y, f.side); this.anim.solo(f, 0); } }
+    }
   }
   blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
   introTick(dt) {
@@ -5759,7 +5782,7 @@ class MatchManager extends Emitter {
   }
 }
 
-return { MODES, MatchManager };
+return { MatchManager, MODES };
 })();
 // ---- scenes/TitleScene.js
 __m["scenes/TitleScene.js"] = (function () {
@@ -6351,25 +6374,25 @@ const { rect, ellipse, line, glow } = __m["render/painter.js"];
 class Fx {
   constructor() { this.p = []; this.words = []; this.rings = []; this.rng = new RNG(77); this.screenLines = 0; this.lineCol = '#ffffff'; this.time = 0; this.ink = 0; this.dark = 0; this.wordCache = new Map(); }
   clear() { this.p.length = 0; this.words.length = 0; this.rings.length = 0; this.screenLines = 0; this.ink = 0; this.dark = 0; }
-  spark(x, y, power = 1, col = '#fff3b0', dir = 0) {
+  spark(x, y, power = 1, col = '#fff3b0', dir = 0) { if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const r = this.rng, n = 5 + power * 5;
     for (let i = 0; i < n; i++) { const a = (dir ? (dir > 0 ? 0 : Math.PI) : 0) + (r.next() - .5) * (dir ? 2.4 : TAU), s = 90 + r.next() * 200 * power; this.p.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, t: 0, life: .16 + r.next() * .14, col: r.next() < .3 ? '#ffffff' : col, g: 300 }); }
     this.p.push({ k: 'flash', x, y, t: 0, life: .07 + power * .02, r: 4 + power * 3.5, col });
     this.p.push({ k: 'star', x, y, t: 0, life: .14 + power * .03, r: 10 + power * 7, col, rot: r.next() * TAU });
   }
-  dust(x, y, power = 1, col = '#c9d2e6') {
+  dust(x, y, power = 1, col = '#c9d2e6') { if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const r = this.rng, n = 3 + power * 4;
     for (let i = 0; i < n; i++) { const s = (40 + r.next() * 90) * power * (r.next() < .5 ? -1 : 1); this.p.push({ k: 'dust', x: x + (r.next() - .5) * 16, y: y - 2, vx: s, vy: -10 - r.next() * 40 * power, t: 0, life: .35 + r.next() * .35, r: 3 + r.next() * 4 * power, col, g: 30 }); }
   }
-  ring(x, y, r, col = '#ffffff', life = .4) { this.rings.push({ x, y, r, col, t: 0, life }); }
-  sweat(x, y, n = 4) { const r = this.rng; for (let i = 0; i < n; i++) this.p.push({ k: 'drop', x, y, vx: (r.next() - .5) * 160, vy: -80 - r.next() * 120, t: 0, life: .5, col: '#bfefff', g: 600 }); }
-  confetti(x, y, n = 60) { const r = this.rng, C = ['#ff5fa2', '#49d6ff', '#ffd65a', '#6be38a', '#ffffff', '#c86bff']; for (let i = 0; i < n; i++) this.p.push({ k: 'conf', x: x + (r.next() - .5) * 300, y: y - r.next() * 80, vx: (r.next() - .5) * 60, vy: 20 + r.next() * 60, t: 0, life: 2.5 + r.next(), col: r.pick(C), g: 40, ph: r.next() * 6 }); }
-  smoke(x, y, col = '#2a1a3c', n = 14) { const r = this.rng; for (let i = 0; i < n; i++) this.p.push({ k: 'dust', x: x + (r.next() - .5) * 30, y: y - r.next() * 40, vx: (r.next() - .5) * 120, vy: -20 - r.next() * 40, t: 0, life: .8 + r.next() * .6, r: 6 + r.next() * 8, col, g: -10 }); }
-  weld(x, y) { const r = this.rng; for (let i = 0; i < 16; i++) { const a = r.next() * TAU, s = 120 + r.next() * 260; this.p.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, t: 0, life: .3 + r.next() * .3, col: r.pick(['#39e6c0', '#ffffff', '#ffe27a']), g: 500 }); } }
-  splash(x, y) { const r = this.rng; for (let i = 0; i < 18; i++) this.p.push({ k: 'drop', x: x + (r.next() - .5) * 20, y, vx: (r.next() - .5) * 220, vy: -120 - r.next() * 200, t: 0, life: .7, col: r.next() < .5 ? '#9fe0ff' : '#ffffff', g: 700 }); }
+  ring(x, y, r, col = '#ffffff', life = .4) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; this.rings.push({ x, y, r, col, t: 0, life }); }
+  sweat(x, y, n = 4) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; const r = this.rng; for (let i = 0; i < n; i++) this.p.push({ k: 'drop', x, y, vx: (r.next() - .5) * 160, vy: -80 - r.next() * 120, t: 0, life: .5, col: '#bfefff', g: 600 }); }
+  confetti(x, y, n = 60) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; const r = this.rng, C = ['#ff5fa2', '#49d6ff', '#ffd65a', '#6be38a', '#ffffff', '#c86bff']; for (let i = 0; i < n; i++) this.p.push({ k: 'conf', x: x + (r.next() - .5) * 300, y: y - r.next() * 80, vx: (r.next() - .5) * 60, vy: 20 + r.next() * 60, t: 0, life: 2.5 + r.next(), col: r.pick(C), g: 40, ph: r.next() * 6 }); }
+  smoke(x, y, col = '#2a1a3c', n = 14) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; const r = this.rng; for (let i = 0; i < n; i++) this.p.push({ k: 'dust', x: x + (r.next() - .5) * 30, y: y - r.next() * 40, vx: (r.next() - .5) * 120, vy: -20 - r.next() * 40, t: 0, life: .8 + r.next() * .6, r: 6 + r.next() * 8, col, g: -10 }); }
+  weld(x, y) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; const r = this.rng; for (let i = 0; i < 16; i++) { const a = r.next() * TAU, s = 120 + r.next() * 260; this.p.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, t: 0, life: .3 + r.next() * .3, col: r.pick(['#39e6c0', '#ffffff', '#ffe27a']), g: 500 }); } }
+  splash(x, y) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; const r = this.rng; for (let i = 0; i < 18; i++) this.p.push({ k: 'drop', x: x + (r.next() - .5) * 20, y, vx: (r.next() - .5) * 220, vy: -120 - r.next() * 200, t: 0, life: .7, col: r.next() < .5 ? '#9fe0ff' : '#ffffff', g: 700 }); }
   trailDot(x, y, col) { this.p.push({ k: 'dot', x, y, vx: 0, vy: 0, t: 0, life: .3, col, g: 0 }); }
   // Comic onomatopoeia with a pop.
-  word(text, x, y, col = '#ffffff', size = 2, rot = 0) { this.words.push({ text, x, y, col, size, t: 0, life: .7 + size * .1, rot: rot || (this.rng.next() - .5) * .5, vy: -26 }); }
+  word(text, x, y, col = '#ffffff', size = 2, rot = 0) { if (!Number.isFinite(x) || !Number.isFinite(y)) return; this.words.push({ text, x, y, col, size, t: 0, life: .7 + size * .1, rot: rot || (this.rng.next() - .5) * .5, vy: -26 }); }
   update(dt) {
     this.time += dt;
     for (const q of this.p) { q.t += dt; if (q.vx != null) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += (q.g || 0) * dt; if (q.k === 'dust') { q.vx *= 1 - dt * 3; } if (q.k === 'conf') { q.x += Math.sin(this.time * 3 + q.ph) * 20 * dt; } } }
@@ -6780,7 +6803,7 @@ class MatchScene {
     m.on('end', r => this.onMatchEnd(r));
     m.on('whip', () => A.sfx('whoosh'));
     m.on('sweep', e => { A.sfx('punch2'); fx.spark(e.o.x, e.o.y - 40, 1); });
-    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name));
+    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name, JSON.stringify(e.info || {})));
   }
   moveEvent(e) {
     const { k, o, a, v, move } = e, A = this.game.audio, fx = this.fx, S = this.game.screen, fin = e.fin;
@@ -7271,7 +7294,7 @@ class Career {
   equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
 }
 
-return { SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, hasCareer, Career };
+return { hasCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -7554,7 +7577,7 @@ const locLine = line;
 const locWave = wave;
 const locWin = windowPane;
 
-return { FLOOR, SKY, drawWindows, streetFar, LOCATIONS, bakeLocation, locMix, locLine, locWave, locWin };
+return { drawWindows, streetFar, bakeLocation, FLOOR, SKY, LOCATIONS, locMix, locLine, locWave, locWin };
 })();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
@@ -7768,7 +7791,7 @@ function talk(id, c, W) {
 }
 const npcPick = pick;
 
-return { NPCS, peopleAt, talk, npcPick };
+return { peopleAt, talk, NPCS, npcPick };
 })();
 // ---- world/Dialogue.js
 __m["world/Dialogue.js"] = (function () {

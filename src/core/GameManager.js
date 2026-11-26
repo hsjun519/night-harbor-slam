@@ -39,7 +39,8 @@ export class GameManager {
   frame(ts) {
     const dt = this.last ? clamp((ts - this.last) / 1000, 0, 1 / 20) : 1 / 60;
     this.last = ts;
-    this.step(dt);
+    // one bad frame must not stop the loop
+    try { this.step(dt); } catch (e) { if (!this.errT || this.time - this.errT > 2) { this.errT = this.time; console.error(e); } this.input.endFrame(); }
   }
   step(dt) {
     this.time += dt; this.frames++; this.fpsT += dt;

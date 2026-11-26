@@ -5,10 +5,10 @@ import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 
 export const DIFFICULTY = {
-  easy: { name: '쉬움', react: .44, err: .34, guard: .14, dodge: .05, counter: 0, rev: .03, mash: 3.4, hang: .12, plan: .78, aggr: .72, combo: .35, pick: .45, pinKick: .55, spacing: 1.25 },
-  normal: { name: '보통', react: .3, err: .18, guard: .32, dodge: .13, counter: .04, rev: .1, mash: 5.6, hang: .32, plan: .5, aggr: .9, combo: .65, pick: .7, pinKick: .75, spacing: 1.05 },
-  hard: { name: '어려움', react: .2, err: .09, guard: .5, dodge: .24, counter: .14, rev: .22, mash: 8, hang: .55, plan: .34, aggr: 1, combo: .85, pick: .88, pinKick: .88, spacing: 1 },
-  expert: { name: '전문가', react: .145, err: .04, guard: .62, dodge: .34, counter: .3, rev: .36, mash: 10.5, hang: .74, plan: .24, aggr: 1.06, combo: .95, pick: .97, pinKick: .95, spacing: .95 },
+  easy: { name: '쉬움', punish: .06, react: .48, err: .38, guard: .12, dodge: .05, counter: 0, rev: .03, mash: 3.2, hang: .12, plan: .9, aggr: .62, combo: .3, pick: .45, pinKick: .55, spacing: 1.25 },
+  normal: { name: '보통', punish: .3, react: .3, err: .18, guard: .32, dodge: .13, counter: .04, rev: .1, mash: 5.6, hang: .32, plan: .5, aggr: .9, combo: .65, pick: .7, pinKick: .75, spacing: 1.05 },
+  hard: { name: '어려움', punish: .66, react: .2, err: .09, guard: .38, dodge: .27, counter: .14, rev: .22, mash: 8, hang: .55, plan: .34, aggr: 1, combo: .85, pick: .88, pinKick: .88, spacing: 1 },
+  expert: { name: '전문가', punish: .88, react: .145, err: .04, guard: .46, dodge: .36, counter: .3, rev: .36, mash: 10.5, hang: .74, plan: .24, aggr: 1.06, combo: .95, pick: .97, pinKick: .95, spacing: .95 },
 };
 
 export class AIController {
@@ -25,7 +25,7 @@ export class AIController {
       if (o === this.f) continue;
       let h = this.mem.get(o);
       if (!h) { h = []; this.mem.set(o, h); }
-      h.push({ t: now, x: o.x, y: o.y, st: o.st, face: o.face, atk: o.atk ? { id: o.atk.def.id, t: o.atk.t, d: o.atk.def } : null, vx: o.vx, side: o.side, fin: o.fin, finPhase: o.finPhase ? o.finPhase.stage : null });
+      h.push({ t: now, x: o.x, y: o.y, st: o.st, face: o.face, atk: o.atk ? { id: o.atk.def.id, t: o.atk.t, d: o.atk.def, hit: o.atk.connected } : null, vx: o.vx, side: o.side, fin: o.fin, finPhase: o.finPhase ? o.finPhase.stage : null });
       while (h.length > 2 && now - h[1].t > this.D.react) h.shift();
     }
   }
@@ -60,9 +60,20 @@ export class AIController {
     const f = this.f, D = this.D;
     if (this.guardT > 0) { this.guardT -= dt; f.intent.down = true; this.faceTo(this.lastThreat); if (this.guardT <= 0) this.lastThreat = null; return true; }
     if (!f.fsm.is('IDLE', 'MOVE', 'GUARD')) return false;
+    const myReach = ATTACKS[f.chain[0]].reach * (f.dims.reach / 35) + 10;
     for (const o of f.match.fighters) {
       if (!f.isFoe(o) || !o.alive) continue;
       const s = this.seen(o);
+      // a whiffed blow leaves a window: step in and hit while they recover
+      if (s.atk && !s.atk.hit && s.atk.t > s.atk.d.startup + s.atk.d.active && Math.abs(s.x - f.x) < myReach + 24 && s.side === f.side) {
+        const key = 'p' + o.idx + ':' + s.atk.id + ':' + Math.round(s.t * 2);
+        if (this.lastPunish !== key) { this.lastPunish = key; if (this.rng.chance(D.punish)) { this.guardT = 0; f.face = Math.sign(o.x - f.x) || f.face; if (Math.abs(o.x - f.x) > myReach - 6) f.intent.mx = f.face; this.tap('atk'); this.note = '헛친 틈 응징'; return true; } }
+      }
+      if (s.atk && s.atk.d.shove && Math.abs(s.x - f.x) < 70 && s.side === f.side) {
+        const key = 's' + o.idx + ':' + Math.round(s.t * 4);
+        if (this.lastShove !== key) { this.lastShove = key; if (this.rng.chance(D.punish * .8)) { this.guardT = 0; f.face = Math.sign(o.x - f.x) || f.face; this.tap('atk'); this.note = '밀치기 끊기'; return true; } }
+        continue;
+      }
       if (!s.atk || s.atk.d.ground || s.side !== f.side) continue;
       const d = s.atk.d, dist = Math.abs(s.x - f.x), toward = sgn(f.x - s.x) === s.face;
       if (!toward || dist > d.reach + 40 + (d.run ? 120 : 0) + (d.air ? 60 : 0)) continue;
@@ -70,10 +81,12 @@ export class AIController {
       if (this.lastSeenAtk === key) continue;
       this.lastSeenAtk = key;
       const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
-      const left = d.startup - s.atk.t - D.react * .0;
-      if (r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) && !d.air && !d.run && left > -.02 && f.dodgeCd <= 0) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
+      // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
+      const left = d.startup - s.atk.t - D.react;
+      const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
+      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
-      if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .12 + this.rng.next() * .2; this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
+      if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
     }
     // finisher coming in
     for (const o of f.match.fighters) {

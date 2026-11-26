@@ -26,6 +26,24 @@ function load(file) {
 }
 load(path.join(SRC, 'main.js'));
 
+// Names declared by `a = 1, b = [..], c = f(x, y)` starting at index i, up to the end of the statement.
+function declaredNames(src, i) {
+  const names = [];
+  let depth = 0, expectName = true, q = null;
+  const BS = String.fromCharCode(92), NL = String.fromCharCode(10);
+  for (; i < src.length; i++) {
+    const ch = src[i];
+    if (q) { if (ch === BS) { i++; continue; } if (ch === q) q = null; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { q = ch; continue; }
+    if (ch === '/' && src[i + 1] === '/') { while (i < src.length && src[i] !== NL) i++; if (depth === 0) break; continue; }
+    if (expectName && depth === 0) { const m = /^[A-Za-z_$][\w$]*/.exec(src.slice(i)); if (m) { names.push(m[0]); i += m[0].length - 1; expectName = false; continue; } }
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) depth--;
+    else if (ch === ',' && depth === 0) expectName = true;
+    else if ((ch === ';' || ch === NL) && depth === 0 && !expectName) { if (ch === ';') break; const rest = src.slice(i + 1).trimStart(); if (!/^[,.?:+\-*/|&]/.test(rest)) break; }
+  }
+  return names;
+}
 function transform(id, file, code) {
   const exports = [];
   code = code.replace(IMPORT_RE, (all, names, star, spec) => {
@@ -34,7 +52,10 @@ function transform(id, file, code) {
     const parts = names.split(',').map(s => s.trim()).filter(Boolean).map(s => { const m = /^(\w+)\s+as\s+(\w+)$/.exec(s); return m ? `${m[1]}: ${m[2]}` : s; });
     return `const { ${parts.join(', ')} } = __m[${JSON.stringify(dep)}];`;
   });
-  code = code.replace(/^export\s+(const|let|var|function|class|async function)\s+(\w+)/gm, (all, kw, name) => { exports.push(name); return `${kw} ${name}`; });
+  // functions and classes: one name each
+  code = code.replace(/^export\s+(function|class|async function)\s+(\w+)/gm, (all, kw, name) => { exports.push(name); return `${kw} ${name}`; });
+  // const/let/var may declare several names: walk the statement and take every top-level declarator
+  code = code.replace(/^export\s+(const|let|var)\s+/gm, (all, kw, offset, whole) => { for (const n of declaredNames(whole, offset + all.length)) exports.push(n); return kw + ' '; });
   code = code.replace(/^export\s+\{([^}]*)\};?\s*$/gm, (all, names) => { for (const n of names.split(',')) { const s = n.trim(); if (s) exports.push(s); } return ''; });
   if (/^\s*export\s/m.test(code)) throw new Error('unhandled export in ' + id);
   return `__m[${JSON.stringify(id)}] = (function () {\n${code}\nreturn { ${exports.join(', ')} };\n})();\n`;
