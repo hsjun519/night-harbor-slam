@@ -90,6 +90,7 @@ export class AudioManager {
       case 'belly': this.tone('sine', 90 * R(), 40, .22, .7); this.burst(.12, .35, 'lowpass', 500, .8); this.tone('triangle', 200, 120, .1, .15); break;
       case 'slash': this.burst(.09, .4, 'bandpass', 2500, 2, 0, this.fx, 900); this.tone('sine', 140, 60, .06, .35); break;
       case 'whip': this.burst(.07, .4, 'bandpass', 3000, 3, 0, this.fx, 1200); this.tone('sine', 120, 60, .05, .3); break;
+      case 'clang': this.burst(.06, .55, 'bandpass', 2600 * R(), 2.2); [[523, .5], [1187, .32], [1939, .22], [3061, .14]].forEach(([f, v], i) => this.tone(i ? 'sine' : 'triangle', f * R(), f * .985, .6 - i * .1, v * .35 * p)); this.tone('sine', 120, 50, .15, .5); break;
       case 'block': this.burst(.05, .4, 'bandpass', 1500, 2); this.tone('square', 380, 300, .05, .1); break;
       case 'parry': this.tone('square', 1320, 1320, .12, .18); this.tone('square', 1760, 1760, .18, .14, .05); this.burst(.05, .3, 'highpass', 4000, .7); break;
       case 'whoosh': this.burst(.18 * pitch, .32, 'bandpass', 500, 1.4, 0, this.fx, 2400); break;

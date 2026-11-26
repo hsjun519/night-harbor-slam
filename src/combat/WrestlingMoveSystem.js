@@ -5,6 +5,9 @@ import { MOVES } from '../data/moves.js';
 import { STATES } from './StateMachine.js';
 import { moveExtent, yawAt, compileMove } from '../anim/paired.js';
 
+// How many moves this down may carry (see BALANCE.moveChainByDown) and its index for the other per-down tables.
+export function chainAllow(v) { const i = Math.max(0, Math.min(v.downs || 1, B.moveChainByDown.length) - 1); return { i, n: Math.min(B.moveChainMax, B.moveChainByDown[i]) }; }
+
 export class WrestlingMoveSystem {
   constructor(match) { this.m = match; }
   startFromHold(L, id) {
@@ -200,9 +203,9 @@ export class WrestlingMoveSystem {
       else {
         // one down can carry a short chain of moves; after the last one the body is left alone until it stands
         v.postMove = true; v.moveChain = (v.moveChain || 0) + 1;
-        const more = !L.fin && v.moveChain < B.moveChainMax;
+        const ca = chainAllow(v), more = !L.fin && v.moveChain < ca.n;
         v.grabImm = more ? .45 : 60;
-        v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 1.6 : 1);
+        v.downTime = (B.moveDownTimes[ca.i] || B.moveDownTime) * (L.fin ? 1.6 : 1);
         if (L.fin) v.downs++;
       }
       v.set('DOWN', { force: true });

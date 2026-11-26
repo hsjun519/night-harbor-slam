@@ -24,8 +24,9 @@ export const LEARNABLE = [
   { id: 'airplane', cost: 65000, fame: 35, by: 'rival' }, { id: 'gutBuster', cost: 50000, fame: 30, by: 'rival' }, { id: 'headDrop', cost: 45000, fame: 20, by: 'rival' }, { id: 'anchorHold', cost: 50000, fame: 25, by: 'rival' }, { id: 'slapFest', cost: 40000, fame: 15, by: 'rival' }, { id: 'cornerSmash', cost: 35000, fame: 10, by: 'trainer' }, { id: 'spinebuster', cost: 45000, fame: 20, by: 'rival' },
 ];
 export const SHOP_ITEMS = [
-  { id: 'bandage', name: '붕대', price: 12000, desc: '부상 게이지 -7. 언제든 사용할 수 있다.', kind: 'item', inj: 7 },
-  { id: 'bigBandage', name: '고급 압박 붕대', price: 30000, desc: '부상 게이지 -18.', kind: 'item', inj: 18 },
+  { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
+  { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
   { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
   { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
   { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
@@ -66,6 +67,21 @@ function migrateLegacy(n) {
   for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
   return d;
 }
+// Sale days: consumables at the clinic and the shop cost 30% less. Merchant days: a peddler sets up on the street.
+export const saleOn = d => d.day > 2 && (d.day + d.season * 2) % 6 === 4;
+export const merchantOn = d => d.day > 1 && (d.day + d.season) % 5 === 2;
+export const salePrice = (d, price) => (saleOn(d) ? Math.round(price * .7 / 100) * 100 : price);
+// The peddler's goods. buff: lasts for the next match (or next training); now: takes effect at once; give: an item.
+export const RARE_ITEMS = [
+  { id: 'knuckle', name: '황금 너클', price: 25000, desc: '다음 경기 공격력 +20%.', buff: { atk: 1.2 } },
+  { id: 'guardSet', name: '강철 보호대', price: 22000, desc: '다음 경기에서 쌓이는 부상 -40%.', buff: { guard: .6 } },
+  { id: 'eelTonic', name: '등대 장어즙', price: 18000, desc: '피로 -60, 부상 -6. 바로 마신다.', now: { fat: 60, inj: 6 } },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
+  { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
+  { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
+  { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
+];
+export const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
 export function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
 
 export class Career {
@@ -91,7 +107,7 @@ export class Career {
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -134,8 +150,9 @@ export class Career {
   }
   // Fighter options for a match.
   entrant(ctrl = 'human') {
-    const S = this.styleDef, st = this.stats, fat = this.d.fatigue;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0 };
+    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue;
+    if (bf.atk) st.atk *= bf.atk;
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -214,14 +231,14 @@ export class Career {
     if (kind !== 'practice' && h) {
       const maxHp = this.stats.hp;
       let inj = (h.dmgTaken / maxHp) * B.injuryPerBar + (h.ko ? B.injuryKO : 0) + h.finishersTaken * B.injuryFinisher + (h.ringOuts ? B.injuryRingOut : 0);
-      inj *= 1 + d.fatigue / 250;
+      inj *= (1 + d.fatigue / 250) * (B.injuryRate || 1) * (d.buffs && d.buffs.guard ? d.buffs.guard : 1);
       inj = Math.round(inj * 10) / 10;
       d.injury = Math.min(100, d.injury + inj); out.injury = inj;
     }
-    if (kind !== 'practice') d.flags.pajeon = 0;
+    if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
     if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
-    const c = d.contract && kind !== 'free' ? d.contract : info.offer;
+    const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
     if (draw) d.record.d++;
     else if (won) { d.record.w++; d.record.streak = Math.max(1, d.record.streak + 1); d.seasonLog.w++; if (res.result.how === 'ko') d.record.ko++; if (res.result.how === 'pin') d.record.pin++; }
     else { d.record.l++; d.record.streak = Math.min(-1, d.record.streak - 1); d.seasonLog.l++; }
@@ -230,6 +247,7 @@ export class Career {
       money = won ? c.reward : Math.round(c.reward * (draw ? .5 : .25) / 1000) * 1000;
       fame = won ? c.fame : draw ? 2 : 1;
       if (res.result.forfeit) { money = 0; fame = -3; }
+      if (!won && (kind === 'brawl' || kind === 'revenge')) { money = 0; fame = kind === 'revenge' ? -1 : 0; }
       xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
       if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
       // ranking points
@@ -243,7 +261,7 @@ export class Career {
         if (c.title && won) { d.flags.champion = true; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push('새 챔피언이 탄생했다!'); }
       }
       if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
-      if (kind !== 'free') d.contract = null;
+      if (c === d.contract) d.contract = null;
     } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
     if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
     if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }

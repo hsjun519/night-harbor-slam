@@ -8,6 +8,7 @@ import { panel, gauge, icon, keycap, prompt, banner } from './ui.js';
 import { BALANCE as B } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 import { MODES } from '../combat/MatchManager.js';
+import { chainAllow } from '../combat/WrestlingMoveSystem.js';
 import { J } from '../anim/skeleton.js';
 
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
@@ -135,6 +136,7 @@ export class HUD {
       // player marker
       if (f.ctrl === 'human' && m.fighters.length > 1) { const y = hy - 8 + Math.round(Math.sin(this.t * 5)); rect(g, '#05060f', hx - 4, y - 1, 9, 6); rect(g, '#ffd65a', hx - 3, y, 7, 2); rect(g, '#ffd65a', hx - 2, y + 2, 5, 1); rect(g, '#ffd65a', hx - 1, y + 3, 3, 1); }
       if (f.st === 'HANG' && f.ctrl !== 'human') drawText(g, '매달림!', hx, hy - 4, { size: 11, align: 'c', color: '#ff8a2b', outline: '#05060f' });
+      if (m.props.threat(f) && Math.floor(this.t * 8) % 2) drawText(g, '!', hx, hy - 30, { scale: 2, align: 'c', color: '#ff5b5b', bold: true, outline: '#05060f' });
       if (f.side === 'out' && m.rules.ringOut === 'count' && f.outCount >= 1 && m.phase === 'fight') drawText(g, String(Math.floor(f.outCount)), hx, hy - 16, { scale: 2, align: 'c', color: f.outCount > 7 ? '#ff5b5b' : '#ffd65a', bold: true, outline: '#05060f' });
     }
     // pin count
@@ -164,11 +166,19 @@ export class HUD {
     // contextual prompts
     const P = [];
     const ar = m.arena;
-    const g2 = m.grapple.grabTarget(f);
+    const g2 = m.grapple.grabTarget(f), PR = m.props;
+    if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
+    else if (f.prop) P.push([[inp.label('atk')], '체어샷'], [[inp.label('grab')], '의자 던지기']);
     if (g2) P.push([[inp.label('grab')], '잡기']);
+    else if (!f.prop && PR.loose(f)) P.push([[inp.label('grab')], '의자 줍기']);
+    else if (!f.prop && f.nearestFoe(52, o => o.prop && o.side === f.side)) P.push([[inp.label('grab')], '의자 뺏기']);
     if (m.rules.pin && f.side === 'in' && f.nearestFoe(58, o => o.st === 'DOWN' && !o.rag)) P.push([[inp.label('down')], '핀폴']);
     if (f.fin >= B.finMax && f.alive) P.push([[inp.label('fin')], '피니셔']);
-    if (f.st === 'PERCH') P.push([[inp.label('atk')], '다이빙'], [[inp.label('down')], '내려오기']);
+    if (f.dash && f.fsm.is('IDLE', 'MOVE') && !f.prop) { const c = m.grapple.dashCheck(f), mv = MOVES[c.id]; P.push([[inp.label('atk')], '돌진 공격'], [[inp.label('grab')], c.ok ? `${mv.name} (게이지 ${B.dashSigCost})` : `${mv.name}: ${c.why}`]); }
+    if (f.st === 'PERCH') {
+      const out = f.face === (f.climbDir || (f.x < ar.mid ? -1 : 1)), elim = m.rules.ringOut === 'elim';
+      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], out ? (elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!') : '다이빙'], [[inp.label('down')], '내려오기']);
+    }
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
     if (ar.hasRing && f.side === 'out' && f.y > ar.matY + 4 && f.st !== 'HANG') { const d = Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))); if (d < 46) P.push([[inp.label('up')], '링으로 올라가기']); }
@@ -191,7 +201,7 @@ export class HUD {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
     const slots = [['u', 0, -26], ['b', -f.face * 70, 0], ['n', 0, 0], ['f', f.face * 70, 0], ['d', 0, 26]];
     panel(g, x - 104, y - 40, 208, 92, { alpha: .82, cut: 3, accent: f.char.color });
-    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${B.moveChainMax}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
+    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
     gauge(g, x + 6, y - 35, 90, 3, L.hold / (B.grabHold * (.8 + .2 * f.stats.grp)), 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
     gauge(g, x + 6, y - 29, 90, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
     for (const [s, dx, dy] of slots) {

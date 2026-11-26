@@ -19,7 +19,7 @@ export class CombatSystem {
     const a = f.atk;
     if (!a) return null;
     const d = a.def, s = f.look.scale || 1, k = f.dims.reach / 35;
-    if (a.t < d.startup || a.t > d.startup + d.active) return null;
+    if (d.nohit || a.t < d.startup || a.t > d.startup + d.active) return null;
     const reach = d.reach * (.4 + .6 * k), front = f.x + f.face * reach, back = f.x - f.face * (d.air ? 12 : 4);
     return { x0: Math.min(front, back), x1: Math.max(front, back), y0: f.y - d.high * s, y1: f.y - d.low * s };
   }
@@ -57,6 +57,7 @@ export class CombatSystem {
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
     }
+    if (d.chair) return this.chairHit(a, v, d, dir, facing, hx, hy);
     const boost = a.atk ? a.atk.boost : 1;
     if (v.st === 'FINISHER' && v.finPhase && v.finPhase.stage === 'stance' && facing && !d.air && a.ground) { m.finisher.connect(v, a, v.finPhase.F, false); return 'stance'; }
     if (d.shove && v.st === 'GUARD') {
@@ -116,6 +117,39 @@ export class CombatSystem {
     if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .14; v.flash = .1; if (d.quake || d.dive) { v.vx = 0; } m.anim.kickBody(v, dir); return 'hit'; }
     if (v.stun <= 0) { m.stun.breakStun(v, a, dir * Math.max(120, d.kb * 1.05) / v.stats.kbr, -Math.max(130, d.up || 0), dir); return 'hit'; }
     this.react(a, v, d, dir, counterHit);
+    return 'hit';
+  }
+  // A swung chair: a perfect guard knocks it out of the hands, a guard eats a lot of stun, anything else is down at once.
+  chairHit(a, v, d, dir, facing, hx, hy) {
+    const m = this.m, P = a.prop;
+    a.atk.connected = true;
+    if (P) { P.uses--; P.dent = Math.min(3, P.dent + 1); }
+    if (v.st === 'GUARD' && facing && v.guardT <= B.perfectGuard) {
+      m.props.drop(a, 'parry', -dir); this.stagger(a, .7, v); this.addFin(v, B.finPerfect); v.perfects++;
+      m.hitstop(.12); m.emit('parry', { a, v, x: hx, y: hy }); m.emit('chairParry', { a, v });
+      if (P && P.uses <= 0) m.props.breakProp(P);
+      return 'parry';
+    }
+    if (v.st === 'GUARD' && facing) {
+      v.stun -= v.maxStun * .5; v.regenDelay = B.stunRegenDelay; this.damage(v, 2, 0, a, { chip: true });
+      m.hitstop(.12); m.emit('chairHit', { a, v, p: P, guarded: true, x: hx, y: hy });
+      if (v.stun <= 0) { v.stun = v.maxStun * .25; this.stagger(v, B.guardBreakStagger, a); m.emit('guardBreak', { a, v }); } else { v.vx = dir * 160; m.anim.kick(v, 'guardHit', .25); }
+      if (P && P.uses <= 0) m.props.breakProp(P);
+      return 'block';
+    }
+    const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
+    a.hitsLanded++;
+    this.damage(v, hp, 0, a, { def: d });
+    this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
+    m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
+    m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
+    if (P && P.uses <= 0) m.props.breakProp(P);
+    if (v.st === 'KO' || !v.alive) return 'ko';
+    if (v.link && v.link.kind !== 'move') m.grapple.breakLink(v.link, 'hit');
+    if (v.link && v.link.kind === 'move' && v.link.a === v && !v.link.committed) m.wrestle.cancel(v.link, 'hit');
+    if (v.st === 'PIN') m.breakPin('hit');
+    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .6); m.anim.kickBody(v, dir); return 'hit'; }
+    m.stun.breakStun(v, a, dir * 150 / v.stats.kbr, -150, dir);
     return 'hit';
   }
   react(a, v, d, dir, counterHit) {

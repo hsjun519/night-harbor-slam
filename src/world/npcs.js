@@ -3,6 +3,7 @@ import { LOOKS } from '../data/looks.js';
 import { CHARACTERS } from '../data/characters.js';
 import { BALANCE as B } from '../data/balance.js';
 import { josa, fmtMoney, pick } from '../core/util.js';
+import { merchantOn } from './CareerManager.js';
 
 export const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
@@ -19,6 +20,7 @@ export const NPCS = {
   busker: { name: '거리 악사', look: LOOKS.busker, stance: 'calm', voice: .95 },
   sponsor: { name: '황 대표', look: LOOKS.sponsor, stance: 'lean', voice: .9 },
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
+  merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
 
@@ -35,6 +37,11 @@ export function peopleAt(loc, c) {
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
       if (day % 4 === 0) add('dohyun', 620, 1);
+      // a wrestler beaten earlier waits by the stairs to the basement
+      if (d.revenge && !d.revenge.invited && day >= d.revenge.day && day <= d.revenge.until) add(d.revenge.opp, 1080, -1, { stance: 'arms', revenge: 1 });
+      break;
+    case 'basement':
+      if (d.revenge && d.revenge.invited && day <= d.revenge.until) add(d.revenge.opp, 430, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'office': add('boss', 400, -1); break;
     case 'gym':
@@ -50,6 +57,7 @@ export function peopleAt(loc, c) {
       add('foreman', 1900, -1);
       add('oldman', 2040, 1);
       if (day % 3 === 0) add('reporter', 1240, 1);
+      if (merchantOn(d)) add('merchant', 1470, -1);
       break;
     case 'clinic': add('doctor', 400, -1); add('nurse', 200, 1); break;
     case 'shop': add('shop', 465, -1); break;
@@ -172,6 +180,11 @@ export function talk(id, c, W) {
     }
     case 'busker': return [S(pick(['♪ 밤배가 들어오면 링에 불이 켜지고… ♪', '이 항구엔 노래가 두 개 있지. 파도 소리랑, 관중 함성.', '네 입장곡? 내가 하나 만들어 줄까. 공짜는 아니지만.']))];
     case 'sponsor': return [S('황금등대 우유의 황 대표요. 요즘 당신 이름이 자주 들리더군.'), S('우리 우유를 링에서 마셔 주면, 매달 후원금을 드리리다.'), { choice: [{ label: '계약한다', go: [S('좋소! 첫 후원금이오.'), { act: () => { d.flags.sponsored = 1; c.earn(50000); W.toast('후원금 ' + fmtMoney(50000), '#9be36b'); } }] }, { label: '거절한다', go: [S('아쉽군. 마음 바뀌면 연락하시오.')] }] }];
+    case 'merchant': {
+      const first = !c.rel('merchant').seen; c.rel('merchant').seen = 1;
+      return [...(first ? [S('어이쿠, 손님! 바다 건너 온 물건들이야. 오늘만 판다! 내일이면 난 다음 항구에 있거든.', { expr: 'happy' })] : []),
+        S(pick(['이 너클? 고래도 한 방에 눕힌다는 전설의 너클이지. …물론 고래는 안 때려 봤어.', '의자는 왜 파냐고? 손님, 레슬링에서 의자보다 좋은 친구는 없어.', '장어즙 한 병이면 밤새 훈련해도 멀쩡해! …낮엔 자야 하지만.', '붕대는 특별히 싸게 줄게. 병원엔 비밀이야.'])), { act: () => W.openMerchant() }];
+    }
     case 'oldman': return [S(lastLine(c, 'oldman', ['나는 저 등대를 40년 지켰지. 안개왕이 처음 나타난 날도 기억해.', '안개왕의 마지막 기술은 {v}목을 잡는 기술{/}이야. 잡히기 전에 피하는 수밖에 없어.', '그 친구, 안개 속에서 싸우는 걸 좋아하지. 링 밖으로 끌어내지 말게. 거긴 그의 바다야.', '불이 꺼지면 당황하지 마. 다시 켜질 때 네가 서 있으면 되는 거야.', '파도는 부서져도 다시 와. 진 날엔 그 말을 기억하게.']))];
     case 'dohyun': {
       const r = c.rel('dohyun');
@@ -201,11 +214,48 @@ export function talk(id, c, W) {
         baeksang: ['링 밖은 피 냄새가 더 진하지.', '물속에서 기다리는 상어처럼, 기회를 기다린다.'],
         bjorn: ['한국 국밥, 최고. 북해엔 없어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다.'],
         baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야.'],
+        galchi: ['부둣가 악동단은 의리로 뭉쳤다! …회비도 걷고.', '오늘은 기분 좋으니까 봐준다! 내일은 몰라!'],
+        myeolchi: ['형님이 저보고 내일부터 다이어트래요. 근데 저 이미 멸치인데요?', '저기요, 사인 좀… 아니 아니, 형님 몰래요.'],
         gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~'],
         ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸.'],
       }[id] || [ch.lines.intro];
       return [S(lastLine(c, id, gossip))];
     }
   }
+}
+// ---- before a match ------------------------------------------------------------------------------------
+// first: never met; won: they beat me last time; lost: I beat them; ring: one line face to face in the ring.
+export const PRE = {
+  taesan: { first: '오, 네가 그 신입이구나! 걱정 마, 화물은 정중하게 다루는 게 내 원칙이야. 던질 때만 빼고.', won: '지난번에 한 번 들려 봤지? 오늘은 더 높이 올려 주마. 고소공포증은 없지?', lost: '지난번엔 허리가 삐끗했던 거야. 오늘은 파스를 세 장 붙이고 왔다고!', ring: '자, 하역 시작한다! 무게 좀 재 볼까?' },
+  haneul: { first: '안녕, 신인! 오늘 바람 냄새가 좋아. 높이 날기 딱 좋은 날이야.', won: '또 만났네! 지난번처럼 위에서 내려다봐 줄게.', lost: '지난번엔 역풍이었어. 오늘은 순풍이야. …아마도?', ring: '바람이 딱 좋은걸? 목 조심해, 위에서 떨어지거든!' },
+  dohyun: { first: '…너구나. 3개월 늦게 들어온 주제에 벌써 나랑 붙어?', won: '실력 차이는 확인했잖아. 오늘은 복습이다.', lost: '지난번은 운이었어. 오늘을 위해 매듭을 세 번 묶고 왔다.', ring: '너와 나, 누가 먼저 올라가나 보자.' },
+  dongsu: { first: '신입이냐. 용접은 불꽃이 튀기 전에 끝나는 법이지. 너도 그렇게 끝내 주마.', won: '지난번 땜질 자국은 잘 아물었냐? 오늘 다시 때워 주지.', lost: '지난번엔 용접봉이 눅눅했다. 오늘은 바싹 말려 왔어.', ring: '불꽃 튀길 준비됐나? 보안경은 나만 썼다.' },
+  mandeok: { first: '밥은 먹고 왔어? 빈속에 나랑 붙으면 큰일 나. 깔리면 납작해지거든.', won: '지난번에 깔렸던 거 기억하지? 오늘은 점심을 두 그릇 먹고 왔어.', lost: '지난번엔 배가 고파서 그랬어. 오늘은 국밥 세 그릇!', ring: '배 든든하게 채웠다! 오늘은 썰물 없어!' },
+  neon: { first: '어머, 신인? 카메라 각도 좀 비켜 줄래? 오늘 주인공은 나거든.', won: '지난번 하이라이트, 내 얼굴만 나왔더라~ 오늘도 잘 부탁해.', lost: '지난번 패배는 편집될 거야. 오늘은 생방송으로 갚아 주지.', ring: '카메라, 나만 잡아! 조명 더 세게!' },
+  fogking: { first: '……등대의 불빛이 너를 비추는군. 오래가지는 않을 것이다.', won: '……안개는 같은 자를 두 번 삼킨다.', lost: '……빛이 한 번 이겼다고 밤이 끝나지는 않는다.', ring: '……보이지 않는 것이 두려운가.' },
+  bokja: { first: '아이고, 신인이야? 새벽 경매보다 싱싱하네! 오늘 매는 공짜로 줄게!', won: '지난번 따귀 맛 기억하지? 오늘은 덤으로 하나 더!', lost: '지난번엔 비린내 때문에 손이 미끄러졌어! 오늘은 고무장갑 꼈다!', ring: '떨이요 떨이! 매가 떨이!' },
+  dueok: { first: '히히, 신인이다! 내 방망이 한 번 맞으면 혹이 두 개 생긴다?', won: '혹 떼러 왔다가 혹 붙인 녀석이네! 히히!', lost: '지난번엔 방망이가 장난을 친 거야. 오늘은 단단히 일러뒀지.', ring: '씨름 한 판 할까? 히히히!' },
+  palcho: { first: '흥미로운 표본이군. 관절이 몇 개인지 오늘 직접 세어 보지.', won: '지난번 데이터는 아주 유익했네. 오늘은 2차 실험이야.', lost: '지난번 결과는 측정 오류였네. 오늘은 빨판을 새로 갈았지.', ring: '자네를 해부… 아니, 분석해 보지.' },
+  baeksang: { first: '피 냄새가 나는군. 신인이라는 냄새.', won: '지난번엔 한 입 베어 물었지. 오늘은 통째로다.', lost: '상어는 같은 그물에 두 번 걸리지 않는다.', ring: '넌 미끼다.' },
+  bjorn: { first: '신인. 작다. 하지만 눈, 좋다. 좋은 싸움 하자.', won: '지난번, 좋은 싸움. 오늘, 또 좋은 싸움. 끝나고 국밥.', lost: '지난번, 졌다. 북해 사람, 그런 거 오래 기억한다.', ring: '파도, 작다. 북해, 크다.' },
+  baekpa: { first: '어서 오게, 젊은 파도. 늙은 파도가 아직 얼마나 높은지 보여 주지.', won: '지난번에 배운 건 잊지 않았겠지? 오늘은 심화 과정일세.', lost: '허허, 지난번엔 자네가 한 수 위였네. 오늘은 늙은이가 복습 좀 했지.', ring: '파도는 부서져도 다시 오는 법이지.' },
+  gosu: { first: '어이 신인! 내 입담에 이미 반은 졌어. 나머지 반은 지금부터 지면 돼!', won: '또 왔어? 지난번 경기 다시 보기 틀어 놓고 팝콘 먹었다니까~', lost: '지난번은 리허설이었어. 오늘이 본 공연이지!', ring: '말로 이기고, 몸으로 또 이기지!' },
+  ironma: { first: '비켜. 아니면 밟고 지나간다.', won: '또 밟힐 준비 됐나.', lost: '…편자를 새로 박았다. 이번엔 안 빠진다.', ring: '밟고 지나간다.' },
+  galchi: { first: '이 동네는 우리 구역이야!', won: '또 털리러 왔냐?', lost: '지난번은 연습이었다고!', ring: '이 동네는 우리 구역이야! 얘들아, 쳐라!' },
+  myeolchi: { first: '형님 말이 맞아요! 아마도요!', won: '헤헤, 또 이길 거예요. …아마도요.', lost: '형님, 저 사람 또 왔어요!', ring: '형님! 저 사람 진짜 커요! …아, 쳐요? 칠게요!' },
+};
+export function preFightLine(id, c) {
+  const P = PRE[id], ch = CHARACTERS[id];
+  if (!P) return ch ? ch.lines.intro : '…';
+  const r = c.d.h2h[id];
+  return !r || r.w + r.l === 0 ? P.first : r.l > r.w ? P.won : P.lost;
+}
+// Waiting room: the next opponent walks over for a word before the match.
+export function roomBanter(id, c) {
+  const d = c.d, me = d.name, ct = d.contract;
+  const S = (text, o = {}) => Object.assign({ who: id, text }, o);
+  const late = ct && ct.day <= d.day;
+  return [S(`${josa(me, '이/가')} 오늘 상대라고? ` + preFightLine(id, c), { expr: 'smug' }),
+    S(late ? '오늘이 마감일이다. 도망치면 사장님이 가만 안 있을걸?' : pick(['몸 풀고 와라. 링에서 기다리지.', '오늘 관객 많다더라. 창피 당하기 딱 좋은 날이지.', '대기실 공기가 무겁군. 네 긴장 때문이겠지?']), { expr: 'fierce' })];
 }
 export const npcPick = pick;

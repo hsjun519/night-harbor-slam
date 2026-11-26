@@ -45,5 +45,7 @@ export const ARENAS = {
   gym: { id: 'gym', name: '훈련장 링', desc: '땀 냄새 밴 연습용 링', crowd: 0, rim: '#ffcf8a', light: .04, tint: [1.02, 1, .96] },
   pier: { id: 'pier', name: '부두 특설 링', desc: '네온과 파도가 관객인 야외 링', crowd: .7, rim: '#ff5fa2', light: -.02, tint: [.98, 1, 1.05] },
   dome: { id: 'dome', name: '등대 돔', desc: '챔피언십이 열리는 거대한 돔', crowd: 1.3, rim: '#ffd65a', light: .03, tint: [1.03, 1.01, .98] },
+  lobby: { id: 'lobby', name: '체육관 로비', desc: '로비가 그대로 싸움판이 됐다', crowd: .4, rim: '#ffcf8a', light: .02, tint: [1.03, 1, .96], hasRing: false, x0: 60, x1: 840 },
+  basement: { id: 'basement', name: '지하 격투장', desc: '로비 아래, 아는 사람만 아는 링', crowd: .55, rim: '#ff8a2b', light: -.05, tint: [1.06, .96, .9] },
   alley: { id: 'alley', name: '부둣길 뒷골목', desc: '링도 종도 없는 길거리 승부', crowd: .25, rim: '#39e6c0', light: -.06, tint: [.95, 1, 1.05], hasRing: false, x0: 60, x1: 840 },
 };

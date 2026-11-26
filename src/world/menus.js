@@ -11,7 +11,7 @@ import { BALANCE as B } from '../data/balance.js';
 import { MODES } from '../combat/MatchManager.js';
 import { ARENAS } from '../combat/arena.js';
 import { DIFFICULTY } from '../combat/AIController.js';
-import { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS } from './CareerManager.js';
+import { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES } from './CareerManager.js';
 
 class Menu {
   constructor(W) { this.W = W; this.game = W.game; this.c = W.c; this.sel = 0; this.t = 0; }
@@ -111,7 +111,8 @@ export class ArenaMenu extends Menu {
 // ---- shop ----
 export class ShopMenu extends Menu {
   constructor(W) { super(W); this.tab = 0; }
-  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k); }
+  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
+  price(it) { return it.kind === 'item' ? salePrice(this.c.d, it.price) : it.price; }
   update(dt) {
     super.update(dt);
     const inp = this.game.input, A = this.game.audio, c = this.c, d = c.d, L = this.list();
@@ -121,7 +122,7 @@ export class ShopMenu extends Menu {
     if (this.ok() && L[this.sel]) {
       const it = L[this.sel];
       if (it.kind !== 'item' && d.owned.includes(it.id)) { this.equip(it); return; }
-      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
       A.sfx('buy');
       if (it.kind === 'item') { d.items[it.id] = (d.items[it.id] || 0) + 1; this.W.toast(`${it.name} 구입 (소지 ${d.items[it.id]})`, '#9be36b'); }
       else { d.owned.push(it.id); this.equip(it); }
@@ -144,8 +145,9 @@ export class ShopMenu extends Menu {
       rect(u, on ? '#3a2a1a' : '#141a36', 72, y, 496, 27); if (on) rect(u, '#ffb347', 72, y, 2, 27);
       drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
       drawText(u, it.desc, 80, y + 15, { size: 11, color: UI.dim });
-      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(it.price), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : UI.money });
+      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
     });
+    if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 소모품 30% 할인', 320, 296, { size: 11, align: 'c', color: '#ff8fc4' });
     this.foot(u, '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
   }
 }
@@ -153,9 +155,10 @@ export class ShopMenu extends Menu {
 // ---- clinic ----
 export class ClinicMenu extends Menu {
   opts() {
-    const d = this.c.d, inj = d.injury, full = Math.max(10000, Math.round(inj * 1500 / 1000) * 1000), part = 22000, stay = Math.max(18000, Math.round((inj * 1200 + 10000) / 1000) * 1000);
+    const d = this.c.d, inj = d.injury, k = saleOn(d) ? .7 : 1;
+    const full = Math.round(Math.max(7000, inj * 1050) * k / 1000) * 1000, part = Math.round(17600 * k / 100) * 100, stay = Math.round(Math.max(13000, inj * 900 + 7500) * k / 1000) * 1000;
     return [
-      { label: '응급 처치', sub: `부상 -12 · ${fmtMoney(part)}`, price: part, act: () => this.treat(12, part, 0) },
+      { label: '응급 처치', sub: `부상 -16 · ${fmtMoney(part)}`, price: part, act: () => this.treat(16, part, 0) },
       { label: '정밀 치료', sub: `부상 전부 · ${fmtMoney(full)} · 시간 1칸`, price: full, act: () => this.treat(100, full, 1) },
       { label: '입원 치료', sub: `부상 전부 + 피로 0 · ${fmtMoney(stay)} · 다음 날 아침까지`, price: stay, act: () => this.hospital(stay) },
       { label: '나가기', act: () => this.W.closeTop() },
@@ -189,7 +192,69 @@ export class ClinicMenu extends Menu {
     const o = this.opts();
     o.forEach((it, i) => { const y = 140 + i * 36, on = i === this.sel; rect(u, on ? '#1f4a4a' : '#141a36', 100, y, 440, 32); if (on) rect(u, '#6be3c8', 100, y, 2, 32); drawText(u, it.label, 110, y + 3, { color: on ? '#ffffff' : '#c9e8e0' }); if (it.sub) drawText(u, it.sub, 110, y + 18, { size: 11, color: UI.dim }); });
     drawText(u, '소지금 ' + this.c.money() + `  ·  붕대 ${d.items.bandage || 0} / 고급 붕대 ${d.items.bigBandage || 0} (Tab→소지품)`, 320, 290, { size: 11, align: 'c', color: UI.dim });
+    if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 치료비 30% 할인', 320, 126, { size: 11, align: 'c', color: '#ff8fc4' });
     this.foot(u, '↑↓ 고르기 · Enter/E 치료 · Esc 나가기', 306);
+  }
+}
+
+// ---- travelling merchant: rare goods for one day ----
+export class MerchantMenu extends Menu {
+  stock() { const d = this.c.d, r = new RNG(d.day * 17 + d.season * 3), pool = r.shuffle(RARE_ITEMS.filter(i => !i.many)).slice(0, 4); return [...pool, RARE_ITEMS.find(i => i.many)]; }
+  update(dt) {
+    super.update(dt); const L = this.stock(), c = this.c, d = c.d, A = this.game.audio;
+    this.nav(L.length + 1);
+    if (this.back()) return;
+    if (this.ok()) {
+      if (this.sel === L.length) { this.W.closeTop(); return; }
+      const it = L[this.sel], bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
+      if (!it.many && bought.includes(it.id)) { A.sfx('deny'); this.W.toast('이건 오늘 한 개뿐이었어!', '#ff8a8a'); return; }
+      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      d.flags.merchant = { day: d.day, ids: [...bought, it.id] };
+      if (it.buff) Object.assign(d.buffs, it.buff);
+      if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
+      if (it.give) d.items[it.give] = (d.items[it.give] || 0) + 1;
+      A.sfx('buy'); this.W.toast(`${it.name} 구입! ${it.desc}`, '#9be36b'); c.save();
+    }
+  }
+  draw(u) {
+    const d = this.c.d, L = this.stock(), bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
+    this.frame(u, '떠돌이 상인 보부의 보따리', 60, 30, 520, 300, '#c98aff');
+    drawText(u, '오늘만 파는 물건. 내일이면 다음 항구로 떠난다.', 320, 50, { size: 11, align: 'c', color: '#e0c8ff' });
+    L.forEach((it, i) => { const y = 70 + i * 36, on = i === this.sel, sold = !it.many && bought.includes(it.id); rect(u, on ? '#3a2a5a' : '#141a36', 72, y, 496, 32); if (on) rect(u, '#c98aff', 72, y, 2, 32); drawText(u, it.name + (sold ? ' [품절]' : ''), 80, y + 3, { color: sold ? UI.faint : on ? '#ffffff' : '#e6d8ff' }); drawText(u, it.desc, 80, y + 18, { size: 11, color: UI.dim }); drawText(u, fmtMoney(it.price), 560, y + 9, { align: 'r', color: UI.money }); });
+    const y = 70 + L.length * 36; rect(u, this.sel === L.length ? '#3a2a5a' : '#141a36', 72, y, 496, 18); drawText(u, '나가기', 320, y + 2, { size: 11, align: 'c', color: this.sel === L.length ? '#ffffff' : UI.dim });
+    drawText(u, '소지금 ' + this.c.money(), 320, 296, { size: 11, align: 'c', color: UI.money });
+    this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 312);
+  }
+}
+
+// ---- vending machine: small, cheap, three a day ----
+export class VendingMenu extends Menu {
+  opts() {
+    return [
+      { label: '이온 음료', price: 3000, sub: '피로 -12', fn: d => { d.fatigue = Math.max(0, d.fatigue - 12); } },
+      { label: '단백질 셰이크', price: 6000, sub: '피로 -6 · 다음 훈련 효과 +15%', fn: d => { d.fatigue = Math.max(0, d.fatigue - 6); d.buffs.train = 1.15; } },
+      { label: '번개 에너지', price: 5000, sub: '다음 경기를 피니셔 게이지 12로 시작 · 피로 +4', fn: d => { d.buffs.finStart = Math.max(d.buffs.finStart || 0, 12); d.fatigue = Math.min(100, d.fatigue + 4); } },
+      { label: '나가기', close: 1 },
+    ];
+  }
+  left() { const d = this.c.d, v = d.flags.vend; return 3 - (v && v.day === d.day ? v.n : 0); }
+  update(dt) {
+    super.update(dt); const o = this.opts(), c = this.c, d = c.d, A = this.game.audio;
+    this.nav(o.length);
+    if (this.back()) return;
+    if (!this.ok()) return;
+    const it = o[this.sel];
+    if (it.close) { this.W.closeTop(); return; }
+    if (this.left() <= 0) { A.sfx('deny'); this.W.toast('오늘은 더 마시면 배탈 난다. (하루 3잔)', '#ff8a8a'); return; }
+    if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+    it.fn(d); const v = d.flags.vend; d.flags.vend = { day: d.day, n: (v && v.day === d.day ? v.n : 0) + 1 };
+    A.sfx('coin'); this.W.toast(`${it.label}: ${it.sub}`, '#9be36b'); c.save();
+  }
+  draw(u) {
+    this.frame(u, '자판기', 150, 70, 340, 210, '#49d6ff');
+    this.opts().forEach((it, i) => { const y = 96 + i * 34, on = i === this.sel; rect(u, on ? '#1f3a5a' : '#141a36', 162, y, 316, 30); drawText(u, it.label, 172, y + 3, { color: on ? '#ffffff' : '#c9e8ff' }); drawText(u, it.sub || '', 172, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 470, y + 8, { align: 'r', color: UI.money }); });
+    drawText(u, `오늘 남은 횟수 ${this.left()}/3`, 320, 236, { size: 11, align: 'c', color: this.left() ? '#9be36b' : '#ff8a8a' });
+    this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 258);
   }
 }
 
@@ -262,7 +327,7 @@ export class InfoMenu extends Menu {
     const d = this.c.d;
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
     if (this.tab === 2) { const r = []; for (const pos of ['front', 'rear']) for (const s of ['n', 'f', 'b', 'u', 'd']) r.push({ pos, s }); return r; }
-    if (this.tab === 3) return ['bandage', 'bigBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
+    if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
     return [];
   }
   update(dt) {
@@ -326,6 +391,8 @@ export class InfoMenu extends Menu {
       R.forEach((k, i) => { const it = SHOP_ITEMS.find(x => x.id === k), y = 150 + i * 26, on = i === this.sel; rect(u, on ? '#26315f' : '#141a36', 44, y, 550, 22); drawText(u, `${it.name} × ${d.items[k]}`, 52, y + 4, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); drawText(u, it.desc, 586, y + 4, { size: 11, align: 'r', color: UI.dim }); });
       const g = Object.values(d.gear).map(id => SHOP_ITEMS.find(i => i.id === id).name);
       drawText(u, '장착 중인 장비: ' + (g.length ? g.join(', ') : '없음'), 44, 300, { size: 11, color: UI.dim });
+      const bf = Object.keys(d.buffs || {}).map(k => BUFF_NAMES[k] || k);
+      if (bf.length) drawText(u, '다음 경기에 적용: ' + bf.join(', '), 44, 286, { size: 11, color: '#ffd65a' });
     }
     drawText(u, '←→ 탭 · Enter 선택 · Tab/Esc 닫기', 320, 322, { size: 11, align: 'c', color: UI.faint });
   }

@@ -12,6 +12,8 @@ import { WrestlingMoveSystem } from './WrestlingMoveSystem.js';
 import { FinisherSystem } from './FinisherSystem.js';
 import { AnimationSystem } from '../anim/AnimationSystem.js';
 import { AIController } from './AIController.js';
+import { PropSystem } from './Props.js';
+import { MatchEvents } from './MatchEvents.js';
 
 export const MODES = {
   single: { name: '싱글 매치', desc: '1대1. 상대의 체력을 0으로 만들면 KO 승리.', rules: { ko: true, pin: false, ringOut: 'count', time: 300 } },
@@ -37,7 +39,9 @@ export class MatchManager extends Emitter {
     this.grapple = new GrappleSystem(this); this.wrestle = new WrestlingMoveSystem(this); this.finisher = new FinisherSystem(this); this.anim = new AnimationSystem(this);
     this.fighters = []; this.links = []; this.queue = []; this.time = 0; this.clock = 0; this.phase = 'intro'; this.result = null;
     this.freeze = 0; this.slowT = 0; this.slowK = 1; this.hype = 25; this.pin = null; this.endT = 0; this.introT = 0;
-    this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null };
+    this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
+    this.props = new PropSystem(this);
+    this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
     this.on('fault', () => this.faults++);
@@ -111,12 +115,15 @@ export class MatchManager extends Emitter {
     this.grapple.update(dt);
     this.wrestle.update(dt);
     this.physics.update(dt);
+    this.props.update(dt);
+    this.events.update(dt);
     this.combat.update();
     this.stun.update(dt);
     if (this.pin) this.pinTick(dt);
     this.rulesTick(dt);
     this.refTick(dt);
     this.anim.update(dt);
+    this.props.follow();
     // keep broken numbers from spreading: report once and put the body back together
     for (const f of this.fighters) {
       const P = f.joints.p;
@@ -128,7 +135,7 @@ export class MatchManager extends Emitter {
   blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
   introTick(dt) {
     this.introT += dt;
-    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2)) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
+    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
     if (this.phase === 'ready' && this.introT > 1.3) { this.phase = 'fight'; for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true }); this.emit('bell', { start: true }); }
   }
   practiceTick(f, dt) {
@@ -350,7 +357,10 @@ export class MatchManager extends Emitter {
     if (!ar.hasRing) return;
     r.t += dt;
     let tx = r.x;
-    if (r.act === 'count' && r.target) tx = r.target.x + (r.target.x < ar.mid ? 40 : -40);
+    // a coach at the ropes has the referee's attention: he walks over and argues
+    if (r.distract) { r.distract.t -= dt; if (r.distract.t <= 0 || r.act === 'count') r.distract = null; }
+    if (r.distract && r.act !== 'count') tx = r.distract.x < ar.mid ? ar.ropeL + 30 : ar.ropeR - 30;
+    else if (r.act === 'count' && r.target) tx = r.target.x + (r.target.x < ar.mid ? 40 : -40);
     else if (r.act === 'raise' && r.raise) tx = r.raise.x + (r.raise.x < ar.mid ? 30 : -30);
     else {
       const act = this.fighters.filter(f => f.alive && f.side === 'in');
@@ -367,7 +377,7 @@ export class MatchManager extends Emitter {
     const crowded = this.fighters.some(f => f.alive && f.side === 'in' && Math.abs(f.x - r.x) < 36);
     r.vx = Math.abs(d) > 6 ? sgn(d) * Math.min(crowded ? 210 : 150, Math.abs(d) * 4) : 0;
     r.x += r.vx * dt;
-    if (r.vx) r.face = sgn(r.vx); else if (r.target) r.face = sgn(r.target.x - r.x) || r.face;
+    if (r.vx) r.face = sgn(r.vx); else if (r.distract) r.face = sgn(r.distract.x - r.x) || r.face; else if (r.target) r.face = sgn(r.target.x - r.x) || r.face;
     r.gait += Math.abs(r.vx) * dt * .07;
   }
   summary() {

@@ -3,6 +3,7 @@ import { clamp, sgn } from '../core/util.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES, HOLDS } from '../data/moves.js';
 import { startAttack, tryBurst } from './CharacterController.js';
+import { CHAIR } from './Props.js';
 
 ATTACKS.shove = { id: 'shove', name: '밀치기', startup: .14, active: .07, recover: .32, reach: 42, low: 30, high: 80, hp: .6, stun: 7, kb: 190, hs: .34, stop: .05, lv: 2, shove: 1, unblock: 1, clip: 'shove', hand: 'open', sfx: 'grip', noCounter: 0 };
 
@@ -18,15 +19,37 @@ export class GrappleSystem {
     }
     return best;
   }
+  // K: throw the chair you hold, catch one flying at you, grab, pick a chair up, take one off a foe, or shove.
   tryGrab(f, I) {
-    const m = this.m;
+    const m = this.m, P = m.props;
+    if (f.prop) { if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
+    const inc = P.incoming(f);
+    if (inc) return P.catchProp(f, inc);
+    // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
+    const dv = this.dashTarget(f);
+    if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);
     if (run && f.ground) { f.face = sgn(run.x - f.x) || f.face; return m.wrestle.start(f, run, f.moves.catch || 'backBody', { noReverse: true }); }
     const v = this.grabTarget(f);
     if (v) return this.beginHold(f, v);
+    const c = P.loose(f, CHAIR.pickR);
+    if (c) return P.pick(f, c);
+    const holder = f.nearestFoe(52, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'ATTACK'));
+    if (holder && P.steal(f, holder)) return true;
     if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(80);
     return startAttack(f, ATTACKS.shove);
+  }
+  dashMove(f) { return f.char.dashSig || (f.stats.weight >= 105 ? 'spear' : 'cutter'); }
+  dashTarget(f) {
+    if (!f.dash || !f.ground || Math.abs(f.vx) < 150) return null;
+    return f.nearestFoe(60, o => o.side === f.side && sgn(o.x - f.x) === f.face && !o.link && o.inv <= 0 && Math.abs(o.y - f.y) < 20 && o.ground && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK', 'TAUNT', 'STAGGER', 'WHIPPED', 'ROPE'));
+  }
+  dashCheck(f) {
+    const id = this.dashMove(f);
+    if (f.sigCd > 0) return { ok: false, id, why: `${Math.ceil(f.sigCd)}초 뒤에 다시` };
+    if (f.fin < B.dashSigCost) return { ok: false, id, why: `게이지 ${B.dashSigCost} 필요` };
+    return { ok: true, id, why: '' };
   }
   beginHold(f, v, pos) {
     const m = this.m;

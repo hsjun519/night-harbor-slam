@@ -74,7 +74,28 @@ const PAINT = {
     door(g, 320, 196, 34, 104, '#6a3a2a', { sign: '사장실' });
     door(g, 1092, 196, 40, 104, '#2a2a3a', { sign: '경기장', signCol: '#7a1f3a' });
     door(g, 564, 196, 36, 104, '#2a4a3a', { sign: '훈련장' });
+    door(g, 1032, 196, 36, 104, '#3a2626', { sign: '지하', signCol: '#5a1a1a' });
     lamp(g, 200, 40, '#ffcf7a', { len: 18 }); lamp(g, 560, 40, '#ffcf7a', { len: 10 }); lamp(g, 940, 40, '#ffcf7a', { len: 18 });
+  },
+  basement(g, L) {
+    const W = L.w;
+    wallBase(g, W, 30, '#34343c', null, '#2c2c32', { ceil: ['#060608', '#0a0a0e', '#0e0e14'] });
+    for (let y = 40; y < FLOOR - 4; y += 22) { rect(g, '#2a2a31', 0, y, W, 1); for (let x = ((y - 40) / 22 % 2) * 30; x < W; x += 60) rect(g, '#2a2a31', x, y, 1, 22); }
+    rect(g, '#05060f', 0, 46, W, 9); rect(g, '#5a4a3a', 0, 47, W, 7); rect(g, '#7a6a5a', 0, 47, W, 2); for (let x = 40; x < W; x += 120) rect(g, '#3a2e24', x, 45, 6, 11);
+    rect(g, '#05060f', 0, 62, W, 6); rect(g, '#3a5a6a', 0, 63, W, 4);
+    drawText(g, '리벤지', 140, 116, { scale: 2, color: '#8a1f2a' }); drawText(g, '야항 지하', 620, 96, { size: 11, color: '#c98a2e' }); drawText(g, 'NO RULES', 330, 128, { size: 11, color: '#3a8a4a' });
+    // the underground ring behind a chain-link fence
+    const rx = 440, rw = 200, my = 262;
+    rect(g, '#05060f', rx - 2, my, rw + 4, FLOOR - my); rect(g, '#140e0c', rx, my + 1, rw, FLOOR - my - 2); rect(g, '#c98a2e', rx, my + 4, rw, 2);
+    rect(g, '#4a2626', rx + 4, my - 8, rw - 8, 9); rect(g, '#5a3030', rx + 4, my - 8, rw - 8, 2);
+    for (const px of [rx + 4, rx + rw - 6]) { rect(g, '#05060f', px - 1, my - 62, 5, 55); rect(g, '#8a8494', px, my - 61, 3, 53); }
+    for (const h of [18, 34, 50]) { rect(g, '#c9a25a', rx + 6, my - 8 - h, rw - 12, 1); rect(g, '#5a4a2a', rx + 6, my - 7 - h, rw - 12, 1); }
+    for (let x = 400; x < 680; x += 8) { line(g, '#3a3a46', x, 150, x + 24, 262); line(g, '#3a3a46', x + 24, 150, x, 262); }
+    rect(g, '#4a4a56', 400, 148, 280, 3);
+    drawText(g, '지하 링', 540, 140, { size: 11, align: 'c', color: '#ffb347' });
+    lamp(g, 200, 30, '#ffb347', { len: 34 }); lamp(g, 540, 30, '#ffb347', { len: 46 }); lamp(g, 700, 30, '#ff8a2b', { len: 26 });
+    door(g, 42, 196, 36, 104, '#3a2626', { sign: '로비' });
+    box(g, 250, 262, 40, 38, '#5a4630'); box(g, 292, 274, 28, 26, '#4a3a2a');
   },
   office(g, L) {
     const W = L.w;
@@ -251,8 +272,9 @@ export function streetFar(L, slot) {
 /* Location data. npcs(c) returns who is here today; objects have an action key handled by WorldScene. */
 export const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
-    doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
+    doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
     objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 75, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 380, w: 220, act: 'poster', label: '선수 포스터' }] },
+  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
   gym: { name: '훈련장', w: 1100, music: 'gym', rim: '#ffcf8a', light: .04, doors: [{ x: 63, to: 'lobby', at: 582, label: '로비' }],
     objects: [{ x: 420, w: 70, act: 'train', game: 'bench', label: '벤치프레스' }, { x: 546, w: 70, act: 'train', game: 'rope', label: '줄넘기' }, { x: 668, w: 50, act: 'train', game: 'mitt', label: '미트 치기' }, { x: 790, w: 60, act: 'train', game: 'bridge', label: '목 브릿지' }, { x: 980, w: 180, act: 'spar', label: '연습 링 (연습 경기)' }, { x: 390, w: 110, act: 'train', game: 'breath', label: '거울 앞 호흡 훈련' }] },

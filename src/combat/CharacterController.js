@@ -6,6 +6,7 @@ import { FINISHERS } from '../data/moves.js';
 import { dimsFor, Joints } from '../anim/skeleton.js';
 import { Ragdoll } from '../anim/ragdoll.js';
 import { StateMachine, STATES } from './StateMachine.js';
+import { keepsProp } from './Props.js';
 
 export function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
@@ -16,7 +17,7 @@ export class Fighter {
     this.name = o.name || char.name; this.look = o.look || char.look; this.ctrl = o.ctrl || 'ai'; this.difficulty = o.difficulty || 'normal';
     this.dims = dimsFor(this.look.build, this.look.scale || 1);
     const s = this.stats = Object.assign({}, char.stats, o.stats || {});
-    this.maxHp = s.hp; this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
+    this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
     this.moves = o.moves || char.moves; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
@@ -28,7 +29,7 @@ export class Fighter {
     this.inv = 0; this.grabImm = 0; this.dodgeCd = 0; this.counterCd = 0; this.burstCd = 0; this.regenDelay = 0; this.flash = 0; this.hitShake = 0; this.landT = 0; this.boost = 0; this.staleList = []; this.moveStale = {};
     this.combo = { n: 0, t: 0, dmg: 0 }; this.chainN = 0; this.chainT = 0; this.holdT = 0; this.running = false; this.lastTap = { dir: 0, t: -9 }; this.prevMx = 0; this.guardT = 0; this.whip = null; this.expr = 'neutral'; this.exprT = 0; this.mash = 0; this.escape = 0; this.protect = 0;
     this.outCount = 0; this.eliminated = false; this.tagged = true; this.partner = null; this.legal = true; this.ai = null; this.tails = null; this.sweat = 0; this.touchRope = null; this.gettingUp = null; this.pinTries = 0; this.tagRecover = 0; this.kills = 0; this.perfects = 0;
-    this.cpuTime = 0;
+    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0;
   }
   get st() { return this.fsm.cur; }
   get t() { return this.fsm.t; }
@@ -49,6 +50,7 @@ export class Fighter {
     if (to !== 'HITSTUN' && to !== 'DOWN' && to !== 'KO' && to !== 'OUT' && to !== 'PINNED') this.dropRag();
     if (to === 'IDLE' || to === 'MOVE') this.whip = null;
     if (to !== 'GUARD') this.guardT = 0;
+    if (this.prop && !keepsProp(to)) this.match.props.drop(this, to);
     this.match.emit('state', { f: this, from, to });
   }
   dropRag() { if (this.rag) { this.match.anim.freezeBlend(this, .16); this.rag = null; } }
@@ -65,11 +67,12 @@ export class Fighter {
     for (const k of BUF_KEYS) { if (I[k]) this.buf[k] = B.inputBuffer; else if (this.buf[k] > 0) this.buf[k] -= dt; }
     const m = Math.abs(I.mx) > .3 ? sgn(I.mx) : 0;
     if (m !== 0 && m !== this.prevMx) {
-      if (this.lastTap.dir === m && this.match.time - this.lastTap.t < B.doubleTap) this.running = true;
+      if (this.lastTap.dir === m && this.match.time - this.lastTap.t < B.doubleTap) { this.running = true; if (!this.dash && this.ground) { this.dash = true; this.match.emit('dashStart', { f: this }); } }
       this.lastTap = { dir: m, t: this.match.time };
       this.holdT = 0;
     }
-    if (m === 0) { this.holdT = 0; if (this.prevMx !== 0) this.runStop = this.match.time; if (this.match.time - (this.runStop || 0) > .1) this.running = false; } else { this.holdT += dt; if (this.holdT > B.runAfter) this.running = true; if (m !== this.prevMx && this.prevMx !== 0) this.running = false; }
+    if (m === 0) { this.holdT = 0; if (this.prevMx !== 0) this.runStop = this.match.time; if (this.match.time - (this.runStop || 0) > .1) { this.running = false; this.dash = false; } } else { this.holdT += dt; if (this.holdT > B.runAfter) this.running = true; if (m !== this.prevMx && this.prevMx !== 0) { this.running = false; this.dash = false; } }
+    if (this.dash && !this.fsm.is('IDLE', 'MOVE', 'ATTACK', 'JUMP', 'FALL', 'AIR_ATTACK', 'ROPE')) this.dash = false;
     this.prevMx = m;
   }
   has(k) { return this.buf[k] > 0; }
@@ -95,7 +98,7 @@ export class Fighter {
   // ---- per frame ----
   tick(dt) {
     this.fsm.t += dt; this.clipT += dt; this.poseT += dt;
-    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
     if (this.chainT > 0) { this.chainT -= dt; if (this.chainT <= 0) this.chainN = 0; }
     if (this.standing) { this.freeT = (this.freeT || 0) + dt; if (this.freeT > 1.6) this.grabCount = 0; } else this.freeT = 0;
     if (this.combo.t > 0) { this.combo.t -= dt; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -110,7 +113,7 @@ export class Fighter {
 // ---- shared pieces -------------------------------------------------------------------------------------
 function groundMove(f, I, dt, scale = 1) {
   const run = f.running && Math.abs(I.mx) > .3;
-  const spd = (run ? B.run : B.walk) * f.stats.spd * scale * (f.boost > 0 ? B.ropeBoost : 1) * (f.exhausted ? .9 : 1);
+  const spd = (run ? (f.dash ? B.dash : B.run) : B.walk) * f.stats.spd * scale * (f.boost > 0 ? B.ropeBoost : 1) * (f.exhausted ? .9 : 1);
   const want = Math.abs(I.mx) > .3 ? sgn(I.mx) * spd : 0;
   f.vx = approach(f.vx, want, (want ? B.accel : B.decel) * dt);
   if (want && scale > 0) f.face = sgn(want);
@@ -127,13 +130,19 @@ export function startAttack(f, def, o = {}) {
 }
 function chooseAttack(f, I) {
   const dirHeld = Math.abs(I.mx) > .3;
+  // a chair in the hands: every J is a chair shot (on a standing or a downed foe)
+  if (f.prop) {
+    if (dirHeld) f.face = sgn(I.mx); else { const n = f.nearestFoe(90, o => o.side === f.side); if (n && Math.abs(n.x - f.x) > 4) f.face = sgn(n.x - f.x); }
+    if (startAttack(f, ATTACKS.chairShot)) f.vx = dirHeld ? f.face * 70 : f.vx * .3;
+    return;
+  }
   // a downed foe in reach and nobody standing closer: ground attack
   const downed = f.nearestFoe(54, o => (o.st === 'DOWN' || o.st === 'PINNED') && o.side === f.side && Math.abs(o.y - f.y) < 30);
   const standing = f.nearestFoe(62, o => o.st !== 'DOWN' && o.st !== 'PINNED');
   if (dirHeld) f.face = sgn(I.mx);
   else if (standing && Math.abs(standing.x - f.x) < 62) f.face = sgn(standing.x - f.x) || f.face;
   else if (downed) f.face = sgn(downed.x - f.x) || f.face;
-  if ((f.running || f.boost > 0) && Math.abs(f.vx) > 110 && sgn(f.vx) === f.face) { const d = ATTACKS[f.char.run]; f.vx = f.face * Math.max(Math.abs(f.vx), B.run * f.stats.spd) * (f.boost > 0 ? 1.1 : 1); if (startAttack(f, d)) { if (d.hop) { f.vy = -d.hop; f.ground = false; } } return; }
+  if ((f.running || f.boost > 0) && Math.abs(f.vx) > 110 && sgn(f.vx) === f.face) { const d = ATTACKS[f.char.run]; f.vx = f.face * Math.max(Math.abs(f.vx), B.run * f.stats.spd) * (f.boost > 0 ? 1.1 : 1); if (startAttack(f, d)) { if (f.dash) f.atk.boost = Math.max(f.atk.boost, 1.15); if (d.hop) { f.vy = -d.hop; f.ground = false; } } return; }
   if (downed && !(standing && Math.abs(standing.x - f.x) < Math.abs(downed.x - f.x) + 8)) { startAttack(f, ATTACKS[f.char.ground || 'stomp']); f.vx = clamp((downed.x - f.x) * 2.4, -90, 90); return; }
   const n = f.chainT > 0 ? f.chainN : 0;
   const def = ATTACKS[f.chain[Math.min(n, f.chain.length - 1)]];
@@ -327,13 +336,19 @@ export const CONTROL = {
     f.x = f.x + (tx - f.x) * Math.min(1, dt * 9); f.y = ar.matY - (ar.ropeH + 3) * k; f.vx = f.vy = 0; f.ground = true;
     if (f.t >= .44) { f.face = -d; f.x = tx; f.set('PERCH'); }
   },
+  // On the turnbuckle: A/D turns, J dives the way you face. Facing out means over the top rope to the floor.
   PERCH(f, I, dt) {
-    const ar = f.arena;
+    const ar = f.arena, m = f.match, out = f.climbDir || (f.x < ar.mid ? -1 : 1);
     f.vx = f.vy = 0; f.y = ar.matY - ar.ropeH - 3; f.ground = true;
+    if (Math.abs(I.mx) > .3 && sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.emit('perchTurn', { f, out: f.face === out }); }
     if (f.t < .12) return;
-    if (f.consume('atk')) { dive(f, I); return; }
-    if (f.consume('jump')) { f.vy = -B.jump * .8; f.vx = f.face * 120; f.ground = false; f.set('JUMP'); f.match.emit('jump', { f }); return; }
-    if (I.down || f.t > B.perchTime || f.consume('grab') || f.consume('dodge')) { f.vy = -60; f.vx = f.face * 60; f.ground = false; f.set('FALL', { force: true }); }
+    if (f.consume('atk')) {
+      if (f.face !== out) { dive(f, I); return; }
+      if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
+      diveOut(f, I, out); return;
+    }
+    if (f.consume('jump')) { f.face = -out; f.vy = -B.jump * .8; f.vx = -out * 120; f.ground = false; f.set('JUMP'); m.emit('jump', { f }); return; }
+    if (I.down || f.t > B.perchTime || f.consume('grab') || f.consume('dodge')) { f.face = -out; f.vy = -60; f.vx = -out * 60; f.ground = false; f.set('FALL', { force: true }); }
   },
   HANG(f, I, dt) {
     const ar = f.arena, left = f.x < ar.mid;
@@ -425,6 +440,19 @@ function dive(f, I) {
   const T = .69;
   f.vy = -250; f.vx = f.face * clamp(dx / T * (Math.abs(I.mx) > .3 ? 1.12 : 1), 70, 330); f.ground = false;
   if (startAttack(f, d)) f.match.emit('dive', { f });
+}
+// Dive from the corner over the top rope onto the floor outside. The flight is longer (the floor is lower than
+// the mat) and must clear the apron; `vault` lets the body pass the ropes, physics flips it to the outside.
+function diveOut(f, I, out) {
+  const ar = f.arena, m = f.match, d = ATTACKS[f.char.dive];
+  const edge = out < 0 ? ar.ropeL - ar.apron - 16 : ar.ropeR + ar.apron + 16;
+  const n = f.nearestFoe(380, o => o.side === 'out' && sgn(o.x - f.x) === out && Math.abs(o.x - f.x) > 30);
+  const tx = n ? n.x : edge + out * 60;
+  const dx = Math.max(Math.abs(tx - f.x), Math.abs(edge - f.x) + 8);
+  const T = .82;
+  f.vault = true;
+  f.vy = -270; f.vx = out * clamp(dx / T * (Math.abs(I.mx) > .3 && sgn(I.mx) === out ? 1.1 : 1), 90, 340); f.ground = false;
+  if (startAttack(f, d)) { m.addHype(6); m.emit('dive', { f, out: true }); }
 }
 function landAttack(f, a) {
   const d = a.def, ok = a.connected;

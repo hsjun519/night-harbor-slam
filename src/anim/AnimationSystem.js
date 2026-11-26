@@ -95,6 +95,7 @@ export class AnimationSystem {
         const v = Math.abs(f.vx), run = v > 150;
         f.gait += dt * (run ? 6.2 + v * .031 : 2.6 + v * .071) * (f.vx * f.face >= 0 ? 1 : -1) / Math.sqrt(f.dims.leg / 43);
         gaitPose(p, f.gait, run ? 'run' : 'walk', clamp01(v / 60));
+        if (f.dash && v > 200) { p[1] += 14; p[2] -= 6; p[3] = Math.min(p[3], 30); p[5] = Math.max(p[5], 40); }   // dash: lean in, arms back
         break;
       }
       case 'JUMP': C('jump', f.t); break;
@@ -155,6 +156,11 @@ export class AnimationSystem {
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
       case 'WIN': C(f.char.win || 'win', f.t); break;
       default: this.stance(f, p);
+    }
+    // carrying a chair: arms forward at chest height, or held high for a taunt or a win
+    if (f.prop && f.st !== 'ATTACK') {
+      if (f.st === 'TAUNT' || f.st === 'WIN') { p[3] = 170; p[4] = 20; p[5] = 164; p[6] = 22; }
+      else { const s = Math.sin(f.poseT * 3) * 3; p[3] = 64 + s; p[4] = 62; p[5] = 72 + s; p[6] = 56; }
     }
     if (f.overlay) { f.overlay.t += dt; if (f.overlay.t > f.overlay.dur) f.overlay = null; }
     const jt = f.joints;

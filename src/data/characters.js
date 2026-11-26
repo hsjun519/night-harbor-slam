@@ -142,6 +142,23 @@ export const CHARACTERS = {
     finisher: 'north', taunt: 'taunt', win: 'winFlex', ai: { aggr: .75, air: .2, grab: .75, def: .5, rope: .3, taunt: .2, dirty: .25 }, voice: 1,
     lines: { intro: '밟고 지나간다.', win: '길 비켜.', lose: '편자가 빠졌군.' },
   },
+  // street punches from the docks: they show up in the lobby, not in the league
+  galchi: {
+    name: '갈치', nick: '부둣가 악동단 두목', style: 'brawl', look: LOOKS.galchi, stance: 'street', color: '#c9d4ff', thug: 1,
+    stats: { hp: 90, stun: 94, atk: 1.02, grp: .98, spd: 1.03, jump: .96, rec: .98, down: 1, fin: 1, weight: 84, lift: 1.4, kbr: .98 },
+    chain: ['jab', 'cross', 'hook'], run: 'shoulder', air: 'crossbody', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('bodySlam', 'irishWhip', 'suplex', 'ddt', 'gutBuster'), rear: front('german', 'ringOut', 'atomic', 'bulldog', 'backdropDriver'), catch: 'backBody', counter: 'hipToss' },
+    finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .45, def: .3, rope: .2, taunt: .45, dirty: .9 }, voice: 1.05,
+    lines: { intro: '이 동네는 우리 구역이야!', win: '지갑은 놓고 가라~', lose: '다, 다음엔 진짜 안 봐준다!' },
+  },
+  myeolchi: {
+    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1,
+    stats: { hp: 76, stun: 84, atk: .9, grp: .9, spd: 1.14, jump: 1.16, rec: 1.02, down: 1.05, fin: 1.05, weight: 62, lift: 1.1, kbr: .9 },
+    chain: ['jab', 'jab', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveKick', ground: 'stomp',
+    moves: { front: front('armDrag', 'irishWhip', 'suplex', 'ddt', 'headDrop'), rear: front('bulldog', 'ringOut', 'german', 'atomic', 'backdropDriver'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'neonspin', taunt: 'tauntDance', win: 'win', ai: { aggr: .65, air: .6, grab: .3, def: .5, rope: .5, taunt: .6, dirty: .7 }, voice: 1.4,
+    lines: { intro: '형님 말이 맞아요! 아마도요!', win: '헤헤, 이겼다! …진짜로?', lose: '형님~ 저 먼저 갑니다~' },
+  },
 };
 for (const id in CHARACTERS) CHARACTERS[id].id = id;
 export const ROSTER_IDS = Object.keys(CHARACTERS).filter(i => i !== 'rookie');

@@ -6,14 +6,22 @@ import { FighterRenderer } from '../render/FighterRenderer.js';
 import { Fx } from '../render/Fx.js';
 import { HUD } from '../render/HUD.js';
 import { UI } from '../render/palette.js';
-import { drawText } from '../render/pixelfont.js';
+import { drawText, textWidth } from '../render/pixelfont.js';
+import { drawProps, drawChairAt } from '../render/PropRenderer.js';
+import { BodyCanvas } from '../render/raster.js';
+import { drawBody } from '../render/body.js';
+import { Actor } from '../world/Actor.js';
+import { FLOOR } from '../world/locations.js';
+import { Dialogue } from '../world/Dialogue.js';
 import { rect } from '../render/painter.js';
 import { panel, menuList, fade, prompt } from '../render/ui.js';
 import { BALANCE as B } from '../data/balance.js';
 import { DIFFICULTY } from '../combat/AIController.js';
-import { J } from '../anim/skeleton.js';
+import { J, JN, Joints } from '../anim/skeleton.js';
 import { drawPortrait } from '../render/head.js';
 
+import { MOVES } from '../data/moves.js';
+const MOVES_NAME = id => (MOVES[id] ? MOVES[id].name : id);
 const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃' };
 export class MatchScene {
   constructor(game, cfg, onEnd) {
@@ -24,7 +32,10 @@ export class MatchScene {
     this.fx = new Fx(); this.hud = new HUD(game.input);
     this.camX = clamp(this.m.arena.mid - VIEW_W / 2, 0, this.m.arena.width - VIEW_W);
     this.paused = false; this.sel = 0; this.debug = false; this.t = 0; this.endT = 0; this.resultShown = false; this.dark = 0; this.darkGoal = 0; this.focusPair = null; this.focusT = 0;
-    this.introStep = -1; this.practiceSel = 0;
+    this.introStep = -1; this.practiceSel = 0; this.cameoActors = new Map(); this.lastDt = 1 / 60;
+    // career matches: a few words face to face before the bell (the intro waits for it)
+    this.pre = cfg.preTalk && cfg.career && !cfg.skipIntro ? cfg.preTalk : null; this.talk = null;
+    if (this.pre) this.m.holdIntro = true;
     this.wire();
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
@@ -76,7 +87,11 @@ export class MatchScene {
     m.on('ropeBody', () => A.sfx('rope', { p: .5 }));
     m.on('land', e => { const v = e.f.landV || 0; if (v > 200) { A.sfx('land', { p: Math.min(1, v / 500) }); fx.dust(e.f.x, e.f.y, .35); } });
     m.on('jump', () => A.sfx('jump'));
-    m.on('dive', e => { A.sfx('whoosh', { pitch: 1.6 }); cheer(.6); });
+    m.on('dive', e => { A.sfx('whoosh', { pitch: 1.6 }); cheer(e.out ? 1.1 : .6); if (e.out) fx.word('장외 다이빙!', e.f.x, e.f.y - 70, '#ffd65a', 2); });
+    m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
+    m.on('perchTurn', e => { A.sfx('step'); });
+    m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    m.on('dashSig', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.f.x, e.f.y - 110, '#ffd65a', 3); cheer(1); this.ar.setScreen(MOVES_NAME(e.id), e.f.name, '#ffd65a', true); });
     m.on('landAttack', e => { A.sfx('thud', { p: .8 }); fx.dust(e.f.x, e.f.y, e.def.quake ? 1.5 : .6); if (e.def.quake) { S.shake(.4); fx.ring(e.f.x, e.f.y, e.def.quake, '#ffffff'); } if (!e.ok && e.def.dive) fx.word('아야야!', e.f.x, e.f.y - 40, '#9aa6d6', 1); });
     m.on('finisherStart', e => { A.sfx('charge'); fx.ring(e.f.x, e.f.y, 60, e.F.color); hud.push('피니셔!', { col: e.F.color, scale: 2, y: 90, life: .9 }); cheer(.8); S.flash(1, 1, 1, .15); });
     m.on('finisherHit', e => { A.sfx('finisher'); hud.finisherCard(e.f, e.F); this.ar.setScreen(e.F.name, e.f.name, e.F.color, true); cheer(1.4); });
@@ -100,6 +115,20 @@ export class MatchScene {
     m.on('whip', () => A.sfx('whoosh'));
     m.on('sweep', e => { A.sfx('punch2'); fx.spark(e.o.x, e.o.y - 40, 1); });
     m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name, JSON.stringify(e.info || {})));
+    // chairs and run-ins
+    const K = a => this.game.input.label(a);
+    m.on('chairHit', e => { A.sfx('clang', { p: e.guarded ? .7 : 1 }); S.shake(e.guarded ? .2 : .42); fx.spark(e.x, e.y, e.guarded ? .9 : 1.8, '#e6ecff'); fx.word(e.guarded ? '막았다!' : e.thrown ? '와장창!' : '깡!', e.x, e.y - 22, '#e6ecff', e.guarded ? 2 : 3); if (e.guarded) cheer(.5); else { cheer(1.3); this.ar.setScreen('체어샷!', e.v.name, '#ffd65a', true); } });
+    m.on('chairParry', e => { fx.word('의자를 쳐냈다!', e.v.x, e.v.y - 104, '#9fd6ff', 2); cheer(1); });
+    m.on('chairBreak', e => { A.sfx('punch3'); fx.word('의자가 부서졌다!', e.x, e.y - 26, '#ffb347', 2); fx.dust(e.x, e.y, .8); fx.spark(e.x, e.y, 1.2, '#9aa4c0'); cheer(.8); });
+    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast(`상대가 의자를 들었다! [${K('down')}] 막기 · [${K('dodge')}] 피하기 · [${K('grab')}] 뺏기`, '#ff8a8a'); } });
+    m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
+    m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
+    m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
+    m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
+    m.on('chairWarn', e => { A.sfx('warn'); if (isH(e.f)) hud.toast(`의자가 날아온다! [${K('dodge')}] 피하기 · [${K('down')}] 막기 · [${K('grab')}] 받기`, '#ffb347'); });
+    m.on('cameoIn', e => { hud.push(e.c.who === 'boss' ? '사장 난입!' : '코치 난입!', { col: '#ffb347', sub: e.c.name, y: 150, life: 1.6, scale: 2 }); A.cheer(.7); });
+    m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
+    m.on('refDistract', () => { fx.word('심판이 한눈판다!', m.ref.x, m.ref.y - 100, '#ffd65a', 1); A.boo(.5); });
   }
   moveEvent(e) {
     const { k, o, a, v, move } = e, A = this.game.audio, fx = this.fx, S = this.game.screen, fin = e.fin;
@@ -146,10 +175,12 @@ export class MatchScene {
   // ---- per frame ----
   update(dt) {
     const g = this.game, inp = g.input, m = this.m;
-    this.t += dt;
+    this.t += dt; this.lastDt = dt;
     if (inp.rawPressed('F3') || inp.rawPressed('Backquote')) this.debug = !this.debug;
     if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
     if (this.paused) { this.pauseInput(); return; }
+    if (this.pre && m.phase === 'intro' && m.introT > (m.cfg.introTime || 3.2) - .15) this.startPreTalk();
+    if (this.talk) { this.talk.update(dt); m.update(dt); this.hud.update(dt, m); this.ar.update(dt, m.hype); this.camera(dt); return; }
     if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
     // human input
     const h = this.human;
@@ -157,6 +188,7 @@ export class MatchScene {
     if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
     m.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
+    for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
     this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
     this.ar.update(dt, m.hype);
     this.hud.update(dt, m);
@@ -231,7 +263,9 @@ export class MatchScene {
   draw(w, u) {
     const m = this.m, cam = Math.round(this.camX);
     this.ar.drawBack(w, cam);
+    this.drawCameos(w, cam);
     this.fr.drawAll(w, m, cam, { dt: 1 / 60 });
+    drawProps(w, m, cam);
     this.ar.drawFront(w, cam);
     this.fx.draw(w, cam);
     const h = this.human;
@@ -242,9 +276,61 @@ export class MatchScene {
     if (this.debug) this.drawDebug(w, cam);
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
+    this.drawBubbles(u, cam);
+    if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
     if (this.paused) this.drawPause(u);
     if (this.resultShown) this.drawResult(u);
+  }
+  startPreTalk() {
+    const P = this.pre, m = this.m, h = this.human, foe = m.fighters.find(f => f.charId === P.opp) || m.fighters.find(f => h && f.isFoe(h));
+    this.pre = null;
+    if (!h || !foe) { m.holdIntro = false; return; }
+    const steps = [...P.lines, { prompt: '어떻게 받아칠까?', choice: P.choices.map(ch => ({ label: ch.label, go: [{ who: P.opp, text: ch.reply, expr: ch.fx === 'taunt' ? 'fierce' : 'neutral' }, { act: () => this.applyPre(ch.fx, h, foe) }] })) }];
+    this.talk = new Dialogue(this.game, steps, { player: { look: h.look, name: h.name }, onEnd: () => { this.talk = null; m.holdIntro = false; m.introT = 99; } });
+    for (const f of m.fighters) f.spot = f === h || f === foe;
+  }
+  // The answer before the bell: a little gauge and a lot of crowd.
+  applyPre(fx, h, foe) {
+    const m = this.m, A = this.game.audio;
+    if (fx === 'taunt') { h.fin = Math.min(B.finMax, h.fin + 15); foe.fin = Math.min(B.finMax, foe.fin + 8); m.addHype(15); A.cheer(1.1); this.hud.toast('도발! 관중 열기 +15 · 피니셔 게이지 +15 (상대도 +8)', '#ffd65a'); }
+    else if (fx === 'respect') { h.fin = Math.min(B.finMax, h.fin + 6); m.addHype(5); A.sfx('clap'); this.hud.toast('관중이 박수를 친다. 피니셔 게이지 +6', '#9be36b'); }
+    else { m.addHype(10); A.cheer(.7); this.hud.toast('기싸움! 관중 열기 +10', '#c9d4ff'); }
+  }
+  // People who run in at the ring side (boss, coach): posed like townspeople, drawn behind the wrestlers.
+  drawCameos(w, cam) {
+    const E = this.m.events, ar = this.m.arena;
+    for (const c of [...this.cameoActors.keys()]) if (!E.cameos.includes(c)) this.cameoActors.delete(c);
+    if (!E.cameos.length) return;
+    if (!this.cbc) { this.cbc = new BodyCanvas(); this.cbc.setLight({ rim: this.m.arenaDef.rim, light: this.m.arenaDef.light }); this.ctmp = new Joints(); }
+    for (const c of E.cameos) {
+      let a = this.cameoActors.get(c);
+      if (!a) { a = new Actor(c.look, { x: c.x, face: c.face, stance: c.stance, y: ar.floorY - FLOOR }); this.cameoActors.set(c, a); }
+      a.x = c.x; a.vx = c.vx; a.face = c.face;
+      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' ? 'arms' : c.stance;
+      if (c.say && c.act !== 'cheer' && c.act !== 'windup') a.talkT = Math.max(a.talkT, .15);
+      a.pose(this.lastDt);
+      const bc = this.cbc, tmp = this.ctmp;
+      tmp.copy(a.joints); for (let i = 0; i < JN; i++) tmp.p[i * 2] -= cam;
+      w.globalAlpha = .35; rect(w, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); w.globalAlpha = 1;
+      bc.begin(tmp.x(0), tmp.y(0) - 4);
+      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
+      bc.finish(); bc.drawTo(w);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 12, -.5 * c.face, c.face, 0);
+    }
+  }
+  drawBubbles(u, cam) {
+    for (const c of this.m.events.cameos) {
+      const a = this.cameoActors.get(c);
+      if (!a) continue;
+      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24;
+      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : '#ff8fc4', outline: '#05060f' });
+      if (!c.say) continue;
+      const tw = textWidth(c.say.text, 11), bw = tw + 12, bx = clamp(Math.round(x - bw / 2), 4, VIEW_W - bw - 4), by = hy - 24;
+      rect(u, '#05060f', bx - 1, by - 1, bw + 2, 18); rect(u, '#f6f2e6', bx, by, bw, 16);
+      rect(u, '#05060f', x - 3, by + 16, 7, 4); rect(u, '#f6f2e6', x - 2, by + 16, 5, 3);
+      drawText(u, c.say.text, bx + 6, by + 2, { size: 11, color: '#141a36' });
+    }
   }
   drawPause(u) {
     fade(u, .55);

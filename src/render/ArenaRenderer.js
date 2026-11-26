@@ -2,7 +2,7 @@
 import { VIEW_W, VIEW_H, RNG, clamp } from '../core/util.js';
 import { rampHex, mixHex, shade } from './palette.js';
 import { drawText } from './pixelfont.js';
-import { canvas, rect, bands, dither, line, ellipse, poly, glow, cone, neon, truss, lamp, poster, brick, planks, windowPane, box } from './painter.js';
+import { canvas, rect, bands, dither, line, ellipse, poly, glow, cone, neon, truss, lamp, poster, brick, planks, windowPane, box, tiles, sofa, plant } from './painter.js';
 
 const W = 900;
 const SKIN = ['#f2c7a4', '#dca27a', '#b97a52', '#8a5a3e', '#5e3b2c'];
@@ -42,11 +42,11 @@ export class ArenaRenderer {
     const id = this.def.id;
     const [far, gf] = canvas(820, VIEW_H), [near, gn] = canvas(W, VIEW_H);
     this.far = far; this.near = near;
-    if (id === 'pier') this.bakePier(gf, gn); else if (id === 'gym') this.bakeGym(gf, gn); else if (id === 'alley') this.bakeAlley(gf, gn); else this.bakeHall(gf, gn, id === 'dome');
+    if (id === 'pier') this.bakePier(gf, gn); else if (id === 'gym') this.bakeGym(gf, gn); else if (id === 'alley') this.bakeAlley(gf, gn); else if (id === 'lobby') this.bakeLobby(gf, gn); else if (id === 'basement') this.bakeBasement(gf, gn); else this.bakeHall(gf, gn, id === 'dome');
     if (this.ar.hasRing) this.bakeRing(gn);
     // crowd seats
     const r = new RNG(9), crowdK = this.def.crowd != null ? this.def.crowd : 1;
-    const rows = id === 'pier' ? [[188, .78, 34, .5], [204, .86, 30, .62]] : id === 'gym' ? [] : id === 'alley' ? [[210, .9, 70, .25]] : [[128, .62, 18, .55], [148, .7, 17, .62], [168, .78, 16, .72], [190, .86, 15, .82], [212, .94, 14, .92]];
+    const rows = id === 'pier' ? [[188, .78, 34, .5], [204, .86, 30, .62]] : id === 'gym' ? [] : id === 'alley' ? [[210, .9, 70, .25]] : id === 'lobby' ? [[214, .94, 48, .45]] : id === 'basement' ? [[176, .8, 20, .26], [198, .88, 18, .32]] : [[128, .62, 18, .55], [148, .7, 17, .62], [168, .78, 16, .72], [190, .86, 15, .82], [212, .94, 14, .92]];
     for (const [y, par, step, light] of rows) for (let x = -20; x < W + 40; x += step * (1 + (1 - crowdK) * 2)) {
       if (r.next() < .12 * (2 - crowdK)) continue;
       this.rows.push({ x: x + r.next() * step * .6, y, par, light, v: (r.next() * this.atlas.n) | 0, ph: r.next() * 6.28, sp: .8 + r.next() * .6, fan: r.next() });
@@ -122,19 +122,48 @@ export class ArenaRenderer {
     const r = new RNG(3);
     for (let i = 0; i < 12; i++) ellipse(n, 'rgba(90,120,200,.18)', r.next() * W, 280 + r.next() * 60, 14 + r.next() * 20, 2);
   }
+  bakeLobby(g, n) {
+    bands(g, 0, 0, 820, 40, ['#0a0d1c', '#0e1226', '#121730']);
+    rect(g, '#2f3a5e', 0, 40, 820, 190); dither(g, 0, 40, 820, 190, '#26304f', .12, 820); rect(g, '#3a4a78', 0, 40, 820, 3);
+    for (let x = 0; x < 820; x += 150) truss(g, x, 14, 150, '#2a3256');
+    windowPane(g, 70, 64, 60, 64, { city: 1, seed: 3 }); windowPane(g, 690, 64, 60, 64, { city: 1, seed: 9 });
+    neon(g, '야항 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
+    [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['비에른', '#8a6a3c']].forEach(([nm, c], i) => poster(g, 300 + i * 46, 86, 36, 50, c, nm.slice(0, 3), { figure: 1, top: i === 0 ? '챔피언' : '' }));
+    rect(g, '#5a3a3a', 0, 176, 820, 54); rect(g, '#6e4848', 0, 176, 820, 2); for (let x = 0; x < 820; x += 40) rect(g, '#4a2e2e', x, 178, 1, 50);
+    tiles(n, 0, 226, W, 134, '#3a3046', '#2e2638', 12);
+    rect(n, '#05060f', 0, 224, W, 3);
+    box(n, 150, 150, 34, 76, '#c2333f'); rect(n, '#120c1e', 154, 156, 20, 40); for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) rect(n, ['#49d6ff', '#ffd65a', '#6be38a'][i], 157 + k * 9, 160 + i * 12, 6, 8); drawText(n, '음료', 167, 204, { size: 11, align: 'c', color: '#ffe6e6' });
+    sofa(n, 420, 226, 92, '#3a6a8c'); plant(n, 530, 226, {}); plant(n, 392, 226, { leaf: '#5aa06a' });
+    rect(n, '#120c1e', 640, 170, 92, 56); rect(n, '#6a4a3a', 642, 172, 88, 54); rect(n, '#8a6a4a', 642, 172, 88, 4); drawText(n, '안내', 686, 186, { size: 11, align: 'c', color: '#ffe9a8' });
+    rect(n, '#120c1e', 40, 134, 70, 92); rect(n, '#2a2440', 42, 136, 66, 88); rect(n, 'rgba(150,200,255,.12)', 44, 138, 62, 84); rect(n, '#4a3a5a', 42, 176, 66, 2);
+  }
+  bakeBasement(g, n) {
+    bands(g, 0, 0, 820, 230, ['#08080c', '#0c0c12', '#101018', '#14141c', '#18181f']);
+    for (let y = 30; y < 230; y += 20) { rect(g, '#1e1e26', 0, y, 820, 1); for (let x = ((y / 20) % 2) * 26; x < 820; x += 52) rect(g, '#1e1e26', x, y, 1, 20); }
+    rect(g, '#05060f', 0, 36, 820, 10); rect(g, '#5a4a3a', 0, 37, 820, 8); rect(g, '#7a6a5a', 0, 37, 820, 2); for (let x = 30; x < 820; x += 110) rect(g, '#3a2e24', x, 35, 6, 12);
+    rect(g, '#05060f', 0, 54, 820, 6); rect(g, '#3a5a6a', 0, 55, 820, 4);
+    drawText(g, '리벤지', 120, 92, { scale: 2, color: '#8a1f2a' }); drawText(g, 'NO RULES', 650, 88, { size: 11, color: '#3a8a4a' }); drawText(g, '야항 지하', 420, 72, { size: 11, color: '#c98a2e' });
+    for (let x = -40; x < 820; x += 8) { line(g, '#2c2c36', x, 150, x + 40, 230); line(g, '#2c2c36', x + 40, 150, x, 230); }
+    rect(g, '#4a4a56', 0, 148, 820, 3);
+    for (const x of [80, 300, 520, 740]) lamp(g, x, 0, '#ffb347', { len: 26 });
+    bands(n, 0, 226, W, 134, ['#1c1c22', '#1e1e24', '#202026', '#222228']);
+    const r = new RNG(17);
+    for (let i = 0; i < 16; i++) ellipse(n, 'rgba(70,24,24,.25)', r.next() * W, 240 + r.next() * 110, 10 + r.next() * 24, 2 + r.next() * 3);
+    for (const x of [40, 830]) box(n, x, 188, 40, 38, '#4a3a2a');
+  }
   bakeRing(g) {
     const a = this.ar, L = a.ropeL, R = a.ropeR, my = a.matY, back = my - 22, front = my + 16;
-    const dome = this.def.id === 'dome', pier = this.def.id === 'pier', gym = this.def.id === 'gym';
-    const matCol = dome ? '#2a3f8c' : gym ? '#7a2f3a' : pier ? '#2a5f86' : '#1f6f7a', M = rampHex(matCol);
+    const dome = this.def.id === 'dome', pier = this.def.id === 'pier', gym = this.def.id === 'gym', base = this.def.id === 'basement';
+    const matCol = dome ? '#2a3f8c' : gym ? '#7a2f3a' : pier ? '#2a5f86' : base ? '#4a2626' : '#1f6f7a', M = rampHex(matCol);
     // shadow under the ring
     ellipse(g, 'rgba(0,0,0,.35)', (L + R) / 2, front + 40, (R - L) / 2 + 40, 8);
     // apron face
-    const skirt = dome ? '#14143a' : '#0e1224';
+    const skirt = dome ? '#14143a' : base ? '#140e0c' : '#0e1224';
     rect(g, '#06070e', L - a.apron - 1, front, R - L + a.apron * 2 + 2, a.floorY - front + 2);
     bands(g, L - a.apron, front + 1, R - L + a.apron * 2, a.floorY - front - 1, [skirt, shade(skirt, .08), skirt, shade(skirt, -.2)]);
     rect(g, dome ? '#ffd65a' : '#ff5fa2', L - a.apron, front + 4, R - L + a.apron * 2, 2);
     rect(g, dome ? '#e0a32e' : '#49d6ff', L - a.apron, a.floorY - 6, R - L + a.apron * 2, 1);
-    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : '야항 레슬링 연맹';
+    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '지하 격투장' : '야항 레슬링 연맹';
     drawText(g, title, (L + R) / 2, front + 12, { scale: 2, align: 'c', color: dome ? '#ffe9a8' : '#eef2ff', bold: true, outline: '#06070e' });
     for (const x of [L + 30, R - 30]) { ellipse(g, dome ? '#e0a32e' : '#49d6ff', x, front + 21, 7, 7); ellipse(g, skirt, x, front + 21, 4, 4); }
     // mat surface (trapezoid)
@@ -187,7 +216,7 @@ export class ArenaRenderer {
     g.drawImage(this.near, Math.round(-camX), 0);
     if (a.hasRing) { this.backRopes(g, camX); this.sideRopes(g, camX, false); }
   }
-  ropeColors() { return this.def.id === 'dome' ? ['#ffd65a', '#f6f1e6', '#e0a32e'] : this.def.id === 'gym' ? ['#e6e9f2', '#c2333f', '#e6e9f2'] : ['#ff5fa2', '#f6f1e6', '#49d6ff']; }
+  ropeColors() { if (this.def.id === 'basement') return ['#c9a25a', '#8a8494', '#c9a25a']; return this.def.id === 'dome' ? ['#ffd65a', '#f6f1e6', '#e0a32e'] : this.def.id === 'gym' ? ['#e6e9f2', '#c2333f', '#e6e9f2'] : ['#ff5fa2', '#f6f1e6', '#49d6ff']; }
   backRopes(g, camX) {
     const a = this.ar, L = a.ropeL + 14 - camX, R = a.ropeR - 14 - camX, back = a.matY - 22, cols = this.ropeColors();
     const wob = a.shake * 2;
@@ -217,7 +246,7 @@ export class ArenaRenderer {
   }
   drawFront(g, camX) { if (this.ar.hasRing) this.sideRopes(g, camX, true); }
   drawScreen(g, camX) {
-    if (this.def.id === 'gym' || this.def.id === 'alley' || this.def.id === 'pier') return;
+    if (this.def.id === 'gym' || this.def.id === 'alley' || this.def.id === 'pier' || this.def.id === 'lobby' || this.def.id === 'basement') return;
     const x = Math.round(410 - camX * .6) - 78, y = 58, w = 156, h = 40;
     rect(g, '#1a1d33', x + 30, 0, 2, y); rect(g, '#1a1d33', x + w - 32, 0, 2, y);
     rect(g, '#06070e', x - 3, y - 3, w + 6, h + 6); rect(g, '#2a3150', x - 2, y - 2, w + 4, h + 4); rect(g, '#05060c', x, y, w, h);
@@ -242,6 +271,11 @@ export class ArenaRenderer {
     } else if (id === 'pier') {
       glow(g, 640 - camX * .6, 46, 60, '#fff0c0', .15);
       for (let x = 0; x < 900; x += 54) glow(g, x - camX * .6, 134, 12, '#ff8fc4', .2);
+    } else if (id === 'lobby') {
+      for (const x of [200, 560]) glow(g, x - camX * .6, 50, 60, '#ffcf7a', .18);
+    } else if (id === 'basement') {
+      for (const x of [80, 300, 520, 740]) glow(g, x - camX * .6, 34, 46, '#ffb347', .28);
+      g.fillStyle = 'rgba(4,3,8,.22)'; g.fillRect(0, 0, VIEW_W, 40); g.fillRect(0, VIEW_H - 30, VIEW_W, 30);
     } else if (id === 'alley') {
       glow(g, 180 - camX * .6, 116, 50, '#ff5fa2', .22); glow(g, 540 - camX * .6, 102, 50, '#49d6ff', .2);
     } else glow(g, 410 - camX * .6, 20, 120, '#ffe0b0', .12);

@@ -3,10 +3,20 @@ export const BALANCE = {
   // movement
   gravity: 980, walk: 104, run: 196, runAfter: .85, doubleTap: .24, accel: 1250, decel: 1500, airAccel: 520, jump: 322, maxFall: 620,
   ropeBoost: 1.42, ropeBoostTime: .75, ropeLean: .22,
+  // tap a direction twice and keep holding: dash (faster than running). K while dashing into a standing foe: the dash move
+  dash: 272, dashSigCost: 15, dashSigCd: 6,
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
-  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82,
+  // moves allowed per down and how long the body stays down after the last one, by the victim's down count:
+  // the first down lets in one move and the victim is back up quickly, so one knockdown cannot decide a match
+  moveChainByDown: [1, 2, 2, 3], moveDownTimes: [1.05, 1.4, 1.7, 1.9],
+  getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  // every wrestler's health is multiplied by this (tuned with tests/sim.mjs so single matches are not over in a minute)
+  hpScale: 1.5,
+  // injury taken from a match is multiplied by this (raised 20% on 2026-11-26; treatment got cheaper and stronger)
+  injuryRate: 1.2,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
   hitstunScale: .94, strikeStun: 1.22,

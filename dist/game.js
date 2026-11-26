@@ -433,6 +433,7 @@ class AudioManager {
       case 'belly': this.tone('sine', 90 * R(), 40, .22, .7); this.burst(.12, .35, 'lowpass', 500, .8); this.tone('triangle', 200, 120, .1, .15); break;
       case 'slash': this.burst(.09, .4, 'bandpass', 2500, 2, 0, this.fx, 900); this.tone('sine', 140, 60, .06, .35); break;
       case 'whip': this.burst(.07, .4, 'bandpass', 3000, 3, 0, this.fx, 1200); this.tone('sine', 120, 60, .05, .3); break;
+      case 'clang': this.burst(.06, .55, 'bandpass', 2600 * R(), 2.2); [[523, .5], [1187, .32], [1939, .22], [3061, .14]].forEach(([f, v], i) => this.tone(i ? 'sine' : 'triangle', f * R(), f * .985, .6 - i * .1, v * .35 * p)); this.tone('sine', 120, 50, .15, .5); break;
       case 'block': this.burst(.05, .4, 'bandpass', 1500, 2); this.tone('square', 380, 300, .05, .1); break;
       case 'parry': this.tone('square', 1320, 1320, .12, .18); this.tone('square', 1760, 1760, .18, .14, .05); this.burst(.05, .3, 'highpass', 4000, .7); break;
       case 'whoosh': this.burst(.18 * pitch, .32, 'bandpass', 500, 1.4, 0, this.fx, 2400); break;
@@ -1392,7 +1393,7 @@ class ControlsOverlay {
     panel(u, 60, 24, 520, 312, { accent: '#49d6ff' });
     drawText(u, this.page ? '조작법 — 탐험' : '조작법 — 경기', 320, 34, { align: 'c', color: '#49d6ff', bold: true });
     const L = this.page ? [
-      [['left', 'right'], '이동'], [['up'], '점프'], [['interact'], 'NPC 대화 · 물건 조사'], [['door'], '문으로 이동'], [['info'], '선수 · 커리어 정보 (부상 게이지)'], [['map'], '지도'], [['pause'], '일시정지 · 저장'],
+      [['left', 'right'], '이동 · 같은 방향 두 번 빠르게: 달리기'], [['up'], '점프'], [['interact'], 'NPC 대화 · 물건 조사 (Enter도 가능)'], [['door'], '문으로 이동'], [['info'], '선수 · 커리어 정보 (부상 게이지)'], [['map'], '지도'], [['pause'], '일시정지 · 저장'],
     ] : [
       [['left', 'right'], '이동 (두 번 누르거나 계속 누르면 달리기)'], [['up'], '점프 · 로프 앞에서 코너 오르기 · 링 밖에서 링으로'], [['down'], '방어 (막 누른 순간 = 패리) · 핀폴 · 태그'], [['atk'], '공격 (연타 3단) · 공중에서 드롭킥 · 쓰러진 상대 짓밟기'],
       [['grab'], '쓰러지거나 비틀거리는 상대 잡기 · 서 있는 상대 밀치기(가드 깨기)'], [['grab'], '잡은 뒤: 방향 + K = 기술 선택, J 무릎치기, L 뒤로 돌기'], [['dodge'], '회피 · 공격 직전에 누르면 반격 던지기'], [['dodge'], '기술에 걸린 순간 L! 표시에 맞춰 누르면 역전'], [['down', 'dodge'], '긴급 탈출 (피니셔 게이지 35 소모, 18초 대기)'], [['fin'], '피니셔 (게이지 가득) · 게이지가 덜 찼으면 도발'],
@@ -2478,6 +2479,10 @@ const LOOKS = {
   gosu: { build: 'lean', scale: 1.02, skin: 'dark', head: { face: 'long', hair: 'flat', hairCol: '#1c1420', glass: 'shades', beard: 'goatee' }, top: { kind: 'vest', c1: '#7c2a8c', c2: '#ffd65a' }, bottom: { kind: 'tights', c1: '#2a1a3c', c2: '#ffd65a', pat: 'side' }, boots: { c1: '#ffd65a', c2: '#7c2a8c', h: .5 }, wrist: { c: '#ffd65a', len: .22 } },
   ironma: { build: 'femPower', scale: 1.05, skin: 'light', head: { face: 'square', hair: 'mohawk', hairCol: '#3fd46b', lashes: 1, paint: 'lines', paintCol: '#3fd46b' }, top: { kind: 'singlet', c1: '#23262f', c2: '#3fd46b' }, bottom: { kind: 'shorts', c1: '#23262f', c2: '#3fd46b', pat: 'side' }, boots: { c1: '#3fd46b', c2: '#23262f', h: .7 }, wrist: { c: '#3fd46b', len: .34 }, knee: '#3fd46b' },
   // ---- townspeople ----
+  galchi: { build: 'athletic', scale: 1.0, skin: 'tan', head: { face: 'jaw', hair: 'slick', hairCol: '#1c1420', glass: 'shades', beard: 'stubble', browTilt: .8 }, top: { kind: 'vest', c1: '#1c1420', c2: '#c9d4ff' }, bottom: { kind: 'pants', c1: '#2a3150', c2: '#c9d4ff', pat: 'side' }, boots: { c1: '#14121c', c2: '#c9d4ff', h: .6 }, wrist: { c: '#c9d4ff', len: .2 }, tattoo: 'chest' },
+  myeolchi: { build: 'slim', scale: .96, skin: 'light', head: { face: 'slim', hair: 'spiky', hairCol: '#9be36b', hat: 'bandana', hatCol: '#3a8a4a', browTilt: .2 }, top: { kind: 'tank', c1: '#9be36b', c2: '#2a4a2a' }, bottom: { kind: 'shorts', c1: '#2a2f4a', c2: '#9be36b', pat: 'side' }, boots: { c1: '#f2efe4', c2: '#9be36b', h: .3 }, wrist: { c: '#9be36b', len: .2 } },
+  merchant: { build: 'stout', scale: .98, skin: 'tan', head: { face: 'round', hair: 'bald', beard: 'full', hat: 'band', hatCol: '#c98a2e', glass: 'round', wrinkle: 1 }, top: { kind: 'coat', c1: '#6a3a8a', c2: '#ffd65a' }, bottom: { kind: 'pants', c1: '#3a2a4a' }, boots: { c1: '#3a2418', c2: '#6a4a3a', h: 0 }, sleeve: { c: '#6a3a8a', len: 1.85 }, coat: { c1: '#6a3a8a', len: .7, open: 1 } },
+  coach: { build: 'stout', scale: 1.0, skin: 'tan', head: { face: 'round', hair: 'slick', hairCol: '#1c1420', glass: 'shades', beard: 'stubble' }, top: { kind: 'track', c1: '#2a2f4a', c2: '#ffd65a' }, bottom: { kind: 'pants', c1: '#2a2f4a', c2: '#ffd65a', pat: 'side' }, boots: { c1: '#1c1420', c2: '#3a3a4a', h: 0 }, sleeve: { c: '#2a2f4a', c2: '#ffd65a', len: 1.85 } },
   boss: { build: 'stout', scale: 1.0, skin: 'tan', head: { face: 'fat', hair: 'buzz', hairCol: '#8a8494', beard: 'handlebar', hat: 'captain', wrinkle: 1, noseRed: 1, browW: 1.8 }, top: { kind: 'suit', c1: '#23396e', c2: '#f2efe4', c3: '#c2333f' }, bottom: { kind: 'pants', c1: '#e6ddc6' }, boots: { c1: '#5a3420', c2: '#8a5a34', h: 0 }, sleeve: { c: '#23396e', len: 1.82 } },
   trainer: { build: 'elder', scale: 1.0, skin: 'tan', head: { face: 'round', hair: 'bun', hairCol: '#c9c6d4', lashes: 0, wrinkle: 1, glass: null }, top: { kind: 'track', c1: '#c2333f', c2: '#f6f2e6' }, bottom: { kind: 'pants', c1: '#c2333f', c2: '#f6f2e6', pat: 'side' }, boots: { c1: '#f6f2e6', c2: '#c2333f', h: 0 }, sleeve: { c: '#c2333f', c2: '#f6f2e6', len: 1.85 } },
   doctor: { build: 'slim', scale: .98, skin: 'light', head: { face: 'slim', hair: 'bob', hairCol: '#4a2f3a', lashes: 1, glass: 'round', eye: '#2a4a3a' }, top: { kind: 'coat', c1: '#eef3fb', c2: '#5fc2b0', c3: null }, bottom: { kind: 'pants', c1: '#3b4668' }, boots: { c1: '#3b2a38', c2: '#6a4a5a', h: 0 }, sleeve: { c: '#eef3fb', len: 1.85 }, coat: { c1: '#eef3fb', len: .62, open: 1 } },
@@ -2643,6 +2648,23 @@ const CHARACTERS = {
     finisher: 'north', taunt: 'taunt', win: 'winFlex', ai: { aggr: .75, air: .2, grab: .75, def: .5, rope: .3, taunt: .2, dirty: .25 }, voice: 1,
     lines: { intro: '밟고 지나간다.', win: '길 비켜.', lose: '편자가 빠졌군.' },
   },
+  // street punches from the docks: they show up in the lobby, not in the league
+  galchi: {
+    name: '갈치', nick: '부둣가 악동단 두목', style: 'brawl', look: LOOKS.galchi, stance: 'street', color: '#c9d4ff', thug: 1,
+    stats: { hp: 90, stun: 94, atk: 1.02, grp: .98, spd: 1.03, jump: .96, rec: .98, down: 1, fin: 1, weight: 84, lift: 1.4, kbr: .98 },
+    chain: ['jab', 'cross', 'hook'], run: 'shoulder', air: 'crossbody', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('bodySlam', 'irishWhip', 'suplex', 'ddt', 'gutBuster'), rear: front('german', 'ringOut', 'atomic', 'bulldog', 'backdropDriver'), catch: 'backBody', counter: 'hipToss' },
+    finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .45, def: .3, rope: .2, taunt: .45, dirty: .9 }, voice: 1.05,
+    lines: { intro: '이 동네는 우리 구역이야!', win: '지갑은 놓고 가라~', lose: '다, 다음엔 진짜 안 봐준다!' },
+  },
+  myeolchi: {
+    name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1,
+    stats: { hp: 76, stun: 84, atk: .9, grp: .9, spd: 1.14, jump: 1.16, rec: 1.02, down: 1.05, fin: 1.05, weight: 62, lift: 1.1, kbr: .9 },
+    chain: ['jab', 'jab', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveKick', ground: 'stomp',
+    moves: { front: front('armDrag', 'irishWhip', 'suplex', 'ddt', 'headDrop'), rear: front('bulldog', 'ringOut', 'german', 'atomic', 'backdropDriver'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'neonspin', taunt: 'tauntDance', win: 'win', ai: { aggr: .65, air: .6, grab: .3, def: .5, rope: .5, taunt: .6, dirty: .7 }, voice: 1.4,
+    lines: { intro: '형님 말이 맞아요! 아마도요!', win: '헤헤, 이겼다! …진짜로?', lose: '형님~ 저 먼저 갑니다~' },
+  },
 };
 for (const id in CHARACTERS) CHARACTERS[id].id = id;
 const ROSTER_IDS = Object.keys(CHARACTERS).filter(i => i !== 'rookie');
@@ -2668,10 +2690,20 @@ const BALANCE = {
   // movement
   gravity: 980, walk: 104, run: 196, runAfter: .85, doubleTap: .24, accel: 1250, decel: 1500, airAccel: 520, jump: 322, maxFall: 620,
   ropeBoost: 1.42, ropeBoostTime: .75, ropeLean: .22,
+  // tap a direction twice and keep holding: dash (faster than running). K while dashing into a standing foe: the dash move
+  dash: 272, dashSigCost: 15, dashSigCd: 6,
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
-  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  downTimes: [2.0, 3.0, 4.0, 5.0, 6.0], moveDownTime: 1.9, moveChainMax: 3, moveChainScale: .82,
+  // moves allowed per down and how long the body stays down after the last one, by the victim's down count:
+  // the first down lets in one move and the victim is back up quickly, so one knockdown cannot decide a match
+  moveChainByDown: [1, 2, 2, 3], moveDownTimes: [1.05, 1.4, 1.7, 1.9],
+  getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
+  // every wrestler's health is multiplied by this (tuned with tests/sim.mjs so single matches are not over in a minute)
+  hpScale: 1.5,
+  // injury taken from a match is multiplied by this (raised 20% on 2026-11-26; treatment got cheaper and stronger)
+  injuryRate: 1.2,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
   hitstunScale: .94, strikeStun: 1.22,
@@ -2798,6 +2830,8 @@ const ARENAS = {
   gym: { id: 'gym', name: '훈련장 링', desc: '땀 냄새 밴 연습용 링', crowd: 0, rim: '#ffcf8a', light: .04, tint: [1.02, 1, .96] },
   pier: { id: 'pier', name: '부두 특설 링', desc: '네온과 파도가 관객인 야외 링', crowd: .7, rim: '#ff5fa2', light: -.02, tint: [.98, 1, 1.05] },
   dome: { id: 'dome', name: '등대 돔', desc: '챔피언십이 열리는 거대한 돔', crowd: 1.3, rim: '#ffd65a', light: .03, tint: [1.03, 1.01, .98] },
+  lobby: { id: 'lobby', name: '체육관 로비', desc: '로비가 그대로 싸움판이 됐다', crowd: .4, rim: '#ffcf8a', light: .02, tint: [1.03, 1, .96], hasRing: false, x0: 60, x1: 840 },
+  basement: { id: 'basement', name: '지하 격투장', desc: '로비 아래, 아는 사람만 아는 링', crowd: .55, rim: '#ff8a2b', light: -.05, tint: [1.06, .96, .9] },
   alley: { id: 'alley', name: '부둣길 뒷골목', desc: '링도 종도 없는 길거리 승부', crowd: .25, rim: '#39e6c0', light: -.06, tint: [.95, 1, 1.05], hasRing: false, x0: 60, x1: 840 },
 };
 
@@ -3193,6 +3227,25 @@ const MOVES = {
     ik: [[0, 2.36, 'N', 'neck'], [.2, 2.36, 'F', 'pelvis']],
     ev: [[.1, 'cry'], [.7, 'lift'], [1.0, 'charge'], [2.12, 'whoosh'], [2.36, 'impact', { p: 2.5, d: 1, word: '쏴아— 쾅!!' }]],
   },
+  // ------------------------------------------------------------------ dash moves: K while dashing into a standing foe
+  cutter: {
+    name: '번개 커터', pos: 'dash', hp: 14, stun: 30, gain: 14, lift: 0, self: .5, sig: 1, desc: '돌진하다 뛰어올라 머리를 감싸 그대로 찍는다. 서 있는 상대에게 건다.',
+    dur: 1.0, rel: .66, vf: -1, vel: [10, -40, -1.4], land: 'prone',
+    A: [[0, 'sp24 hd-10 a120/50 b110/50 t50/70 u-6/60 lift8', 'out'], [.16, 'r-24 sp6 hd-12 a150/70 b142/70 t70/60 u40/60 lift26 ox10', 'out'], [.34, 'r-70 sp-6 hd-6 a120/70 b112/70 t50/40 u30/50 lift12 ox16', 'in'], [.5, 'r-88 sp-8 hd-8 a96/60 b90/60 t30/40 u20/50 ox16', 'in'], [1.0, 'r-88 sp-8 hd-8 a90/60 b84/60 t28/40 u18/50 ox16']],
+    V: [[0, 'sp6 hd0 a24/40 b36/40 t16/18 u-14/18'], [.16, 'sp34 hd34 a50/30 b40/30 t14/20 u-8/20'], [.34, 'sp30 hd30 a120/20 b110/24 t-4/20 u6/30'], [.5, 'sp6 hd-6 a150/20 b140/20 t0/10 u4/8'], [1.0, 'sp4 hd-6 a150/20 b140/20 t0/10 u4/8']],
+    R: [[0, 26, 44, 0], [.16, 28, 42, -24, 'out'], [.34, 32, 22, -70, 'in'], [.5, 36, 'g', -92, 'in'], [1.0, 36, 'g', -90]],
+    ik: [[.1, .5, 'N', 'head'], [.1, .5, 'F', 'neck']],
+    ev: [[0, 'whoosh'], [.12, 'cry'], [.48, 'impact', { p: 1.2, d: 1, word: '번쩍!' }]],
+  },
+  spear: {
+    name: '돌파 태클', pos: 'dash', hp: 15, stun: 26, gain: 14, lift: 0, self: .55, sig: 1, desc: '낮게 돌진해 허리를 들이받고 그대로 눕힌다. 서 있는 상대에게 건다.',
+    dur: 1.0, rel: .62, vf: -1, vel: [70, -60, -.8], land: 'sup',
+    A: [[0, 'sp64 hd-14 a96/30 b100/30 t56/84 u-34/66', 'out'], [.14, 'sp74 hd-16 a84/40 b88/40 t44/70 u-44/50 ox10', 'out'], [.36, 'r40 sp56 hd-12 a74/50 b80/50 t30/50 u12/60 ox26', 'in'], [.6, 'r66 sp34 hd-10 a64/60 b70/60 t40/80 u30/90 ox36'], [1.0, 'r66 sp34 hd-10 a64/60 b70/60 t40/80 u30/90 ox36']],
+    V: [[0, 'sp8 hd0 a36/40 b46/40 t18/20 u-14/20'], [.14, 'sp66 hd34 a84/30 b74/30 t60/40 u40/40'], [.36, 'sp24 hd14 a124/30 b114/30 t70/40 u50/50'], [.6, FLAT], [1.0, FLAT]],
+    R: [[0, 24, 44, 0], [.14, 22, 50, 18, 'out'], [.36, 44, 34, 70, 'in'], [.6, 58, 'g', 92, 'in'], [1.0, 60, 'g', 92]],
+    ik: [[.08, .5, 'N', 'pelvis'], [.08, .5, 'F', 'pelvis']],
+    ev: [[0, 'grunt'], [.14, 'impact', { p: .5, d: .3, word: '퍽!' }], [.6, 'impact', { p: 1.25, d: .7, word: '쾅!' }]],
+  },
 };
 for (const id in MOVES) MOVES[id].id = id;
 
@@ -3465,6 +3518,179 @@ class StateMachine {
 
 return { StateMachine, STATES, REACTIONS };
 })();
+// ---- combat/Props.js
+__m["combat/Props.js"] = (function () {
+// Loose objects in a match: folding chairs. They fly in (tossed by the boss, slid in by a coach, thrown by a
+// wrestler), land, get picked up (K), swung (J: a chair shot knocks the target down at once), thrown (K while
+// holding), dropped when the holder is hit or grabbed, and taken away (K on a foe holding one). A chair bends a
+// little with every blow and breaks after a few. Simulation only: PropRenderer draws them.
+const { clamp, sgn } = __m["core/util.js"];
+const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
+const { J } = __m["anim/skeleton.js"];
+ATTACKS.chairShot = { id: 'chairShot', name: '체어샷', startup: .3, active: .09, recover: .48, reach: 46, low: -12, high: 96, hp: 9, stun: 0, kb: 210, up: 140, hs: .5, stop: .17, lv: 4, chair: 1, ground: 1, wind: 'sp-16 hd-8 a176/20 b170/20 t12/12 u-16/12', hit: 'sp26 hd6 a84/6 b90/6 t32/28 u-26/16', sfx: 'clang' };
+ATTACKS.chairToss = { id: 'chairToss', name: '의자 던지기', startup: .16, active: .02, recover: .3, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp-12 hd-4 a170/30 b160/30 t10/10 u-14/10', hit: 'sp18 hd4 a100/10 b96/10 t26/20 u-20/12' };
+ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .12, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
+
+const CHAIR = { uses: 3, pickR: 32, catchR: 44, throwV: 340, half: 12 };
+// States in which a wrestler keeps hold of a chair; any other state drops it.
+const KEEP = new Set(['IDLE', 'MOVE', 'ATTACK', 'GUARD', 'JUMP', 'FALL', 'TAUNT', 'ROPE', 'WIN', 'INTRO', 'ENTER_RING', 'EXIT_RING', 'APRON']);
+const keepsProp = st => KEEP.has(st);
+
+class PropSystem {
+  constructor(m) { this.m = m; this.list = []; this.n = 0; }
+  get any() { return this.list.length > 0; }
+  // x, y: centre of the chair. o.state 'floor' puts it on the ground, 'fly' throws it with o.vx/o.vy.
+  spawn(x, y, o = {}) {
+    const ar = this.m.arena;
+    const p = Object.assign({ id: ++this.n, kind: 'chair', x, y, vx: 0, vy: 0, rot: 0, spin: 0, side: 'in', state: 'floor', holder: null, uses: CHAIR.uses, by: null, aim: null, hit: new Set(), t: 0, gone: false, bounces: 0, dent: 0 }, o);
+    if (p.state === 'fly' && !p.spin) p.spin = sgn(p.vx || 1) * 8;
+    if (p.state === 'floor') this.rest(p, ar);
+    this.list.push(p);
+    this.m.emit('propSpawn', { p });
+    return p;
+  }
+  rest(p, ar) { p.state = 'floor'; p.vx = p.vy = p.spin = 0; p.rot = (p.rot % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) < Math.PI ? Math.PI / 2 : -Math.PI / 2; p.y = ar.ground(p.x, p.y, p.side) - 10; p.by = null; p.aim = null; p.hit.clear(); }
+  update(dt) {
+    const m = this.m, ar = m.arena;
+    for (const p of this.list) {
+      p.t += dt;
+      if (p.state === 'held') { if (!p.holder || !p.holder.alive || p.holder.prop !== p) this.release(p, 0, -60); continue; }
+      if (p.state !== 'fly') continue;
+      p.vy = Math.min(B.maxFall, p.vy + B.gravity * dt); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.spin * dt;
+      if (ar.hasRing) { // in or out of the ring, as a body would be
+        if (p.side === 'out' && p.x > ar.ropeL + 2 && p.x < ar.ropeR - 2 && p.y < ar.matY - 4) p.side = 'in';
+        else if (p.side === 'in' && (p.x < ar.ropeL - 6 || p.x > ar.ropeR + 6)) p.side = 'out';
+      }
+      if (p.x < ar.x0 + 12 || p.x > ar.x1 - 12) { p.x = clamp(p.x, ar.x0 + 12, ar.x1 - 12); p.vx *= -.3; }
+      if (p.by || p.aim) this.hits(p);
+      const g = ar.ground(p.x, p.y + 10, p.side) - 10;
+      if (p.y >= g && p.vy > 0) {
+        p.y = g;
+        if (p.vy > 200 && p.bounces < 2) { p.vy *= -.3; p.vx *= .45; p.spin *= -.5; p.bounces++; p.by = null; p.aim = null; m.emit('propLand', { p, hard: true }); }
+        else { this.rest(p, ar); m.emit('propLand', { p }); }
+      }
+    }
+    if (this.list.some(p => p.gone)) this.list = this.list.filter(p => !p.gone);
+  }
+  // Held chairs ride on the hands; called after the bodies are posed.
+  follow() {
+    for (const p of this.list) {
+      if (p.state !== 'held' || !p.holder) continue;
+      const f = p.holder, jt = f.joints;
+      const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
+      const a = Math.atan2(hy - sy, hx - sx);
+      p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; p.face = f.face; p.side = f.side;
+    }
+  }
+  // Thrown chairs hit whoever they meet: guard blocks, a dodge passes through, otherwise down at once.
+  hits(p) {
+    const m = this.m;
+    for (const v of m.fighters) {
+      if (!v.alive || v === p.by || p.hit.has(v) || v.link || v.st === 'TAGWAIT') continue;
+      if (p.by && !p.by.isFoe(v)) continue;
+      const b = m.combat.hurtbox(v);
+      if (p.x + CHAIR.half < b.x0 || p.x - CHAIR.half > b.x1 || p.y + CHAIR.half < b.y0 || p.y - CHAIR.half > b.y1) continue;
+      p.hit.add(v);
+      if (this.impact(p, v)) return;
+    }
+  }
+  impact(p, v) {
+    const m = this.m, dir = sgn(p.vx) || sgn(v.x - p.x) || 1;
+    if (v.inv > 0 || (v.st === 'DODGE' && v.invDodge)) { m.emit('dodge', { f: v, a: p.by || v }); return false; }
+    if (v.st === 'GUARD' && v.face === -dir) {
+      v.stun -= v.maxStun * .35; v.regenDelay = B.stunRegenDelay;
+      p.vx = -p.vx * .25; p.vy = -170; p.spin = -p.spin; p.by = null; p.aim = null; p.dent = Math.min(3, p.dent + 1);
+      m.hitstop(.1); m.emit('chairHit', { a: null, v, p, guarded: true, thrown: true, x: p.x, y: p.y });
+      if (v.stun <= 0) { v.stun = v.maxStun * .25; m.combat.stagger(v, B.guardBreakStagger, null); m.emit('guardBreak', { a: v, v }); }
+      return true;
+    }
+    if (!(v.fsm.is('IDLE', 'MOVE', 'ATTACK', 'TAUNT', 'JUMP', 'FALL', 'AIR_ATTACK', 'STAGGER', 'HITSTUN', 'ROPE', 'WHIPPED', 'GET_UP', 'PERCH', 'CLIMB', 'APRON') || v.st === 'GUARD')) return false;
+    m.combat.damage(v, 6, 0, p.by, { def: ATTACKS.chairShot });
+    p.vx *= -.25; p.vy = -160; p.spin = -p.spin; p.dent = Math.min(3, p.dent + 1); p.uses--;
+    const by = p.by; p.by = null; p.aim = null;
+    m.addHype(10); m.hitstop(.15);
+    m.emit('chairHit', { a: by, v, p, thrown: true, x: p.x, y: p.y });
+    if (v.alive && v.st !== 'KO') m.stun.breakStun(v, by, dir * 150 / v.stats.kbr, -150, dir);
+    if (p.uses <= 0) this.breakProp(p);
+    return true;
+  }
+  // ---- what is near a wrestler ----
+  loose(f, r = CHAIR.pickR) {
+    let best = null, bd = r;
+    for (const p of this.list) { if (p.state !== 'floor' || p.side !== f.side) continue; const d = Math.abs(p.x - f.x); if (d < bd && Math.abs((p.y + 10) - f.y) < 26) { bd = d; best = p; } }
+    return best;
+  }
+  incoming(f) {
+    for (const p of this.list) {
+      if (p.state !== 'fly' || p.by === f || p.vy < -40 && p.aim !== f) continue;
+      const dx = p.x - f.x, dy = p.y - (f.y - f.h * .55);
+      if (Math.abs(dx) < CHAIR.catchR && Math.abs(dy) < 44 && (p.aim === f || sgn(-dx) === sgn(p.vx) || Math.abs(dx) < 16)) return p;
+    }
+    return null;
+  }
+  threat(f) { return this.list.find(p => p.state === 'fly' && p.aim === f) || null; }
+  // ---- actions ----
+  attach(p, f) {
+    if (f.prop && f.prop !== p) this.release(f.prop, -f.face * 40, -80);
+    if (p.holder && p.holder !== f) p.holder.prop = null;
+    p.state = 'held'; p.holder = f; f.prop = p; p.by = null; p.aim = null; p.side = f.side; p.hit.clear();
+  }
+  release(p, vx = 0, vy = -60) {
+    const f = p.holder;
+    if (f && f.prop === p) f.prop = null;
+    p.holder = null; p.state = 'fly'; p.vx = vx; p.vy = vy; p.spin = (sgn(vx) || 1) * 5; p.by = null; p.aim = null; p.bounces = 1;
+  }
+  pick(f, p) {
+    this.attach(p, f);
+    f.vx = 0; f.face = sgn(p.x - f.x) || f.face;
+    if (!f.set('ATTACK')) return true;
+    f.atk = { def: ATTACKS.chairPick, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
+    this.m.emit('propPick', { f, p });
+    return true;
+  }
+  catchProp(f, p) {
+    this.attach(p, f);
+    f.vx = -sgn(p.vx || f.face) * 40;
+    this.m.addHype(8);
+    this.m.emit('propCatch', { f, p });
+    return true;
+  }
+  toss(f) {
+    const p = f.prop;
+    if (!p) return false;
+    if (!f.set('ATTACK')) return false;
+    f.atk = { def: ATTACKS.chairToss, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
+    f.prop = null; p.holder = null; p.state = 'fly'; p.x = f.x + f.face * 16; p.y = f.y - f.h * .72;
+    p.vx = f.face * CHAIR.throwV; p.vy = -150; p.spin = f.face * 11; p.by = f; p.aim = null; p.bounces = 0; p.hit.clear();
+    this.m.emit('propThrow', { f, p });
+    return true;
+  }
+  steal(f, v) {
+    const p = v.prop;
+    if (!p || (v.st === 'ATTACK' && v.atk && v.atk.def.chair && v.atk.t > v.atk.def.startup * .5)) return false;
+    this.attach(p, f);
+    f.face = sgn(v.x - f.x) || f.face;
+    this.m.combat.stagger(v, .55, f); v.vx = f.face * 90;
+    this.m.addHype(6);
+    this.m.emit('propSteal', { f, v, p });
+    return true;
+  }
+  drop(f, why, dir) {
+    const p = f.prop;
+    if (!p) return;
+    this.release(p, (dir != null ? dir : -f.face) * (why === 'parry' ? 150 : 60), why === 'parry' ? -220 : -90);
+    p.x = f.x + f.face * 10; p.y = f.y - f.h * .6;
+    this.m.emit('propDrop', { f, p, why });
+  }
+  breakProp(p) {
+    if (p.holder && p.holder.prop === p) p.holder.prop = null;
+    p.gone = true; p.holder = null;
+    this.m.emit('chairBreak', { p, x: p.x, y: p.y });
+  }
+}
+
+return { PropSystem, CHAIR, keepsProp };
+})();
 // ---- combat/CharacterController.js
 __m["combat/CharacterController.js"] = (function () {
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
@@ -3475,6 +3701,7 @@ const { FINISHERS } = __m["data/moves.js"];
 const { dimsFor, Joints } = __m["anim/skeleton.js"];
 const { Ragdoll } = __m["anim/ragdoll.js"];
 const { StateMachine, STATES } = __m["combat/StateMachine.js"];
+const { keepsProp } = __m["combat/Props.js"];
 function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
 
@@ -3484,7 +3711,7 @@ class Fighter {
     this.name = o.name || char.name; this.look = o.look || char.look; this.ctrl = o.ctrl || 'ai'; this.difficulty = o.difficulty || 'normal';
     this.dims = dimsFor(this.look.build, this.look.scale || 1);
     const s = this.stats = Object.assign({}, char.stats, o.stats || {});
-    this.maxHp = s.hp; this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
+    this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
     this.moves = o.moves || char.moves; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
@@ -3496,7 +3723,7 @@ class Fighter {
     this.inv = 0; this.grabImm = 0; this.dodgeCd = 0; this.counterCd = 0; this.burstCd = 0; this.regenDelay = 0; this.flash = 0; this.hitShake = 0; this.landT = 0; this.boost = 0; this.staleList = []; this.moveStale = {};
     this.combo = { n: 0, t: 0, dmg: 0 }; this.chainN = 0; this.chainT = 0; this.holdT = 0; this.running = false; this.lastTap = { dir: 0, t: -9 }; this.prevMx = 0; this.guardT = 0; this.whip = null; this.expr = 'neutral'; this.exprT = 0; this.mash = 0; this.escape = 0; this.protect = 0;
     this.outCount = 0; this.eliminated = false; this.tagged = true; this.partner = null; this.legal = true; this.ai = null; this.tails = null; this.sweat = 0; this.touchRope = null; this.gettingUp = null; this.pinTries = 0; this.tagRecover = 0; this.kills = 0; this.perfects = 0;
-    this.cpuTime = 0;
+    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0;
   }
   get st() { return this.fsm.cur; }
   get t() { return this.fsm.t; }
@@ -3517,6 +3744,7 @@ class Fighter {
     if (to !== 'HITSTUN' && to !== 'DOWN' && to !== 'KO' && to !== 'OUT' && to !== 'PINNED') this.dropRag();
     if (to === 'IDLE' || to === 'MOVE') this.whip = null;
     if (to !== 'GUARD') this.guardT = 0;
+    if (this.prop && !keepsProp(to)) this.match.props.drop(this, to);
     this.match.emit('state', { f: this, from, to });
   }
   dropRag() { if (this.rag) { this.match.anim.freezeBlend(this, .16); this.rag = null; } }
@@ -3533,11 +3761,12 @@ class Fighter {
     for (const k of BUF_KEYS) { if (I[k]) this.buf[k] = B.inputBuffer; else if (this.buf[k] > 0) this.buf[k] -= dt; }
     const m = Math.abs(I.mx) > .3 ? sgn(I.mx) : 0;
     if (m !== 0 && m !== this.prevMx) {
-      if (this.lastTap.dir === m && this.match.time - this.lastTap.t < B.doubleTap) this.running = true;
+      if (this.lastTap.dir === m && this.match.time - this.lastTap.t < B.doubleTap) { this.running = true; if (!this.dash && this.ground) { this.dash = true; this.match.emit('dashStart', { f: this }); } }
       this.lastTap = { dir: m, t: this.match.time };
       this.holdT = 0;
     }
-    if (m === 0) { this.holdT = 0; if (this.prevMx !== 0) this.runStop = this.match.time; if (this.match.time - (this.runStop || 0) > .1) this.running = false; } else { this.holdT += dt; if (this.holdT > B.runAfter) this.running = true; if (m !== this.prevMx && this.prevMx !== 0) this.running = false; }
+    if (m === 0) { this.holdT = 0; if (this.prevMx !== 0) this.runStop = this.match.time; if (this.match.time - (this.runStop || 0) > .1) { this.running = false; this.dash = false; } } else { this.holdT += dt; if (this.holdT > B.runAfter) this.running = true; if (m !== this.prevMx && this.prevMx !== 0) { this.running = false; this.dash = false; } }
+    if (this.dash && !this.fsm.is('IDLE', 'MOVE', 'ATTACK', 'JUMP', 'FALL', 'AIR_ATTACK', 'ROPE')) this.dash = false;
     this.prevMx = m;
   }
   has(k) { return this.buf[k] > 0; }
@@ -3563,7 +3792,7 @@ class Fighter {
   // ---- per frame ----
   tick(dt) {
     this.fsm.t += dt; this.clipT += dt; this.poseT += dt;
-    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
     if (this.chainT > 0) { this.chainT -= dt; if (this.chainT <= 0) this.chainN = 0; }
     if (this.standing) { this.freeT = (this.freeT || 0) + dt; if (this.freeT > 1.6) this.grabCount = 0; } else this.freeT = 0;
     if (this.combo.t > 0) { this.combo.t -= dt; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -3578,7 +3807,7 @@ class Fighter {
 // ---- shared pieces -------------------------------------------------------------------------------------
 function groundMove(f, I, dt, scale = 1) {
   const run = f.running && Math.abs(I.mx) > .3;
-  const spd = (run ? B.run : B.walk) * f.stats.spd * scale * (f.boost > 0 ? B.ropeBoost : 1) * (f.exhausted ? .9 : 1);
+  const spd = (run ? (f.dash ? B.dash : B.run) : B.walk) * f.stats.spd * scale * (f.boost > 0 ? B.ropeBoost : 1) * (f.exhausted ? .9 : 1);
   const want = Math.abs(I.mx) > .3 ? sgn(I.mx) * spd : 0;
   f.vx = approach(f.vx, want, (want ? B.accel : B.decel) * dt);
   if (want && scale > 0) f.face = sgn(want);
@@ -3595,13 +3824,19 @@ function startAttack(f, def, o = {}) {
 }
 function chooseAttack(f, I) {
   const dirHeld = Math.abs(I.mx) > .3;
+  // a chair in the hands: every J is a chair shot (on a standing or a downed foe)
+  if (f.prop) {
+    if (dirHeld) f.face = sgn(I.mx); else { const n = f.nearestFoe(90, o => o.side === f.side); if (n && Math.abs(n.x - f.x) > 4) f.face = sgn(n.x - f.x); }
+    if (startAttack(f, ATTACKS.chairShot)) f.vx = dirHeld ? f.face * 70 : f.vx * .3;
+    return;
+  }
   // a downed foe in reach and nobody standing closer: ground attack
   const downed = f.nearestFoe(54, o => (o.st === 'DOWN' || o.st === 'PINNED') && o.side === f.side && Math.abs(o.y - f.y) < 30);
   const standing = f.nearestFoe(62, o => o.st !== 'DOWN' && o.st !== 'PINNED');
   if (dirHeld) f.face = sgn(I.mx);
   else if (standing && Math.abs(standing.x - f.x) < 62) f.face = sgn(standing.x - f.x) || f.face;
   else if (downed) f.face = sgn(downed.x - f.x) || f.face;
-  if ((f.running || f.boost > 0) && Math.abs(f.vx) > 110 && sgn(f.vx) === f.face) { const d = ATTACKS[f.char.run]; f.vx = f.face * Math.max(Math.abs(f.vx), B.run * f.stats.spd) * (f.boost > 0 ? 1.1 : 1); if (startAttack(f, d)) { if (d.hop) { f.vy = -d.hop; f.ground = false; } } return; }
+  if ((f.running || f.boost > 0) && Math.abs(f.vx) > 110 && sgn(f.vx) === f.face) { const d = ATTACKS[f.char.run]; f.vx = f.face * Math.max(Math.abs(f.vx), B.run * f.stats.spd) * (f.boost > 0 ? 1.1 : 1); if (startAttack(f, d)) { if (f.dash) f.atk.boost = Math.max(f.atk.boost, 1.15); if (d.hop) { f.vy = -d.hop; f.ground = false; } } return; }
   if (downed && !(standing && Math.abs(standing.x - f.x) < Math.abs(downed.x - f.x) + 8)) { startAttack(f, ATTACKS[f.char.ground || 'stomp']); f.vx = clamp((downed.x - f.x) * 2.4, -90, 90); return; }
   const n = f.chainT > 0 ? f.chainN : 0;
   const def = ATTACKS[f.chain[Math.min(n, f.chain.length - 1)]];
@@ -3795,13 +4030,19 @@ const CONTROL = {
     f.x = f.x + (tx - f.x) * Math.min(1, dt * 9); f.y = ar.matY - (ar.ropeH + 3) * k; f.vx = f.vy = 0; f.ground = true;
     if (f.t >= .44) { f.face = -d; f.x = tx; f.set('PERCH'); }
   },
+  // On the turnbuckle: A/D turns, J dives the way you face. Facing out means over the top rope to the floor.
   PERCH(f, I, dt) {
-    const ar = f.arena;
+    const ar = f.arena, m = f.match, out = f.climbDir || (f.x < ar.mid ? -1 : 1);
     f.vx = f.vy = 0; f.y = ar.matY - ar.ropeH - 3; f.ground = true;
+    if (Math.abs(I.mx) > .3 && sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.emit('perchTurn', { f, out: f.face === out }); }
     if (f.t < .12) return;
-    if (f.consume('atk')) { dive(f, I); return; }
-    if (f.consume('jump')) { f.vy = -B.jump * .8; f.vx = f.face * 120; f.ground = false; f.set('JUMP'); f.match.emit('jump', { f }); return; }
-    if (I.down || f.t > B.perchTime || f.consume('grab') || f.consume('dodge')) { f.vy = -60; f.vx = f.face * 60; f.ground = false; f.set('FALL', { force: true }); }
+    if (f.consume('atk')) {
+      if (f.face !== out) { dive(f, I); return; }
+      if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
+      diveOut(f, I, out); return;
+    }
+    if (f.consume('jump')) { f.face = -out; f.vy = -B.jump * .8; f.vx = -out * 120; f.ground = false; f.set('JUMP'); m.emit('jump', { f }); return; }
+    if (I.down || f.t > B.perchTime || f.consume('grab') || f.consume('dodge')) { f.face = -out; f.vy = -60; f.vx = -out * 60; f.ground = false; f.set('FALL', { force: true }); }
   },
   HANG(f, I, dt) {
     const ar = f.arena, left = f.x < ar.mid;
@@ -3893,6 +4134,19 @@ function dive(f, I) {
   const T = .69;
   f.vy = -250; f.vx = f.face * clamp(dx / T * (Math.abs(I.mx) > .3 ? 1.12 : 1), 70, 330); f.ground = false;
   if (startAttack(f, d)) f.match.emit('dive', { f });
+}
+// Dive from the corner over the top rope onto the floor outside. The flight is longer (the floor is lower than
+// the mat) and must clear the apron; `vault` lets the body pass the ropes, physics flips it to the outside.
+function diveOut(f, I, out) {
+  const ar = f.arena, m = f.match, d = ATTACKS[f.char.dive];
+  const edge = out < 0 ? ar.ropeL - ar.apron - 16 : ar.ropeR + ar.apron + 16;
+  const n = f.nearestFoe(380, o => o.side === 'out' && sgn(o.x - f.x) === out && Math.abs(o.x - f.x) > 30);
+  const tx = n ? n.x : edge + out * 60;
+  const dx = Math.max(Math.abs(tx - f.x), Math.abs(edge - f.x) + 8);
+  const T = .82;
+  f.vault = true;
+  f.vy = -270; f.vx = out * clamp(dx / T * (Math.abs(I.mx) > .3 && sgn(I.mx) === out ? 1.1 : 1), 90, 340); f.ground = false;
+  if (startAttack(f, d)) { m.addHype(6); m.emit('dive', { f, out: true }); }
 }
 function landAttack(f, a) {
   const d = a.def, ok = a.connected;
@@ -4042,7 +4296,7 @@ class CombatSystem {
     const a = f.atk;
     if (!a) return null;
     const d = a.def, s = f.look.scale || 1, k = f.dims.reach / 35;
-    if (a.t < d.startup || a.t > d.startup + d.active) return null;
+    if (d.nohit || a.t < d.startup || a.t > d.startup + d.active) return null;
     const reach = d.reach * (.4 + .6 * k), front = f.x + f.face * reach, back = f.x - f.face * (d.air ? 12 : 4);
     return { x0: Math.min(front, back), x1: Math.max(front, back), y0: f.y - d.high * s, y1: f.y - d.low * s };
   }
@@ -4080,6 +4334,7 @@ class CombatSystem {
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
     }
+    if (d.chair) return this.chairHit(a, v, d, dir, facing, hx, hy);
     const boost = a.atk ? a.atk.boost : 1;
     if (v.st === 'FINISHER' && v.finPhase && v.finPhase.stage === 'stance' && facing && !d.air && a.ground) { m.finisher.connect(v, a, v.finPhase.F, false); return 'stance'; }
     if (d.shove && v.st === 'GUARD') {
@@ -4139,6 +4394,39 @@ class CombatSystem {
     if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .14; v.flash = .1; if (d.quake || d.dive) { v.vx = 0; } m.anim.kickBody(v, dir); return 'hit'; }
     if (v.stun <= 0) { m.stun.breakStun(v, a, dir * Math.max(120, d.kb * 1.05) / v.stats.kbr, -Math.max(130, d.up || 0), dir); return 'hit'; }
     this.react(a, v, d, dir, counterHit);
+    return 'hit';
+  }
+  // A swung chair: a perfect guard knocks it out of the hands, a guard eats a lot of stun, anything else is down at once.
+  chairHit(a, v, d, dir, facing, hx, hy) {
+    const m = this.m, P = a.prop;
+    a.atk.connected = true;
+    if (P) { P.uses--; P.dent = Math.min(3, P.dent + 1); }
+    if (v.st === 'GUARD' && facing && v.guardT <= B.perfectGuard) {
+      m.props.drop(a, 'parry', -dir); this.stagger(a, .7, v); this.addFin(v, B.finPerfect); v.perfects++;
+      m.hitstop(.12); m.emit('parry', { a, v, x: hx, y: hy }); m.emit('chairParry', { a, v });
+      if (P && P.uses <= 0) m.props.breakProp(P);
+      return 'parry';
+    }
+    if (v.st === 'GUARD' && facing) {
+      v.stun -= v.maxStun * .5; v.regenDelay = B.stunRegenDelay; this.damage(v, 2, 0, a, { chip: true });
+      m.hitstop(.12); m.emit('chairHit', { a, v, p: P, guarded: true, x: hx, y: hy });
+      if (v.stun <= 0) { v.stun = v.maxStun * .25; this.stagger(v, B.guardBreakStagger, a); m.emit('guardBreak', { a, v }); } else { v.vx = dir * 160; m.anim.kick(v, 'guardHit', .25); }
+      if (P && P.uses <= 0) m.props.breakProp(P);
+      return 'block';
+    }
+    const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
+    a.hitsLanded++;
+    this.damage(v, hp, 0, a, { def: d });
+    this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
+    m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
+    m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
+    if (P && P.uses <= 0) m.props.breakProp(P);
+    if (v.st === 'KO' || !v.alive) return 'ko';
+    if (v.link && v.link.kind !== 'move') m.grapple.breakLink(v.link, 'hit');
+    if (v.link && v.link.kind === 'move' && v.link.a === v && !v.link.committed) m.wrestle.cancel(v.link, 'hit');
+    if (v.st === 'PIN') m.breakPin('hit');
+    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .6); m.anim.kickBody(v, dir); return 'hit'; }
+    m.stun.breakStun(v, a, dir * 150 / v.stats.kbr, -150, dir);
     return 'hit';
   }
   react(a, v, d, dir, counterHit) {
@@ -4241,6 +4529,7 @@ const { clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES, HOLDS } = __m["data/moves.js"];
 const { startAttack, tryBurst } = __m["combat/CharacterController.js"];
+const { CHAIR } = __m["combat/Props.js"];
 ATTACKS.shove = { id: 'shove', name: '밀치기', startup: .14, active: .07, recover: .32, reach: 42, low: 30, high: 80, hp: .6, stun: 7, kb: 190, hs: .34, stop: .05, lv: 2, shove: 1, unblock: 1, clip: 'shove', hand: 'open', sfx: 'grip', noCounter: 0 };
 
 class GrappleSystem {
@@ -4255,15 +4544,37 @@ class GrappleSystem {
     }
     return best;
   }
+  // K: throw the chair you hold, catch one flying at you, grab, pick a chair up, take one off a foe, or shove.
   tryGrab(f, I) {
-    const m = this.m;
+    const m = this.m, P = m.props;
+    if (f.prop) { if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
+    const inc = P.incoming(f);
+    if (inc) return P.catchProp(f, inc);
+    // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
+    const dv = this.dashTarget(f);
+    if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);
     if (run && f.ground) { f.face = sgn(run.x - f.x) || f.face; return m.wrestle.start(f, run, f.moves.catch || 'backBody', { noReverse: true }); }
     const v = this.grabTarget(f);
     if (v) return this.beginHold(f, v);
+    const c = P.loose(f, CHAIR.pickR);
+    if (c) return P.pick(f, c);
+    const holder = f.nearestFoe(52, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'ATTACK'));
+    if (holder && P.steal(f, holder)) return true;
     if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(80);
     return startAttack(f, ATTACKS.shove);
+  }
+  dashMove(f) { return f.char.dashSig || (f.stats.weight >= 105 ? 'spear' : 'cutter'); }
+  dashTarget(f) {
+    if (!f.dash || !f.ground || Math.abs(f.vx) < 150) return null;
+    return f.nearestFoe(60, o => o.side === f.side && sgn(o.x - f.x) === f.face && !o.link && o.inv <= 0 && Math.abs(o.y - f.y) < 20 && o.ground && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK', 'TAUNT', 'STAGGER', 'WHIPPED', 'ROPE'));
+  }
+  dashCheck(f) {
+    const id = this.dashMove(f);
+    if (f.sigCd > 0) return { ok: false, id, why: `${Math.ceil(f.sigCd)}초 뒤에 다시` };
+    if (f.fin < B.dashSigCost) return { ok: false, id, why: `게이지 ${B.dashSigCost} 필요` };
+    return { ok: true, id, why: '' };
   }
   beginHold(f, v, pos) {
     const m = this.m;
@@ -4505,6 +4816,9 @@ const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { STATES } = __m["combat/StateMachine.js"];
 const { moveExtent, yawAt, compileMove } = __m["anim/paired.js"];
+// How many moves this down may carry (see BALANCE.moveChainByDown) and its index for the other per-down tables.
+function chainAllow(v) { const i = Math.max(0, Math.min(v.downs || 1, B.moveChainByDown.length) - 1); return { i, n: Math.min(B.moveChainMax, B.moveChainByDown[i]) }; }
+
 class WrestlingMoveSystem {
   constructor(match) { this.m = match; }
   startFromHold(L, id) {
@@ -4700,9 +5014,9 @@ class WrestlingMoveSystem {
       else {
         // one down can carry a short chain of moves; after the last one the body is left alone until it stands
         v.postMove = true; v.moveChain = (v.moveChain || 0) + 1;
-        const more = !L.fin && v.moveChain < B.moveChainMax;
+        const ca = chainAllow(v), more = !L.fin && v.moveChain < ca.n;
         v.grabImm = more ? .45 : 60;
-        v.downTime = B.moveDownTime * (1 + .07 * Math.max(0, v.downs - 1)) * (L.fin ? 1.6 : 1);
+        v.downTime = (B.moveDownTimes[ca.i] || B.moveDownTime) * (L.fin ? 1.6 : 1);
         if (L.fin) v.downs++;
       }
       v.set('DOWN', { force: true });
@@ -4728,7 +5042,7 @@ class WrestlingMoveSystem {
   }
 }
 
-return { WrestlingMoveSystem };
+return { chainAllow, WrestlingMoveSystem };
 })();
 // ---- combat/FinisherSystem.js
 __m["combat/FinisherSystem.js"] = (function () {
@@ -4934,6 +5248,7 @@ class AnimationSystem {
         const v = Math.abs(f.vx), run = v > 150;
         f.gait += dt * (run ? 6.2 + v * .031 : 2.6 + v * .071) * (f.vx * f.face >= 0 ? 1 : -1) / Math.sqrt(f.dims.leg / 43);
         gaitPose(p, f.gait, run ? 'run' : 'walk', clamp01(v / 60));
+        if (f.dash && v > 200) { p[1] += 14; p[2] -= 6; p[3] = Math.min(p[3], 30); p[5] = Math.max(p[5], 40); }   // dash: lean in, arms back
         break;
       }
       case 'JUMP': C('jump', f.t); break;
@@ -4994,6 +5309,11 @@ class AnimationSystem {
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
       case 'WIN': C(f.char.win || 'win', f.t); break;
       default: this.stance(f, p);
+    }
+    // carrying a chair: arms forward at chest height, or held high for a taunt or a win
+    if (f.prop && f.st !== 'ATTACK') {
+      if (f.st === 'TAUNT' || f.st === 'WIN') { p[3] = 170; p[4] = 20; p[5] = 164; p[6] = 22; }
+      else { const s = Math.sin(f.poseT * 3) * 3; p[3] = 64 + s; p[4] = 62; p[5] = 72 + s; p[6] = 56; }
     }
     if (f.overlay) { f.overlay.t += dt; if (f.overlay.t > f.overlay.dur) f.overlay = null; }
     const jt = f.joints;
@@ -5219,6 +5539,12 @@ class AIController {
     const dist = Math.abs(t.x - f.x), ar = m.arena;
     const tDown = t.st === 'DOWN' && !t.rag, tGrab = t.grabbable && t.side === f.side;
     const hpK = f.hp / f.maxHp, stK = f.stun / f.maxStun;
+    // chairs: swing the one in hand; otherwise fetch a loose one or take it off the foe
+    if (f.prop && f.side === t.side) { if (!this.goal || this.goal.name !== 'chairSwing' || this.goal.data !== t) { this.goal = { name: 'chairSwing', data: t, t: 0 }; this.goalT = 0; } this.note = '체어샷'; return; }
+    const loose = m.props.any && !f.prop ? m.props.loose(f, 260) : null;
+    if (loose && !t.prop) { const mine = Math.abs(loose.x - f.x) < Math.abs(loose.x - t.x) + 40; add('chair', (mine ? 4.5 : 1.2) * (.6 + (tr.dirty || .3)) * D.pick, loose); }
+    if (t.prop && dist < 170 && t.side === f.side) add('steal', 3 * D.pick, t);
+    if (!f.prop && !tDown && t.side === f.side && dist > 90 && dist < 260 && f.fin >= B.dashSigCost && f.sigCd <= 0 && t.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'STAGGER')) add('dashSig', 2.2 * D.pick * (.6 + (tr.aggr || .5)), t);
     if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', 3 + (f.outCount > 5 ? 6 : 0), null);
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
     if (tDown && !tGrab) {
@@ -5243,7 +5569,7 @@ class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -5272,6 +5598,14 @@ class AIController {
     const f = this.f, g = this.goal, m = f.match, ar = m.arena, D = this.D;
     if (!g) return;
     g.t = (g.t || 0) + dt;
+    if (g.name === 'chair') {
+      const c = g.data;
+      if (!c || c.gone || c.state !== 'floor' || f.prop) { this.planT = 0; this.goal = null; return; }
+      if (Math.abs(c.x - f.x) > 22) this.move(c.x, 16, Math.abs(c.x - f.x) > 120);
+      else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = .35; }
+      if (g.t > 5) this.planT = 0;
+      return;
+    }
     const t = g.data && g.data.alive ? g.data : f.target;
     if (!t && g.name !== 'return' && g.name !== 'tagOut') { this.goal = null; return; }
     const dist = t ? Math.abs(t.x - f.x) : 0, dir = t ? sgn(t.x - f.x) : f.face;
@@ -5317,6 +5651,28 @@ class AIController {
         if (t.st !== 'DOWN' && t.st !== 'STAGGER') { this.planT = 0; break; }
         if (this.move(cx, 8, true)) { f.intent.mx = side; this.tap('jump'); this.goal = null; }
         void nr;
+        break;
+      }
+      case 'dashSig': {
+        if (f.fin < B.dashSigCost || f.sigCd > 0 || t.st === 'DOWN' || t.side !== f.side) { this.planT = 0; break; }
+        f.intent.mx = dir; f.running = true; if (!f.dash && f.ground) { f.dash = true; m.emit('dashStart', { f }); }
+        if (dist < 56 && f.dash && Math.abs(f.vx) > 150) { this.tap('grab'); this.goal = null; }
+        if (g.t > 2.5) this.planT = 0;
+        break;
+      }
+      case 'chairSwing': {
+        if (!f.prop) { this.planT = 0; break; }
+        const want = 36;
+        if (dist > want + 4) this.move(t.x - dir * want, 4, dist > 140);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { f.face = dir; this.tap('atk'); this.wait = .8 + this.rng.next() * .6; }
+        if (g.t > 6) this.planT = 0;
+        break;
+      }
+      case 'steal': {
+        if (!t.prop) { this.planT = 0; break; }
+        if (dist > 42) this.move(t.x - dir * 36, 4, dist > 120);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { f.face = dir; this.tap('grab'); this.wait = .5; }
+        if (g.t > 3) this.planT = 0;
         break;
       }
       case 'taunt': if (dist > 90 && f.fsm.is('IDLE', 'MOVE') && f.fin < B.finMax) { this.tap('fin'); this.goal = null; } else if (dist <= 90) f.intent.mx = -dir; break;
@@ -5408,7 +5764,16 @@ class AIController {
     this.holdPlan = null;
   }
   perch() {
-    const f = this.f;
+    const f = this.f, m = f.match, ar = m.arena, out = f.climbDir || (f.x < ar.mid ? -1 : 1);
+    // a foe lying or reeling on the floor outside, on this side: turn round and dive over the top
+    const below = m.rules.ringOut !== 'elim' && f.nearestFoe(300, o => o.side === 'out' && sgn(o.x - f.x) === out && (o.st === 'DOWN' || o.st === 'STAGGER' || o.st === 'IDLE' || o.st === 'MOVE'));
+    const inside = f.nearestFoe(320, o => o.side === 'in' && sgn(o.x - f.x) === -out);
+    if (below && (!inside || inside.st !== 'DOWN')) {
+      if (f.face !== out) { f.intent.mx = out; return; }
+      if (f.t > .35 + this.D.react) this.tap('atk');
+      return;
+    }
+    if (f.face !== -out) { f.intent.mx = -out; return; }
     const n = f.nearestFoe(320, o => sgn(o.x - f.x) === f.face);
     if (n && f.t > .3 + this.D.react && (n.st === 'DOWN' || n.st === 'STAGGER' || this.rng.chance(.3))) this.tap('atk');
     else if (f.t > 1.4) this.tap('atk');
@@ -5444,6 +5809,140 @@ class AIController {
 
 return { AIController, DIFFICULTY };
 })();
+// ---- combat/MatchEvents.js
+__m["combat/MatchEvents.js"] = (function () {
+// Run-ins during career matches. cfg.events is a list of plans:
+//   { kind: 'bossChair', at }               the boss walks up to the ring and tosses a chair at the player
+//   { kind: 'coachChair', when, below, at } the opponent's coach distracts the referee and slides a chair in
+//   { kind: 'chairs', xs: [x, ...] }        chairs lying around from the start
+// The people who run in are "cameos": not fighters, no hit boxes. MatchScene draws them and their speech.
+const { clamp, sgn, pick } = __m["core/util.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { LOOKS } = __m["data/looks.js"];
+const LINES = {
+  bossShout: ['관객이 하품한다! 자, 선물이다!', '쇼는 이렇게 하는 거야! 받아라!', '표 값은 해야지! 이거나 먹게!'],
+  bossHit: ['하하! 시청률 폭발이다!', '바로 그거야! 신문 1면이다!', '좋아, 관객이 일어섰어!'],
+  bossMiss: ['…피하면 어떡하나! 의자 값이 얼만데!', '어허, 몸놀림은 좋군!', '그 의자, 써먹기라도 하게!'],
+  bossCatch: ['오호, 받아 냈군! 쓸 줄은 알지?', '역시 내가 고른 선수야!'],
+  coachIn: ['심판님! 저기 관객석에 흉기가!', '심판! 신발 끈 풀렸어요, 신발 끈!', '심판님, 저 사람 손에 기름 발랐어요!'],
+  coachSlide: ['받아! 이걸로 끝내 버려!', '지금이야! 의자!'],
+  coachCheer: ['때려! 때려!', '그렇지! 그거야!', '심판은 내가 붙잡고 있을게!'],
+  coachSad: ['아이고, 그걸 뺏기면 어떡해!', '…난 아무것도 안 했다.'],
+};
+
+class MatchEvents {
+  constructor(m, plan) {
+    this.m = m; this.cameos = [];
+    this.plan = (plan || []).map(e => Object.assign({}, e, { done: false }));
+    const pre = this.plan.find(e => e.kind === 'chairs');
+    if (pre) { pre.done = true; this.chairs(pre); }
+  }
+  get busy() { return this.cameos.length > 0; }
+  foeOf(f) { return f && this.m.fighters.find(o => o.isFoe(f) && o.alive && o.st !== 'TAGWAIT'); }
+  due(e) {
+    const m = this.m, h = m.human;
+    if (m.phase !== 'fight' || m.pin || !h || this.busy) return false;
+    if (m.clock < (e.at || 0)) return false;
+    if (e.when === 'foeLosing') { const foe = this.foeOf(h); return !!foe && foe.hp < foe.maxHp * (e.below || .6) && foe.side === 'in' && !foe.prop; }
+    if (e.when === 'humanLosing') return h.hp < h.maxHp * (e.below || .5);
+    return h.side === 'in' && h.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK');
+  }
+  update(dt) {
+    for (const e of this.plan) if (!e.done && this.due(e)) { e.done = true; this.begin(e); }
+    for (const c of this.cameos) this.tick(c, dt);
+    if (this.cameos.some(c => c.gone)) this.cameos = this.cameos.filter(c => !c.gone);
+  }
+  chairs(e) { const ar = this.m.arena; for (const x of e.xs || [ar.ropeL + 40, ar.ropeR - 40]) this.m.props.spawn(x, 0, { side: ar.inside(x) ? 'in' : 'out', state: 'floor' }); }
+  begin(e) {
+    const m = this.m, ar = m.arena, h = m.human;
+    if (e.kind === 'bossChair') this.walkIn({ who: 'boss', name: '구만석 사장', look: LOOKS.boss, target: h, e, speed: 120, stance: 'arms' });
+    else if (e.kind === 'coachChair') { const foe = this.foeOf(h); if (foe) this.walkIn({ who: 'coach', name: e.coachName || '상대 코치', look: LOOKS.coach || LOOKS.foreman, target: foe, e, speed: 230, stance: 'calm' }); }
+    void ar;
+  }
+  // Come in from the near end of the hall to the floor beside the ring, on the target's side.
+  walkIn(o) {
+    const ar = this.m.arena, left = o.target.x < ar.mid;
+    const spot = left ? ar.ropeL - ar.apron - 44 : ar.ropeR + ar.apron + 44;
+    const from = left ? ar.x0 + 6 : ar.x1 - 6;
+    const c = Object.assign({ x: from, y: ar.floorY, face: left ? 1 : -1, vx: 0, act: 'enter', t: 0, spot, home: from, say: null, gone: false }, o);
+    this.cameos.push(c);
+    this.m.emit('cameoIn', { c });
+    return c;
+  }
+  say(c, text, life = 1.8) { c.say = { text, t: 0, life }; this.m.emit('cameoSay', { c, text }); }
+  go(c, act) { c.act = act; c.t = 0; }
+  tick(c, dt) {
+    const m = this.m, ar = m.arena;
+    c.t += dt;
+    if (c.say) { c.say.t += dt; if (c.say.t > c.say.life) c.say = null; }
+    const ended = m.phase !== 'fight';
+    if (ended && c.act !== 'leave') this.go(c, 'leave');
+    const walk = (to, spd) => { const d = to - c.x; if (Math.abs(d) < 3) { c.vx = 0; return true; } c.vx = sgn(d) * spd; c.x += c.vx * dt; if (Math.abs(to - c.x) < 3 || sgn(to - c.x) !== sgn(d)) { c.x = to; c.vx = 0; return true; } return false; };
+    const T = c.target;
+    switch (c.act) {
+      case 'enter':
+        if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, c.who === 'boss' ? 'shout' : 'distract'); if (c.who === 'boss') this.say(c, pick(LINES.bossShout), 1.5); else { this.say(c, pick(LINES.coachIn), 1.6); m.ref.distract = { t: 3.2, x: c.x }; m.emit('refDistract', { c }); } }
+        break;
+      // ---- the boss ----
+      case 'shout': if (c.t > 1.05) { this.go(c, 'windup'); m.emit('chairWarn', { f: T, c }); } break;
+      case 'windup': if (c.t > .6) { this.throwAt(c, T); this.go(c, 'watch'); } break;
+      case 'watch': {
+        const p = c.prop;
+        if (p && !c.reacted && (p.state !== 'fly' || p.hit.size)) {
+          c.reacted = true;
+          const caught = p.state === 'held' && p.holder === T, hit = p.hit.has(T) && T.st === 'DOWN';
+          this.say(c, pick(caught ? LINES.bossCatch : hit ? LINES.bossHit : LINES.bossMiss), 1.8);
+          m.emit('bossReact', { c, caught, hit });
+        }
+        if (c.t > 2.6) this.go(c, 'leave');
+        break;
+      }
+      // ---- the opponent's coach ----
+      case 'distract': if (c.t > 1.3) { this.slideTo(c, T); this.say(c, pick(LINES.coachSlide), 1.3); this.go(c, 'cheer'); } break;
+      case 'cheer':
+        if (c.t > 1.4 && !c.cheered) { c.cheered = true; const stolen = c.prop && c.prop.holder && c.prop.holder !== T; this.say(c, pick(stolen ? LINES.coachSad : LINES.coachCheer), 1.6); }
+        if (c.t > 3.2) this.go(c, 'leave');
+        break;
+      case 'leave':
+        c.face = sgn(c.home - c.x) || c.face;
+        if (walk(c.home, c.speed * 1.2)) { c.gone = true; m.emit('cameoOut', { c }); }
+        break;
+    }
+  }
+  // Ballistic toss that clears the top rope and arrives at (tx, ty).
+  arc(x0, y0, tx, ty, Ts) {
+    const ar = this.m.arena, g = B.gravity, ropeX = x0 < ar.mid ? ar.ropeL : ar.ropeR, top = ar.matY - ar.ropeH - 14;
+    let best = null;
+    for (const T of Ts) {
+      const vx = (tx - x0) / T, vy = (ty - y0 - .5 * g * T * T) / T;
+      const tc = Math.abs(vx) > 1 ? (ropeX - x0) / vx : 0, yc = y0 + vy * tc + .5 * g * tc * tc;
+      best = { vx, vy };
+      if (tc <= 0 || yc < top) break;
+    }
+    return best;
+  }
+  throwAt(c, T) {
+    const m = this.m, ar = m.arena;
+    if (!T || !T.alive) return;
+    const x0 = c.x + c.face * 10, y0 = c.y - 64;
+    const tx = clamp(T.x + (T.vx || 0) * .35, ar.ropeL + 26, ar.ropeR - 26), ty = T.y - T.h * .55;
+    const v = this.arc(x0, y0, tx, ty, [.85, 1, 1.15, 1.3]);
+    c.prop = m.props.spawn(x0, y0, { state: 'fly', vx: v.vx, vy: v.vy, side: 'out', aim: T, spin: c.face * 9 });
+    m.emit('cameoThrow', { c, p: c.prop });
+  }
+  slideTo(c, T) {
+    const m = this.m, ar = m.arena;
+    if (!T || !T.alive) return;
+    const x0 = c.x + c.face * 10, y0 = c.y - 40;
+    const tx = clamp(T.x - c.face * 28, ar.ropeL + 24, ar.ropeR - 24), ty = ar.matY - 10;
+    const v = this.arc(x0, y0, tx, ty, [.7, .85, 1]);
+    c.prop = m.props.spawn(x0, y0, { state: 'fly', vx: v.vx, vy: v.vy, side: 'out', spin: c.face * 6 });
+    m.emit('cameoThrow', { c, p: c.prop, slide: true });
+  }
+}
+
+return { MatchEvents };
+})();
 // ---- combat/MatchManager.js
 __m["combat/MatchManager.js"] = (function () {
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
@@ -5460,6 +5959,8 @@ const { WrestlingMoveSystem } = __m["combat/WrestlingMoveSystem.js"];
 const { FinisherSystem } = __m["combat/FinisherSystem.js"];
 const { AnimationSystem } = __m["anim/AnimationSystem.js"];
 const { AIController } = __m["combat/AIController.js"];
+const { PropSystem } = __m["combat/Props.js"];
+const { MatchEvents } = __m["combat/MatchEvents.js"];
 const MODES = {
   single: { name: '싱글 매치', desc: '1대1. 상대의 체력을 0으로 만들면 KO 승리.', rules: { ko: true, pin: false, ringOut: 'count', time: 300 } },
   pin: { name: '핀폴 매치', desc: '다운된 상대를 S로 눌러 3카운트를 세면 승리. 체력이 0이 되어도 끝나지 않는다.', rules: { ko: false, pin: true, ringOut: 'count', time: 360 } },
@@ -5484,7 +5985,9 @@ class MatchManager extends Emitter {
     this.grapple = new GrappleSystem(this); this.wrestle = new WrestlingMoveSystem(this); this.finisher = new FinisherSystem(this); this.anim = new AnimationSystem(this);
     this.fighters = []; this.links = []; this.queue = []; this.time = 0; this.clock = 0; this.phase = 'intro'; this.result = null;
     this.freeze = 0; this.slowT = 0; this.slowK = 1; this.hype = 25; this.pin = null; this.endT = 0; this.introT = 0;
-    this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null };
+    this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
+    this.props = new PropSystem(this);
+    this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
     this.on('fault', () => this.faults++);
@@ -5558,12 +6061,15 @@ class MatchManager extends Emitter {
     this.grapple.update(dt);
     this.wrestle.update(dt);
     this.physics.update(dt);
+    this.props.update(dt);
+    this.events.update(dt);
     this.combat.update();
     this.stun.update(dt);
     if (this.pin) this.pinTick(dt);
     this.rulesTick(dt);
     this.refTick(dt);
     this.anim.update(dt);
+    this.props.follow();
     // keep broken numbers from spreading: report once and put the body back together
     for (const f of this.fighters) {
       const P = f.joints.p;
@@ -5575,7 +6081,7 @@ class MatchManager extends Emitter {
   blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
   introTick(dt) {
     this.introT += dt;
-    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2)) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
+    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
     if (this.phase === 'ready' && this.introT > 1.3) { this.phase = 'fight'; for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true }); this.emit('bell', { start: true }); }
   }
   practiceTick(f, dt) {
@@ -5797,7 +6303,10 @@ class MatchManager extends Emitter {
     if (!ar.hasRing) return;
     r.t += dt;
     let tx = r.x;
-    if (r.act === 'count' && r.target) tx = r.target.x + (r.target.x < ar.mid ? 40 : -40);
+    // a coach at the ropes has the referee's attention: he walks over and argues
+    if (r.distract) { r.distract.t -= dt; if (r.distract.t <= 0 || r.act === 'count') r.distract = null; }
+    if (r.distract && r.act !== 'count') tx = r.distract.x < ar.mid ? ar.ropeL + 30 : ar.ropeR - 30;
+    else if (r.act === 'count' && r.target) tx = r.target.x + (r.target.x < ar.mid ? 40 : -40);
     else if (r.act === 'raise' && r.raise) tx = r.raise.x + (r.raise.x < ar.mid ? 30 : -30);
     else {
       const act = this.fighters.filter(f => f.alive && f.side === 'in');
@@ -5814,7 +6323,7 @@ class MatchManager extends Emitter {
     const crowded = this.fighters.some(f => f.alive && f.side === 'in' && Math.abs(f.x - r.x) < 36);
     r.vx = Math.abs(d) > 6 ? sgn(d) * Math.min(crowded ? 210 : 150, Math.abs(d) * 4) : 0;
     r.x += r.vx * dt;
-    if (r.vx) r.face = sgn(r.vx); else if (r.target) r.face = sgn(r.target.x - r.x) || r.face;
+    if (r.vx) r.face = sgn(r.vx); else if (r.distract) r.face = sgn(r.distract.x - r.x) || r.face; else if (r.target) r.face = sgn(r.target.x - r.x) || r.face;
     r.gait += Math.abs(r.vx) * dt * .07;
   }
   summary() {
@@ -6031,7 +6540,7 @@ __m["render/ArenaRenderer.js"] = (function () {
 const { VIEW_W, VIEW_H, RNG, clamp } = __m["core/util.js"];
 const { rampHex, mixHex, shade } = __m["render/palette.js"];
 const { drawText } = __m["render/pixelfont.js"];
-const { canvas, rect, bands, dither, line, ellipse, poly, glow, cone, neon, truss, lamp, poster, brick, planks, windowPane, box } = __m["render/painter.js"];
+const { canvas, rect, bands, dither, line, ellipse, poly, glow, cone, neon, truss, lamp, poster, brick, planks, windowPane, box, tiles, sofa, plant } = __m["render/painter.js"];
 const W = 900;
 const SKIN = ['#f2c7a4', '#dca27a', '#b97a52', '#8a5a3e', '#5e3b2c'];
 const HAIR = ['#1b1420', '#3a2630', '#5a3a2a', '#c9b07a', '#d26a3a', '#e8e4ee', '#3a3f6a', '#ff6fb0'];
@@ -6070,11 +6579,11 @@ class ArenaRenderer {
     const id = this.def.id;
     const [far, gf] = canvas(820, VIEW_H), [near, gn] = canvas(W, VIEW_H);
     this.far = far; this.near = near;
-    if (id === 'pier') this.bakePier(gf, gn); else if (id === 'gym') this.bakeGym(gf, gn); else if (id === 'alley') this.bakeAlley(gf, gn); else this.bakeHall(gf, gn, id === 'dome');
+    if (id === 'pier') this.bakePier(gf, gn); else if (id === 'gym') this.bakeGym(gf, gn); else if (id === 'alley') this.bakeAlley(gf, gn); else if (id === 'lobby') this.bakeLobby(gf, gn); else if (id === 'basement') this.bakeBasement(gf, gn); else this.bakeHall(gf, gn, id === 'dome');
     if (this.ar.hasRing) this.bakeRing(gn);
     // crowd seats
     const r = new RNG(9), crowdK = this.def.crowd != null ? this.def.crowd : 1;
-    const rows = id === 'pier' ? [[188, .78, 34, .5], [204, .86, 30, .62]] : id === 'gym' ? [] : id === 'alley' ? [[210, .9, 70, .25]] : [[128, .62, 18, .55], [148, .7, 17, .62], [168, .78, 16, .72], [190, .86, 15, .82], [212, .94, 14, .92]];
+    const rows = id === 'pier' ? [[188, .78, 34, .5], [204, .86, 30, .62]] : id === 'gym' ? [] : id === 'alley' ? [[210, .9, 70, .25]] : id === 'lobby' ? [[214, .94, 48, .45]] : id === 'basement' ? [[176, .8, 20, .26], [198, .88, 18, .32]] : [[128, .62, 18, .55], [148, .7, 17, .62], [168, .78, 16, .72], [190, .86, 15, .82], [212, .94, 14, .92]];
     for (const [y, par, step, light] of rows) for (let x = -20; x < W + 40; x += step * (1 + (1 - crowdK) * 2)) {
       if (r.next() < .12 * (2 - crowdK)) continue;
       this.rows.push({ x: x + r.next() * step * .6, y, par, light, v: (r.next() * this.atlas.n) | 0, ph: r.next() * 6.28, sp: .8 + r.next() * .6, fan: r.next() });
@@ -6150,19 +6659,48 @@ class ArenaRenderer {
     const r = new RNG(3);
     for (let i = 0; i < 12; i++) ellipse(n, 'rgba(90,120,200,.18)', r.next() * W, 280 + r.next() * 60, 14 + r.next() * 20, 2);
   }
+  bakeLobby(g, n) {
+    bands(g, 0, 0, 820, 40, ['#0a0d1c', '#0e1226', '#121730']);
+    rect(g, '#2f3a5e', 0, 40, 820, 190); dither(g, 0, 40, 820, 190, '#26304f', .12, 820); rect(g, '#3a4a78', 0, 40, 820, 3);
+    for (let x = 0; x < 820; x += 150) truss(g, x, 14, 150, '#2a3256');
+    windowPane(g, 70, 64, 60, 64, { city: 1, seed: 3 }); windowPane(g, 690, 64, 60, 64, { city: 1, seed: 9 });
+    neon(g, '야항 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
+    [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['비에른', '#8a6a3c']].forEach(([nm, c], i) => poster(g, 300 + i * 46, 86, 36, 50, c, nm.slice(0, 3), { figure: 1, top: i === 0 ? '챔피언' : '' }));
+    rect(g, '#5a3a3a', 0, 176, 820, 54); rect(g, '#6e4848', 0, 176, 820, 2); for (let x = 0; x < 820; x += 40) rect(g, '#4a2e2e', x, 178, 1, 50);
+    tiles(n, 0, 226, W, 134, '#3a3046', '#2e2638', 12);
+    rect(n, '#05060f', 0, 224, W, 3);
+    box(n, 150, 150, 34, 76, '#c2333f'); rect(n, '#120c1e', 154, 156, 20, 40); for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) rect(n, ['#49d6ff', '#ffd65a', '#6be38a'][i], 157 + k * 9, 160 + i * 12, 6, 8); drawText(n, '음료', 167, 204, { size: 11, align: 'c', color: '#ffe6e6' });
+    sofa(n, 420, 226, 92, '#3a6a8c'); plant(n, 530, 226, {}); plant(n, 392, 226, { leaf: '#5aa06a' });
+    rect(n, '#120c1e', 640, 170, 92, 56); rect(n, '#6a4a3a', 642, 172, 88, 54); rect(n, '#8a6a4a', 642, 172, 88, 4); drawText(n, '안내', 686, 186, { size: 11, align: 'c', color: '#ffe9a8' });
+    rect(n, '#120c1e', 40, 134, 70, 92); rect(n, '#2a2440', 42, 136, 66, 88); rect(n, 'rgba(150,200,255,.12)', 44, 138, 62, 84); rect(n, '#4a3a5a', 42, 176, 66, 2);
+  }
+  bakeBasement(g, n) {
+    bands(g, 0, 0, 820, 230, ['#08080c', '#0c0c12', '#101018', '#14141c', '#18181f']);
+    for (let y = 30; y < 230; y += 20) { rect(g, '#1e1e26', 0, y, 820, 1); for (let x = ((y / 20) % 2) * 26; x < 820; x += 52) rect(g, '#1e1e26', x, y, 1, 20); }
+    rect(g, '#05060f', 0, 36, 820, 10); rect(g, '#5a4a3a', 0, 37, 820, 8); rect(g, '#7a6a5a', 0, 37, 820, 2); for (let x = 30; x < 820; x += 110) rect(g, '#3a2e24', x, 35, 6, 12);
+    rect(g, '#05060f', 0, 54, 820, 6); rect(g, '#3a5a6a', 0, 55, 820, 4);
+    drawText(g, '리벤지', 120, 92, { scale: 2, color: '#8a1f2a' }); drawText(g, 'NO RULES', 650, 88, { size: 11, color: '#3a8a4a' }); drawText(g, '야항 지하', 420, 72, { size: 11, color: '#c98a2e' });
+    for (let x = -40; x < 820; x += 8) { line(g, '#2c2c36', x, 150, x + 40, 230); line(g, '#2c2c36', x + 40, 150, x, 230); }
+    rect(g, '#4a4a56', 0, 148, 820, 3);
+    for (const x of [80, 300, 520, 740]) lamp(g, x, 0, '#ffb347', { len: 26 });
+    bands(n, 0, 226, W, 134, ['#1c1c22', '#1e1e24', '#202026', '#222228']);
+    const r = new RNG(17);
+    for (let i = 0; i < 16; i++) ellipse(n, 'rgba(70,24,24,.25)', r.next() * W, 240 + r.next() * 110, 10 + r.next() * 24, 2 + r.next() * 3);
+    for (const x of [40, 830]) box(n, x, 188, 40, 38, '#4a3a2a');
+  }
   bakeRing(g) {
     const a = this.ar, L = a.ropeL, R = a.ropeR, my = a.matY, back = my - 22, front = my + 16;
-    const dome = this.def.id === 'dome', pier = this.def.id === 'pier', gym = this.def.id === 'gym';
-    const matCol = dome ? '#2a3f8c' : gym ? '#7a2f3a' : pier ? '#2a5f86' : '#1f6f7a', M = rampHex(matCol);
+    const dome = this.def.id === 'dome', pier = this.def.id === 'pier', gym = this.def.id === 'gym', base = this.def.id === 'basement';
+    const matCol = dome ? '#2a3f8c' : gym ? '#7a2f3a' : pier ? '#2a5f86' : base ? '#4a2626' : '#1f6f7a', M = rampHex(matCol);
     // shadow under the ring
     ellipse(g, 'rgba(0,0,0,.35)', (L + R) / 2, front + 40, (R - L) / 2 + 40, 8);
     // apron face
-    const skirt = dome ? '#14143a' : '#0e1224';
+    const skirt = dome ? '#14143a' : base ? '#140e0c' : '#0e1224';
     rect(g, '#06070e', L - a.apron - 1, front, R - L + a.apron * 2 + 2, a.floorY - front + 2);
     bands(g, L - a.apron, front + 1, R - L + a.apron * 2, a.floorY - front - 1, [skirt, shade(skirt, .08), skirt, shade(skirt, -.2)]);
     rect(g, dome ? '#ffd65a' : '#ff5fa2', L - a.apron, front + 4, R - L + a.apron * 2, 2);
     rect(g, dome ? '#e0a32e' : '#49d6ff', L - a.apron, a.floorY - 6, R - L + a.apron * 2, 1);
-    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : '야항 레슬링 연맹';
+    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '지하 격투장' : '야항 레슬링 연맹';
     drawText(g, title, (L + R) / 2, front + 12, { scale: 2, align: 'c', color: dome ? '#ffe9a8' : '#eef2ff', bold: true, outline: '#06070e' });
     for (const x of [L + 30, R - 30]) { ellipse(g, dome ? '#e0a32e' : '#49d6ff', x, front + 21, 7, 7); ellipse(g, skirt, x, front + 21, 4, 4); }
     // mat surface (trapezoid)
@@ -6215,7 +6753,7 @@ class ArenaRenderer {
     g.drawImage(this.near, Math.round(-camX), 0);
     if (a.hasRing) { this.backRopes(g, camX); this.sideRopes(g, camX, false); }
   }
-  ropeColors() { return this.def.id === 'dome' ? ['#ffd65a', '#f6f1e6', '#e0a32e'] : this.def.id === 'gym' ? ['#e6e9f2', '#c2333f', '#e6e9f2'] : ['#ff5fa2', '#f6f1e6', '#49d6ff']; }
+  ropeColors() { if (this.def.id === 'basement') return ['#c9a25a', '#8a8494', '#c9a25a']; return this.def.id === 'dome' ? ['#ffd65a', '#f6f1e6', '#e0a32e'] : this.def.id === 'gym' ? ['#e6e9f2', '#c2333f', '#e6e9f2'] : ['#ff5fa2', '#f6f1e6', '#49d6ff']; }
   backRopes(g, camX) {
     const a = this.ar, L = a.ropeL + 14 - camX, R = a.ropeR - 14 - camX, back = a.matY - 22, cols = this.ropeColors();
     const wob = a.shake * 2;
@@ -6245,7 +6783,7 @@ class ArenaRenderer {
   }
   drawFront(g, camX) { if (this.ar.hasRing) this.sideRopes(g, camX, true); }
   drawScreen(g, camX) {
-    if (this.def.id === 'gym' || this.def.id === 'alley' || this.def.id === 'pier') return;
+    if (this.def.id === 'gym' || this.def.id === 'alley' || this.def.id === 'pier' || this.def.id === 'lobby' || this.def.id === 'basement') return;
     const x = Math.round(410 - camX * .6) - 78, y = 58, w = 156, h = 40;
     rect(g, '#1a1d33', x + 30, 0, 2, y); rect(g, '#1a1d33', x + w - 32, 0, 2, y);
     rect(g, '#06070e', x - 3, y - 3, w + 6, h + 6); rect(g, '#2a3150', x - 2, y - 2, w + 4, h + 4); rect(g, '#05060c', x, y, w, h);
@@ -6270,6 +6808,11 @@ class ArenaRenderer {
     } else if (id === 'pier') {
       glow(g, 640 - camX * .6, 46, 60, '#fff0c0', .15);
       for (let x = 0; x < 900; x += 54) glow(g, x - camX * .6, 134, 12, '#ff8fc4', .2);
+    } else if (id === 'lobby') {
+      for (const x of [200, 560]) glow(g, x - camX * .6, 50, 60, '#ffcf7a', .18);
+    } else if (id === 'basement') {
+      for (const x of [80, 300, 520, 740]) glow(g, x - camX * .6, 34, 46, '#ffb347', .28);
+      g.fillStyle = 'rgba(4,3,8,.22)'; g.fillRect(0, 0, VIEW_W, 40); g.fillRect(0, VIEW_H - 30, VIEW_W, 30);
     } else if (id === 'alley') {
       glow(g, 180 - camX * .6, 116, 50, '#ff5fa2', .22); glow(g, 540 - camX * .6, 102, 50, '#49d6ff', .2);
     } else glow(g, 410 - camX * .6, 20, 120, '#ffe0b0', .12);
@@ -6508,6 +7051,7 @@ const { panel, gauge, icon, keycap, prompt, banner } = __m["render/ui.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { MODES } = __m["combat/MatchManager.js"];
+const { chainAllow } = __m["combat/WrestlingMoveSystem.js"];
 const { J } = __m["anim/skeleton.js"];
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 class HUD {
@@ -6634,6 +7178,7 @@ class HUD {
       // player marker
       if (f.ctrl === 'human' && m.fighters.length > 1) { const y = hy - 8 + Math.round(Math.sin(this.t * 5)); rect(g, '#05060f', hx - 4, y - 1, 9, 6); rect(g, '#ffd65a', hx - 3, y, 7, 2); rect(g, '#ffd65a', hx - 2, y + 2, 5, 1); rect(g, '#ffd65a', hx - 1, y + 3, 3, 1); }
       if (f.st === 'HANG' && f.ctrl !== 'human') drawText(g, '매달림!', hx, hy - 4, { size: 11, align: 'c', color: '#ff8a2b', outline: '#05060f' });
+      if (m.props.threat(f) && Math.floor(this.t * 8) % 2) drawText(g, '!', hx, hy - 30, { scale: 2, align: 'c', color: '#ff5b5b', bold: true, outline: '#05060f' });
       if (f.side === 'out' && m.rules.ringOut === 'count' && f.outCount >= 1 && m.phase === 'fight') drawText(g, String(Math.floor(f.outCount)), hx, hy - 16, { scale: 2, align: 'c', color: f.outCount > 7 ? '#ff5b5b' : '#ffd65a', bold: true, outline: '#05060f' });
     }
     // pin count
@@ -6663,11 +7208,19 @@ class HUD {
     // contextual prompts
     const P = [];
     const ar = m.arena;
-    const g2 = m.grapple.grabTarget(f);
+    const g2 = m.grapple.grabTarget(f), PR = m.props;
+    if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
+    else if (f.prop) P.push([[inp.label('atk')], '체어샷'], [[inp.label('grab')], '의자 던지기']);
     if (g2) P.push([[inp.label('grab')], '잡기']);
+    else if (!f.prop && PR.loose(f)) P.push([[inp.label('grab')], '의자 줍기']);
+    else if (!f.prop && f.nearestFoe(52, o => o.prop && o.side === f.side)) P.push([[inp.label('grab')], '의자 뺏기']);
     if (m.rules.pin && f.side === 'in' && f.nearestFoe(58, o => o.st === 'DOWN' && !o.rag)) P.push([[inp.label('down')], '핀폴']);
     if (f.fin >= B.finMax && f.alive) P.push([[inp.label('fin')], '피니셔']);
-    if (f.st === 'PERCH') P.push([[inp.label('atk')], '다이빙'], [[inp.label('down')], '내려오기']);
+    if (f.dash && f.fsm.is('IDLE', 'MOVE') && !f.prop) { const c = m.grapple.dashCheck(f), mv = MOVES[c.id]; P.push([[inp.label('atk')], '돌진 공격'], [[inp.label('grab')], c.ok ? `${mv.name} (게이지 ${B.dashSigCost})` : `${mv.name}: ${c.why}`]); }
+    if (f.st === 'PERCH') {
+      const out = f.face === (f.climbDir || (f.x < ar.mid ? -1 : 1)), elim = m.rules.ringOut === 'elim';
+      P.push([[inp.label('left') + '/' + inp.label('right')], out ? '안쪽 보기' : '바깥 보기'], [[inp.label('atk')], out ? (elim ? '장외 다이빙 금지(탈락)' : '장외 다이빙!') : '다이빙'], [[inp.label('down')], '내려오기']);
+    }
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
     if (ar.hasRing && f.side === 'out' && f.y > ar.matY + 4 && f.st !== 'HANG') { const d = Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))); if (d < 46) P.push([[inp.label('up')], '링으로 올라가기']); }
@@ -6690,7 +7243,7 @@ class HUD {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
     const slots = [['u', 0, -26], ['b', -f.face * 70, 0], ['n', 0, 0], ['f', f.face * 70, 0], ['d', 0, 26]];
     panel(g, x - 104, y - 40, 208, 92, { alpha: .82, cut: 3, accent: f.char.color });
-    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${B.moveChainMax}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
+    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
     gauge(g, x + 6, y - 35, 90, 3, L.hold / (B.grabHold * (.8 + .2 * f.stats.grp)), 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
     gauge(g, x + 6, y - 29, 90, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
     for (const [s, dx, dy] of slots) {
@@ -6744,635 +7297,53 @@ const hudEllipse = ellipse;
 
 return { HUD, hudShade, hudEllipse };
 })();
-// ---- scenes/MatchScene.js
-__m["scenes/MatchScene.js"] = (function () {
-// A match on screen: simulation + camera + effects + sound + HUD + pause + results.
-const { VIEW_W, VIEW_H, clamp, damp, fmtTime, sgn, josa } = __m["core/util.js"];
-const { MatchManager, MODES } = __m["combat/MatchManager.js"];
-const { ArenaRenderer } = __m["render/ArenaRenderer.js"];
-const { FighterRenderer } = __m["render/FighterRenderer.js"];
-const { Fx } = __m["render/Fx.js"];
-const { HUD } = __m["render/HUD.js"];
-const { UI } = __m["render/palette.js"];
-const { drawText } = __m["render/pixelfont.js"];
-const { rect } = __m["render/painter.js"];
-const { panel, menuList, fade, prompt } = __m["render/ui.js"];
-const { BALANCE: B } = __m["data/balance.js"];
-const { DIFFICULTY } = __m["combat/AIController.js"];
-const { J } = __m["anim/skeleton.js"];
-const { drawPortrait } = __m["render/head.js"];
-const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃' };
-class MatchScene {
-  constructor(game, cfg, onEnd) {
-    this.game = game; this.cfg = cfg; this.onEnd = onEnd;
-    this.m = new MatchManager(cfg);
-    this.ar = new ArenaRenderer(this.m.arena, this.m.arenaDef);
-    this.fr = new FighterRenderer(); this.fr.setEnv({ rim: this.m.arenaDef.rim, light: this.m.arenaDef.light });
-    this.fx = new Fx(); this.hud = new HUD(game.input);
-    this.camX = clamp(this.m.arena.mid - VIEW_W / 2, 0, this.m.arena.width - VIEW_W);
-    this.paused = false; this.sel = 0; this.debug = false; this.t = 0; this.endT = 0; this.resultShown = false; this.dark = 0; this.darkGoal = 0; this.focusPair = null; this.focusT = 0;
-    this.introStep = -1; this.practiceSel = 0;
-    this.wire();
-    const tint = this.m.arenaDef.tint || [1, 1, 1];
-    game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
-    game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
-    this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#ffd65a');
-  }
-  titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
-  get human() { return this.m.human; }
-  // ---- events to effects ----
-  wire() {
-    const m = this.m, A = this.game.audio, fx = this.fx, S = this.game.screen, hud = this.hud, ar = this.ar;
-    const isH = f => f && f.ctrl === 'human';
-    const cheer = k => { ar.boost(k * .3); if (k > .5) A.cheer(Math.min(1.4, k)); };
-    m.on('swing', e => { if (e.def.lv >= 2) A.sfx('swing'); });
-    m.on('hit', e => {
-      const d = e.d, p = d.lv >= 4 ? 1.6 : d.lv >= 3 ? 1.2 : d.lv >= 2 ? .8 : .5;
-      fx.spark(e.x, e.y, p, e.counterHit ? '#ff8fc4' : '#fff3b0', e.dir);
-      A.sfx(d.sfx || 'punch1');
-      if (d.lv >= 3) { S.shake(.18 + p * .1); A.sfx('hurt', { voice: e.v.char.voice }); }
-      if (d.lv >= 4) fx.sweat(e.x, e.y, 5);
-      if (e.counterHit) fx.word('카운터!', e.x, e.y - 18, '#ff8fc4', 2);
-      else if (d.lv >= 3) fx.word(d.lv >= 4 ? '콰직!' : e.combo > 2 ? '퍽퍽!' : '퍽!', e.x + e.dir * 6, e.y - 14, '#ffffff', 2);
-      else if (d.lv === 1 && Math.random() < .25) fx.word(['팍', '탁', '퍽'][(Math.random() * 3) | 0], e.x, e.y - 10, '#ffe9a8', 1);
-      if (e.armored) fx.word('버텼다!', e.v.x, e.v.y - 100, '#ffd65a', 1);
-      if (d.lv >= 3) cheer(.4);
-    });
-    m.on('block', e => { fx.spark(e.x, e.y, .5, '#9fd6ff', sgn(e.v.x - e.a.x)); A.sfx('block'); });
-    m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
-    m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
-    m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
-    m.on('counter', e => { fx.word('반격!', e.f.x, e.f.y - 100, '#ff5fa2', 3); A.sfx('counter'); m.slowmo(.4, .3); S.flash(1, .6, .8, .25); cheer(.8); });
-    m.on('reversal', e => { fx.word(e.fin ? '피니셔 역전!!' : '역전!', e.f.x, e.f.y - 104, '#ff5fa2', 3); A.sfx('reversal'); m.slowmo(.35, .45); S.flash(1, .5, .8, .4); cheer(1.2); });
-    m.on('revFail', e => { if (isH(e.v)) fx.word('너무 일찍!', e.v.x, e.v.y - 100, '#9aa6d6', 1); });
-    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a)) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
-    m.on('grab', e => { A.sfx('grip'); });
-    m.on('escape', e => { fx.word('탈출!', e.v.x, e.v.y - 100, '#6be38a', 2); A.sfx('whoosh'); });
-    m.on('switch', () => A.sfx('grip'));
-    m.on('grabStrike', e => { fx.spark(e.v.x, e.v.y - 50, .6); A.sfx('kick1'); });
-    m.on('deny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast(`${e.mv ? e.mv.name : '기술'}: ${e.why}`, '#ff8a8a'); });
-    m.on('moveStart', e => {
-      A.sfx(e.fin ? 'cry' : 'grunt', { voice: e.a.char.voice });
-      if (e.fin) { this.finisherCam(e.a, e.v, e.fin); }
-    });
-    m.on('moveEvent', e => this.moveEvent(e));
-    m.on('thud', e => { if (e.v > 220) { fx.dust(e.x, e.y, Math.min(1.4, e.v / 400)); A.sfx('thud', { p: Math.min(1, e.v / 500) }); } });
-    m.on('wall', e => { S.shake(.35); A.sfx('punch3'); fx.word('쾅!', e.x, e.y - 30, '#ffffff', 2); fx.spark(e.x, e.y, 1); });
-    m.on('rope', e => { A.sfx('rope'); });
-    m.on('ropeHit', () => A.sfx('rope', { p: .7 }));
-    m.on('ropeBody', () => A.sfx('rope', { p: .5 }));
-    m.on('land', e => { const v = e.f.landV || 0; if (v > 200) { A.sfx('land', { p: Math.min(1, v / 500) }); fx.dust(e.f.x, e.f.y, .35); } });
-    m.on('jump', () => A.sfx('jump'));
-    m.on('dive', e => { A.sfx('whoosh', { pitch: 1.6 }); cheer(.6); });
-    m.on('landAttack', e => { A.sfx('thud', { p: .8 }); fx.dust(e.f.x, e.f.y, e.def.quake ? 1.5 : .6); if (e.def.quake) { S.shake(.4); fx.ring(e.f.x, e.f.y, e.def.quake, '#ffffff'); } if (!e.ok && e.def.dive) fx.word('아야야!', e.f.x, e.f.y - 40, '#9aa6d6', 1); });
-    m.on('finisherStart', e => { A.sfx('charge'); fx.ring(e.f.x, e.f.y, 60, e.F.color); hud.push('피니셔!', { col: e.F.color, scale: 2, y: 90, life: .9 }); cheer(.8); S.flash(1, 1, 1, .15); });
-    m.on('finisherHit', e => { A.sfx('finisher'); hud.finisherCard(e.f, e.F); this.ar.setScreen(e.F.name, e.f.name, e.F.color, true); cheer(1.4); });
-    m.on('finisherMiss', e => { fx.word(e.why === 'blocked' ? '막혔다!' : e.why === 'crash' ? '헛디뎠다!' : '빗나감!', e.f.x, e.f.y - 100, '#9aa6d6', 2); A.boo(.6); A.sfx('miss'); });
-    m.on('finReady', e => { if (isH(e.f)) { hud.toast(`피니셔 준비! [${this.game.input.label('fin')}]`, '#3fe0d0'); A.sfx('good'); } });
-    m.on('taunt', e => { cheer(.5); });
-    m.on('burst', e => { fx.ring(e.f.x, e.f.y, 110, '#ffffff', .5); fx.spark(e.f.x, e.f.y - 50, 1.5, '#9fe0ff'); S.flash(.8, .95, 1, .3); A.sfx('parry'); fx.word('긴급 탈출!', e.f.x, e.f.y - 104, '#9fe0ff', 2); });
-    m.on('stagger', e => { fx.word('어질…', e.f.x, e.f.y - 100, '#ffd65a', 1); });
-    m.on('overRope', e => { if (m.rules.ringOut === 'elim') cheer(.7); });
-    m.on('eliminated', e => { A.sfx('bell'); hud.push('탈락!', { col: '#ff5b5b', sub: e.f.name, y: 110, life: 1.4 }); cheer(1); });
-    m.on('entry', e => { hud.push('입장!', { col: e.f.char.color, sub: e.f.name + ' — ' + e.f.char.nick, y: 100, life: 1.8 }); A.sfx('bell'); cheer(1); this.ar.setScreen(e.f.name, '입장!', e.f.char.color, true); });
-    m.on('hang', e => { fx.word('매달렸다!', e.f.x, e.f.y - 70, '#ffb347', 2); cheer(.8); });
-    m.on('pin', () => { A.sfx('grip'); cheer(.6); });
-    m.on('count', e => { if (e.pin) { A.sfx('count', { n: e.n }); cheer(.3 * e.n); this.ar.setScreen(String(e.n), '카운트', e.n >= 3 ? '#ff5b5b' : '#ffffff'); } else A.sfx('tick'); });
-    m.on('kickout', e => { fx.word('킥아웃!', e.v.x, e.v.y - 60, '#6be38a', 3); cheer(1.3); this.ar.setScreen('킥아웃!', String(e.count), '#6be38a', true); });
-    m.on('tag', e => { fx.word('교대!', e.f.x, e.f.y - 90, '#6be38a', 2); A.sfx('slap'); cheer(.9); });
-    m.on('ko', e => { A.sfx('ko'); A.sfx('bell3'); S.shake(.5); m.slowmo(.25, 1.2); this.ar.setScreen('K.O.!', e.v.name, '#ff5b5b', true); cheer(1.5); });
-    m.on('ready', () => { hud.push('준비…', { col: '#ffffff', y: 140, life: 1.2, scale: 3 }); this.ar.setScreen('준비', this.titleText(), '#ffffff'); });
-    m.on('bell', () => { A.sfx('bell'); hud.push('파이트!', { col: '#ffd65a', y: 140, life: 1, scale: 4, grad: '#ff8a2b' }); this.ar.setScreen(this.titleText(), MODES[m.mode].name, '#49d6ff'); cheer(1); });
-    m.on('end', r => this.onMatchEnd(r));
-    m.on('whip', () => A.sfx('whoosh'));
-    m.on('sweep', e => { A.sfx('punch2'); fx.spark(e.o.x, e.o.y - 40, 1); });
-    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name, JSON.stringify(e.info || {})));
-  }
-  moveEvent(e) {
-    const { k, o, a, v, move } = e, A = this.game.audio, fx = this.fx, S = this.game.screen, fin = e.fin;
-    const gx = v ? v.joints.x(J.pelvis) : a.x, gy = this.m.arena.ground(gx, a.y, a.side);
-    switch (k) {
-      case 'impact': {
-        const p = o.p || 1;
-        S.shake(Math.min(1, .25 + p * .22)); A.sfx('slam', { p });
-        fx.dust(gx, gy, p * .9); fx.ring(gx, gy, 40 + p * 30, '#ffffff', .35 + p * .1);
-        if (v) { const hx = v.joints.x(J.head), hy = v.joints.y(J.head); fx.spark(hx, hy, Math.min(2, p), fin ? fin.color : '#fff3b0'); fx.sweat(hx, hy, 4 + p * 2); }
-        if (o.word) fx.word(o.word, gx, gy - 60 - p * 8, fin ? fin.color : '#ffffff', fin ? 3 : 2);
-        this.m.arena.slam(gx, p);
-        if (fin) { S.flash(1, 1, 1, .45); S.goal.zoom = Math.max(S.goal.zoom, 1.42); this.focusT = Math.max(this.focusT, .6); S.fx.chroma = 1; fx.screenLines = .5; fx.lineCol = fin.color; }
-        if (o.spark) fx.weld(gx, gy - 60);
-        this.ar.boost(.3 + p * .15); if (p >= 1) A.cheer(Math.min(1.5, p * .7));
-        break;
-      }
-      case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
-      case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
-      case 'whoosh': A.sfx('whoosh'); break;
-      case 'spin': A.sfx('spin'); break;
-      case 'lift': A.sfx('lift', { voice: a.char.voice }); break;
-      case 'grunt': A.sfx('grunt', { voice: a.char.voice }); break;
-      case 'cry': A.sfx('cry', { voice: a.char.voice }); fx.word(fin ? fin.line || '' : '', a.x, a.y - 120, '#ffffff', 1); break;
-      case 'charge': A.sfx('charge'); fx.ring(a.x, a.y, 50, fin ? fin.color : '#ffffff'); break;
-      case 'grip': A.sfx('grip'); break;
-      case 'dust': fx.dust(gx, gy, 1); break;
-      case 'splash': fx.splash(a.x, a.y); A.sfx('splash'); break;
-      case 'fin': fx.splash(a.x + a.face * 20, a.y); break;
-      case 'ink': fx.smoke(v ? v.x : a.x, a.y - 50, '#2a1440', 22); A.sfx('ink'); this.fx.ink = 1.4; break;
-      case 'blackout': this.darkGoal = .86; A.sfx('lightsOff'); this.darkUntil = this.m.time + 2.1; break;
-    }
-  }
-  finisherCam(a, v) { this.focusPair = { a, v }; this.focusT = 2.2; this.m.slowmo(.5, .45); this.fx.screenLines = .8; }
-  onMatchEnd(r) {
-    this.endT = 0;
-    const h = this.human, win = h && r.winner && r.team === h.team;
-    const A = this.game.audio;
-    setTimeout(() => A.jingle(r.draw ? 'lose' : !h ? 'win' : win ? 'win' : 'lose'), 900);
-    this.hud.push(r.draw ? '무승부' : win || !h ? '승리!' : '패배…', { col: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', sub: r.draw ? HOW[r.how] : `${r.winner ? r.winner.name : ''} · ${HOW[r.how] || r.how}`, y: 120, life: 3, scale: 4 });
-    if (r.winner) { this.fx.confetti(r.winner.x, 140, 90); }
-    this.ar.setScreen(r.draw ? '무승부' : (r.winner ? r.winner.name : ''), HOW[r.how] || '', '#ffd65a', true);
-  }
-  // ---- per frame ----
-  update(dt) {
-    const g = this.game, inp = g.input, m = this.m;
-    this.t += dt;
-    if (inp.rawPressed('F3') || inp.rawPressed('Backquote')) this.debug = !this.debug;
-    if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
-    if (this.paused) { this.pauseInput(); return; }
-    if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
-    // human input
-    const h = this.human;
-    if (h && m.phase === 'fight') inp.fillIntent(h.intent);
-    if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
-    m.update(dt);
-    if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
-    this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
-    this.ar.update(dt, m.hype);
-    this.hud.update(dt, m);
-    g.audio.crowd(.3 + m.hype / 100 * .7);
-    this.camera(dt);
-    // lights out
-    if (this.darkUntil && m.time > this.darkUntil) { this.darkGoal = 0; this.darkUntil = 0; }
-    this.dark = damp(this.dark, this.darkGoal, 9, dt);
-  }
-  camera(dt) {
-    const m = this.m, S = this.game.screen, ar = m.arena;
-    let tx;
-    const act = m.fighters.filter(f => !f.gone && (f.alive || f.st === 'KO') && f.st !== 'TAGWAIT');
-    if (m.phase === 'intro') {
-      const F = m.fighters.filter(f => f.st === 'INTRO'), n = F.length, step = n ? Math.min(n - 1, Math.floor(m.introT / ((m.cfg.introTime || 3.2) / n))) : -1;
-      if (step !== this.introStep && F[step]) { this.introStep = step; const f = F[step]; this.hud.push(f.name, { col: f.char.color, sub: f.char.nick + ' · ' + (DIFFICULTY[f.difficulty] && f.ctrl !== 'human' ? DIFFICULTY[f.difficulty].name : '플레이어'), y: 188, life: (m.cfg.introTime || 3.2) / n, scale: 3, from: f.x < ar.mid ? -1 : 1 }); for (const o of F) o.spot = o === f; this.game.audio.cheer(.7); }
-      const f = F[Math.max(0, step)];
-      tx = f ? f.x : ar.mid;
-      if (f) { S.focus(f.x - this.camX, f.y - 60, 1.3); }
-    } else {
-      for (const f of m.fighters) f.spot = false;
-      const h = this.human;
-      let sum = 0, wsum = 0;
-      for (const f of act) { const w = f === h ? 2.2 : f.side === 'in' ? 1 : .6; sum += f.x * w; wsum += w; }
-      tx = wsum ? sum / wsum : ar.mid;
-      if (h && act.length > 1) { const lo = h.x - VIEW_W / 2 + 70, hi = h.x + VIEW_W / 2 - 70; tx = clamp(tx, lo, hi); }
-      if (this.focusT > 0 && this.focusPair) {
-        this.focusT -= dt;
-        const { a, v } = this.focusPair, fx = (a.x + v.x) / 2, fy = Math.min(a.y, v.y) - 60;
-        S.focus(fx - this.camX, fy, this.focusT > 1.6 ? 1.32 : 1.18);
-        if (this.focusT <= 0) { this.focusPair = null; S.unfocus(); }
-      } else if (m.phase === 'end' && m.result && m.result.loser && this.endT < 2.4) { const l = m.result.loser; S.focus(l.x - this.camX, l.y - 40, 1.35); }
-      else S.unfocus();
-    }
-    const want = clamp(tx - VIEW_W / 2, 0, ar.width - VIEW_W);
-    this.camX = damp(this.camX, want, m.phase === 'intro' ? 4 : 5.5, dt);
-  }
-  pauseInput() {
-    const inp = this.game.input, A = this.game.audio, items = this.pauseItems();
-    if (inp.pressed('up')) { this.sel = (this.sel + items.length - 1) % items.length; A.sfx('ui'); }
-    if (inp.pressed('down')) { this.sel = (this.sel + 1) % items.length; A.sfx('ui'); }
-    const it = items[this.sel];
-    if ((inp.pressed('left') || inp.pressed('right')) && it.cycle) { it.cycle(inp.pressed('left') ? -1 : 1); A.sfx('ui'); }
-    if (inp.menuPressed('cancel') || inp.pressed('pause')) { this.paused = false; A.sfx('back'); this.game.input.clear(); return; }
-    if (inp.menuPressed('confirm')) { A.sfx('ok'); if (it.act) it.act(); }
-  }
-  pauseItems() {
-    const P = this.m.practice;
-    const items = [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '디버그 표시', value: this.debug ? '켬' : '끔', act: () => { this.debug = !this.debug; }, cycle: () => { this.debug = !this.debug; } }];
-    if (P) {
-      const beh = ['idle', 'guard', 'attack', 'dodge', 'escape', 'ai'], names = { idle: '가만히', guard: '방어만', attack: '공격', dodge: '회피·반격', escape: '탈출 연타', ai: '일반 AI' };
-      const foe = this.m.fighters.find(f => f.ctrl !== 'human');
-      const cur = foe && foe.ai ? (foe.ai.behavior || 'ai') : 'idle';
-      items.push({ label: '상대 행동', value: names[cur], cycle: d => { const i = (beh.indexOf(cur) + d + beh.length) % beh.length; if (foe && foe.ai) { foe.ai.behavior = beh[i] === 'ai' ? null : beh[i]; foe.ctrl = beh[i] === 'ai' ? 'ai' : 'dummy'; } }, act: () => items[3].cycle(1) });
-      items.push({ label: '상대 체력 무한', value: P.infinite ? '켬' : '끔', cycle: () => { P.infinite = !P.infinite; }, act: () => { P.infinite = !P.infinite; } });
-      items.push({ label: '내 피니셔 가득', value: P.fullFin ? '켬' : '끔', cycle: () => { P.fullFin = !P.fullFin; }, act: () => { P.fullFin = !P.fullFin; } });
-      items.push({ label: '상대 기절 저항 0', value: P.stunLock ? '켬' : '끔', cycle: () => { P.stunLock = !P.stunLock; }, act: () => { P.stunLock = !P.stunLock; } });
-      items.push({ label: '상대 회복', act: () => { for (const f of this.m.fighters) { f.hp = f.maxHp; f.stun = f.maxStun; } } });
-      items.push({ label: '연습 끝내기', act: () => this.finish(true) });
-    } else items.push({ label: this.cfg.career ? '기권 (패배 처리)' : '경기 포기', act: () => { this.paused = false; const h = this.human; const w = this.m.fighters.find(f => h && f.team !== h.team); this.m.end({ winner: w, loser: h, how: 'forfeit', team: w ? w.team : null, forfeit: true }); } });
-    return items;
-  }
-  finish(quit) {
-    if (this.done) return;
-    this.done = true;
-    this.game.screen.resetFx();
-    const r = this.m.result || { forfeit: true, quit };
-    const summary = this.m.summary(), h = this.human;
-    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m });
-  }
-  // ---- drawing ----
-  draw(w, u) {
-    const m = this.m, cam = Math.round(this.camX);
-    this.ar.drawBack(w, cam);
-    this.fr.drawAll(w, m, cam, { dt: 1 / 60 });
-    this.ar.drawFront(w, cam);
-    this.fx.draw(w, cam);
-    const h = this.human;
-    this.ar.drawLights(w, cam, h ? h.x : null);
-    if (this.fx.ink > 0) { w.globalAlpha = Math.min(.55, this.fx.ink * .4); rect(w, '#14081e', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
-    if (this.dark > .02) { w.globalAlpha = this.dark; rect(w, '#020208', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; const L = m.links.find(l => l.fin); if (L) for (const f of [L.a, L.v]) if (f) { rect(w, '#ffffff', Math.round(f.joints.x(J.head) - cam) + f.face * 3, Math.round(f.joints.y(J.head)) - 1, 2, 1); } }
-    this.fx.drawLines(w, VIEW_W, VIEW_H);
-    if (this.debug) this.drawDebug(w, cam);
-    u.clearRect(0, 0, VIEW_W, VIEW_H);
-    this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
-    if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
-    if (this.paused) this.drawPause(u);
-    if (this.resultShown) this.drawResult(u);
-  }
-  drawPause(u) {
-    fade(u, .55);
-    panel(u, 210, 70, 220, 220, { accent: '#ffd65a' });
-    drawText(u, '일시정지', 320, 80, { align: 'c', color: '#ffd65a', bold: true });
-    menuList(u, this.pauseItems(), this.sel, 228, 108, { w: 184, lh: 19 });
-    drawText(u, '←→ 값 바꾸기  Enter 선택  Esc 닫기', 320, 272, { size: 11, align: 'c', color: UI.dim });
-  }
-  drawResult(u) {
-    const m = this.m, r = m.result, h = this.human;
-    fade(u, .62);
-    const win = h && r && r.winner && r.team === h.team;
-    panel(u, 130, 40, 380, 270, { accent: win ? '#ffd65a' : '#ff5b5b' });
-    drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
-    drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
-    if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
-    if (h) {
-      const S = m.summary()[h.idx];
-      const rows = [['준 피해', S.dmgDealt.toFixed(0)], ['받은 피해', S.dmgTaken.toFixed(0)], ['다운 시킨 횟수', String(m.fighters.filter(f => f.isFoe(h)).reduce((s, f) => s + f.downs, 0))], ['다운 당한 횟수', String(S.downs)], ['사용한 기술 종류', String(S.moves)], ['반격·역전', String(S.counters)], ['패리', String(S.perfects)]];
-      rows.forEach(([k, v], i) => { drawText(u, k, 160, 162 + i * 16, { size: 11, color: UI.dim }); drawText(u, v, 480, 162 + i * 16, { size: 11, align: 'r', color: '#ffffff' }); });
-    }
-    prompt(u, [this.game.input.label('confirm')], '계속', 320, 290, { align: 'c' });
-  }
-  drawDebug(g, cam) {
-    const m = this.m;
-    for (const f of m.fighters) {
-      if (f.gone) continue;
-      const hb = m.combat.hurtbox(f);
-      g.strokeStyle = '#6be38a'; g.lineWidth = 1; g.strokeRect(Math.round(hb.x0 - cam) + .5, Math.round(hb.y0) + .5, Math.round(hb.x1 - hb.x0), Math.round(hb.y1 - hb.y0));
-      const a = m.combat.hitbox(f);
-      if (a) { g.strokeStyle = '#ff5b5b'; g.strokeRect(Math.round(a.x0 - cam) + .5, Math.round(a.y0) + .5, Math.round(a.x1 - a.x0), Math.round(a.y1 - a.y0)); }
-      const x = Math.round(f.x - cam), y = Math.round(hb.y0 - 34);
-      drawText(g, `${f.st}${f.hsKind && f.st === 'HITSTUN' ? ':' + f.hsKind : ''}`, x, y, { size: 11, align: 'c', color: '#ffffff', outline: '#05060f' });
-      drawText(g, `HP${f.hp.toFixed(0)} ST${Math.max(0, f.stun).toFixed(0)} v${f.vx.toFixed(0)},${f.vy.toFixed(0)}`, x, y + 11, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
-      if (f.ai) drawText(g, `AI:${f.ai.note}`, x, y + 22, { size: 11, align: 'c', color: '#7fe0ff', outline: '#05060f' });
-      rect(g, '#ff5fa2', x, Math.round(f.y), 1, 1);
-    }
-    drawText(g, `fps ${this.game.fps.toFixed(0)}  links ${m.links.length}  hype ${m.hype.toFixed(0)}  slow ${m.slowK.toFixed(2)}`, 6, 320, { size: 11, color: '#ffffff', outline: '#05060f' });
-  }
+// ---- render/PropRenderer.js
+__m["render/PropRenderer.js"] = (function () {
+// Match props: a folding steel chair drawn as a small pixel sprite and rotated without smoothing, with a floor
+// shadow and dents that grow with every blow.
+const { ellipse } = __m["render/painter.js"];
+const SPR = new Map();
+function chairSprite(dent) {
+  let c = SPR.get(dent);
+  if (c) return c;
+  c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(26, 34) : Object.assign(document.createElement('canvas'), { width: 26, height: 34 });
+  const g = c.getContext('2d');
+  const O = '#05060f', M = dent >= 2 ? '#8b93ab' : '#9aa4c0', L = '#e2e8fa', D = '#5a6584';
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const parts = [[4, 1, 7, 11], [6, 11, 3, 21], [6, 17, 15, 3], [18, 19, 3, 13], [8, 25, 11, 2]];  // backrest, back post, seat, front leg, brace
+  for (const [x, y, w, h] of parts) R(x - 1, y - 1, w + 2, h + 2, O);
+  R(4, 1, 7, 11, M); R(4, 1, 7, 1, L); R(4, 1, 1, 11, L); R(10, 1, 1, 11, D); R(4, 11, 7, 1, D);
+  R(5, 4, 5, 2, '#c2333f');
+  R(6, 11, 3, 21, M); R(6, 11, 1, 21, L); R(8, 11, 1, 21, D);
+  R(6, 17, 15, 3, M); R(6, 17, 15, 1, L); R(6, 19, 15, 1, D);
+  R(18, 19, 3, 13, M); R(18, 19, 1, 13, L); R(20, 19, 1, 13, D);
+  R(8, 25, 11, 1, M); R(8, 26, 11, 1, D);
+  R(5, 31, 5, 2, O); R(17, 31, 5, 2, O);
+  if (dent >= 1) { R(11, 18, 3, 1, D); R(7, 7, 2, 1, D); }
+  if (dent >= 2) { R(14, 17, 2, 2, O); R(5, 9, 3, 1, O); R(19, 24, 1, 3, O); }
+  SPR.set(dent, c);
+  return c;
 }
-const matchHow = HOW;
-const balanceRef = B;
-
-return { MatchScene, matchHow, balanceRef };
-})();
-// ---- scenes/SettingsScene.js
-__m["scenes/SettingsScene.js"] = (function () {
-// Settings: volumes, screen effects and key bindings (changes are saved).
-const { drawText } = __m["render/pixelfont.js"];
-const { UI } = __m["render/palette.js"];
-const { panel, menuList, fade, keycap } = __m["render/ui.js"];
-const { ACTIONS, DEFAULT_KEYS, keyLabel } = __m["core/InputManager.js"];
-const { rect } = __m["render/painter.js"];
-class SettingsOverlay {
-  constructor(game) { this.game = game; this.sel = 0; this.page = 0; this.wait = null; }
-  items() {
-    const s = this.game.settings, pct = v => Math.round(v * 100) + '%';
-    if (this.page === 0) return [
-      { label: '전체 음량', value: pct(s.master), k: 'master', step: .1 }, { label: '음악', value: pct(s.music), k: 'music', step: .1 }, { label: '효과음', value: pct(s.sfx), k: 'sfx', step: .1 },
-      { label: '화면 흔들림', value: pct(s.shake), k: 'shake', step: .25 }, { label: '번쩍임 효과', value: pct(s.flash), k: 'flash', step: .25 }, { label: '주사선 효과', value: s.scan ? '켬' : '끔', k: 'scan', toggle: 1 },
-      { label: '대화 속도', value: ['느림', '보통', '빠름'][Math.round(s.typeSpeed * 2) - 1] || '보통', k: 'typeSpeed', list: [.5, 1, 1.5] },
-      { label: '키 설정 →', act: () => { this.page = 1; this.sel = 0; } }, { label: '닫기', act: () => this.close() },
-    ];
-    const keys = this.game.input.keys;
-    return [...Object.keys(ACTIONS).map(a => ({ label: ACTIONS[a], value: (keys[a] || []).map(keyLabel).join(' / '), bind: a })), { label: '기본값으로', act: () => { this.game.input.keys = JSON.parse(JSON.stringify(DEFAULT_KEYS)); this.game.saveSettings(); } }, { label: '← 돌아가기', act: () => { this.page = 0; this.sel = 0; } }];
-  }
-  close() { this.game.saveSettings(); this.game.applySettings(); this.game.audio.sfx('back'); this.game.pop(); }
-  update() {
-    const inp = this.game.input, A = this.game.audio, it = this.items(), s = this.game.settings;
-    if (this.wait) return;
-    if (inp.pressed('up')) { this.sel = (this.sel + it.length - 1) % it.length; A.sfx('ui'); }
-    if (inp.pressed('down')) { this.sel = (this.sel + 1) % it.length; A.sfx('ui'); }
-    const cur = it[this.sel];
-    if (inp.menuPressed('cancel') && !this.wait) { if (this.page) { this.page = 0; this.sel = 0; A.sfx('back'); } else this.close(); return; }
-    const d = inp.pressed('left') ? -1 : inp.pressed('right') ? 1 : 0;
-    if (cur.k && (d || inp.menuPressed('confirm'))) {
-      const dd = d || 1;
-      if (cur.toggle) s[cur.k] = s[cur.k] ? 0 : 1;
-      else if (cur.list) { const i = cur.list.indexOf(s[cur.k]); s[cur.k] = cur.list[(Math.max(0, i) + dd + cur.list.length) % cur.list.length]; }
-      else s[cur.k] = Math.round(Math.min(1, Math.max(0, s[cur.k] + dd * cur.step)) * 100) / 100;
-      this.game.applySettings(); A.sfx('ui');
-      return;
+function drawChairAt(g, x, y, rot = 0, face = 1, dent = 0) {
+  g.save(); g.translate(Math.round(x), Math.round(y)); g.rotate(rot); if (face < 0) g.scale(-1, 1);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(chairSprite(dent | 0), -13, -17);
+  g.restore();
+}
+function drawProps(g, m, camX) {
+  const ar = m.arena;
+  for (const p of m.props.list) {
+    const x = p.x - camX;
+    if (x < -40 || x > 680) continue;
+    if (p.state !== 'held') {
+      const gy = ar.ground(p.x, p.y + 10, p.side), k = Math.max(.25, 1 - (gy - p.y) / 160);
+      g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(12 * k), 2); g.globalAlpha = 1;
     }
-    if (inp.menuPressed('confirm')) {
-      if (cur.act) { A.sfx('ok'); cur.act(); }
-      else if (cur.bind) {
-        this.wait = cur.bind; A.sfx('ok');
-        inp.captureNext(code => {
-          const a = this.wait; this.wait = null;
-          if (code === 'Escape') return;
-          const keys = this.game.input.keys;
-          for (const k in keys) keys[k] = keys[k].filter(c => c !== code);
-          keys[a] = [code, ...(keys[a] || [])].slice(0, 2);
-          this.game.saveSettings(); A.sfx('good');
-        });
-      }
-    }
-  }
-  draw(w, u) {
-    fade(u, .72);
-    panel(u, 130, 30, 380, 300, { accent: '#49d6ff' });
-    drawText(u, this.page ? '키 설정' : '설정', 320, 40, { align: 'c', color: '#49d6ff', bold: true });
-    menuList(u, this.items(), this.sel, 150, 66, { w: 340, lh: this.page ? 17 : 22, size: this.page ? 11 : 14 });
-    if (this.wait) { rect(u, '#05060f', 200, 150, 240, 50); panel(u, 202, 152, 236, 46, { accent: '#ffd65a' }); drawText(u, `'${ACTIONS[this.wait]}'에 쓸 키를 누르세요`, 320, 162, { align: 'c', color: '#ffffff' }); drawText(u, 'Esc 취소', 320, 180, { size: 11, align: 'c', color: UI.dim }); }
-    drawText(u, '←→ 값 바꾸기 · Enter 선택 · Esc 닫기', 320, 314, { size: 11, align: 'c', color: UI.dim });
-    void keycap;
+    drawChairAt(g, x, p.y, p.rot || 0, p.face || 1, p.dent);
   }
 }
 
-return { SettingsOverlay };
-})();
-// ---- world/CareerManager.js
-__m["world/CareerManager.js"] = (function () {
-// Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
-const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
-const { Save } = __m["core/SaveManager.js"];
-const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
-const { BALANCE: B } = __m["data/balance.js"];
-const { MOVES } = __m["data/moves.js"];
-const SLOT_NAMES = ['오전', '오후', '저녁'];
-const SEASON_DAYS = 28;
-// Growth per trained level (levels go 0..20).
-const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'] };
-const STYLE_BASE = {
-  all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
-  power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
-  air: { label: '하이플라이어', stats: { hp: 88, stun: 94, atk: .95, grp: .94, spd: 1.14, jump: 1.24, rec: 1.08, down: 1.08, fin: 1.1, weight: 74, lift: 1, kbr: .85 }, chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', stance: 'air', finisher: 'typhoon', moves: { front: { n: 'headDrop', f: 'irishWhip', b: 'suplex', u: 'bellyToBelly', d: 'ddt' }, rear: { n: 'bulldog', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'german' }, catch: 'backBody', counter: 'armDrag' }, build: 'lean' },
-  tech: { label: '테크니션', stats: { hp: 96, stun: 100, atk: .96, grp: 1.14, spd: 1.02, jump: 1, rec: 1.14, down: 1.04, fin: 1.04, weight: 92, lift: 1.5, kbr: 1 }, chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveElbow', stance: 'tech', finisher: 'anchor', moves: { front: { n: 'suplex', f: 'irishWhip', b: 'bellyToBelly', u: 'backbreaker', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'anchorHold', u: 'backdropDriver', d: 'atomic' }, catch: 'spinebuster', counter: 'armDrag' }, build: 'athletic' },
-  brawl: { label: '브롤러', stats: { hp: 104, stun: 108, atk: 1.14, grp: .95, spd: .99, jump: .96, rec: 1, down: 1, fin: 1, weight: 102, lift: 1.4, kbr: 1.06 }, chain: ['jab', 'cross', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', stance: 'box', finisher: 'weld', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'slapFest', d: 'ddt' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'german', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'athletic' },
-  heavy: { label: '슈퍼 헤비급', stats: { hp: 130, stun: 118, atk: 1.04, grp: 1.02, spd: .82, jump: .76, rec: .9, down: .92, fin: .95, weight: 156, lift: 1.8, kbr: 1.6 }, chain: ['sumoPush', 'sumoPush', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', stance: 'heavy', finisher: 'tsunami', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'airplane', d: 'gutBuster' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'heavy' },
-};
-// Moves a trainer or rival can teach. cost in won, fame needed.
-const LEARNABLE = [
-  { id: 'backbreaker', cost: 30000, fame: 5, by: 'trainer' }, { id: 'bellyToBelly', cost: 30000, fame: 5, by: 'trainer' }, { id: 'atomic', cost: 25000, fame: 0, by: 'trainer' },
-  { id: 'piledriver', cost: 60000, fame: 25, by: 'trainer' }, { id: 'chokeslam', cost: 70000, fame: 30, by: 'trainer' }, { id: 'giantSwing', cost: 55000, fame: 20, by: 'trainer' },
-  { id: 'airplane', cost: 65000, fame: 35, by: 'rival' }, { id: 'gutBuster', cost: 50000, fame: 30, by: 'rival' }, { id: 'headDrop', cost: 45000, fame: 20, by: 'rival' }, { id: 'anchorHold', cost: 50000, fame: 25, by: 'rival' }, { id: 'slapFest', cost: 40000, fame: 15, by: 'rival' }, { id: 'cornerSmash', cost: 35000, fame: 10, by: 'trainer' }, { id: 'spinebuster', cost: 45000, fame: 20, by: 'rival' },
-];
-const SHOP_ITEMS = [
-  { id: 'bandage', name: '붕대', price: 12000, desc: '부상 게이지 -7. 언제든 사용할 수 있다.', kind: 'item', inj: 7 },
-  { id: 'bigBandage', name: '고급 압박 붕대', price: 30000, desc: '부상 게이지 -18.', kind: 'item', inj: 18 },
-  { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
-  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
-  { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
-  { id: 'mouthguard', name: '마우스피스', price: 30000, desc: '최대 기절 저항 +6.', kind: 'gear', slot: 'mouth', mod: { stun: 6 } },
-  { id: 'proBoots', name: '프로 부츠', price: 55000, desc: '이동 속도 +3%, 점프력 +3%.', kind: 'gear', slot: 'boots', mod: { spd: .03, jump: .03 } },
-  { id: 'luckyCharm', name: '등대 부적', price: 48000, desc: '피니셔 충전 +5%.', kind: 'gear', slot: 'charm', mod: { fin: .05 } },
-  { id: 'outfitGold', name: '금빛 타이츠', price: 40000, desc: '의상: 금색과 검정.', kind: 'outfit', look: { bottom: { kind: 'tights', c1: '#1c1424', c2: '#ffd65a', pat: 'flame' }, boots: { c1: '#ffd65a', c2: '#1c1424', h: .78 } } },
-  { id: 'outfitSea', name: '파도 트렁크', price: 30000, desc: '의상: 청록 파도무늬.', kind: 'outfit', look: { bottom: { kind: 'trunks', c1: '#1f8fa6', c2: '#e6f6ff', pat: 'bands' }, boots: { c1: '#e6f6ff', c2: '#1f8fa6', h: .7 } } },
-  { id: 'outfitNeon', name: '네온 싱글렛', price: 50000, desc: '의상: 분홍 네온 싱글렛.', kind: 'outfit', look: { top: { kind: 'singlet', c1: '#ff4fa3', c2: '#23d5c8' }, bottom: { kind: 'shorts', c1: '#ff4fa3', c2: '#23d5c8', pat: 'side' } } },
-  { id: 'maskWave', name: '파도 마스크', price: 60000, desc: '의상: 파도 무늬 복면.', kind: 'outfit', mask: { full: 1, kind: 'wave', c1: '#1f6f7a', c2: '#e6f6ff', c3: '#ffd65a' } },
-  { id: 'headband', name: '머리띠', price: 15000, desc: '의상: 붉은 머리띠.', kind: 'outfit', hat: 'band', hatCol: '#d23b5a' },
-  { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
-];
-
-// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
-// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
-// and move it over.
-const saveKey = n => 'save' + n;
-const LEGACY = ['career0', 'career1', 'career2'];
-const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
-function legacyNewest(suffix = '') {
-  let best = null;
-  for (const k of LEGACY) {
-    const d = Save.get(k + suffix);
-    if (!d || typeof d !== 'object' || !d.name) continue;
-    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
-    if (!best || lex(score, best.score) > 0) best = { d, score };
-  }
-  return best && best.d;
-}
-function migrateLegacy(n) {
-  const d = legacyNewest();
-  if (!d) return null;
-  const chk = legacyNewest('.chk');
-  d.saveSlot = n;
-  Save.set(saveKey(n), d);
-  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
-  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
-  return d;
-}
-function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
-
-class Career {
-  static create(n, setup) {
-    const c = new Career();
-    const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
-    Object.assign(c.d, {
-      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
-      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0 },
-      moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
-    });
-    c.d.league = c.newLeague(1);
-    c.save(true);
-    return c;
-  }
-  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  constructor() {
-    this.d = {
-      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
-      record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
-      items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
-      seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-    };
-  }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; }
-  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
-  save(checkpoint) {
-    const n = this.d.saveSlot || 1;
-    this.d.savedAt = Date.now();
-    Save.set(saveKey(n), this.d);
-    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
-  }
-  // ---- league ----
-  newLeague(season) {
-    const base = ['baekpa', 'bjorn', 'taesan', 'neon', 'baeksang', 'mandeok', 'haneul', 'dongsu', 'dohyun', 'dueok', 'palcho', 'bokja'];
-    if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
-    return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
-  }
-  get champion() { return this.d.flags.champion ? 'player' : 'fogking'; }
-  // Player rank: position among the league plus the player (1 = top contender).
-  rankList() {
-    const L = this.d.league.slice();
-    const me = { id: 'player', pts: this.d.flags.rankPts || 0, w: this.d.record.w, l: this.d.record.l };
-    L.push(me);
-    L.sort((a, b) => b.pts - a.pts || (a.id === 'player' ? 1 : -1));
-    return L;
-  }
-  get rank() { return this.rankList().findIndex(e => e.id === 'player') + 1; }
-  rankOf(id) { return this.rankList().findIndex(e => e.id === id) + 1; }
-  // ---- stats ----
-  get stats() {
-    const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
-    b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
-    for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
-    for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
-    b.lift *= 1 + L.grp * .015 + L.hp * .008;
-    return b;
-  }
-  get styleDef() { return STYLE_BASE[this.d.style] || STYLE_BASE.all; }
-  look() {
-    const L = deepClone(this.d.look);
-    const o = this.d.outfit;
-    if (o) for (const id of o) { const it = SHOP_ITEMS.find(i => i.id === id); if (!it) continue; if (it.look) Object.assign(L, deepClone(it.look)); if (it.mask) L.head.mask = deepClone(it.mask); if (it.hat) { L.head.hat = it.hat; L.head.hatCol = it.hatCol; } if (it.cape) L.cape = deepClone(it.cape); }
-    return L;
-  }
-  // Fighter options for a match.
-  entrant(ctrl = 'human') {
-    const S = this.styleDef, st = this.stats, fat = this.d.fatigue;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0 };
-  }
-  // ---- time ----
-  get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
-  spendSlot(n = 1) {
-    const d = this.d;
-    d.slot += n;
-    const msgs = [];
-    while (d.slot > 2) { d.slot -= 3; msgs.push(...this.nextDay(true)); }
-    return msgs;
-  }
-  sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
-  nextDay(forced) {
-    const d = this.d, msgs = [];
-    // contract deadline passed without a match
-    if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
-    d.day++;
-    if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
-    if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
-    // league simulation: others win and lose too
-    const r = new RNG(d.season * 100 + d.day);
-    for (const e of d.league) { if (r.chance(.35)) { const up = r.chance(.5 + (CHARACTERS[e.id].stats.hp - 100) / 400); e.pts += up ? 4 : -2; up ? e.w++ : e.l++; } }
-    return msgs;
-  }
-  // ---- injuries ----
-  get injuryLevel() { const i = this.d.injury; return i >= B.injuryDanger ? 'danger' : i >= B.injuryWarn ? 'warn' : 'ok'; }
-  healInjury(pts) { const before = this.d.injury; this.d.injury = Math.max(0, this.d.injury - pts); return before - this.d.injury; }
-  // ---- economy ----
-  canPay(n) { return this.d.money >= n; }
-  pay(n) { if (this.d.money < n) return false; this.d.money -= n; return true; }
-  earn(n) { this.d.money += n; this.d.earnedTotal += n; this.d.seasonLog.earned += n; }
-  xpNeed() { return 80 + this.d.level * 40; }
-  addXp(n) {
-    const d = this.d, ups = [];
-    d.xp += n;
-    while (d.xp >= this.xpNeed()) { d.xp -= this.xpNeed(); d.level++; d.points += 2; ups.push(d.level); }
-    return ups;
-  }
-  // ---- offers ----
-  makeOffers() {
-    const d = this.d, r = new RNG(d.season * 1000 + d.day * 7 + d.record.w * 3);
-    const ranks = this.rankList(), me = this.rank, out = [];
-    const others = ranks.filter(e => e.id !== 'player');
-    const pick = off => { const i = me - 1 + off, j = i > me - 1 ? i - 1 : i; return others[clamp(j, 0, others.length - 1)]; };
-    const lvl = rk => (d.season >= 2 ? ['normal', 'hard', 'hard', 'expert'] : ['easy', 'normal', 'normal', 'hard'])[clamp(Math.floor((14 - rk) / 4), 0, 3)];
-    const mk = (opp, kind, extra = {}) => {
-      const rk = this.rankOf(opp.id), c = CHARACTERS[opp.id];
-      const reward = Math.round((22000 + (15 - rk) * 5200) * (kind === 'challenge' ? 1.4 : 1) * (1 + (d.season - 1) * .3) / 1000) * 1000;
-      return Object.assign({ opp: opp.id, oppName: c.name, mode: 'single', arena: 'hall', reward, fame: kind === 'challenge' ? 9 : 6, kind, day: d.day + 1 + r.int(0, 2), difficulty: lvl(rk), rank: rk, desc: '' }, extra);
-    };
-    out.push(mk(pick(-1), 'normal', { desc: '바로 위 순위. 이기면 순위를 빼앗는다.' }));
-    let ch = pick(r.chance(.5) ? -3 : -2);
-    if (out.some(o => o.opp === ch.id)) ch = pick(-4);
-    out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
-    let third = pick(r.int(0, 2));
-    for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
-    out.push(mk(third, 'stip', r.chance(.5) ? { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' } : { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }));
-    // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
-    const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
-    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
-      const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
-      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n }));
-    }
-    // events
-    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
-    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion) out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: '챔피언 타이틀 매치. 등대 돔에서 열린다.', title: 1 });
-    d.offers = out.slice(0, 4); d.offersDay = d.day;
-    return d.offers;
-  }
-  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
-  // ---- after a match ----
-  applyResult(kind, res, info = {}) {
-    const d = this.d, h = res.human, won = res.won, draw = res.draw;
-    const out = { lines: [], money: 0, fame: 0, xp: 0, injury: 0, ups: [], rankBefore: this.rank, rankAfter: 0 };
-    // injuries: proportional to damage actually taken, never from practice
-    if (kind !== 'practice' && h) {
-      const maxHp = this.stats.hp;
-      let inj = (h.dmgTaken / maxHp) * B.injuryPerBar + (h.ko ? B.injuryKO : 0) + h.finishersTaken * B.injuryFinisher + (h.ringOuts ? B.injuryRingOut : 0);
-      inj *= 1 + d.fatigue / 250;
-      inj = Math.round(inj * 10) / 10;
-      d.injury = Math.min(100, d.injury + inj); out.injury = inj;
-    }
-    if (kind !== 'practice') d.flags.pajeon = 0;
-    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
-    d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
-    const c = d.contract && kind !== 'free' ? d.contract : info.offer;
-    if (draw) d.record.d++;
-    else if (won) { d.record.w++; d.record.streak = Math.max(1, d.record.streak + 1); d.seasonLog.w++; if (res.result.how === 'ko') d.record.ko++; if (res.result.how === 'pin') d.record.pin++; }
-    else { d.record.l++; d.record.streak = Math.min(-1, d.record.streak - 1); d.seasonLog.l++; }
-    let money = 0, fame = 0, xp = won ? 60 : draw ? 35 : 25;
-    if (c) {
-      money = won ? c.reward : Math.round(c.reward * (draw ? .5 : .25) / 1000) * 1000;
-      fame = won ? c.fame : draw ? 2 : 1;
-      if (res.result.forfeit) { money = 0; fame = -3; }
-      xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
-      if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
-      // ranking points
-      if (kind === 'official' || kind === 'title') {
-        d.record.official++;
-        const opp = d.league.find(e => e.id === c.opp);
-        const myPts = d.flags.rankPts || 0;
-        if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
-        else if (won) d.flags.rankPts = myPts + 3;
-        else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won) { d.flags.champion = true; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push('새 챔피언이 탄생했다!'); }
-      }
-      if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
-      if (kind !== 'free') d.contract = null;
-    } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
-    if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
-    if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }
-    d.fame = clamp(d.fame + fame, 0, 999);
-    this.earn(Math.max(0, money));
-    out.money = money; out.fame = fame; out.xp = xp;
-    out.ups = this.addXp(xp);
-    out.rankAfter = this.rank;
-    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
-    d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
-    d.seasonLog.matches.push(d.lastResult);
-    this.save();
-    return out;
-  }
-  // Rival relationship with 서도현.
-  rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
-  money() { return fmtMoney(this.d.money); }
-  learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
-  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
-  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
-}
-
-return { hasCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS };
+return { drawChairAt, drawProps };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -7451,7 +7422,28 @@ const PAINT = {
     door(g, 320, 196, 34, 104, '#6a3a2a', { sign: '사장실' });
     door(g, 1092, 196, 40, 104, '#2a2a3a', { sign: '경기장', signCol: '#7a1f3a' });
     door(g, 564, 196, 36, 104, '#2a4a3a', { sign: '훈련장' });
+    door(g, 1032, 196, 36, 104, '#3a2626', { sign: '지하', signCol: '#5a1a1a' });
     lamp(g, 200, 40, '#ffcf7a', { len: 18 }); lamp(g, 560, 40, '#ffcf7a', { len: 10 }); lamp(g, 940, 40, '#ffcf7a', { len: 18 });
+  },
+  basement(g, L) {
+    const W = L.w;
+    wallBase(g, W, 30, '#34343c', null, '#2c2c32', { ceil: ['#060608', '#0a0a0e', '#0e0e14'] });
+    for (let y = 40; y < FLOOR - 4; y += 22) { rect(g, '#2a2a31', 0, y, W, 1); for (let x = ((y - 40) / 22 % 2) * 30; x < W; x += 60) rect(g, '#2a2a31', x, y, 1, 22); }
+    rect(g, '#05060f', 0, 46, W, 9); rect(g, '#5a4a3a', 0, 47, W, 7); rect(g, '#7a6a5a', 0, 47, W, 2); for (let x = 40; x < W; x += 120) rect(g, '#3a2e24', x, 45, 6, 11);
+    rect(g, '#05060f', 0, 62, W, 6); rect(g, '#3a5a6a', 0, 63, W, 4);
+    drawText(g, '리벤지', 140, 116, { scale: 2, color: '#8a1f2a' }); drawText(g, '야항 지하', 620, 96, { size: 11, color: '#c98a2e' }); drawText(g, 'NO RULES', 330, 128, { size: 11, color: '#3a8a4a' });
+    // the underground ring behind a chain-link fence
+    const rx = 440, rw = 200, my = 262;
+    rect(g, '#05060f', rx - 2, my, rw + 4, FLOOR - my); rect(g, '#140e0c', rx, my + 1, rw, FLOOR - my - 2); rect(g, '#c98a2e', rx, my + 4, rw, 2);
+    rect(g, '#4a2626', rx + 4, my - 8, rw - 8, 9); rect(g, '#5a3030', rx + 4, my - 8, rw - 8, 2);
+    for (const px of [rx + 4, rx + rw - 6]) { rect(g, '#05060f', px - 1, my - 62, 5, 55); rect(g, '#8a8494', px, my - 61, 3, 53); }
+    for (const h of [18, 34, 50]) { rect(g, '#c9a25a', rx + 6, my - 8 - h, rw - 12, 1); rect(g, '#5a4a2a', rx + 6, my - 7 - h, rw - 12, 1); }
+    for (let x = 400; x < 680; x += 8) { line(g, '#3a3a46', x, 150, x + 24, 262); line(g, '#3a3a46', x + 24, 150, x, 262); }
+    rect(g, '#4a4a56', 400, 148, 280, 3);
+    drawText(g, '지하 링', 540, 140, { size: 11, align: 'c', color: '#ffb347' });
+    lamp(g, 200, 30, '#ffb347', { len: 34 }); lamp(g, 540, 30, '#ffb347', { len: 46 }); lamp(g, 700, 30, '#ff8a2b', { len: 26 });
+    door(g, 42, 196, 36, 104, '#3a2626', { sign: '로비' });
+    box(g, 250, 262, 40, 38, '#5a4630'); box(g, 292, 274, 28, 26, '#4a3a2a');
   },
   office(g, L) {
     const W = L.w;
@@ -7628,8 +7620,9 @@ function streetFar(L, slot) {
 /* Location data. npcs(c) returns who is here today; objects have an action key handled by WorldScene. */
 const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
-    doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
+    doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
     objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 75, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 380, w: 220, act: 'poster', label: '선수 포스터' }] },
+  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
   gym: { name: '훈련장', w: 1100, music: 'gym', rim: '#ffcf8a', light: .04, doors: [{ x: 63, to: 'lobby', at: 582, label: '로비' }],
     objects: [{ x: 420, w: 70, act: 'train', game: 'bench', label: '벤치프레스' }, { x: 546, w: 70, act: 'train', game: 'rope', label: '줄넘기' }, { x: 668, w: 50, act: 'train', game: 'mitt', label: '미트 치기' }, { x: 790, w: 60, act: 'train', game: 'bridge', label: '목 브릿지' }, { x: 980, w: 180, act: 'spar', label: '연습 링 (연습 경기)' }, { x: 390, w: 110, act: 'train', game: 'breath', label: '거울 앞 호흡 훈련' }] },
@@ -7657,6 +7650,325 @@ const locWin = windowPane;
 
 return { drawWindows, streetFar, bakeLocation, FLOOR, SKY, LOCATIONS, locMix, locLine, locWave, locWin };
 })();
+// ---- world/Actor.js
+__m["world/Actor.js"] = (function () {
+// A person drawn outside the fight system: townspeople, the player walking around town, run-ins at the ring side.
+const { Joints, dimsFor, solveFK, toWorld } = __m["anim/skeleton.js"];
+const { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip } = __m["anim/clips.js"];
+const { updateTails } = __m["anim/AnimationSystem.js"];
+const { FLOOR } = __m["world/locations.js"];
+const P = new Float32Array(16);
+class Actor {
+  constructor(look, o = {}) { this.look = look; this.dims = dimsFor(look.build, look.scale || 1); this.x = o.x || 100; this.y = FLOOR + (o.y || 0); this.vx = 0; this.vy = 0; this.face = o.face || 1; this.ground = true; this.stance = o.stance || 'calm'; this.gait = 0; this.t = Math.random() * 3; this.poseT = this.t; this.joints = new Joints(); this.expr = 'neutral'; this.exprT = 0; this.tails = null; this.idx = 0; this.id = o.id; this.home = this.x; this.wander = o.wander || 0; this.wT = 2; this.talkT = 0; this.y0 = this.y; }
+  pose(dt) {
+    this.t += dt; this.poseT = this.t;
+    const moving = Math.abs(this.vx) > 6;
+    if (!this.ground) sampleClip(clip(this.vy < 0 ? 'jump' : 'fall'), .2, P);
+    else if (this.talkT > 0) sampleClip(clip('talk'), this.t, P);
+    else if (STANCES[this.stance]) { stancePose(this.stance, this.t, P); if (moving) { this.gait += dt * (2.6 + Math.abs(this.vx) * .07) * (this.vx * this.face >= 0 ? 1 : -1); gaitPose(P, this.gait, Math.abs(this.vx) > 150 ? 'run' : 'walk', 1); } }
+    else if (hasClip(this.stance)) sampleClip(clip(this.stance), this.t, P);
+    else stancePose('calm', this.t, P);
+    if (!this.ground) solveFK(P, this.dims, this.joints, { snap: false, py: -this.dims.leg * .92 });
+    else solveFK(P, this.dims, this.joints, {});
+    toWorld(this.joints, this.face, this.x, this.y);
+    this.faceExpr = this.exprT > 0 ? this.expr : (Math.floor(this.t * .7) % 5 === 0 && (this.t % 1.43) < .12 ? 'blink' : this.talkT > 0 ? (Math.floor(this.t * 8) % 2 ? 'talk' : 'neutral') : 'neutral');
+    if (this.exprT > 0) this.exprT -= dt;
+    if (this.talkT > 0) this.talkT -= dt;
+    updateTails(this, dt, this.y);
+  }
+}
+
+return { Actor };
+})();
+// ---- world/CareerManager.js
+__m["world/CareerManager.js"] = (function () {
+// Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
+const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
+const { Save } = __m["core/SaveManager.js"];
+const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { MOVES } = __m["data/moves.js"];
+const SLOT_NAMES = ['오전', '오후', '저녁'];
+const SEASON_DAYS = 28;
+// Growth per trained level (levels go 0..20).
+const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'] };
+const STYLE_BASE = {
+  all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
+  power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
+  air: { label: '하이플라이어', stats: { hp: 88, stun: 94, atk: .95, grp: .94, spd: 1.14, jump: 1.24, rec: 1.08, down: 1.08, fin: 1.1, weight: 74, lift: 1, kbr: .85 }, chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', stance: 'air', finisher: 'typhoon', moves: { front: { n: 'headDrop', f: 'irishWhip', b: 'suplex', u: 'bellyToBelly', d: 'ddt' }, rear: { n: 'bulldog', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'german' }, catch: 'backBody', counter: 'armDrag' }, build: 'lean' },
+  tech: { label: '테크니션', stats: { hp: 96, stun: 100, atk: .96, grp: 1.14, spd: 1.02, jump: 1, rec: 1.14, down: 1.04, fin: 1.04, weight: 92, lift: 1.5, kbr: 1 }, chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveElbow', stance: 'tech', finisher: 'anchor', moves: { front: { n: 'suplex', f: 'irishWhip', b: 'bellyToBelly', u: 'backbreaker', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'anchorHold', u: 'backdropDriver', d: 'atomic' }, catch: 'spinebuster', counter: 'armDrag' }, build: 'athletic' },
+  brawl: { label: '브롤러', stats: { hp: 104, stun: 108, atk: 1.14, grp: .95, spd: .99, jump: .96, rec: 1, down: 1, fin: 1, weight: 102, lift: 1.4, kbr: 1.06 }, chain: ['jab', 'cross', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', stance: 'box', finisher: 'weld', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'slapFest', d: 'ddt' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'german', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'athletic' },
+  heavy: { label: '슈퍼 헤비급', stats: { hp: 130, stun: 118, atk: 1.04, grp: 1.02, spd: .82, jump: .76, rec: .9, down: .92, fin: .95, weight: 156, lift: 1.8, kbr: 1.6 }, chain: ['sumoPush', 'sumoPush', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', stance: 'heavy', finisher: 'tsunami', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'airplane', d: 'gutBuster' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'heavy' },
+};
+// Moves a trainer or rival can teach. cost in won, fame needed.
+const LEARNABLE = [
+  { id: 'backbreaker', cost: 30000, fame: 5, by: 'trainer' }, { id: 'bellyToBelly', cost: 30000, fame: 5, by: 'trainer' }, { id: 'atomic', cost: 25000, fame: 0, by: 'trainer' },
+  { id: 'piledriver', cost: 60000, fame: 25, by: 'trainer' }, { id: 'chokeslam', cost: 70000, fame: 30, by: 'trainer' }, { id: 'giantSwing', cost: 55000, fame: 20, by: 'trainer' },
+  { id: 'airplane', cost: 65000, fame: 35, by: 'rival' }, { id: 'gutBuster', cost: 50000, fame: 30, by: 'rival' }, { id: 'headDrop', cost: 45000, fame: 20, by: 'rival' }, { id: 'anchorHold', cost: 50000, fame: 25, by: 'rival' }, { id: 'slapFest', cost: 40000, fame: 15, by: 'rival' }, { id: 'cornerSmash', cost: 35000, fame: 10, by: 'trainer' }, { id: 'spinebuster', cost: 45000, fame: 20, by: 'rival' },
+];
+const SHOP_ITEMS = [
+  { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
+  { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
+  { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
+  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
+  { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
+  { id: 'mouthguard', name: '마우스피스', price: 30000, desc: '최대 기절 저항 +6.', kind: 'gear', slot: 'mouth', mod: { stun: 6 } },
+  { id: 'proBoots', name: '프로 부츠', price: 55000, desc: '이동 속도 +3%, 점프력 +3%.', kind: 'gear', slot: 'boots', mod: { spd: .03, jump: .03 } },
+  { id: 'luckyCharm', name: '등대 부적', price: 48000, desc: '피니셔 충전 +5%.', kind: 'gear', slot: 'charm', mod: { fin: .05 } },
+  { id: 'outfitGold', name: '금빛 타이츠', price: 40000, desc: '의상: 금색과 검정.', kind: 'outfit', look: { bottom: { kind: 'tights', c1: '#1c1424', c2: '#ffd65a', pat: 'flame' }, boots: { c1: '#ffd65a', c2: '#1c1424', h: .78 } } },
+  { id: 'outfitSea', name: '파도 트렁크', price: 30000, desc: '의상: 청록 파도무늬.', kind: 'outfit', look: { bottom: { kind: 'trunks', c1: '#1f8fa6', c2: '#e6f6ff', pat: 'bands' }, boots: { c1: '#e6f6ff', c2: '#1f8fa6', h: .7 } } },
+  { id: 'outfitNeon', name: '네온 싱글렛', price: 50000, desc: '의상: 분홍 네온 싱글렛.', kind: 'outfit', look: { top: { kind: 'singlet', c1: '#ff4fa3', c2: '#23d5c8' }, bottom: { kind: 'shorts', c1: '#ff4fa3', c2: '#23d5c8', pat: 'side' } } },
+  { id: 'maskWave', name: '파도 마스크', price: 60000, desc: '의상: 파도 무늬 복면.', kind: 'outfit', mask: { full: 1, kind: 'wave', c1: '#1f6f7a', c2: '#e6f6ff', c3: '#ffd65a' } },
+  { id: 'headband', name: '머리띠', price: 15000, desc: '의상: 붉은 머리띠.', kind: 'outfit', hat: 'band', hatCol: '#d23b5a' },
+  { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
+];
+
+// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
+// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
+// and move it over.
+const saveKey = n => 'save' + n;
+const LEGACY = ['career0', 'career1', 'career2'];
+const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+function legacyNewest(suffix = '') {
+  let best = null;
+  for (const k of LEGACY) {
+    const d = Save.get(k + suffix);
+    if (!d || typeof d !== 'object' || !d.name) continue;
+    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
+    if (!best || lex(score, best.score) > 0) best = { d, score };
+  }
+  return best && best.d;
+}
+function migrateLegacy(n) {
+  const d = legacyNewest();
+  if (!d) return null;
+  const chk = legacyNewest('.chk');
+  d.saveSlot = n;
+  Save.set(saveKey(n), d);
+  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
+  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
+  return d;
+}
+// Sale days: consumables at the clinic and the shop cost 30% less. Merchant days: a peddler sets up on the street.
+const saleOn = d => d.day > 2 && (d.day + d.season * 2) % 6 === 4;
+const merchantOn = d => d.day > 1 && (d.day + d.season) % 5 === 2;
+const salePrice = (d, price) => (saleOn(d) ? Math.round(price * .7 / 100) * 100 : price);
+// The peddler's goods. buff: lasts for the next match (or next training); now: takes effect at once; give: an item.
+const RARE_ITEMS = [
+  { id: 'knuckle', name: '황금 너클', price: 25000, desc: '다음 경기 공격력 +20%.', buff: { atk: 1.2 } },
+  { id: 'guardSet', name: '강철 보호대', price: 22000, desc: '다음 경기에서 쌓이는 부상 -40%.', buff: { guard: .6 } },
+  { id: 'eelTonic', name: '등대 장어즙', price: 18000, desc: '피로 -60, 부상 -6. 바로 마신다.', now: { fat: 60, inj: 6 } },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
+  { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
+  { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
+  { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
+];
+const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
+function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
+
+class Career {
+  static create(n, setup) {
+    const c = new Career();
+    const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
+    Object.assign(c.d, {
+      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
+      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0 },
+      moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
+    });
+    c.d.league = c.newLeague(1);
+    c.save(true);
+    return c;
+  }
+  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  constructor() {
+    this.d = {
+      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
+      record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
+      items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
+      seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
+    };
+  }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; }
+  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
+  save(checkpoint) {
+    const n = this.d.saveSlot || 1;
+    this.d.savedAt = Date.now();
+    Save.set(saveKey(n), this.d);
+    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
+  }
+  // ---- league ----
+  newLeague(season) {
+    const base = ['baekpa', 'bjorn', 'taesan', 'neon', 'baeksang', 'mandeok', 'haneul', 'dongsu', 'dohyun', 'dueok', 'palcho', 'bokja'];
+    if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
+    return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
+  }
+  get champion() { return this.d.flags.champion ? 'player' : 'fogking'; }
+  // Player rank: position among the league plus the player (1 = top contender).
+  rankList() {
+    const L = this.d.league.slice();
+    const me = { id: 'player', pts: this.d.flags.rankPts || 0, w: this.d.record.w, l: this.d.record.l };
+    L.push(me);
+    L.sort((a, b) => b.pts - a.pts || (a.id === 'player' ? 1 : -1));
+    return L;
+  }
+  get rank() { return this.rankList().findIndex(e => e.id === 'player') + 1; }
+  rankOf(id) { return this.rankList().findIndex(e => e.id === id) + 1; }
+  // ---- stats ----
+  get stats() {
+    const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
+    b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
+    for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
+    for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
+    b.lift *= 1 + L.grp * .015 + L.hp * .008;
+    return b;
+  }
+  get styleDef() { return STYLE_BASE[this.d.style] || STYLE_BASE.all; }
+  look() {
+    const L = deepClone(this.d.look);
+    const o = this.d.outfit;
+    if (o) for (const id of o) { const it = SHOP_ITEMS.find(i => i.id === id); if (!it) continue; if (it.look) Object.assign(L, deepClone(it.look)); if (it.mask) L.head.mask = deepClone(it.mask); if (it.hat) { L.head.hat = it.hat; L.head.hatCol = it.hatCol; } if (it.cape) L.cape = deepClone(it.cape); }
+    return L;
+  }
+  // Fighter options for a match.
+  entrant(ctrl = 'human') {
+    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue;
+    if (bf.atk) st.atk *= bf.atk;
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: S.dive, ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
+  }
+  // ---- time ----
+  get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
+  spendSlot(n = 1) {
+    const d = this.d;
+    d.slot += n;
+    const msgs = [];
+    while (d.slot > 2) { d.slot -= 3; msgs.push(...this.nextDay(true)); }
+    return msgs;
+  }
+  sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
+  nextDay(forced) {
+    const d = this.d, msgs = [];
+    // contract deadline passed without a match
+    if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
+    d.day++;
+    if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
+    if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
+    // league simulation: others win and lose too
+    const r = new RNG(d.season * 100 + d.day);
+    for (const e of d.league) { if (r.chance(.35)) { const up = r.chance(.5 + (CHARACTERS[e.id].stats.hp - 100) / 400); e.pts += up ? 4 : -2; up ? e.w++ : e.l++; } }
+    return msgs;
+  }
+  // ---- injuries ----
+  get injuryLevel() { const i = this.d.injury; return i >= B.injuryDanger ? 'danger' : i >= B.injuryWarn ? 'warn' : 'ok'; }
+  healInjury(pts) { const before = this.d.injury; this.d.injury = Math.max(0, this.d.injury - pts); return before - this.d.injury; }
+  // ---- economy ----
+  canPay(n) { return this.d.money >= n; }
+  pay(n) { if (this.d.money < n) return false; this.d.money -= n; return true; }
+  earn(n) { this.d.money += n; this.d.earnedTotal += n; this.d.seasonLog.earned += n; }
+  xpNeed() { return 80 + this.d.level * 40; }
+  addXp(n) {
+    const d = this.d, ups = [];
+    d.xp += n;
+    while (d.xp >= this.xpNeed()) { d.xp -= this.xpNeed(); d.level++; d.points += 2; ups.push(d.level); }
+    return ups;
+  }
+  // ---- offers ----
+  makeOffers() {
+    const d = this.d, r = new RNG(d.season * 1000 + d.day * 7 + d.record.w * 3);
+    const ranks = this.rankList(), me = this.rank, out = [];
+    const others = ranks.filter(e => e.id !== 'player');
+    const pick = off => { const i = me - 1 + off, j = i > me - 1 ? i - 1 : i; return others[clamp(j, 0, others.length - 1)]; };
+    const lvl = rk => (d.season >= 2 ? ['normal', 'hard', 'hard', 'expert'] : ['easy', 'normal', 'normal', 'hard'])[clamp(Math.floor((14 - rk) / 4), 0, 3)];
+    const mk = (opp, kind, extra = {}) => {
+      const rk = this.rankOf(opp.id), c = CHARACTERS[opp.id];
+      const reward = Math.round((22000 + (15 - rk) * 5200) * (kind === 'challenge' ? 1.4 : 1) * (1 + (d.season - 1) * .3) / 1000) * 1000;
+      return Object.assign({ opp: opp.id, oppName: c.name, mode: 'single', arena: 'hall', reward, fame: kind === 'challenge' ? 9 : 6, kind, day: d.day + 1 + r.int(0, 2), difficulty: lvl(rk), rank: rk, desc: '' }, extra);
+    };
+    out.push(mk(pick(-1), 'normal', { desc: '바로 위 순위. 이기면 순위를 빼앗는다.' }));
+    let ch = pick(r.chance(.5) ? -3 : -2);
+    if (out.some(o => o.opp === ch.id)) ch = pick(-4);
+    out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
+    let third = pick(r.int(0, 2));
+    for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
+    out.push(mk(third, 'stip', r.chance(.5) ? { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' } : { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }));
+    // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
+    const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
+    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
+      const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
+      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n }));
+    }
+    // events
+    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
+    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
+    if (me === 1 && d.fame >= 55 && !d.flags.champion) out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: '챔피언 타이틀 매치. 등대 돔에서 열린다.', title: 1 });
+    d.offers = out.slice(0, 4); d.offersDay = d.day;
+    return d.offers;
+  }
+  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
+  // ---- after a match ----
+  applyResult(kind, res, info = {}) {
+    const d = this.d, h = res.human, won = res.won, draw = res.draw;
+    const out = { lines: [], money: 0, fame: 0, xp: 0, injury: 0, ups: [], rankBefore: this.rank, rankAfter: 0 };
+    // injuries: proportional to damage actually taken, never from practice
+    if (kind !== 'practice' && h) {
+      const maxHp = this.stats.hp;
+      let inj = (h.dmgTaken / maxHp) * B.injuryPerBar + (h.ko ? B.injuryKO : 0) + h.finishersTaken * B.injuryFinisher + (h.ringOuts ? B.injuryRingOut : 0);
+      inj *= (1 + d.fatigue / 250) * (B.injuryRate || 1) * (d.buffs && d.buffs.guard ? d.buffs.guard : 1);
+      inj = Math.round(inj * 10) / 10;
+      d.injury = Math.min(100, d.injury + inj); out.injury = inj;
+    }
+    if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
+    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
+    d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
+    const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
+    if (draw) d.record.d++;
+    else if (won) { d.record.w++; d.record.streak = Math.max(1, d.record.streak + 1); d.seasonLog.w++; if (res.result.how === 'ko') d.record.ko++; if (res.result.how === 'pin') d.record.pin++; }
+    else { d.record.l++; d.record.streak = Math.min(-1, d.record.streak - 1); d.seasonLog.l++; }
+    let money = 0, fame = 0, xp = won ? 60 : draw ? 35 : 25;
+    if (c) {
+      money = won ? c.reward : Math.round(c.reward * (draw ? .5 : .25) / 1000) * 1000;
+      fame = won ? c.fame : draw ? 2 : 1;
+      if (res.result.forfeit) { money = 0; fame = -3; }
+      if (!won && (kind === 'brawl' || kind === 'revenge')) { money = 0; fame = kind === 'revenge' ? -1 : 0; }
+      xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
+      if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
+      // ranking points
+      if (kind === 'official' || kind === 'title') {
+        d.record.official++;
+        const opp = d.league.find(e => e.id === c.opp);
+        const myPts = d.flags.rankPts || 0;
+        if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
+        else if (won) d.flags.rankPts = myPts + 3;
+        else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
+        if (c.title && won) { d.flags.champion = true; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push('새 챔피언이 탄생했다!'); }
+      }
+      if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
+      if (c === d.contract) d.contract = null;
+    } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
+    if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
+    if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }
+    d.fame = clamp(d.fame + fame, 0, 999);
+    this.earn(Math.max(0, money));
+    out.money = money; out.fame = fame; out.xp = xp;
+    out.ups = this.addXp(xp);
+    out.rankAfter = this.rank;
+    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
+    d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
+    d.seasonLog.matches.push(d.lastResult);
+    this.save();
+    return out;
+  }
+  // Rival relationship with 서도현.
+  rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
+  money() { return fmtMoney(this.d.money); }
+  learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
+  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
+  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+}
+
+return { hasCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES };
+})();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
 // Townspeople and what they say. Lines change with progress, results, rank, injuries and past talks.
@@ -7664,6 +7976,7 @@ const { LOOKS } = __m["data/looks.js"];
 const { CHARACTERS } = __m["data/characters.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { josa, fmtMoney, pick } = __m["core/util.js"];
+const { merchantOn } = __m["world/CareerManager.js"];
 const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
   trainer: { name: '백 관장', look: LOOKS.trainer, stance: 'hips', voice: 1.1 },
@@ -7679,6 +7992,7 @@ const NPCS = {
   busker: { name: '거리 악사', look: LOOKS.busker, stance: 'calm', voice: .95 },
   sponsor: { name: '황 대표', look: LOOKS.sponsor, stance: 'lean', voice: .9 },
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
+  merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
 
@@ -7695,6 +8009,11 @@ function peopleAt(loc, c) {
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
       if (day % 4 === 0) add('dohyun', 620, 1);
+      // a wrestler beaten earlier waits by the stairs to the basement
+      if (d.revenge && !d.revenge.invited && day >= d.revenge.day && day <= d.revenge.until) add(d.revenge.opp, 1080, -1, { stance: 'arms', revenge: 1 });
+      break;
+    case 'basement':
+      if (d.revenge && d.revenge.invited && day <= d.revenge.until) add(d.revenge.opp, 430, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'office': add('boss', 400, -1); break;
     case 'gym':
@@ -7710,6 +8029,7 @@ function peopleAt(loc, c) {
       add('foreman', 1900, -1);
       add('oldman', 2040, 1);
       if (day % 3 === 0) add('reporter', 1240, 1);
+      if (merchantOn(d)) add('merchant', 1470, -1);
       break;
     case 'clinic': add('doctor', 400, -1); add('nurse', 200, 1); break;
     case 'shop': add('shop', 465, -1); break;
@@ -7832,6 +8152,11 @@ function talk(id, c, W) {
     }
     case 'busker': return [S(pick(['♪ 밤배가 들어오면 링에 불이 켜지고… ♪', '이 항구엔 노래가 두 개 있지. 파도 소리랑, 관중 함성.', '네 입장곡? 내가 하나 만들어 줄까. 공짜는 아니지만.']))];
     case 'sponsor': return [S('황금등대 우유의 황 대표요. 요즘 당신 이름이 자주 들리더군.'), S('우리 우유를 링에서 마셔 주면, 매달 후원금을 드리리다.'), { choice: [{ label: '계약한다', go: [S('좋소! 첫 후원금이오.'), { act: () => { d.flags.sponsored = 1; c.earn(50000); W.toast('후원금 ' + fmtMoney(50000), '#9be36b'); } }] }, { label: '거절한다', go: [S('아쉽군. 마음 바뀌면 연락하시오.')] }] }];
+    case 'merchant': {
+      const first = !c.rel('merchant').seen; c.rel('merchant').seen = 1;
+      return [...(first ? [S('어이쿠, 손님! 바다 건너 온 물건들이야. 오늘만 판다! 내일이면 난 다음 항구에 있거든.', { expr: 'happy' })] : []),
+        S(pick(['이 너클? 고래도 한 방에 눕힌다는 전설의 너클이지. …물론 고래는 안 때려 봤어.', '의자는 왜 파냐고? 손님, 레슬링에서 의자보다 좋은 친구는 없어.', '장어즙 한 병이면 밤새 훈련해도 멀쩡해! …낮엔 자야 하지만.', '붕대는 특별히 싸게 줄게. 병원엔 비밀이야.'])), { act: () => W.openMerchant() }];
+    }
     case 'oldman': return [S(lastLine(c, 'oldman', ['나는 저 등대를 40년 지켰지. 안개왕이 처음 나타난 날도 기억해.', '안개왕의 마지막 기술은 {v}목을 잡는 기술{/}이야. 잡히기 전에 피하는 수밖에 없어.', '그 친구, 안개 속에서 싸우는 걸 좋아하지. 링 밖으로 끌어내지 말게. 거긴 그의 바다야.', '불이 꺼지면 당황하지 마. 다시 켜질 때 네가 서 있으면 되는 거야.', '파도는 부서져도 다시 와. 진 날엔 그 말을 기억하게.']))];
     case 'dohyun': {
       const r = c.rel('dohyun');
@@ -7861,6 +8186,8 @@ function talk(id, c, W) {
         baeksang: ['링 밖은 피 냄새가 더 진하지.', '물속에서 기다리는 상어처럼, 기회를 기다린다.'],
         bjorn: ['한국 국밥, 최고. 북해엔 없어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다.'],
         baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야.'],
+        galchi: ['부둣가 악동단은 의리로 뭉쳤다! …회비도 걷고.', '오늘은 기분 좋으니까 봐준다! 내일은 몰라!'],
+        myeolchi: ['형님이 저보고 내일부터 다이어트래요. 근데 저 이미 멸치인데요?', '저기요, 사인 좀… 아니 아니, 형님 몰래요.'],
         gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~'],
         ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸.'],
       }[id] || [ch.lines.intro];
@@ -7868,9 +8195,44 @@ function talk(id, c, W) {
     }
   }
 }
+// ---- before a match ------------------------------------------------------------------------------------
+// first: never met; won: they beat me last time; lost: I beat them; ring: one line face to face in the ring.
+const PRE = {
+  taesan: { first: '오, 네가 그 신입이구나! 걱정 마, 화물은 정중하게 다루는 게 내 원칙이야. 던질 때만 빼고.', won: '지난번에 한 번 들려 봤지? 오늘은 더 높이 올려 주마. 고소공포증은 없지?', lost: '지난번엔 허리가 삐끗했던 거야. 오늘은 파스를 세 장 붙이고 왔다고!', ring: '자, 하역 시작한다! 무게 좀 재 볼까?' },
+  haneul: { first: '안녕, 신인! 오늘 바람 냄새가 좋아. 높이 날기 딱 좋은 날이야.', won: '또 만났네! 지난번처럼 위에서 내려다봐 줄게.', lost: '지난번엔 역풍이었어. 오늘은 순풍이야. …아마도?', ring: '바람이 딱 좋은걸? 목 조심해, 위에서 떨어지거든!' },
+  dohyun: { first: '…너구나. 3개월 늦게 들어온 주제에 벌써 나랑 붙어?', won: '실력 차이는 확인했잖아. 오늘은 복습이다.', lost: '지난번은 운이었어. 오늘을 위해 매듭을 세 번 묶고 왔다.', ring: '너와 나, 누가 먼저 올라가나 보자.' },
+  dongsu: { first: '신입이냐. 용접은 불꽃이 튀기 전에 끝나는 법이지. 너도 그렇게 끝내 주마.', won: '지난번 땜질 자국은 잘 아물었냐? 오늘 다시 때워 주지.', lost: '지난번엔 용접봉이 눅눅했다. 오늘은 바싹 말려 왔어.', ring: '불꽃 튀길 준비됐나? 보안경은 나만 썼다.' },
+  mandeok: { first: '밥은 먹고 왔어? 빈속에 나랑 붙으면 큰일 나. 깔리면 납작해지거든.', won: '지난번에 깔렸던 거 기억하지? 오늘은 점심을 두 그릇 먹고 왔어.', lost: '지난번엔 배가 고파서 그랬어. 오늘은 국밥 세 그릇!', ring: '배 든든하게 채웠다! 오늘은 썰물 없어!' },
+  neon: { first: '어머, 신인? 카메라 각도 좀 비켜 줄래? 오늘 주인공은 나거든.', won: '지난번 하이라이트, 내 얼굴만 나왔더라~ 오늘도 잘 부탁해.', lost: '지난번 패배는 편집될 거야. 오늘은 생방송으로 갚아 주지.', ring: '카메라, 나만 잡아! 조명 더 세게!' },
+  fogking: { first: '……등대의 불빛이 너를 비추는군. 오래가지는 않을 것이다.', won: '……안개는 같은 자를 두 번 삼킨다.', lost: '……빛이 한 번 이겼다고 밤이 끝나지는 않는다.', ring: '……보이지 않는 것이 두려운가.' },
+  bokja: { first: '아이고, 신인이야? 새벽 경매보다 싱싱하네! 오늘 매는 공짜로 줄게!', won: '지난번 따귀 맛 기억하지? 오늘은 덤으로 하나 더!', lost: '지난번엔 비린내 때문에 손이 미끄러졌어! 오늘은 고무장갑 꼈다!', ring: '떨이요 떨이! 매가 떨이!' },
+  dueok: { first: '히히, 신인이다! 내 방망이 한 번 맞으면 혹이 두 개 생긴다?', won: '혹 떼러 왔다가 혹 붙인 녀석이네! 히히!', lost: '지난번엔 방망이가 장난을 친 거야. 오늘은 단단히 일러뒀지.', ring: '씨름 한 판 할까? 히히히!' },
+  palcho: { first: '흥미로운 표본이군. 관절이 몇 개인지 오늘 직접 세어 보지.', won: '지난번 데이터는 아주 유익했네. 오늘은 2차 실험이야.', lost: '지난번 결과는 측정 오류였네. 오늘은 빨판을 새로 갈았지.', ring: '자네를 해부… 아니, 분석해 보지.' },
+  baeksang: { first: '피 냄새가 나는군. 신인이라는 냄새.', won: '지난번엔 한 입 베어 물었지. 오늘은 통째로다.', lost: '상어는 같은 그물에 두 번 걸리지 않는다.', ring: '넌 미끼다.' },
+  bjorn: { first: '신인. 작다. 하지만 눈, 좋다. 좋은 싸움 하자.', won: '지난번, 좋은 싸움. 오늘, 또 좋은 싸움. 끝나고 국밥.', lost: '지난번, 졌다. 북해 사람, 그런 거 오래 기억한다.', ring: '파도, 작다. 북해, 크다.' },
+  baekpa: { first: '어서 오게, 젊은 파도. 늙은 파도가 아직 얼마나 높은지 보여 주지.', won: '지난번에 배운 건 잊지 않았겠지? 오늘은 심화 과정일세.', lost: '허허, 지난번엔 자네가 한 수 위였네. 오늘은 늙은이가 복습 좀 했지.', ring: '파도는 부서져도 다시 오는 법이지.' },
+  gosu: { first: '어이 신인! 내 입담에 이미 반은 졌어. 나머지 반은 지금부터 지면 돼!', won: '또 왔어? 지난번 경기 다시 보기 틀어 놓고 팝콘 먹었다니까~', lost: '지난번은 리허설이었어. 오늘이 본 공연이지!', ring: '말로 이기고, 몸으로 또 이기지!' },
+  ironma: { first: '비켜. 아니면 밟고 지나간다.', won: '또 밟힐 준비 됐나.', lost: '…편자를 새로 박았다. 이번엔 안 빠진다.', ring: '밟고 지나간다.' },
+  galchi: { first: '이 동네는 우리 구역이야!', won: '또 털리러 왔냐?', lost: '지난번은 연습이었다고!', ring: '이 동네는 우리 구역이야! 얘들아, 쳐라!' },
+  myeolchi: { first: '형님 말이 맞아요! 아마도요!', won: '헤헤, 또 이길 거예요. …아마도요.', lost: '형님, 저 사람 또 왔어요!', ring: '형님! 저 사람 진짜 커요! …아, 쳐요? 칠게요!' },
+};
+function preFightLine(id, c) {
+  const P = PRE[id], ch = CHARACTERS[id];
+  if (!P) return ch ? ch.lines.intro : '…';
+  const r = c.d.h2h[id];
+  return !r || r.w + r.l === 0 ? P.first : r.l > r.w ? P.won : P.lost;
+}
+// Waiting room: the next opponent walks over for a word before the match.
+function roomBanter(id, c) {
+  const d = c.d, me = d.name, ct = d.contract;
+  const S = (text, o = {}) => Object.assign({ who: id, text }, o);
+  const late = ct && ct.day <= d.day;
+  return [S(`${josa(me, '이/가')} 오늘 상대라고? ` + preFightLine(id, c), { expr: 'smug' }),
+    S(late ? '오늘이 마감일이다. 도망치면 사장님이 가만 안 있을걸?' : pick(['몸 풀고 와라. 링에서 기다리지.', '오늘 관객 많다더라. 창피 당하기 딱 좋은 날이지.', '대기실 공기가 무겁군. 네 긴장 때문이겠지?']), { expr: 'fierce' })];
+}
 const npcPick = pick;
 
-return { peopleAt, talk, NPCS, npcPick };
+return { peopleAt, talk, preFightLine, roomBanter, NPCS, PRE, npcPick };
 })();
 // ---- world/Dialogue.js
 __m["world/Dialogue.js"] = (function () {
@@ -7955,6 +8317,450 @@ class Dialogue {
 
 return { Dialogue };
 })();
+// ---- scenes/MatchScene.js
+__m["scenes/MatchScene.js"] = (function () {
+// A match on screen: simulation + camera + effects + sound + HUD + pause + results.
+const { VIEW_W, VIEW_H, clamp, damp, fmtTime, sgn, josa } = __m["core/util.js"];
+const { MatchManager, MODES } = __m["combat/MatchManager.js"];
+const { ArenaRenderer } = __m["render/ArenaRenderer.js"];
+const { FighterRenderer } = __m["render/FighterRenderer.js"];
+const { Fx } = __m["render/Fx.js"];
+const { HUD } = __m["render/HUD.js"];
+const { UI } = __m["render/palette.js"];
+const { drawText, textWidth } = __m["render/pixelfont.js"];
+const { drawProps, drawChairAt } = __m["render/PropRenderer.js"];
+const { BodyCanvas } = __m["render/raster.js"];
+const { drawBody } = __m["render/body.js"];
+const { Actor } = __m["world/Actor.js"];
+const { FLOOR } = __m["world/locations.js"];
+const { Dialogue } = __m["world/Dialogue.js"];
+const { rect } = __m["render/painter.js"];
+const { panel, menuList, fade, prompt } = __m["render/ui.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { DIFFICULTY } = __m["combat/AIController.js"];
+const { J, JN, Joints } = __m["anim/skeleton.js"];
+const { drawPortrait } = __m["render/head.js"];const { MOVES } = __m["data/moves.js"];
+const MOVES_NAME = id => (MOVES[id] ? MOVES[id].name : id);
+const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃' };
+class MatchScene {
+  constructor(game, cfg, onEnd) {
+    this.game = game; this.cfg = cfg; this.onEnd = onEnd;
+    this.m = new MatchManager(cfg);
+    this.ar = new ArenaRenderer(this.m.arena, this.m.arenaDef);
+    this.fr = new FighterRenderer(); this.fr.setEnv({ rim: this.m.arenaDef.rim, light: this.m.arenaDef.light });
+    this.fx = new Fx(); this.hud = new HUD(game.input);
+    this.camX = clamp(this.m.arena.mid - VIEW_W / 2, 0, this.m.arena.width - VIEW_W);
+    this.paused = false; this.sel = 0; this.debug = false; this.t = 0; this.endT = 0; this.resultShown = false; this.dark = 0; this.darkGoal = 0; this.focusPair = null; this.focusT = 0;
+    this.introStep = -1; this.practiceSel = 0; this.cameoActors = new Map(); this.lastDt = 1 / 60;
+    // career matches: a few words face to face before the bell (the intro waits for it)
+    this.pre = cfg.preTalk && cfg.career && !cfg.skipIntro ? cfg.preTalk : null; this.talk = null;
+    if (this.pre) this.m.holdIntro = true;
+    this.wire();
+    const tint = this.m.arenaDef.tint || [1, 1, 1];
+    game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
+    game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
+    this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#ffd65a');
+  }
+  titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
+  get human() { return this.m.human; }
+  // ---- events to effects ----
+  wire() {
+    const m = this.m, A = this.game.audio, fx = this.fx, S = this.game.screen, hud = this.hud, ar = this.ar;
+    const isH = f => f && f.ctrl === 'human';
+    const cheer = k => { ar.boost(k * .3); if (k > .5) A.cheer(Math.min(1.4, k)); };
+    m.on('swing', e => { if (e.def.lv >= 2) A.sfx('swing'); });
+    m.on('hit', e => {
+      const d = e.d, p = d.lv >= 4 ? 1.6 : d.lv >= 3 ? 1.2 : d.lv >= 2 ? .8 : .5;
+      fx.spark(e.x, e.y, p, e.counterHit ? '#ff8fc4' : '#fff3b0', e.dir);
+      A.sfx(d.sfx || 'punch1');
+      if (d.lv >= 3) { S.shake(.18 + p * .1); A.sfx('hurt', { voice: e.v.char.voice }); }
+      if (d.lv >= 4) fx.sweat(e.x, e.y, 5);
+      if (e.counterHit) fx.word('카운터!', e.x, e.y - 18, '#ff8fc4', 2);
+      else if (d.lv >= 3) fx.word(d.lv >= 4 ? '콰직!' : e.combo > 2 ? '퍽퍽!' : '퍽!', e.x + e.dir * 6, e.y - 14, '#ffffff', 2);
+      else if (d.lv === 1 && Math.random() < .25) fx.word(['팍', '탁', '퍽'][(Math.random() * 3) | 0], e.x, e.y - 10, '#ffe9a8', 1);
+      if (e.armored) fx.word('버텼다!', e.v.x, e.v.y - 100, '#ffd65a', 1);
+      if (d.lv >= 3) cheer(.4);
+    });
+    m.on('block', e => { fx.spark(e.x, e.y, .5, '#9fd6ff', sgn(e.v.x - e.a.x)); A.sfx('block'); });
+    m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
+    m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
+    m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
+    m.on('counter', e => { fx.word('반격!', e.f.x, e.f.y - 100, '#ff5fa2', 3); A.sfx('counter'); m.slowmo(.4, .3); S.flash(1, .6, .8, .25); cheer(.8); });
+    m.on('reversal', e => { fx.word(e.fin ? '피니셔 역전!!' : '역전!', e.f.x, e.f.y - 104, '#ff5fa2', 3); A.sfx('reversal'); m.slowmo(.35, .45); S.flash(1, .5, .8, .4); cheer(1.2); });
+    m.on('revFail', e => { if (isH(e.v)) fx.word('너무 일찍!', e.v.x, e.v.y - 100, '#9aa6d6', 1); });
+    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a)) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
+    m.on('grab', e => { A.sfx('grip'); });
+    m.on('escape', e => { fx.word('탈출!', e.v.x, e.v.y - 100, '#6be38a', 2); A.sfx('whoosh'); });
+    m.on('switch', () => A.sfx('grip'));
+    m.on('grabStrike', e => { fx.spark(e.v.x, e.v.y - 50, .6); A.sfx('kick1'); });
+    m.on('deny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast(`${e.mv ? e.mv.name : '기술'}: ${e.why}`, '#ff8a8a'); });
+    m.on('moveStart', e => {
+      A.sfx(e.fin ? 'cry' : 'grunt', { voice: e.a.char.voice });
+      if (e.fin) { this.finisherCam(e.a, e.v, e.fin); }
+    });
+    m.on('moveEvent', e => this.moveEvent(e));
+    m.on('thud', e => { if (e.v > 220) { fx.dust(e.x, e.y, Math.min(1.4, e.v / 400)); A.sfx('thud', { p: Math.min(1, e.v / 500) }); } });
+    m.on('wall', e => { S.shake(.35); A.sfx('punch3'); fx.word('쾅!', e.x, e.y - 30, '#ffffff', 2); fx.spark(e.x, e.y, 1); });
+    m.on('rope', e => { A.sfx('rope'); });
+    m.on('ropeHit', () => A.sfx('rope', { p: .7 }));
+    m.on('ropeBody', () => A.sfx('rope', { p: .5 }));
+    m.on('land', e => { const v = e.f.landV || 0; if (v > 200) { A.sfx('land', { p: Math.min(1, v / 500) }); fx.dust(e.f.x, e.f.y, .35); } });
+    m.on('jump', () => A.sfx('jump'));
+    m.on('dive', e => { A.sfx('whoosh', { pitch: 1.6 }); cheer(e.out ? 1.1 : .6); if (e.out) fx.word('장외 다이빙!', e.f.x, e.f.y - 70, '#ffd65a', 2); });
+    m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
+    m.on('perchTurn', e => { A.sfx('step'); });
+    m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    m.on('dashSig', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.f.x, e.f.y - 110, '#ffd65a', 3); cheer(1); this.ar.setScreen(MOVES_NAME(e.id), e.f.name, '#ffd65a', true); });
+    m.on('landAttack', e => { A.sfx('thud', { p: .8 }); fx.dust(e.f.x, e.f.y, e.def.quake ? 1.5 : .6); if (e.def.quake) { S.shake(.4); fx.ring(e.f.x, e.f.y, e.def.quake, '#ffffff'); } if (!e.ok && e.def.dive) fx.word('아야야!', e.f.x, e.f.y - 40, '#9aa6d6', 1); });
+    m.on('finisherStart', e => { A.sfx('charge'); fx.ring(e.f.x, e.f.y, 60, e.F.color); hud.push('피니셔!', { col: e.F.color, scale: 2, y: 90, life: .9 }); cheer(.8); S.flash(1, 1, 1, .15); });
+    m.on('finisherHit', e => { A.sfx('finisher'); hud.finisherCard(e.f, e.F); this.ar.setScreen(e.F.name, e.f.name, e.F.color, true); cheer(1.4); });
+    m.on('finisherMiss', e => { fx.word(e.why === 'blocked' ? '막혔다!' : e.why === 'crash' ? '헛디뎠다!' : '빗나감!', e.f.x, e.f.y - 100, '#9aa6d6', 2); A.boo(.6); A.sfx('miss'); });
+    m.on('finReady', e => { if (isH(e.f)) { hud.toast(`피니셔 준비! [${this.game.input.label('fin')}]`, '#3fe0d0'); A.sfx('good'); } });
+    m.on('taunt', e => { cheer(.5); });
+    m.on('burst', e => { fx.ring(e.f.x, e.f.y, 110, '#ffffff', .5); fx.spark(e.f.x, e.f.y - 50, 1.5, '#9fe0ff'); S.flash(.8, .95, 1, .3); A.sfx('parry'); fx.word('긴급 탈출!', e.f.x, e.f.y - 104, '#9fe0ff', 2); });
+    m.on('stagger', e => { fx.word('어질…', e.f.x, e.f.y - 100, '#ffd65a', 1); });
+    m.on('overRope', e => { if (m.rules.ringOut === 'elim') cheer(.7); });
+    m.on('eliminated', e => { A.sfx('bell'); hud.push('탈락!', { col: '#ff5b5b', sub: e.f.name, y: 110, life: 1.4 }); cheer(1); });
+    m.on('entry', e => { hud.push('입장!', { col: e.f.char.color, sub: e.f.name + ' — ' + e.f.char.nick, y: 100, life: 1.8 }); A.sfx('bell'); cheer(1); this.ar.setScreen(e.f.name, '입장!', e.f.char.color, true); });
+    m.on('hang', e => { fx.word('매달렸다!', e.f.x, e.f.y - 70, '#ffb347', 2); cheer(.8); });
+    m.on('pin', () => { A.sfx('grip'); cheer(.6); });
+    m.on('count', e => { if (e.pin) { A.sfx('count', { n: e.n }); cheer(.3 * e.n); this.ar.setScreen(String(e.n), '카운트', e.n >= 3 ? '#ff5b5b' : '#ffffff'); } else A.sfx('tick'); });
+    m.on('kickout', e => { fx.word('킥아웃!', e.v.x, e.v.y - 60, '#6be38a', 3); cheer(1.3); this.ar.setScreen('킥아웃!', String(e.count), '#6be38a', true); });
+    m.on('tag', e => { fx.word('교대!', e.f.x, e.f.y - 90, '#6be38a', 2); A.sfx('slap'); cheer(.9); });
+    m.on('ko', e => { A.sfx('ko'); A.sfx('bell3'); S.shake(.5); m.slowmo(.25, 1.2); this.ar.setScreen('K.O.!', e.v.name, '#ff5b5b', true); cheer(1.5); });
+    m.on('ready', () => { hud.push('준비…', { col: '#ffffff', y: 140, life: 1.2, scale: 3 }); this.ar.setScreen('준비', this.titleText(), '#ffffff'); });
+    m.on('bell', () => { A.sfx('bell'); hud.push('파이트!', { col: '#ffd65a', y: 140, life: 1, scale: 4, grad: '#ff8a2b' }); this.ar.setScreen(this.titleText(), MODES[m.mode].name, '#49d6ff'); cheer(1); });
+    m.on('end', r => this.onMatchEnd(r));
+    m.on('whip', () => A.sfx('whoosh'));
+    m.on('sweep', e => { A.sfx('punch2'); fx.spark(e.o.x, e.o.y - 40, 1); });
+    m.on('fault', e => console.warn('fault', e.why, e.f && e.f.name, JSON.stringify(e.info || {})));
+    // chairs and run-ins
+    const K = a => this.game.input.label(a);
+    m.on('chairHit', e => { A.sfx('clang', { p: e.guarded ? .7 : 1 }); S.shake(e.guarded ? .2 : .42); fx.spark(e.x, e.y, e.guarded ? .9 : 1.8, '#e6ecff'); fx.word(e.guarded ? '막았다!' : e.thrown ? '와장창!' : '깡!', e.x, e.y - 22, '#e6ecff', e.guarded ? 2 : 3); if (e.guarded) cheer(.5); else { cheer(1.3); this.ar.setScreen('체어샷!', e.v.name, '#ffd65a', true); } });
+    m.on('chairParry', e => { fx.word('의자를 쳐냈다!', e.v.x, e.v.y - 104, '#9fd6ff', 2); cheer(1); });
+    m.on('chairBreak', e => { A.sfx('punch3'); fx.word('의자가 부서졌다!', e.x, e.y - 26, '#ffb347', 2); fx.dust(e.x, e.y, .8); fx.spark(e.x, e.y, 1.2, '#9aa4c0'); cheer(.8); });
+    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast(`상대가 의자를 들었다! [${K('down')}] 막기 · [${K('dodge')}] 피하기 · [${K('grab')}] 뺏기`, '#ff8a8a'); } });
+    m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
+    m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
+    m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
+    m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
+    m.on('chairWarn', e => { A.sfx('warn'); if (isH(e.f)) hud.toast(`의자가 날아온다! [${K('dodge')}] 피하기 · [${K('down')}] 막기 · [${K('grab')}] 받기`, '#ffb347'); });
+    m.on('cameoIn', e => { hud.push(e.c.who === 'boss' ? '사장 난입!' : '코치 난입!', { col: '#ffb347', sub: e.c.name, y: 150, life: 1.6, scale: 2 }); A.cheer(.7); });
+    m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
+    m.on('refDistract', () => { fx.word('심판이 한눈판다!', m.ref.x, m.ref.y - 100, '#ffd65a', 1); A.boo(.5); });
+  }
+  moveEvent(e) {
+    const { k, o, a, v, move } = e, A = this.game.audio, fx = this.fx, S = this.game.screen, fin = e.fin;
+    const gx = v ? v.joints.x(J.pelvis) : a.x, gy = this.m.arena.ground(gx, a.y, a.side);
+    switch (k) {
+      case 'impact': {
+        const p = o.p || 1;
+        S.shake(Math.min(1, .25 + p * .22)); A.sfx('slam', { p });
+        fx.dust(gx, gy, p * .9); fx.ring(gx, gy, 40 + p * 30, '#ffffff', .35 + p * .1);
+        if (v) { const hx = v.joints.x(J.head), hy = v.joints.y(J.head); fx.spark(hx, hy, Math.min(2, p), fin ? fin.color : '#fff3b0'); fx.sweat(hx, hy, 4 + p * 2); }
+        if (o.word) fx.word(o.word, gx, gy - 60 - p * 8, fin ? fin.color : '#ffffff', fin ? 3 : 2);
+        this.m.arena.slam(gx, p);
+        if (fin) { S.flash(1, 1, 1, .45); S.goal.zoom = Math.max(S.goal.zoom, 1.42); this.focusT = Math.max(this.focusT, .6); S.fx.chroma = 1; fx.screenLines = .5; fx.lineCol = fin.color; }
+        if (o.spark) fx.weld(gx, gy - 60);
+        this.ar.boost(.3 + p * .15); if (p >= 1) A.cheer(Math.min(1.5, p * .7));
+        break;
+      }
+      case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
+      case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
+      case 'whoosh': A.sfx('whoosh'); break;
+      case 'spin': A.sfx('spin'); break;
+      case 'lift': A.sfx('lift', { voice: a.char.voice }); break;
+      case 'grunt': A.sfx('grunt', { voice: a.char.voice }); break;
+      case 'cry': A.sfx('cry', { voice: a.char.voice }); fx.word(fin ? fin.line || '' : '', a.x, a.y - 120, '#ffffff', 1); break;
+      case 'charge': A.sfx('charge'); fx.ring(a.x, a.y, 50, fin ? fin.color : '#ffffff'); break;
+      case 'grip': A.sfx('grip'); break;
+      case 'dust': fx.dust(gx, gy, 1); break;
+      case 'splash': fx.splash(a.x, a.y); A.sfx('splash'); break;
+      case 'fin': fx.splash(a.x + a.face * 20, a.y); break;
+      case 'ink': fx.smoke(v ? v.x : a.x, a.y - 50, '#2a1440', 22); A.sfx('ink'); this.fx.ink = 1.4; break;
+      case 'blackout': this.darkGoal = .86; A.sfx('lightsOff'); this.darkUntil = this.m.time + 2.1; break;
+    }
+  }
+  finisherCam(a, v) { this.focusPair = { a, v }; this.focusT = 2.2; this.m.slowmo(.5, .45); this.fx.screenLines = .8; }
+  onMatchEnd(r) {
+    this.endT = 0;
+    const h = this.human, win = h && r.winner && r.team === h.team;
+    const A = this.game.audio;
+    setTimeout(() => A.jingle(r.draw ? 'lose' : !h ? 'win' : win ? 'win' : 'lose'), 900);
+    this.hud.push(r.draw ? '무승부' : win || !h ? '승리!' : '패배…', { col: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', sub: r.draw ? HOW[r.how] : `${r.winner ? r.winner.name : ''} · ${HOW[r.how] || r.how}`, y: 120, life: 3, scale: 4 });
+    if (r.winner) { this.fx.confetti(r.winner.x, 140, 90); }
+    this.ar.setScreen(r.draw ? '무승부' : (r.winner ? r.winner.name : ''), HOW[r.how] || '', '#ffd65a', true);
+  }
+  // ---- per frame ----
+  update(dt) {
+    const g = this.game, inp = g.input, m = this.m;
+    this.t += dt; this.lastDt = dt;
+    if (inp.rawPressed('F3') || inp.rawPressed('Backquote')) this.debug = !this.debug;
+    if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
+    if (this.paused) { this.pauseInput(); return; }
+    if (this.pre && m.phase === 'intro' && m.introT > (m.cfg.introTime || 3.2) - .15) this.startPreTalk();
+    if (this.talk) { this.talk.update(dt); m.update(dt); this.hud.update(dt, m); this.ar.update(dt, m.hype); this.camera(dt); return; }
+    if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
+    // human input
+    const h = this.human;
+    if (h && m.phase === 'fight') inp.fillIntent(h.intent);
+    if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
+    m.update(dt);
+    if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
+    for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
+    this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
+    this.ar.update(dt, m.hype);
+    this.hud.update(dt, m);
+    g.audio.crowd(.3 + m.hype / 100 * .7);
+    this.camera(dt);
+    // lights out
+    if (this.darkUntil && m.time > this.darkUntil) { this.darkGoal = 0; this.darkUntil = 0; }
+    this.dark = damp(this.dark, this.darkGoal, 9, dt);
+  }
+  camera(dt) {
+    const m = this.m, S = this.game.screen, ar = m.arena;
+    let tx;
+    const act = m.fighters.filter(f => !f.gone && (f.alive || f.st === 'KO') && f.st !== 'TAGWAIT');
+    if (m.phase === 'intro') {
+      const F = m.fighters.filter(f => f.st === 'INTRO'), n = F.length, step = n ? Math.min(n - 1, Math.floor(m.introT / ((m.cfg.introTime || 3.2) / n))) : -1;
+      if (step !== this.introStep && F[step]) { this.introStep = step; const f = F[step]; this.hud.push(f.name, { col: f.char.color, sub: f.char.nick + ' · ' + (DIFFICULTY[f.difficulty] && f.ctrl !== 'human' ? DIFFICULTY[f.difficulty].name : '플레이어'), y: 188, life: (m.cfg.introTime || 3.2) / n, scale: 3, from: f.x < ar.mid ? -1 : 1 }); for (const o of F) o.spot = o === f; this.game.audio.cheer(.7); }
+      const f = F[Math.max(0, step)];
+      tx = f ? f.x : ar.mid;
+      if (f) { S.focus(f.x - this.camX, f.y - 60, 1.3); }
+    } else {
+      for (const f of m.fighters) f.spot = false;
+      const h = this.human;
+      let sum = 0, wsum = 0;
+      for (const f of act) { const w = f === h ? 2.2 : f.side === 'in' ? 1 : .6; sum += f.x * w; wsum += w; }
+      tx = wsum ? sum / wsum : ar.mid;
+      if (h && act.length > 1) { const lo = h.x - VIEW_W / 2 + 70, hi = h.x + VIEW_W / 2 - 70; tx = clamp(tx, lo, hi); }
+      if (this.focusT > 0 && this.focusPair) {
+        this.focusT -= dt;
+        const { a, v } = this.focusPair, fx = (a.x + v.x) / 2, fy = Math.min(a.y, v.y) - 60;
+        S.focus(fx - this.camX, fy, this.focusT > 1.6 ? 1.32 : 1.18);
+        if (this.focusT <= 0) { this.focusPair = null; S.unfocus(); }
+      } else if (m.phase === 'end' && m.result && m.result.loser && this.endT < 2.4) { const l = m.result.loser; S.focus(l.x - this.camX, l.y - 40, 1.35); }
+      else S.unfocus();
+    }
+    const want = clamp(tx - VIEW_W / 2, 0, ar.width - VIEW_W);
+    this.camX = damp(this.camX, want, m.phase === 'intro' ? 4 : 5.5, dt);
+  }
+  pauseInput() {
+    const inp = this.game.input, A = this.game.audio, items = this.pauseItems();
+    if (inp.pressed('up')) { this.sel = (this.sel + items.length - 1) % items.length; A.sfx('ui'); }
+    if (inp.pressed('down')) { this.sel = (this.sel + 1) % items.length; A.sfx('ui'); }
+    const it = items[this.sel];
+    if ((inp.pressed('left') || inp.pressed('right')) && it.cycle) { it.cycle(inp.pressed('left') ? -1 : 1); A.sfx('ui'); }
+    if (inp.menuPressed('cancel') || inp.pressed('pause')) { this.paused = false; A.sfx('back'); this.game.input.clear(); return; }
+    if (inp.menuPressed('confirm')) { A.sfx('ok'); if (it.act) it.act(); }
+  }
+  pauseItems() {
+    const P = this.m.practice;
+    const items = [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '디버그 표시', value: this.debug ? '켬' : '끔', act: () => { this.debug = !this.debug; }, cycle: () => { this.debug = !this.debug; } }];
+    if (P) {
+      const beh = ['idle', 'guard', 'attack', 'dodge', 'escape', 'ai'], names = { idle: '가만히', guard: '방어만', attack: '공격', dodge: '회피·반격', escape: '탈출 연타', ai: '일반 AI' };
+      const foe = this.m.fighters.find(f => f.ctrl !== 'human');
+      const cur = foe && foe.ai ? (foe.ai.behavior || 'ai') : 'idle';
+      items.push({ label: '상대 행동', value: names[cur], cycle: d => { const i = (beh.indexOf(cur) + d + beh.length) % beh.length; if (foe && foe.ai) { foe.ai.behavior = beh[i] === 'ai' ? null : beh[i]; foe.ctrl = beh[i] === 'ai' ? 'ai' : 'dummy'; } }, act: () => items[3].cycle(1) });
+      items.push({ label: '상대 체력 무한', value: P.infinite ? '켬' : '끔', cycle: () => { P.infinite = !P.infinite; }, act: () => { P.infinite = !P.infinite; } });
+      items.push({ label: '내 피니셔 가득', value: P.fullFin ? '켬' : '끔', cycle: () => { P.fullFin = !P.fullFin; }, act: () => { P.fullFin = !P.fullFin; } });
+      items.push({ label: '상대 기절 저항 0', value: P.stunLock ? '켬' : '끔', cycle: () => { P.stunLock = !P.stunLock; }, act: () => { P.stunLock = !P.stunLock; } });
+      items.push({ label: '상대 회복', act: () => { for (const f of this.m.fighters) { f.hp = f.maxHp; f.stun = f.maxStun; } } });
+      items.push({ label: '연습 끝내기', act: () => this.finish(true) });
+    } else items.push({ label: this.cfg.career ? '기권 (패배 처리)' : '경기 포기', act: () => { this.paused = false; const h = this.human; const w = this.m.fighters.find(f => h && f.team !== h.team); this.m.end({ winner: w, loser: h, how: 'forfeit', team: w ? w.team : null, forfeit: true }); } });
+    return items;
+  }
+  finish(quit) {
+    if (this.done) return;
+    this.done = true;
+    this.game.screen.resetFx();
+    const r = this.m.result || { forfeit: true, quit };
+    const summary = this.m.summary(), h = this.human;
+    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m });
+  }
+  // ---- drawing ----
+  draw(w, u) {
+    const m = this.m, cam = Math.round(this.camX);
+    this.ar.drawBack(w, cam);
+    this.drawCameos(w, cam);
+    this.fr.drawAll(w, m, cam, { dt: 1 / 60 });
+    drawProps(w, m, cam);
+    this.ar.drawFront(w, cam);
+    this.fx.draw(w, cam);
+    const h = this.human;
+    this.ar.drawLights(w, cam, h ? h.x : null);
+    if (this.fx.ink > 0) { w.globalAlpha = Math.min(.55, this.fx.ink * .4); rect(w, '#14081e', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
+    if (this.dark > .02) { w.globalAlpha = this.dark; rect(w, '#020208', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; const L = m.links.find(l => l.fin); if (L) for (const f of [L.a, L.v]) if (f) { rect(w, '#ffffff', Math.round(f.joints.x(J.head) - cam) + f.face * 3, Math.round(f.joints.y(J.head)) - 1, 2, 1); } }
+    this.fx.drawLines(w, VIEW_W, VIEW_H);
+    if (this.debug) this.drawDebug(w, cam);
+    u.clearRect(0, 0, VIEW_W, VIEW_H);
+    this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
+    this.drawBubbles(u, cam);
+    if (this.talk) this.talk.draw(u);
+    if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
+    if (this.paused) this.drawPause(u);
+    if (this.resultShown) this.drawResult(u);
+  }
+  startPreTalk() {
+    const P = this.pre, m = this.m, h = this.human, foe = m.fighters.find(f => f.charId === P.opp) || m.fighters.find(f => h && f.isFoe(h));
+    this.pre = null;
+    if (!h || !foe) { m.holdIntro = false; return; }
+    const steps = [...P.lines, { prompt: '어떻게 받아칠까?', choice: P.choices.map(ch => ({ label: ch.label, go: [{ who: P.opp, text: ch.reply, expr: ch.fx === 'taunt' ? 'fierce' : 'neutral' }, { act: () => this.applyPre(ch.fx, h, foe) }] })) }];
+    this.talk = new Dialogue(this.game, steps, { player: { look: h.look, name: h.name }, onEnd: () => { this.talk = null; m.holdIntro = false; m.introT = 99; } });
+    for (const f of m.fighters) f.spot = f === h || f === foe;
+  }
+  // The answer before the bell: a little gauge and a lot of crowd.
+  applyPre(fx, h, foe) {
+    const m = this.m, A = this.game.audio;
+    if (fx === 'taunt') { h.fin = Math.min(B.finMax, h.fin + 15); foe.fin = Math.min(B.finMax, foe.fin + 8); m.addHype(15); A.cheer(1.1); this.hud.toast('도발! 관중 열기 +15 · 피니셔 게이지 +15 (상대도 +8)', '#ffd65a'); }
+    else if (fx === 'respect') { h.fin = Math.min(B.finMax, h.fin + 6); m.addHype(5); A.sfx('clap'); this.hud.toast('관중이 박수를 친다. 피니셔 게이지 +6', '#9be36b'); }
+    else { m.addHype(10); A.cheer(.7); this.hud.toast('기싸움! 관중 열기 +10', '#c9d4ff'); }
+  }
+  // People who run in at the ring side (boss, coach): posed like townspeople, drawn behind the wrestlers.
+  drawCameos(w, cam) {
+    const E = this.m.events, ar = this.m.arena;
+    for (const c of [...this.cameoActors.keys()]) if (!E.cameos.includes(c)) this.cameoActors.delete(c);
+    if (!E.cameos.length) return;
+    if (!this.cbc) { this.cbc = new BodyCanvas(); this.cbc.setLight({ rim: this.m.arenaDef.rim, light: this.m.arenaDef.light }); this.ctmp = new Joints(); }
+    for (const c of E.cameos) {
+      let a = this.cameoActors.get(c);
+      if (!a) { a = new Actor(c.look, { x: c.x, face: c.face, stance: c.stance, y: ar.floorY - FLOOR }); this.cameoActors.set(c, a); }
+      a.x = c.x; a.vx = c.vx; a.face = c.face;
+      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' ? 'arms' : c.stance;
+      if (c.say && c.act !== 'cheer' && c.act !== 'windup') a.talkT = Math.max(a.talkT, .15);
+      a.pose(this.lastDt);
+      const bc = this.cbc, tmp = this.ctmp;
+      tmp.copy(a.joints); for (let i = 0; i < JN; i++) tmp.p[i * 2] -= cam;
+      w.globalAlpha = .35; rect(w, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); w.globalAlpha = 1;
+      bc.begin(tmp.x(0), tmp.y(0) - 4);
+      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
+      bc.finish(); bc.drawTo(w);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 12, -.5 * c.face, c.face, 0);
+    }
+  }
+  drawBubbles(u, cam) {
+    for (const c of this.m.events.cameos) {
+      const a = this.cameoActors.get(c);
+      if (!a) continue;
+      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24;
+      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : '#ff8fc4', outline: '#05060f' });
+      if (!c.say) continue;
+      const tw = textWidth(c.say.text, 11), bw = tw + 12, bx = clamp(Math.round(x - bw / 2), 4, VIEW_W - bw - 4), by = hy - 24;
+      rect(u, '#05060f', bx - 1, by - 1, bw + 2, 18); rect(u, '#f6f2e6', bx, by, bw, 16);
+      rect(u, '#05060f', x - 3, by + 16, 7, 4); rect(u, '#f6f2e6', x - 2, by + 16, 5, 3);
+      drawText(u, c.say.text, bx + 6, by + 2, { size: 11, color: '#141a36' });
+    }
+  }
+  drawPause(u) {
+    fade(u, .55);
+    panel(u, 210, 70, 220, 220, { accent: '#ffd65a' });
+    drawText(u, '일시정지', 320, 80, { align: 'c', color: '#ffd65a', bold: true });
+    menuList(u, this.pauseItems(), this.sel, 228, 108, { w: 184, lh: 19 });
+    drawText(u, '←→ 값 바꾸기  Enter 선택  Esc 닫기', 320, 272, { size: 11, align: 'c', color: UI.dim });
+  }
+  drawResult(u) {
+    const m = this.m, r = m.result, h = this.human;
+    fade(u, .62);
+    const win = h && r && r.winner && r.team === h.team;
+    panel(u, 130, 40, 380, 270, { accent: win ? '#ffd65a' : '#ff5b5b' });
+    drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
+    drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
+    if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
+    if (h) {
+      const S = m.summary()[h.idx];
+      const rows = [['준 피해', S.dmgDealt.toFixed(0)], ['받은 피해', S.dmgTaken.toFixed(0)], ['다운 시킨 횟수', String(m.fighters.filter(f => f.isFoe(h)).reduce((s, f) => s + f.downs, 0))], ['다운 당한 횟수', String(S.downs)], ['사용한 기술 종류', String(S.moves)], ['반격·역전', String(S.counters)], ['패리', String(S.perfects)]];
+      rows.forEach(([k, v], i) => { drawText(u, k, 160, 162 + i * 16, { size: 11, color: UI.dim }); drawText(u, v, 480, 162 + i * 16, { size: 11, align: 'r', color: '#ffffff' }); });
+    }
+    prompt(u, [this.game.input.label('confirm')], '계속', 320, 290, { align: 'c' });
+  }
+  drawDebug(g, cam) {
+    const m = this.m;
+    for (const f of m.fighters) {
+      if (f.gone) continue;
+      const hb = m.combat.hurtbox(f);
+      g.strokeStyle = '#6be38a'; g.lineWidth = 1; g.strokeRect(Math.round(hb.x0 - cam) + .5, Math.round(hb.y0) + .5, Math.round(hb.x1 - hb.x0), Math.round(hb.y1 - hb.y0));
+      const a = m.combat.hitbox(f);
+      if (a) { g.strokeStyle = '#ff5b5b'; g.strokeRect(Math.round(a.x0 - cam) + .5, Math.round(a.y0) + .5, Math.round(a.x1 - a.x0), Math.round(a.y1 - a.y0)); }
+      const x = Math.round(f.x - cam), y = Math.round(hb.y0 - 34);
+      drawText(g, `${f.st}${f.hsKind && f.st === 'HITSTUN' ? ':' + f.hsKind : ''}`, x, y, { size: 11, align: 'c', color: '#ffffff', outline: '#05060f' });
+      drawText(g, `HP${f.hp.toFixed(0)} ST${Math.max(0, f.stun).toFixed(0)} v${f.vx.toFixed(0)},${f.vy.toFixed(0)}`, x, y + 11, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+      if (f.ai) drawText(g, `AI:${f.ai.note}`, x, y + 22, { size: 11, align: 'c', color: '#7fe0ff', outline: '#05060f' });
+      rect(g, '#ff5fa2', x, Math.round(f.y), 1, 1);
+    }
+    drawText(g, `fps ${this.game.fps.toFixed(0)}  links ${m.links.length}  hype ${m.hype.toFixed(0)}  slow ${m.slowK.toFixed(2)}`, 6, 320, { size: 11, color: '#ffffff', outline: '#05060f' });
+  }
+}
+const matchHow = HOW;
+const balanceRef = B;
+
+return { MatchScene, matchHow, balanceRef };
+})();
+// ---- scenes/SettingsScene.js
+__m["scenes/SettingsScene.js"] = (function () {
+// Settings: volumes, screen effects and key bindings (changes are saved).
+const { drawText } = __m["render/pixelfont.js"];
+const { UI } = __m["render/palette.js"];
+const { panel, menuList, fade, keycap } = __m["render/ui.js"];
+const { ACTIONS, DEFAULT_KEYS, keyLabel } = __m["core/InputManager.js"];
+const { rect } = __m["render/painter.js"];
+class SettingsOverlay {
+  constructor(game) { this.game = game; this.sel = 0; this.page = 0; this.wait = null; }
+  items() {
+    const s = this.game.settings, pct = v => Math.round(v * 100) + '%';
+    if (this.page === 0) return [
+      { label: '전체 음량', value: pct(s.master), k: 'master', step: .1 }, { label: '음악', value: pct(s.music), k: 'music', step: .1 }, { label: '효과음', value: pct(s.sfx), k: 'sfx', step: .1 },
+      { label: '화면 흔들림', value: pct(s.shake), k: 'shake', step: .25 }, { label: '번쩍임 효과', value: pct(s.flash), k: 'flash', step: .25 }, { label: '주사선 효과', value: s.scan ? '켬' : '끔', k: 'scan', toggle: 1 },
+      { label: '대화 속도', value: ['느림', '보통', '빠름'][Math.round(s.typeSpeed * 2) - 1] || '보통', k: 'typeSpeed', list: [.5, 1, 1.5] },
+      { label: '키 설정 →', act: () => { this.page = 1; this.sel = 0; } }, { label: '닫기', act: () => this.close() },
+    ];
+    const keys = this.game.input.keys;
+    return [...Object.keys(ACTIONS).map(a => ({ label: ACTIONS[a], value: (keys[a] || []).map(keyLabel).join(' / '), bind: a })), { label: '기본값으로', act: () => { this.game.input.keys = JSON.parse(JSON.stringify(DEFAULT_KEYS)); this.game.saveSettings(); } }, { label: '← 돌아가기', act: () => { this.page = 0; this.sel = 0; } }];
+  }
+  close() { this.game.saveSettings(); this.game.applySettings(); this.game.audio.sfx('back'); this.game.pop(); }
+  update() {
+    const inp = this.game.input, A = this.game.audio, it = this.items(), s = this.game.settings;
+    if (this.wait) return;
+    if (inp.pressed('up')) { this.sel = (this.sel + it.length - 1) % it.length; A.sfx('ui'); }
+    if (inp.pressed('down')) { this.sel = (this.sel + 1) % it.length; A.sfx('ui'); }
+    const cur = it[this.sel];
+    if (inp.menuPressed('cancel') && !this.wait) { if (this.page) { this.page = 0; this.sel = 0; A.sfx('back'); } else this.close(); return; }
+    const d = inp.pressed('left') ? -1 : inp.pressed('right') ? 1 : 0;
+    if (cur.k && (d || inp.menuPressed('confirm'))) {
+      const dd = d || 1;
+      if (cur.toggle) s[cur.k] = s[cur.k] ? 0 : 1;
+      else if (cur.list) { const i = cur.list.indexOf(s[cur.k]); s[cur.k] = cur.list[(Math.max(0, i) + dd + cur.list.length) % cur.list.length]; }
+      else s[cur.k] = Math.round(Math.min(1, Math.max(0, s[cur.k] + dd * cur.step)) * 100) / 100;
+      this.game.applySettings(); A.sfx('ui');
+      return;
+    }
+    if (inp.menuPressed('confirm')) {
+      if (cur.act) { A.sfx('ok'); cur.act(); }
+      else if (cur.bind) {
+        this.wait = cur.bind; A.sfx('ok');
+        inp.captureNext(code => {
+          const a = this.wait; this.wait = null;
+          if (code === 'Escape') return;
+          const keys = this.game.input.keys;
+          for (const k in keys) keys[k] = keys[k].filter(c => c !== code);
+          keys[a] = [code, ...(keys[a] || [])].slice(0, 2);
+          this.game.saveSettings(); A.sfx('good');
+        });
+      }
+    }
+  }
+  draw(w, u) {
+    fade(u, .72);
+    panel(u, 130, 30, 380, 300, { accent: '#49d6ff' });
+    drawText(u, this.page ? '키 설정' : '설정', 320, 40, { align: 'c', color: '#49d6ff', bold: true });
+    menuList(u, this.items(), this.sel, 150, 66, { w: 340, lh: this.page ? 17 : 22, size: this.page ? 11 : 14 });
+    if (this.wait) { rect(u, '#05060f', 200, 150, 240, 50); panel(u, 202, 152, 236, 46, { accent: '#ffd65a' }); drawText(u, `'${ACTIONS[this.wait]}'에 쓸 키를 누르세요`, 320, 162, { align: 'c', color: '#ffffff' }); drawText(u, 'Esc 취소', 320, 180, { size: 11, align: 'c', color: UI.dim }); }
+    drawText(u, '←→ 값 바꾸기 · Enter 선택 · Esc 닫기', 320, 314, { size: 11, align: 'c', color: UI.dim });
+    void keycap;
+  }
+}
+
+return { SettingsOverlay };
+})();
 // ---- world/menus.js
 __m["world/menus.js"] = (function () {
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
@@ -7970,7 +8776,7 @@ const { BALANCE: B } = __m["data/balance.js"];
 const { MODES } = __m["combat/MatchManager.js"];
 const { ARENAS } = __m["combat/arena.js"];
 const { DIFFICULTY } = __m["combat/AIController.js"];
-const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS } = __m["world/CareerManager.js"];
+const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES } = __m["world/CareerManager.js"];
 class Menu {
   constructor(W) { this.W = W; this.game = W.game; this.c = W.c; this.sel = 0; this.t = 0; }
   nav(n, opts = {}) {
@@ -8069,7 +8875,8 @@ class ArenaMenu extends Menu {
 // ---- shop ----
 class ShopMenu extends Menu {
   constructor(W) { super(W); this.tab = 0; }
-  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k); }
+  list() { const k = ['item', 'gear', 'outfit'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
+  price(it) { return it.kind === 'item' ? salePrice(this.c.d, it.price) : it.price; }
   update(dt) {
     super.update(dt);
     const inp = this.game.input, A = this.game.audio, c = this.c, d = c.d, L = this.list();
@@ -8079,7 +8886,7 @@ class ShopMenu extends Menu {
     if (this.ok() && L[this.sel]) {
       const it = L[this.sel];
       if (it.kind !== 'item' && d.owned.includes(it.id)) { this.equip(it); return; }
-      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
       A.sfx('buy');
       if (it.kind === 'item') { d.items[it.id] = (d.items[it.id] || 0) + 1; this.W.toast(`${it.name} 구입 (소지 ${d.items[it.id]})`, '#9be36b'); }
       else { d.owned.push(it.id); this.equip(it); }
@@ -8102,8 +8909,9 @@ class ShopMenu extends Menu {
       rect(u, on ? '#3a2a1a' : '#141a36', 72, y, 496, 27); if (on) rect(u, '#ffb347', 72, y, 2, 27);
       drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
       drawText(u, it.desc, 80, y + 15, { size: 11, color: UI.dim });
-      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(it.price), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : UI.money });
+      drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
     });
+    if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 소모품 30% 할인', 320, 296, { size: 11, align: 'c', color: '#ff8fc4' });
     this.foot(u, '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
   }
 }
@@ -8111,9 +8919,10 @@ class ShopMenu extends Menu {
 // ---- clinic ----
 class ClinicMenu extends Menu {
   opts() {
-    const d = this.c.d, inj = d.injury, full = Math.max(10000, Math.round(inj * 1500 / 1000) * 1000), part = 22000, stay = Math.max(18000, Math.round((inj * 1200 + 10000) / 1000) * 1000);
+    const d = this.c.d, inj = d.injury, k = saleOn(d) ? .7 : 1;
+    const full = Math.round(Math.max(7000, inj * 1050) * k / 1000) * 1000, part = Math.round(17600 * k / 100) * 100, stay = Math.round(Math.max(13000, inj * 900 + 7500) * k / 1000) * 1000;
     return [
-      { label: '응급 처치', sub: `부상 -12 · ${fmtMoney(part)}`, price: part, act: () => this.treat(12, part, 0) },
+      { label: '응급 처치', sub: `부상 -16 · ${fmtMoney(part)}`, price: part, act: () => this.treat(16, part, 0) },
       { label: '정밀 치료', sub: `부상 전부 · ${fmtMoney(full)} · 시간 1칸`, price: full, act: () => this.treat(100, full, 1) },
       { label: '입원 치료', sub: `부상 전부 + 피로 0 · ${fmtMoney(stay)} · 다음 날 아침까지`, price: stay, act: () => this.hospital(stay) },
       { label: '나가기', act: () => this.W.closeTop() },
@@ -8147,7 +8956,69 @@ class ClinicMenu extends Menu {
     const o = this.opts();
     o.forEach((it, i) => { const y = 140 + i * 36, on = i === this.sel; rect(u, on ? '#1f4a4a' : '#141a36', 100, y, 440, 32); if (on) rect(u, '#6be3c8', 100, y, 2, 32); drawText(u, it.label, 110, y + 3, { color: on ? '#ffffff' : '#c9e8e0' }); if (it.sub) drawText(u, it.sub, 110, y + 18, { size: 11, color: UI.dim }); });
     drawText(u, '소지금 ' + this.c.money() + `  ·  붕대 ${d.items.bandage || 0} / 고급 붕대 ${d.items.bigBandage || 0} (Tab→소지품)`, 320, 290, { size: 11, align: 'c', color: UI.dim });
+    if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 치료비 30% 할인', 320, 126, { size: 11, align: 'c', color: '#ff8fc4' });
     this.foot(u, '↑↓ 고르기 · Enter/E 치료 · Esc 나가기', 306);
+  }
+}
+
+// ---- travelling merchant: rare goods for one day ----
+class MerchantMenu extends Menu {
+  stock() { const d = this.c.d, r = new RNG(d.day * 17 + d.season * 3), pool = r.shuffle(RARE_ITEMS.filter(i => !i.many)).slice(0, 4); return [...pool, RARE_ITEMS.find(i => i.many)]; }
+  update(dt) {
+    super.update(dt); const L = this.stock(), c = this.c, d = c.d, A = this.game.audio;
+    this.nav(L.length + 1);
+    if (this.back()) return;
+    if (this.ok()) {
+      if (this.sel === L.length) { this.W.closeTop(); return; }
+      const it = L[this.sel], bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
+      if (!it.many && bought.includes(it.id)) { A.sfx('deny'); this.W.toast('이건 오늘 한 개뿐이었어!', '#ff8a8a'); return; }
+      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      d.flags.merchant = { day: d.day, ids: [...bought, it.id] };
+      if (it.buff) Object.assign(d.buffs, it.buff);
+      if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
+      if (it.give) d.items[it.give] = (d.items[it.give] || 0) + 1;
+      A.sfx('buy'); this.W.toast(`${it.name} 구입! ${it.desc}`, '#9be36b'); c.save();
+    }
+  }
+  draw(u) {
+    const d = this.c.d, L = this.stock(), bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
+    this.frame(u, '떠돌이 상인 보부의 보따리', 60, 30, 520, 300, '#c98aff');
+    drawText(u, '오늘만 파는 물건. 내일이면 다음 항구로 떠난다.', 320, 50, { size: 11, align: 'c', color: '#e0c8ff' });
+    L.forEach((it, i) => { const y = 70 + i * 36, on = i === this.sel, sold = !it.many && bought.includes(it.id); rect(u, on ? '#3a2a5a' : '#141a36', 72, y, 496, 32); if (on) rect(u, '#c98aff', 72, y, 2, 32); drawText(u, it.name + (sold ? ' [품절]' : ''), 80, y + 3, { color: sold ? UI.faint : on ? '#ffffff' : '#e6d8ff' }); drawText(u, it.desc, 80, y + 18, { size: 11, color: UI.dim }); drawText(u, fmtMoney(it.price), 560, y + 9, { align: 'r', color: UI.money }); });
+    const y = 70 + L.length * 36; rect(u, this.sel === L.length ? '#3a2a5a' : '#141a36', 72, y, 496, 18); drawText(u, '나가기', 320, y + 2, { size: 11, align: 'c', color: this.sel === L.length ? '#ffffff' : UI.dim });
+    drawText(u, '소지금 ' + this.c.money(), 320, 296, { size: 11, align: 'c', color: UI.money });
+    this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 312);
+  }
+}
+
+// ---- vending machine: small, cheap, three a day ----
+class VendingMenu extends Menu {
+  opts() {
+    return [
+      { label: '이온 음료', price: 3000, sub: '피로 -12', fn: d => { d.fatigue = Math.max(0, d.fatigue - 12); } },
+      { label: '단백질 셰이크', price: 6000, sub: '피로 -6 · 다음 훈련 효과 +15%', fn: d => { d.fatigue = Math.max(0, d.fatigue - 6); d.buffs.train = 1.15; } },
+      { label: '번개 에너지', price: 5000, sub: '다음 경기를 피니셔 게이지 12로 시작 · 피로 +4', fn: d => { d.buffs.finStart = Math.max(d.buffs.finStart || 0, 12); d.fatigue = Math.min(100, d.fatigue + 4); } },
+      { label: '나가기', close: 1 },
+    ];
+  }
+  left() { const d = this.c.d, v = d.flags.vend; return 3 - (v && v.day === d.day ? v.n : 0); }
+  update(dt) {
+    super.update(dt); const o = this.opts(), c = this.c, d = c.d, A = this.game.audio;
+    this.nav(o.length);
+    if (this.back()) return;
+    if (!this.ok()) return;
+    const it = o[this.sel];
+    if (it.close) { this.W.closeTop(); return; }
+    if (this.left() <= 0) { A.sfx('deny'); this.W.toast('오늘은 더 마시면 배탈 난다. (하루 3잔)', '#ff8a8a'); return; }
+    if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+    it.fn(d); const v = d.flags.vend; d.flags.vend = { day: d.day, n: (v && v.day === d.day ? v.n : 0) + 1 };
+    A.sfx('coin'); this.W.toast(`${it.label}: ${it.sub}`, '#9be36b'); c.save();
+  }
+  draw(u) {
+    this.frame(u, '자판기', 150, 70, 340, 210, '#49d6ff');
+    this.opts().forEach((it, i) => { const y = 96 + i * 34, on = i === this.sel; rect(u, on ? '#1f3a5a' : '#141a36', 162, y, 316, 30); drawText(u, it.label, 172, y + 3, { color: on ? '#ffffff' : '#c9e8ff' }); drawText(u, it.sub || '', 172, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 470, y + 8, { align: 'r', color: UI.money }); });
+    drawText(u, `오늘 남은 횟수 ${this.left()}/3`, 320, 236, { size: 11, align: 'c', color: this.left() ? '#9be36b' : '#ff8a8a' });
+    this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 258);
   }
 }
 
@@ -8220,7 +9091,7 @@ class InfoMenu extends Menu {
     const d = this.c.d;
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
     if (this.tab === 2) { const r = []; for (const pos of ['front', 'rear']) for (const s of ['n', 'f', 'b', 'u', 'd']) r.push({ pos, s }); return r; }
-    if (this.tab === 3) return ['bandage', 'bigBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
+    if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
     return [];
   }
   update(dt) {
@@ -8284,6 +9155,8 @@ class InfoMenu extends Menu {
       R.forEach((k, i) => { const it = SHOP_ITEMS.find(x => x.id === k), y = 150 + i * 26, on = i === this.sel; rect(u, on ? '#26315f' : '#141a36', 44, y, 550, 22); drawText(u, `${it.name} × ${d.items[k]}`, 52, y + 4, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); drawText(u, it.desc, 586, y + 4, { size: 11, align: 'r', color: UI.dim }); });
       const g = Object.values(d.gear).map(id => SHOP_ITEMS.find(i => i.id === id).name);
       drawText(u, '장착 중인 장비: ' + (g.length ? g.join(', ') : '없음'), 44, 300, { size: 11, color: UI.dim });
+      const bf = Object.keys(d.buffs || {}).map(k => BUFF_NAMES[k] || k);
+      if (bf.length) drawText(u, '다음 경기에 적용: ' + bf.join(', '), 44, 286, { size: 11, color: '#ffd65a' });
     }
     drawText(u, '←→ 탭 · Enter 선택 · Tab/Esc 닫기', 320, 322, { size: 11, align: 'c', color: UI.faint });
   }
@@ -8422,7 +9295,7 @@ const menuTime = fmtTime;
 const menuTW = textWidth;
 const menuMix = mixHex;
 
-return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, FoodMenu, LearnMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
+return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, VendingMenu, FoodMenu, LearnMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
 })();
 // ---- world/Training.js
 __m["world/Training.js"] = (function () {
@@ -8479,7 +9352,9 @@ class Training {
       const pay = Math.round((6000 + this.s.good * 1800 + d.season * 1000) / 500) * 500;
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
     } else {
-      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK;
+      const tb = d.buffs && d.buffs.train || 1;
+      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK * tb;
+      if (d.buffs && d.buffs.train) { delete d.buffs.train; this.boosted = 1; }
       for (const k of this.G.stats) { const before = d.lv[k]; d.lv[k] = Math.min(20, d.lv[k] + g); this.gains.push([k, d.lv[k] - before]); }
       d.fatigue = Math.min(100, d.fatigue + 14);
       this.fatK = fatK;
@@ -8607,6 +9482,7 @@ class Training {
       if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
       else this.gains.forEach(([k, g], i) => drawText(u, `${STAT_GROWTH[k][1]} Lv +${g.toFixed(2)}  (Lv ${this.c.d.lv[k].toFixed(1)})`, 320, 136 + i * 16, { size: 11, align: 'c', color: '#6be38a' }));
       if (this.fatK && this.fatK < 1) drawText(u, '피곤해서 효과가 줄었다…', 320, 172, { size: 11, align: 'c', color: '#ff8a8a' });
+      if (this.boosted) drawText(u, '단백질 셰이크 효과 +15%!', 320, 186, { size: 11, align: 'c', color: '#6be38a' });
       prompt(u, ['Enter'], '확인', 320, 212, { align: 'c' });
       return;
     }
@@ -8671,7 +9547,7 @@ return { Training, TRAINING_GAMES };
 // ---- world/WorldScene.js
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
-const { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG } = __m["core/util.js"];
+const { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG, pick } = __m["core/util.js"];
 const { drawText, textWidth } = __m["render/pixelfont.js"];
 const { UI, mixHex } = __m["render/palette.js"];
 const { rect, glow } = __m["render/painter.js"];
@@ -8684,32 +9560,13 @@ const { updateTails } = __m["anim/AnimationSystem.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { CHARACTERS } = __m["data/characters.js"];
 const { LOCATIONS, bakeLocation, drawWindows, streetFar, FLOOR } = __m["world/locations.js"];
-const { NPCS, peopleAt, talk } = __m["world/npcs.js"];
+const { NPCS, peopleAt, talk, roomBanter, preFightLine, PRE } = __m["world/npcs.js"];
 const { Dialogue } = __m["world/Dialogue.js"];
-const { SLOT_NAMES } = __m["world/CareerManager.js"];
+const { SLOT_NAMES, saleOn, merchantOn, BUFF_NAMES } = __m["world/CareerManager.js"];
 const Menus = __m["world/menus.js"];
 const { Training } = __m["world/Training.js"];
+const { Actor } = __m["world/Actor.js"];
 const P = new Float32Array(16);
-class Actor {
-  constructor(look, o = {}) { this.look = look; this.dims = dimsFor(look.build, look.scale || 1); this.x = o.x || 100; this.y = FLOOR + (o.y || 0); this.vx = 0; this.vy = 0; this.face = o.face || 1; this.ground = true; this.stance = o.stance || 'calm'; this.gait = 0; this.t = Math.random() * 3; this.poseT = this.t; this.joints = new Joints(); this.expr = 'neutral'; this.exprT = 0; this.tails = null; this.idx = 0; this.id = o.id; this.home = this.x; this.wander = o.wander || 0; this.wT = 2; this.talkT = 0; this.y0 = this.y; }
-  pose(dt) {
-    this.t += dt; this.poseT = this.t;
-    const moving = Math.abs(this.vx) > 6;
-    if (!this.ground) sampleClip(clip(this.vy < 0 ? 'jump' : 'fall'), .2, P);
-    else if (this.talkT > 0) sampleClip(clip('talk'), this.t, P);
-    else if (STANCES[this.stance]) { stancePose(this.stance, this.t, P); if (moving) { this.gait += dt * (2.6 + Math.abs(this.vx) * .07) * (this.vx * this.face >= 0 ? 1 : -1); gaitPose(P, this.gait, Math.abs(this.vx) > 150 ? 'run' : 'walk', 1); } }
-    else if (hasClip(this.stance)) sampleClip(clip(this.stance), this.t, P);
-    else stancePose('calm', this.t, P);
-    if (!this.ground) solveFK(P, this.dims, this.joints, { snap: false, py: -this.dims.leg * .92 });
-    else solveFK(P, this.dims, this.joints, {});
-    toWorld(this.joints, this.face, this.x, this.y);
-    this.faceExpr = this.exprT > 0 ? this.expr : (Math.floor(this.t * .7) % 5 === 0 && (this.t % 1.43) < .12 ? 'blink' : this.talkT > 0 ? (Math.floor(this.t * 8) % 2 ? 'talk' : 'neutral') : 'neutral');
-    if (this.exprT > 0) this.exprT -= dt;
-    if (this.talkT > 0) this.talkT -= dt;
-    updateTails(this, dt, this.y);
-  }
-}
-
 class WorldScene {
   constructor(game, career, o = {}) {
     this.game = game; this.c = career; this.t = 0; this.bc = new BodyCanvas(); this.overlays = []; this.dialog = null; this.toasts = []; this.prompt = null; this.camX = 0; this.farCache = {};
@@ -8737,26 +9594,122 @@ class WorldScene {
     this.game.audio.music(L.music);
     this.game.screen.goal.tint = this.c.d.slot === 2 ? [.92, .95, 1.08] : this.c.d.slot === 1 ? [1.06, .98, .92] : [1, 1, 1];
     this.bc.setLight({ rim: L.rim, light: L.light });
+    this.approachers = [];
+    this.townEvents(id, instant);
     if (id === 'lobby' && this.c.injuryLevel !== 'ok' && this.c.d.flags.injWarnDay !== this.c.d.day) { this.c.d.flags.injWarnDay = this.c.d.day; setTimeout(() => this.toast(this.c.injuryLevel === 'danger' ? `부상 위험 ${Math.round(this.c.d.injury)}% — 당장 치료가 필요하다!` : `부상 주의 ${Math.round(this.c.d.injury)}% — 의원에 들르자`, this.c.injuryLevel === 'danger' ? '#ff5b5b' : '#ffb347'), 400); }
     if (!instant) this.c.save();
   }
   goDoor(d) {
     const A = this.game.audio;
-    if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast(d.lock === 'rivalgym' ? '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수" ' : '"챔피언십 관계자 외 출입 금지"', '#ff8a8a'); return; }
+    if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast({ rivalgym: '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수"', dome: '"챔피언십 관계자 외 출입 금지"', basement: '"관계자 외 출입 금지" …문 아래에서 함성이 새어 나온다.' }[d.lock] || '잠겨 있다', '#ff8a8a'); return; }
     A.sfx('door');
     this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
-  unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return (d.contract && d.contract.title) || d.flags.champion; return true; }
+  unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return (d.contract && d.contract.title) || d.flags.champion; if (k === 'basement') return !!(d.revenge && d.revenge.invited) || !!d.flags.basementKnown; return true; }
   say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
   toast(text, col = '#eef2ff') { this.toasts.push({ text, col, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
   open(o) { this.overlays.push(o); this.game.input.clear(); }
   closeTop() { this.overlays.pop(); this.game.input.clear(); }
+  // ---- things that happen in town: people walking up to talk, gangs, revenge ----
+  approach(a, fn, o = {}) { a.scripted = true; this.approachers.push({ a, fn, speed: o.speed || 120, near: o.near || 56, range: o.range || 1e9 }); }
+  tickApproach(dt) {
+    if (!this.approachers.length || this.dialog || this.overlays.length || this.fadeT > 0) return;
+    const p = this.player;
+    for (const ap of this.approachers.slice()) {
+      const a = ap.a, d = p.x - a.x;
+      if (Math.abs(d) > ap.range) { a.vx = 0; continue; }
+      if (Math.abs(d) <= ap.near) { a.vx = 0; a.face = sgn(d) || a.face; this.approachers.splice(this.approachers.indexOf(ap), 1); a.scripted = false; if (ap.fn) { p.face = -a.face; ap.fn(a); return; } continue; }
+      a.vx = sgn(d) * ap.speed; a.face = sgn(d); a.x += a.vx * dt;
+    }
+  }
+  townEvents(id, instant) {
+    const c = this.c, d = c.d;
+    if ((id === 'lobby' || id === 'street') && d.flags.newsDay !== d.day) {
+      d.flags.newsDay = d.day;
+      if (saleOn(d)) setTimeout(() => this.toast('오늘은 항구 대세일! 항구의원·돛대 상회 소모품 30% 할인', '#ff8fc4'), 700);
+      if (merchantOn(d)) setTimeout(() => this.toast('떠돌이 상인 보부가 부둣길 광장 옆에 보따리를 풀었다!', '#c98aff'), 1300);
+    }
+    if (d.revenge && d.day > d.revenge.until) { this.toast(`${josa(d.revenge.oppName, '은/는')} 지하에서 기다리다 지쳐 돌아갔다.`, '#c9d4ff'); d.revenge = null; }
+    const R = d.revenge;
+    if (id === 'lobby' && R && !R.invited && d.day >= R.day) { const a = this.npcs.find(n => n.id === R.opp); if (a) { this.approach(a, () => this.say(this.revengeInvite()), { range: 260, speed: 105 }); return; } }
+    // the next opponent comes over in the waiting room, once per contract
+    if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
+      const key = d.contract.opp + d.contract.day, a = this.npcs.find(n => n.id === d.contract.opp);
+      if (a && d.flags.roomTalk !== key) this.approach(a, () => { d.flags.roomTalk = key; this.say(roomBanter(a.id, c)); }, { range: 300, speed: 85 });
+    }
+    // troublemakers from the docks burst into the lobby: the first time from day 3, then now and then
+    if (id === 'lobby' && !instant && d.day >= 3 && d.flags.gangDay !== d.day && !(R && !R.invited && d.day >= R.day)) {
+      const roll = new RNG(d.day * 71 + d.season * 7).next();
+      d.flags.gangDay = d.day;
+      if (!d.flags.gangSeen || roll < .16) this.gangArrives();
+    }
+  }
+  gangArrives() {
+    const p = this.player, from = Math.max(40, Math.min(p.x - 230, 90));
+    const mk = (id, x) => { const N = NPCS[id], a = new Actor(N.look, { x, face: 1, stance: 'street', id }); a.idx = this.npcs.length + 1; this.npcs.push(a); return a; };
+    const boss = mk('galchi', from), kid = mk('myeolchi', from - 34);
+    this.approach(boss, () => this.say(this.gangLines()), { speed: 175 });
+    this.approach(kid, null, { speed: 175, near: 92 });
+    this.toast('부둣가 악동단이 로비에 들이닥쳤다!', '#ffb347');
+    this.game.audio.sfx('door'); this.game.audio.sfx('warn');
+  }
+  gangLeave() { for (const a of this.npcs) if (a.id === 'galchi' || a.id === 'myeolchi') { a.leaving = true; a.scripted = false; } this.approachers = this.approachers.filter(ap => !ap.a.leaving); }
+  gangLines() {
+    const c = this.c, d = c.d, first = !d.flags.gangSeen;
+    d.flags.gangSeen = (d.flags.gangSeen || 0) + 1;
+    const offer = { opp: 'galchi', oppName: '부둣가 악동단', reward: 30000 + d.season * 5000, fame: 4, kind: 'brawl' };
+    const fight = () => this.startMatch('brawl', offer), price = Math.min(8000, d.money);
+    return [
+      { who: 'galchi', text: first ? '자, 자! 주목! 오늘부터 이 체육관은 우리 {y}부둣가 악동단{/} 구역이다!' : '우리가 또 왔다! 지난번 일은 기억 안 나지만, 아무튼 또 왔다!', expr: 'smug' },
+      { who: 'myeolchi', text: first ? '형님… 저 사람 레슬러 같은데요? 팔뚝이 제 허벅지만 한데요?' : '형님, 저 사람 또 있어요. 오늘은 그냥 가면 안 될까요?' },
+      { who: 'galchi', text: '그러니까 더 좋지! 레슬러 하나 눕히면 우리 이름이 항구에 쫙 퍼진다고!', expr: 'fierce' },
+      { prompt: '로비가 싸움판이 되려 한다', choice: [
+        { label: '"덤벼라!" (로비 난투 1:2)', act: fight },
+        { label: '사장님을 부른다', go: [{ who: 'boss', text: '뭐, 악동? …자네가 해결하게. 링 밖 싸움도 다 쇼 연습이야! 아, 화분은 깨지 말고!' }, { act: fight }] },
+        { label: `지갑을 내준다 (${fmtMoney(price)})`, go: [{ act: () => { c.pay(price); d.fame = Math.max(0, d.fame - 2); this.toast(`악동단에게 ${fmtMoney(price)}을 뜯겼다. 명성 -2`, '#ff8a8a'); this.gangLeave(); } }, { who: 'galchi', text: '히히, 말이 통하는 녀석이네! 얘들아, 철수!' }, { who: 'myeolchi', text: '형님, 저 사람 표정이 엄청 무서운데요…' }] },
+      ] },
+    ];
+  }
+  revengeInvite() {
+    const c = this.c, d = c.d, R = d.revenge;
+    const excuse = pick(['지난번엔 조명이 눈부셔서 그랬던 거다. 그래, 조명 탓이야.', '그날은 아침을 안 먹어서 힘이 안 났을 뿐이다.', '링이 미끄러웠다. 분명히 미끄러웠어.', '심판이 내 쪽은 한 번도 안 봤어. 다 봤는데 안 봤다고.']);
+    const down = () => { R.invited = true; d.flags.basementKnown = 1; };
+    return [
+      { who: R.opp, text: `${d.name}. 기다리고 있었다.`, expr: 'fierce' },
+      { who: R.opp, text: excuse },
+      { who: R.opp, text: '이 로비 아래에 {v}지하 링{/}이 있다. 심판도, 규칙도 없는 곳이지. 의자든 뭐든 다 쓴다. 거기서 다시 붙자.' },
+      { prompt: '리벤지 신청을 받았다', choice: [
+        { label: '지금 따라 내려간다', act: () => { down(); this.goDoor(LOCATIONS.lobby.doors.find(x => x.to === 'basement')); } },
+        { label: `나중에 내려가겠다 (${R.until}일까지)`, go: [{ act: () => { down(); this.npcs = this.npcs.filter(n => n.id !== R.opp); this.toast(`지하 계단이 열렸다. ${R.until}일까지 ${josa(R.oppName, '이/가')} 기다린다.`, '#ffb347'); } }, { who: R.opp, text: '도망치지 마라. 지하에서 기다리겠다.' }] },
+        { label: '거절한다 (명성 -2)', go: [{ act: () => { d.revenge = null; d.fame = Math.max(0, d.fame - 2); this.npcs = this.npcs.filter(n => n.id !== R.opp); } }, { who: R.opp, text: '흥, 겁쟁이 같으니라고. 소문 다 내 주지.', expr: 'smug' }] },
+      ] },
+    ];
+  }
+  revengeReady() {
+    const d = this.c.d, R = d.revenge;
+    const offer = { opp: R.opp, oppName: R.oppName, reward: 30000 + d.season * 8000, fame: 6, kind: 'revenge', difficulty: d.season >= 2 ? 'expert' : 'hard' };
+    return [
+      { who: R.opp, text: pick(['왔군. 여기선 아무도 안 말린다. 의자든 뭐든 다 쓰는 거다.', '관객은 적지만 다들 돈을 걸었지. 실망시키지 마라.', '오늘은 조명 탓도, 심판 탓도 없다.']), expr: 'fierce' },
+      { prompt: '지하 리벤지 매치', choice: [{ label: `링에 오른다 (판돈 ${fmtMoney(offer.reward)})`, act: () => this.startMatch('revenge', offer) }, { label: '아직은 아니다', go: [{ who: R.opp, text: '도망칠 생각은 마라.' }] }] },
+    ];
+  }
+  // Surprises during career matches: the boss's chair toss, a coach sneaking a chair in.
+  matchEvents(kind, o) {
+    const d = this.c.d;
+    if (!o || o.mode === 'rumble' || o.mode === 'tag' || kind === 'title') return [];
+    const r = new RNG(d.day * 97 + d.slot * 13 + d.history.length * 7 + d.season);
+    const ch = CHARACTERS[o.opp], dirty = ch && ch.ai ? ch.ai.dirty || 0 : 0;
+    if ((kind === 'official' || kind === 'free' || kind === 'event') && ((!d.flags.bossChairSeen && d.history.length >= 1) || r.chance(.2))) { d.flags.bossChairSeen = 1; return [{ kind: 'bossChair', at: 2 + r.next() * 4 }]; }
+    if (r.chance(.12 + dirty * .35)) return [{ kind: 'coachChair', when: 'foeLosing', below: .55, coachName: `${ch ? ch.name : '상대'}의 코치` }];
+    return [];
+  }
   // ---- actions used by dialogues and objects ----
   openOffers() { if (!this.c.d.offers.length || this.c.d.offersDay !== this.c.d.day) this.c.makeOffers(); this.open(new Menus.OffersMenu(this)); }
   openArenaList() { this.open(new Menus.ArenaMenu(this)); }
   openShop() { this.open(new Menus.ShopMenu(this)); }
   openClinic() { this.open(new Menus.ClinicMenu(this)); }
   openFood() { this.open(new Menus.FoodMenu(this)); }
+  openMerchant() { this.open(new Menus.MerchantMenu(this)); }
   openLearn(by) { this.open(new Menus.LearnMenu(this, by)); }
   openInfo(tab = 1) { this.open(new Menus.InfoMenu(this, tab)); }
   startJob() { this.startTraining('job'); }
@@ -8791,20 +9744,41 @@ class WorldScene {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
     const foe = id => ({ char: id, ctrl: 'ai', difficulty: lv });
+    if (kind === 'brawl') return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), { char: 'galchi', ctrl: 'ai', difficulty: d.season >= 2 ? 'hard' : 'normal', team: 1 }, { char: 'myeolchi', ctrl: 'ai', difficulty: 'easy', team: 1 }], career: 1, title: '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }], introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
+    if (kind === 'revenge') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
     if (o && o.mode === 'tag') return { mode: 'tag', arena: o.arena || 'pier', entrants: [me, { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('dueok'), foe('baeksang')], career: 1, title: '항구 태그 대전' };
-    return { mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    return { events: this.matchEvents(kind, o).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) { c.d.flags['dojo_' + offer.opp] = 1; }
-    if (kind === 'free' || kind === 'dojo') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
+    if (kind === 'free' || kind === 'dojo' || kind === 'brawl' || kind === 'revenge') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
+    if (kind === 'brawl') {
+      if (res.won) { c.d.flags.gangBeaten = (c.d.flags.gangBeaten || 0) + 1; this.toast('악동단을 쫓아냈다! 사장님이 로비 지킴이 보너스를 줬다.', '#9be36b'); }
+      else if (!res.quit) { const st = Math.min(12000, c.d.money); if (st > 0) { c.pay(st); this.toast(`악동단이 지갑을 털어 갔다… -${fmtMoney(st)}`, '#ff8a8a'); } }
+    }
+    if (kind === 'revenge') { c.d.revenge = null; this.toast(res.won ? '지하의 리벤지를 짓밟았다! 판돈을 챙겼다.' : '지하에서 졌다… 소문이 금방 퍼질 거다.', res.won ? '#9be36b' : '#ff8a8a'); }
+    // a beaten wrestler may come back for revenge a few days later
+    if (res.won && (kind === 'official' || kind === 'free' || kind === 'dojo') && offer && CHARACTERS[offer.opp] && offer.opp !== 'fogking' && !c.d.revenge && Math.random() < (c.d.flags.revengeSeen ? .4 : .8)) { c.d.flags.revengeSeen = 1; c.d.revenge = { opp: offer.opp, oppName: offer.oppName || CHARACTERS[offer.opp].name, day: c.d.day + 2, until: c.d.day + 7, invited: false }; }
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
     c.save();
     this.open(new Menus.ResultMenu(this, sum, res, kind, offer));
+  }
+  // Face to face in the ring before the bell: the opponent's line, the player's answer, a small effect.
+  preTalk(id, o) {
+    const c = this.c, line = PRE[id] ? PRE[id].ring : CHARACTERS[id] ? CHARACTERS[id].lines.intro : null;
+    if (!line) return null;
+    const first = preFightLine(id, c);
+    return { opp: id, lines: [{ who: id, text: first }, { who: id, text: line, expr: 'fierce' }],
+      choices: [
+        { label: '"한 방에 끝내 주지."', reply: pick(['뭐라고?! 후회하게 해 주마!', '하, 입만 살았군!', '그 말, 링 바닥에서 다시 해 봐라!']), fx: 'taunt' },
+        { label: '"좋은 경기 합시다."', reply: pick(['…흥, 예의는 아는군.', '그래, 끝나고도 그 말 할 수 있으면.', '좋아. 봐주진 않는다.']), fx: 'respect' },
+        { label: '"……" (말없이 노려본다)', reply: pick(['…뭘 봐?', '…눈싸움은 내가 이긴다.', '……']), fx: 'stare' },
+      ] };
   }
   checkGameOver() { if (this.c.d.injury >= 100) { this.game.go(() => new Menus.GameOverScene(this.game, this.c)); return true; } return false; }
   // ---- update ----
@@ -8817,12 +9791,15 @@ class WorldScene {
     if (this.fadeT > 0) { this.fadeT = Math.max(0, this.fadeT - dt); if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
     const fading = this.fadeT > 0;
     for (const a of this.npcs) this.npcThink(a, dt);
+    if (this.npcs.some(a => a.gone)) this.npcs = this.npcs.filter(a => !a.gone);
+    this.tickApproach(dt);
     this.guide = this.findGuide();
     if (this.overlays.length) { this.overlays[this.overlays.length - 1].update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.dialog) { this.dialog.update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.c.d.flags.seasonEnd && !fading) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
     let mx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
     if (fading) mx = 0;
+    this.runCheck(p, mx);
     this.physics(p, dt, mx);
     if (inp.pressed('up') && p.ground && !fading) { p.vy = -250; p.ground = false; A.sfx('jump'); }
     p.pose(dt);
@@ -8878,8 +9855,17 @@ class WorldScene {
     if (ob.loc === this.loc) x = ob.x; else { door = this.routeTo(ob.loc); if (door) x = door.x; }
     return { ob, x, door };
   }
+  // A/D twice quickly: run. Letting go or turning round stops it.
+  runCheck(p, mx) {
+    const inp = this.game.input, tap = inp.pressed('right') ? 1 : inp.pressed('left') ? -1 : 0;
+    if (tap) {
+      if (this.lastTap && this.lastTap.dir === tap && this.t - this.lastTap.t < B.doubleTap + .06) { if (!p.running) { p.running = true; this.game.audio.sfx('whoosh', { pitch: 1.4 }); p.dust = .3; } }
+      this.lastTap = { dir: tap, t: this.t };
+    }
+    if (!mx || (p.running && p.vx && Math.sign(p.vx) !== mx && Math.abs(p.vx) > 40)) p.running = false;
+  }
   physics(a, dt, mx) {
-    const L = this.L, spd = 108;
+    const L = this.L, spd = a.running ? 214 : 108;
     const want = mx * spd;
     a.vx = Math.abs(want) > 0 ? a.vx + clamp(want - a.vx, -1200 * dt, 1200 * dt) : a.vx * Math.max(0, 1 - dt * 14);
     if (mx) a.face = mx;
@@ -8887,9 +9873,12 @@ class WorldScene {
     a.x += a.vx * dt; a.y += a.vy * dt;
     if (a.y >= a.y0) { if (!a.ground && a.vy > 200) this.game.audio.sfx('land', { p: .4 }); a.y = a.y0; a.vy = 0; a.ground = true; }
     a.x = clamp(a.x, 18, L.w - 18);
-    if (a.ground && Math.abs(a.vx) > 30) { a.stepT = (a.stepT || 0) + dt; if (a.stepT > .3) { a.stepT = 0; this.game.audio.sfx('step'); } }
+    if (a.ground && Math.abs(a.vx) > 30) { a.stepT = (a.stepT || 0) + dt; if (a.stepT > (Math.abs(a.vx) > 150 ? .2 : .3)) { a.stepT = 0; this.game.audio.sfx('step'); } }
+    if (a.dust > 0) a.dust -= dt;
   }
   npcThink(a, dt) {
+    if (a.leaving) { a.vx = -190; a.face = -1; a.x += a.vx * dt; if (a.x < 30) a.gone = true; return; }
+    if (a.scripted) return;
     const p = this.player, d = Math.abs(a.x - p.x);
     if (d < 90) a.face = sgn(p.x - a.x) || a.face;
     if (a.wander && d > 120) {
@@ -8913,6 +9902,10 @@ class WorldScene {
     const A = this.game.audio, c = this.c, d = c.d;
     if (pr.kind === 'npc') {
       const a = pr.a; a.face = sgn(this.player.x - a.x) || a.face; this.player.face = -a.face; a.talkT = 1.5; A.sfx('ui');
+      const R = d.revenge;
+      if (R && a.id === R.opp && this.loc === 'basement') { this.say(this.revengeReady()); return; }
+      if (R && a.id === R.opp && this.loc === 'lobby' && !R.invited) { this.approachers = this.approachers.filter(ap => ap.a !== a); a.scripted = false; this.say(this.revengeInvite()); return; }
+      if ((a.id === 'galchi' || a.id === 'myeolchi') && !a.leaving && this.approachers.some(ap => ap.a.id === 'galchi')) { this.approachers = this.approachers.filter(ap => ap.a.id !== 'galchi' && ap.a.id !== 'myeolchi'); for (const n of this.npcs) if (n.id === 'galchi' || n.id === 'myeolchi') n.scripted = false; this.say(this.gangLines()); return; }
       this.say(talk(a.id, c, this));
       return;
     }
@@ -8920,7 +9913,7 @@ class WorldScene {
     switch (o.act) {
       case 'train': this.startTraining(o.game); break;
       case 'spar': this.say([{ who: 'trainer', text: '연습 링이다. 상대 행동, 체력을 바꿔 가며 기술을 시험해 봐. 기록도 부상도 남지 않아.' }, { choice: [{ label: '연습 경기 시작', act: () => this.startMatch('practice', { opp: 'dohyun' }) }, { label: '그만두기', go: [] }] }]); break;
-      case 'vending': if (c.pay(3000)) { d.fatigue = Math.max(0, d.fatigue - 8); A.sfx('coin'); this.toast('이온 음료를 마셨다. 피로 -8 (₩3,000)', '#9be36b'); } else { A.sfx('deny'); this.toast('돈이 모자란다', '#ff8a8a'); } break;
+      case 'vending': A.sfx('ui'); this.open(new Menus.VendingMenu(this)); break;
       case 'schedule': this.say(this.scheduleLines()); break;
       case 'ranking': this.open(new Menus.RankMenu(this)); break;
       case 'rest': this.restMenu(); break;
@@ -8941,6 +9934,8 @@ class WorldScene {
       case 'racks': this.openShop(); break;
       case 'sale': this.openShop(); break;
       case 'dojo': this.dojoMenu(); break;
+      case 'undergroundRing': if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
+      case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       default: this.toast(o.label);
     }
@@ -9054,7 +10049,10 @@ class WorldScene {
       ly += 13;
     }
     if (!busy && d.contract && !(G && G.ob.contract)) { drawText(u, `계약: ${d.contract.oppName} (~${d.contract.day}일)`, 8, ly, { size: 11, color: d.contract.day <= d.day ? '#ffb347' : '#c9d4ff', outline: '#05060f' }); ly += 13; }
-    if (d.points > 0 && !busy) drawText(u, `능력치 포인트 ${d.points} (${inp.label('info')})`, 8, ly, { size: 11, color: '#6be38a', outline: '#05060f' });
+    if (d.points > 0 && !busy) { drawText(u, `능력치 포인트 ${d.points} (${inp.label('info')})`, 8, ly, { size: 11, color: '#6be38a', outline: '#05060f' }); ly += 13; }
+    const bf = Object.keys(d.buffs || {}).map(k => BUFF_NAMES[k] || k);
+    if (bf.length && !busy) drawText(u, '다음 경기: ' + bf.join(' · '), 8, ly, { size: 11, color: '#ffd65a', outline: '#05060f' });
+    drawText(u, `${inp.label('left')}·${inp.label('right')} 두 번: 달리기`, 8, 348, { size: 11, color: this.player.running ? '#ffd65a' : UI.faint, outline: '#05060f' });
     drawText(u, `${inp.label('interact')}·Enter 대화/조사 · ${inp.label('door')} 문 · ${inp.label('info')} 정보 · ${inp.label('map')} 지도 · ${inp.label('pause')} 메뉴`, 632, 348, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
   }
   // Yellow marker over the goal (person or door) when it is on screen, or an arrow at the screen edge.

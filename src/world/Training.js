@@ -52,7 +52,9 @@ export class Training {
       const pay = Math.round((6000 + this.s.good * 1800 + d.season * 1000) / 500) * 500;
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
     } else {
-      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK;
+      const tb = d.buffs && d.buffs.train || 1;
+      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK * tb;
+      if (d.buffs && d.buffs.train) { delete d.buffs.train; this.boosted = 1; }
       for (const k of this.G.stats) { const before = d.lv[k]; d.lv[k] = Math.min(20, d.lv[k] + g); this.gains.push([k, d.lv[k] - before]); }
       d.fatigue = Math.min(100, d.fatigue + 14);
       this.fatK = fatK;
@@ -180,6 +182,7 @@ export class Training {
       if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
       else this.gains.forEach(([k, g], i) => drawText(u, `${STAT_GROWTH[k][1]} Lv +${g.toFixed(2)}  (Lv ${this.c.d.lv[k].toFixed(1)})`, 320, 136 + i * 16, { size: 11, align: 'c', color: '#6be38a' }));
       if (this.fatK && this.fatK < 1) drawText(u, '피곤해서 효과가 줄었다…', 320, 172, { size: 11, align: 'c', color: '#ff8a8a' });
+      if (this.boosted) drawText(u, '단백질 셰이크 효과 +15%!', 320, 186, { size: 11, align: 'c', color: '#6be38a' });
       prompt(u, ['Enter'], '확인', 320, 212, { align: 'c' });
       return;
     }
