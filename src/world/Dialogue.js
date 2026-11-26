@@ -18,6 +18,7 @@ export class Dialogue {
       if (typeof s === 'string') s = { who: this.lastWho, text: s };
       if (s.act) { s.act(); if (this.done) return; continue; }
       if (s.if) { const ok = s.if(); this.queue.unshift(...(ok ? s.then || [] : s.else || [])); continue; }
+      if (s.choice && !s.who && !s.name) s = Object.assign({}, s, { who: this.lastWho });   // the last speaker asks the question
       this.cur = s; this.shown = 0; this.t = 0; this.sel = 0; this.lastWho = s.who || this.lastWho;
       if (s.text) { const w = this.lineWidth(); this.lines = wrapText(s.text, w); this.total = this.lines.reduce((n, l) => n + visLen(l), 0); }
       return;
@@ -59,14 +60,20 @@ export class Dialogue {
     if (look) drawPortrait(u, look, c.expr || (c.choice ? 'neutral' : Math.floor(this.t * 8) % 2 && this.shown < this.total ? 'talk' : 'neutral'), x + 9, y + 11, 80, { px: 3, dy: 10, flip: false });
     const name = c.who === 'me' ? (this.player ? this.player.name : '나') : npc ? npc.name : c.name || '';
     if (name) { const nw = Math.max(70, name.length * 14 + 14); rect(u, '#05060f', x + 98, y - 9, nw + 2, 17); rect(u, npc && npc.wrestler ? '#7a1f4a' : '#1f4a7a', x + 99, y - 8, nw, 15); drawText(u, name, x + 105, y - 7, { size: 11, color: '#ffffff' }); }
+    const inp = this.game.input, key = inp.device === 'pad' ? 'A' : inp.label('interact') + '·Enter';
     if (c.choice) {
       drawText(u, c.prompt || '어떻게 할까?', x + 104, y + 12, { color: UI.dim, size: 11 });
+      drawText(u, `↑↓ 고르기 · ${key} 결정`, x + w - 10, y + 12, { size: 11, align: 'r', color: UI.faint });
       c.choice.forEach((ch, i) => { const yy = y + 28 + i * 16, on = i === this.sel; if (on) rect(u, mixHex(UI.accent, '#0e1330', .5), x + 100, yy - 2, 300, 15); drawText(u, (on ? '▶ ' : '  ') + ch.label, x + 104, yy, { color: on ? '#ffffff' : UI.dim, size: 11 }); });
       return;
     }
     let left = Math.floor(this.shown);
     this.lines.forEach((l, i) => { if (left <= 0) return; const n = visLen(l); drawText(u, n <= left ? l : sliceTagged(l, left), x + 104, y + 14 + i * 18, { color: '#eef2ff' }); left -= n; });
-    if (this.shown >= this.total && Math.floor(this.t * 3) % 2) drawText(u, '▼', x + w - 16, y + h - 16, { size: 11, color: '#ffd65a' });
+    if (this.shown >= this.total) {
+      const last = !this.queue.some(s => typeof s === 'string' || s.text || s.choice);
+      drawText(u, `${key} ${last ? '닫기' : '다음'}`, x + w - 24, y + h - 15, { size: 11, align: 'r', color: UI.faint });
+      if (Math.floor(this.t * 3) % 2) drawText(u, '▼', x + w - 16, y + h - 16, { size: 11, color: '#ffd65a' });
+    }
     void clamp; void stripTags;
   }
 }

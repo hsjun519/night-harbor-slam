@@ -17,7 +17,7 @@ export class InputManager {
     this.keys = JSON.parse(JSON.stringify(DEFAULT_KEYS));
     this.held = new Set(); this.downNow = new Set(); this.upNow = new Set();
     this.padHeld = new Set(); this.padPrev = new Set(); this.axisX = 0; this.axisY = 0;
-    this.device = 'kb'; this.textMode = false; this.capture = null; this.any = false; this.lastCode = null;
+    this.device = 'kb'; this.textMode = false; this.textHook = null; this.capture = null; this.any = false; this.lastCode = null;
     this.focusLost = false;
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', e => this.onKey(e, true));
@@ -27,7 +27,9 @@ export class InputManager {
   }
   setBindings(b) { if (b) for (const k in DEFAULT_KEYS) if (Array.isArray(b[k]) && b[k].length) this.keys[k] = b[k].slice(0, 2); }
   onKey(e, d) {
-    if (this.textMode) return;
+    // A text box is open. Keys typed into it never reach here (it stops them); keys that do arrive mean the
+    // box lost focus, so the box decides (Enter/Esc close it, anything else gives it the focus back).
+    if (this.textMode) { if (this.textHook) this.textHook(e, d); return; }
     const c = e.code;
     if (this.capture && d) { e.preventDefault(); const fn = this.capture; this.capture = null; fn(c); return; }
     if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace'].includes(c) || (c === 'F3')) e.preventDefault();
@@ -60,6 +62,9 @@ export class InputManager {
     return this.pressed(a);
   }
   rawPressed(code) { return this.downNow.has(code); }
+  // "Do it" outside a match (mini-games, prompts): attack, finisher, interact or any menu confirm key.
+  actPressed() { return this.pressed('atk') || this.pressed('fin') || this.pressed('interact') || this.menuPressed('confirm'); }
+  actDown() { if (this.down('atk') || this.down('fin') || this.down('interact')) return true; for (const c of MENU.confirm) if (this.held.has(c)) return true; for (const b of PAD.confirm) if (this.padHeld.has(b)) return true; return false; }
   // Fill a fighter intent from the current state.
   fillIntent(I) {
     I.mx = (this.down('right') ? 1 : 0) - (this.down('left') ? 1 : 0);

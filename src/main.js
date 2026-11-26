@@ -12,8 +12,8 @@ const game = new GameManager(canvas);
 game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: hasCareer(1), onCareer: kind => startCareer(kind) }));
 game.playMatch = (cfg, after) => game.go(() => new MatchScene(game, cfg, res => after && after(res)));
 game.openSettings = () => game.push(new SettingsOverlay(game));
-function startCareer(kind) {
-  if (kind === 'continue') { const c = Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+function startCareer(kind, given) {
+  if (kind === 'continue') { const c = given || Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
   game.go(() => new CreateScene(game, look => { const c = Career.create(1, look); game.career = c; game.go(() => new WorldScene(game, c, { intro: true })); }));
 }
 game.startCareer = startCareer;

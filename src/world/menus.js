@@ -30,7 +30,7 @@ class Menu {
 }
 
 export class Confirm extends Menu {
-  constructor(W, text, yes, o = {}) { super(W); this.text = text; this.yes = yes; this.o = o; this.sel = 1; }
+  constructor(W, text, yes, o = {}) { super(W); this.text = text; this.yes = yes; this.o = o; this.sel = o.danger ? 1 : 0; }   // risky questions start on '아니요'
   update(dt) {
     super.update(dt); const inp = this.game.input;
     if (inp.pressed('left') || inp.pressed('right') || inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); }
@@ -40,7 +40,8 @@ export class Confirm extends Menu {
   draw(u) {
     this.frame(u, this.o.danger ? '경고' : '확인', 120, 110, 400, 130, this.o.danger ? '#ff5b5b' : '#ffd65a');
     wrapText(this.text, 360, 14).forEach((l, i) => drawText(u, l, 320, 138 + i * 17, { align: 'c', color: '#ffffff' }));
-    ['예', '아니요'].forEach((t, i) => { const x = 270 + i * 100, on = this.sel === i; rect(u, on ? (i === 0 && this.o.danger ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 36, 206, 72, 20); drawText(u, t, x, 209, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+    ['예', '아니요'].forEach((t, i) => { const x = 270 + i * 100, on = this.sel === i; rect(u, on ? (i === 0 && this.o.danger ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 36, 200, 72, 20); if (on) rect(u, '#ffd65a', x - 36, 219, 72, 1); drawText(u, (on ? '▶ ' : '') + t, x, 203, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+    drawText(u, '←→ 선택 · Enter/E 결정 · Esc 취소', 320, 226, { size: 11, align: 'c', color: UI.faint });
   }
 }
 
@@ -75,7 +76,8 @@ export class OffersMenu extends Menu {
     });
     const y = 62 + list.length * 56;
     rect(u, this.sel === list.length ? '#26315f' : '#141a36', 52, y, 536, 18); drawText(u, '닫기', 320, y + 2, { size: 11, align: 'c', color: this.sel === list.length ? '#ffffff' : UI.dim });
-    this.foot(u, '부상과 피로는 경기 결과에 영향을 준다. 무리한 일정은 피하자.', 316);
+    this.foot(u, '↑↓ 고르기 · Enter/E 계약 · Esc 닫기', 300);
+    drawText(u, '부상과 피로는 경기 결과에 영향을 준다. 무리한 일정은 피하자.', 320, 316, { size: 11, align: 'c', color: UI.faint });
   }
 }
 
@@ -102,6 +104,7 @@ export class ArenaMenu extends Menu {
   draw(u) {
     this.frame(u, '오늘의 대진', 80, 40, 480, 70 + this.items.length * 34, '#ff5fa2');
     this.items.forEach((it, i) => { const y = 66 + i * 34, on = i === this.sel; rect(u, on ? '#26315f' : '#141a36', 92, y, 456, 30); if (on) rect(u, '#ff5fa2', 92, y, 2, 30); drawText(u, it.label, 100, y + 3, { color: on ? '#ffffff' : '#c9d4ff' }); if (it.sub) drawText(u, it.sub, 100, y + 17, { size: 11, color: UI.dim }); });
+    this.foot(u, '↑↓ 고르기 · Enter/E 결정 · Esc 닫기', 40 + 70 + this.items.length * 34 - 16);
   }
 }
 
@@ -186,6 +189,7 @@ export class ClinicMenu extends Menu {
     const o = this.opts();
     o.forEach((it, i) => { const y = 140 + i * 36, on = i === this.sel; rect(u, on ? '#1f4a4a' : '#141a36', 100, y, 440, 32); if (on) rect(u, '#6be3c8', 100, y, 2, 32); drawText(u, it.label, 110, y + 3, { color: on ? '#ffffff' : '#c9e8e0' }); if (it.sub) drawText(u, it.sub, 110, y + 18, { size: 11, color: UI.dim }); });
     drawText(u, '소지금 ' + this.c.money() + `  ·  붕대 ${d.items.bandage || 0} / 고급 붕대 ${d.items.bigBandage || 0} (Tab→소지품)`, 320, 290, { size: 11, align: 'c', color: UI.dim });
+    this.foot(u, '↑↓ 고르기 · Enter/E 치료 · Esc 나가기', 306);
   }
 }
 
@@ -220,7 +224,8 @@ export class FoodMenu extends Menu {
   draw(u) {
     this.frame(u, '순덕 포차', 120, 60, 400, 230, '#ff8a9a');
     this.opts().forEach((it, i) => { const y = 88 + i * 34, on = i === this.sel; rect(u, on ? '#4a1a2a' : '#141a36', 134, y, 372, 30); drawText(u, it.label, 144, y + 3, { color: on ? '#ffffff' : '#f0d0d8' }); drawText(u, it.sub || '', 144, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 498, y + 8, { align: 'r', color: UI.money }); });
-    this.foot(u, '피로가 높으면 훈련 효과가 떨어지고 경기에서 부상이 더 쌓인다.', 272);
+    drawText(u, '피로가 높으면 훈련 효과가 떨어지고 경기에서 부상이 더 쌓인다.', 320, 262, { size: 11, align: 'c', color: UI.faint });
+    this.foot(u, '↑↓ 고르기 · Enter/E 주문 · Esc 나가기', 276);
   }
 }
 
@@ -245,6 +250,7 @@ export class LearnMenu extends Menu {
     const d = this.c.d, L = this.list();
     this.frame(u, this.by === 'rival' ? '철썩 짐의 기술' : '백 관장의 기술 교실', 70, 30, 500, 300, '#6be38a');
     L.forEach((l, i) => { const m = MOVES[l.id], y = 56 + i * 32, on = i === this.sel, has = d.known.includes(l.id); rect(u, on ? '#1f3a2a' : '#141a36', 82, y, 476, 29); drawText(u, m.name + (has ? ' [습득]' : ''), 90, y + 2, { color: has ? UI.faint : on ? '#ffffff' : '#c9e8d0' }); drawText(u, m.desc, 90, y + 16, { size: 11, color: UI.dim }); drawText(u, has ? '' : fmtMoney(l.cost), 550, y + 2, { align: 'r', color: UI.money }); drawText(u, has ? '' : `명성 ${l.fame}`, 550, y + 16, { size: 11, align: 'r', color: d.fame >= l.fame ? UI.fame : '#ff8a8a' }); });
+    this.foot(u, '↑↓ 고르기 · Enter/E 배우기 · Esc 나가기 · 배운 기술은 Tab → 기술에서 장착', 312);
   }
 }
 
@@ -346,7 +352,7 @@ export class MapMenu extends Menu {
     rect(u, '#3a3020', 486, 250, 40, 16); drawText(u, '하역장', 506, 252, { size: 11, align: 'c', color: '#ffd65a' });
     node('dome', 556, 258, '등대 돔', !W.unlocked('dome'));
     drawText(u, '지금 위치: ' + W.L.name, 320, 290, { size: 11, align: 'c', color: '#ffd65a' });
-    this.foot(u, '잠긴 곳: 철썩 짐(명성 40) · 등대 돔(타이틀전 계약)', 306);
+    this.foot(u, '잠긴 곳: 철썩 짐(명성 40) · 등대 돔(타이틀전 계약) · M/Esc 닫기', 306);
   }
 }
 
@@ -358,6 +364,7 @@ export class RankMenu extends Menu {
     this.frame(u, '선수 랭킹', 120, 20, 400, 320, '#ffd65a');
     drawText(u, `챔피언: ${c.d.flags.champion ? c.d.name : '안개왕'}`, 320, 40, { color: '#ffd65a', align: 'c' });
     L.forEach((e, i) => { const y = 60 + i * 17, me = e.id === 'player', name = me ? c.d.name : CHARACTERS[e.id].name; if (me) rect(u, '#3a3a1a', 134, y - 2, 372, 16); drawText(u, `${i + 1}`, 150, y, { size: 11, align: 'r', color: me ? '#ffd65a' : UI.dim }); drawText(u, name, 162, y, { size: 11, color: me ? '#ffd65a' : '#ffffff' }); drawText(u, me ? CHARACTERS.rookie.nick : CHARACTERS[e.id].nick, 270, y, { size: 11, color: UI.dim }); drawText(u, `${e.w}승 ${e.l}패`, 496, y, { size: 11, align: 'r', color: UI.dim }); });
+    this.foot(u, 'Enter/Esc 닫기', 324);
   }
 }
 
@@ -365,7 +372,7 @@ export class RankMenu extends Menu {
 export class PauseMenu extends Menu {
   items() { return [{ label: '계속하기', act: () => this.W.closeTop() }, { label: '저장하기', act: () => { this.c.save(); this.W.toast('저장했다', '#9be36b'); this.W.closeTop(); } }, { label: '조작법', act: () => this.game.showControls() }, { label: '설정', act: () => this.game.openSettings() }, { label: '저장하고 타이틀로', act: () => { this.c.save(); this.game.toTitle(); } }]; }
   update(dt) { super.update(dt); const it = this.items(); this.nav(it.length); if (this.back()) return; if (this.ok()) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
-  draw(u) { this.frame(u, '메뉴', 220, 90, 200, 150, '#49d6ff'); menuList(u, this.items(), this.sel, 238, 118, { w: 164, lh: 20 }); }
+  draw(u) { this.frame(u, '메뉴', 220, 90, 200, 160, '#49d6ff'); menuList(u, this.items(), this.sel, 238, 118, { w: 164, lh: 20 }); this.foot(u, 'Enter 결정 · Esc 닫기', 232); }
 }
 
 // ---- after a match ----
@@ -435,7 +442,7 @@ export class SeasonEndMenu extends Menu {
 // ---- career over ----
 export class GameOverScene {
   constructor(game, career) { this.game = game; this.c = career; this.t = 0; this.sel = 0; game.audio.music(null); game.audio.jingle('gameover'); career.d.retired = true; }
-  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.slot); if (k && k.d.injury < 100) { k.save(); this.game.career = k; this.game.startCareer('continue'); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
+  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
   update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
   draw(w, u) {
     const d = this.c.d;

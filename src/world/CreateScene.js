@@ -5,7 +5,7 @@ import { UI, SKINS, mixHex } from '../render/palette.js';
 import { rect, bands, cone } from '../render/painter.js';
 import { panel, prompt, gauge } from '../render/ui.js';
 import { Mannequin } from '../scenes/TitleScene.js';
-import { STYLE_BASE } from './CareerManager.js';
+import { STYLE_BASE, hasCareer } from './CareerManager.js';
 import { FINISHERS } from '../data/moves.js';
 import { STYLES } from '../data/characters.js';
 
@@ -38,7 +38,7 @@ export class CreateScene {
     this.game = game; this.done = done; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
     this.v = { style: 'all', build: 'auto', skin: 'tan', face: 'square', hair: 'side', hairCol: '#2b3350', beard: 'none', mask: 'none', top: 'none', bottom: 'tights', c1: '#157f8c', c2: '#ffd65a', boots: '#23263a' };
     game.audio.music('lobby');
-    this.input = null;
+    this.input = null; this.cool = 0; this.autoT = .45; this.okT = 0; this.afterName = null; this.ask = null;
   }
   look() {
     const v = this.v, S = STYLE_BASE[v.style];
@@ -56,36 +56,97 @@ export class CreateScene {
     v.mask = r.chance(.25) ? r.pick(OPTS.mask.slice(1)) : 'none';
     if (v.c1 === v.c2) v.c2 = r.pick(COLORS);
   }
+  // The name is typed into a real text box laid over the name row, so Korean input methods work.
+  // Enter must work in every way browsers report it: a plain Enter, an Enter that also commits a Hangul
+  // syllable (key "Process"/keyCode 229 while composing, sometimes followed by a second plain Enter),
+  // and an Enter that reaches the window because the box lost focus.
   openInput() {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || this.input) return;
+    const inp = this.game.input;
     const el = this.input = document.createElement('input');
-    el.maxLength = 8; el.value = this.name; el.placeholder = '이름 (최대 8자)';
-    const cv = document.getElementById('game'), r = cv.getBoundingClientRect(), k = r.width / VIEW_W;
-    Object.assign(el.style, { position: 'fixed', left: r.left + 120 * k + 'px', top: r.top + 74 * k + 'px', width: 170 * k + 'px', height: 16 * k + 'px', fontSize: 11 * k + 'px', background: '#0b0f22', color: '#ffffff', border: '2px solid #ffd65a', outline: 'none', padding: '0 4px', zIndex: 10, fontFamily: 'sans-serif' });
+    el.type = 'text'; el.maxLength = 8; el.value = this.name; el.placeholder = '이름 입력 후 Enter';
+    el.autocomplete = 'off'; el.spellcheck = false; el.setAttribute('enterkeyhint', 'done'); el.setAttribute('aria-label', '선수 이름 (최대 8자)');
+    Object.assign(el.style, { position: 'fixed', boxSizing: 'border-box', background: '#0b0f22', color: '#ffd65a', border: '2px solid #ffd65a', borderRadius: '0', outline: 'none', padding: '0 4px', margin: '0', zIndex: 10, fontFamily: "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif", fontWeight: 'bold' });
+    this.placeInput();
     document.body.appendChild(el);
-    this.game.input.textMode = true;
-    const finish = () => { if (!this.input) return; this.name = el.value.trim().slice(0, 8); el.remove(); this.input = null; this.game.input.textMode = false; this.game.input.clear(); this.game.audio.sfx('ok'); };
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); finish(); } e.stopPropagation(); });
-    el.addEventListener('blur', finish);
-    setTimeout(() => el.focus(), 30);
+    inp.textMode = true;
+    this.composing = false; this.wantDone = false;
+    const enterKey = e => e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
+    el.addEventListener('compositionstart', () => { this.composing = true; });
+    el.addEventListener('compositionend', () => { this.composing = false; if (this.wantDone) setTimeout(() => this.finishInput(), 0); });
+    el.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (enterKey(e)) {
+        if (e.repeat) { e.preventDefault(); return; }
+        // still composing a syllable: let the input method commit it first, then close
+        if (e.isComposing || e.keyCode === 229 || this.composing) { this.wantDone = true; setTimeout(() => { if (!this.composing) this.finishInput(); }, 40); return; }
+        e.preventDefault(); this.finishInput(); return;
+      }
+      if (e.key === 'Escape' || e.code === 'Escape') { e.preventDefault(); this.finishInput(); }
+    });
+    el.addEventListener('keyup', e => e.stopPropagation());
+    el.addEventListener('blur', () => setTimeout(() => { if (this.input === el && document.activeElement !== el) this.finishInput(); }, 0));
+    inp.textHook = (e, down) => {
+      if (!down) return;
+      if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Escape' || e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); this.finishInput(); }
+      else if (document.activeElement !== el) el.focus();
+    };
+    el.focus();
+    setTimeout(() => { if (this.input === el && document.activeElement !== el) el.focus(); }, 30);
   }
+  placeInput() {
+    const el = this.input, cv = typeof document !== 'undefined' && document.getElementById('game');
+    if (!el || !cv) return;
+    const r = cv.getBoundingClientRect(), k = r.width / VIEW_W;
+    Object.assign(el.style, { left: Math.round(r.left + 116 * k) + 'px', top: Math.round(r.top + 50 * k) + 'px', width: Math.round(222 * k) + 'px', height: Math.round(17 * k) + 'px', fontSize: Math.max(12, Math.round(11 * k)) + 'px' });
+  }
+  finishInput() {
+    const el = this.input;
+    if (!el) return;
+    const v = (el.value || '').replace(/\s+/g, ' ').trim().slice(0, 8);
+    this.input = null; this.wantDone = false; this.composing = false;
+    el.remove();
+    const inp = this.game.input;
+    inp.textMode = false; inp.textHook = null; inp.clear();
+    this.cool = .3;   // a second Enter from the same key press must not reopen the box
+    const cv = document.getElementById('game'); if (cv) cv.focus();
+    if (v) {
+      this.name = v; this.okT = 1.6; this.game.audio.sfx('ok');
+      this.row = this.afterName === 'start' ? ROWS.indexOf('start') : 1;
+    } else this.game.audio.sfx('back');
+    this.afterName = null;
+  }
+  begin() { this.ask = null; this.game.audio.sfx('ok'); this.done({ name: this.name, style: this.v.style, look: this.look() }); }
   update(dt) {
     this.t += dt;
-    if (this.input) return;
+    if (this.okT > 0) this.okT -= dt;
+    if (this.input) { this.placeInput(); return; }
+    // right after the box closes, ignore Enter/Esc (a trailing Enter must not reopen it), but let the cursor move
+    const settling = this.cool > 0;
+    if (settling) this.cool = Math.max(0, this.cool - dt);
     const inp = this.game.input, A = this.game.audio;
+    // the name comes first: open the box by itself once the screen has faded in
+    if (this.autoT > 0) { this.autoT -= dt; if (this.autoT <= 0 && !this.name && this.row === 0) { this.openInput(); return; } }
+    if (this.ask) {
+      if (inp.pressed('left') || inp.pressed('right') || inp.pressed('up') || inp.pressed('down')) { this.ask.sel ^= 1; A.sfx('ui'); }
+      if (inp.menuPressed('cancel')) { this.ask = null; A.sfx('back'); return; }
+      if (inp.menuPressed('confirm')) { if (this.ask.sel === 0) this.begin(); else { this.ask = null; A.sfx('back'); } }
+      return;
+    }
     if (inp.pressed('up')) { this.row = (this.row + ROWS.length - 1) % ROWS.length; A.sfx('ui'); }
     if (inp.pressed('down')) { this.row = (this.row + 1) % ROWS.length; A.sfx('ui'); }
     const k = ROWS[this.row];
     if (OPTS[k] && (inp.pressed('left') || inp.pressed('right'))) { const L = OPTS[k], i = L.indexOf(this.v[k]); this.v[k] = L[(i + (inp.pressed('left') ? -1 : 1) + L.length) % L.length]; A.sfx('ui', { pitch: 1.2 }); }
+    if (settling) return;
     if (inp.menuPressed('cancel')) { A.sfx('back'); this.game.toTitle(); return; }
     if (inp.menuPressed('confirm')) {
       if (k === 'name') this.openInput();
       else if (k === 'random') { this.randomize(); A.sfx('ok'); }
       else if (k === 'start') {
-        if (!this.name) { this.row = 0; this.openInput(); return; }
-        A.sfx('ok');
-        this.done({ name: this.name, style: this.v.style, look: this.look() });
-      } else if (OPTS[k]) { const L = OPTS[k], i = L.indexOf(this.v[k]); this.v[k] = L[(i + 1) % L.length]; A.sfx('ui'); }
+        if (!this.name) { this.row = 0; this.afterName = 'start'; this.openInput(); return; }
+        if (hasCareer(1)) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
+        this.begin();
+      } else if (OPTS[k]) { this.row = Math.min(ROWS.length - 1, this.row + 1); A.sfx('ui'); }   // Enter on a choice: keep it, go to the next item
     }
   }
   show(k) {
@@ -106,18 +167,38 @@ export class CreateScene {
       const y = 53 + i * 17, on = i === this.row;
       if (on) rect(u, mixHex(UI.accent, UI.panel, .55), 18, y - 2, 322, 16);
       drawText(u, ROWNAME[k], 26, y, { size: 11, color: on ? '#ffffff' : UI.dim });
-      if (k === 'name') drawText(u, this.input ? '' : (this.name || '(Enter로 입력)'), 120, y, { size: 11, color: this.name ? '#ffd65a' : UI.faint });
+      if (k === 'name') {
+        if (!this.input) drawText(u, this.name || '(Enter를 눌러 입력)', 120, y, { size: 11, color: this.name ? '#ffd65a' : UI.faint });
+        if (!this.input && this.name && this.okT > 0) drawText(u, '✓ 확정', 334, y, { size: 11, align: 'r', color: '#6be38a' });
+        else if (!this.input && !this.name) drawText(u, '필수', 334, y, { size: 11, align: 'r', color: on ? '#ffb347' : UI.faint });
+      }
       else if (OPTS[k]) {
         if (['hairCol', 'c1', 'c2', 'boots'].includes(k)) { rect(u, '#05060f', 199, y, 42, 11); rect(u, this.v[k], 200, y + 1, 40, 9); drawText(u, '◀        ▶', 220, y, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.faint }); }
         else drawText(u, '◀ ' + this.show(k) + ' ▶', 334, y, { size: 11, align: 'r', color: on ? '#ffd65a' : '#c9d4ff' });
       }
     });
     const S = STYLE_BASE[this.v.style], st = S.stats, F = FINISHERS[S.finisher];
-    panel(u, 360, 46, 266, 120, { accent: '#ff5fa2', alpha: .9 });
+    panel(u, 360, 46, 266, 134, { accent: '#ff5fa2', alpha: .9 });
     drawText(u, STYLES[this.v.style].name, 370, 52, { color: '#ffffff', bold: true });
     drawText(u, STYLES[this.v.style].desc, 370, 68, { size: 11, color: '#ff8fc4' });
-    [['체력', (st.hp - 60) / 90], ['기절 저항', (st.stun - 60) / 80], ['공격력', (st.atk - .6) / .75], ['잡기', (st.grp - .6) / .75], ['속도', (st.spd - .6) / .75], ['점프', (st.jump - .6) / .75]].forEach(([n, v], i) => { drawText(u, n, 370, 84 + i * 11, { size: 11, color: UI.dim }); gauge(u, 440, 88 + i * 11, 100, 4, clamp(v, .05, 1), 'fin', { col: '#ff8fc4' }); });
-    drawText(u, '피니셔: ' + F.name, 370, 152, { size: 11, color: '#ffd65a' });
-    prompt(u, ['↑↓'], '항목', 20, 338, {}); prompt(u, ['←→'], '바꾸기', 90, 338, {}); prompt(u, ['Enter'], '결정', 170, 338, {}); prompt(u, ['Esc'], '타이틀', 250, 338, {});
+    [['체력', (st.hp - 60) / 90], ['기절 저항', (st.stun - 60) / 80], ['공격력', (st.atk - .6) / .75], ['잡기', (st.grp - .6) / .75], ['속도', (st.spd - .6) / .75], ['점프', (st.jump - .6) / .75]].forEach(([n, v], i) => { drawText(u, n, 370, 84 + i * 13, { size: 11, color: UI.dim }); gauge(u, 440, 88 + i * 13, 100, 4, clamp(v, .05, 1), 'fin', { col: '#ff8fc4' }); });
+    drawText(u, '피니셔: ' + F.name, 370, 164, { size: 11, color: '#ffd65a' });
+    if (this.input) {
+      rect(u, '#05060f', 14, 334, 612, 18);
+      drawText(u, '이름을 입력하세요 (한글·영문 최대 8자)', 20, 338, { size: 11, color: '#ffd65a' });
+      prompt(u, ['Enter'], '확정', 300, 338, {}); prompt(u, ['Esc'], '그만두기', 370, 338, {});
+    } else {
+      const k = ROWS[this.row];
+      prompt(u, ['↑↓'], '항목', 20, 338, {}); prompt(u, ['←→'], '바꾸기', 90, 338, {});
+      prompt(u, ['Enter'], k === 'name' ? '이름 입력' : k === 'start' ? '시작' : k === 'random' ? '무작위' : '다음 항목', 170, 338, {}); prompt(u, ['Esc'], '타이틀', 280, 338, {});
+    }
+    if (this.ask) {
+      rect(u, 'rgba(5,6,15,.6)', 0, 0, VIEW_W, VIEW_H);
+      panel(u, 130, 120, 380, 110, { accent: '#ff5b5b' });
+      drawText(u, '저장된 커리어가 있습니다', 320, 130, { align: 'c', color: '#ff8a8a', bold: true });
+      drawText(u, '새로 시작하면 이전 커리어 저장이 지워집니다. 시작할까요?', 320, 152, { size: 11, align: 'c', color: '#ffffff' });
+      ['예, 새로 시작', '아니요'].forEach((t, i) => { const x = 250 + i * 140, on = this.ask.sel === i; rect(u, on ? (i === 0 ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 56, 184, 112, 20); drawText(u, t, x, 187, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+      drawText(u, '←→ 선택 · Enter 결정 · Esc 취소', 320, 212, { size: 11, align: 'c', color: UI.dim });
+    }
   }
 }

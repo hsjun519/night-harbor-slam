@@ -45,7 +45,13 @@ export class WorldScene {
     this.player = new Actor(career.look(), { x: career.d.x || 240, face: 1, id: 'me' });
     this.player.name = career.d.name;
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
-    if (o.intro) this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` }, { who: 'janitor', text: '사장님 방은 저기 왼쪽 문이야. {y}F{/}를 누르면 들어갈 수 있어. 사람한테는 {y}E{/}로 말을 걸고.' }, { who: 'janitor', text: '{y}Tab{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.' }]);
+    if (o.intro) {
+      const K = a => game.input.label(a);
+      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` },
+        { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
+        { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
+        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
+    }
     if (o.after) this.afterMatch(o.after);
     game.screen.resetFx();
   }
@@ -67,7 +73,7 @@ export class WorldScene {
     const A = this.game.audio;
     if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast(d.lock === 'rivalgym' ? '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수" ' : '"챔피언십 관계자 외 출입 금지"', '#ff8a8a'); return; }
     A.sfx('door');
-    this.fadeT = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
+    this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
   unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return (d.contract && d.contract.title) || d.flags.champion; return true; }
   say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
@@ -136,29 +142,70 @@ export class WorldScene {
     const inp = this.game.input, A = this.game.audio, p = this.player, L = this.L;
     for (const t of this.toasts) t.t += dt;
     this.toasts = this.toasts.filter(t => t.t < 3.4);
-    if (this.fadeT > 0) { this.fadeT -= dt; if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
+    // fadeT must land on exactly 0: it is a "transition running" flag as well as a timer
+    if (this.fadeT > 0) { this.fadeT = Math.max(0, this.fadeT - dt); if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
+    const fading = this.fadeT > 0;
     for (const a of this.npcs) this.npcThink(a, dt);
+    this.guide = this.findGuide();
     if (this.overlays.length) { this.overlays[this.overlays.length - 1].update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.dialog) { this.dialog.update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
-    if (this.c.d.flags.seasonEnd && !this.fadeT) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
+    if (this.c.d.flags.seasonEnd && !fading) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
     let mx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
-    if (this.fadeT > 0) mx = 0;
+    if (fading) mx = 0;
     this.physics(p, dt, mx);
-    if (inp.pressed('up') && p.ground && !this.fadeT) { p.vy = -250; p.ground = false; A.sfx('jump'); }
+    if (inp.pressed('up') && p.ground && !fading) { p.vy = -250; p.ground = false; A.sfx('jump'); }
     p.pose(dt);
     for (const a of this.npcs) a.pose(dt);
     // what is near?
-    this.prompt = this.findPrompt();
-    if (!this.fadeT) {
-      if (inp.pressed('interact') && this.prompt && this.prompt.kind !== 'door') this.use(this.prompt);
-      else if (inp.pressed('door') && this.prompt && this.prompt.kind === 'door') this.goDoor(this.prompt.door);
-      else if (inp.pressed('interact') && this.prompt && this.prompt.kind === 'door') this.goDoor(this.prompt.door);
+    this.prompt = fading ? null : this.findPrompt();
+    if (!fading) {
+      // talk/use: E, or Enter/Space; doors: F, or any of those while standing at a door
+      const use = inp.pressed('interact') || inp.menuPressed('confirm');
+      const pr = this.prompt;
+      if (pr && pr.kind === 'door' && (use || inp.pressed('door'))) this.goDoor(pr.door);
+      else if (pr && pr.kind !== 'door' && use) this.use(pr);
+      else if (!pr && (inp.pressed('interact') || inp.pressed('door') || inp.rawPressed('Enter')) && !inp.pressed('up')) this.nothingHere();
       if (inp.pressed('info')) { A.sfx('ui'); this.openInfo(1); }
-      if (inp.pressed('map')) { A.sfx('ui'); this.open(new Menus.MapMenu(this)); }
-      if (inp.pressed('pause')) { A.sfx('ui'); this.open(new Menus.PauseMenu(this)); }
+      else if (inp.pressed('map')) { A.sfx('ui'); this.open(new Menus.MapMenu(this)); }
+      else if (inp.pressed('pause')) { A.sfx('ui'); this.open(new Menus.PauseMenu(this)); }
     }
     const want = clamp(p.x - VIEW_W / 2 + p.face * 40, 0, Math.max(0, L.w - VIEW_W));
     this.camX = damp(this.camX, want, 5, dt);
+  }
+  // Pressing talk or door with nothing in reach: say what is nearest instead of silently doing nothing.
+  nothingHere() {
+    const p = this.player; let best = null, bd = 1e9;
+    for (const a of this.npcs) { const d = Math.abs(a.x - p.x); if (d < bd) { bd = d; best = { x: a.x, name: NPCS[a.id].name }; } }
+    for (const d of this.L.doors) { const dd = Math.abs(d.x - p.x); if (dd < bd) { bd = dd; best = { x: d.x, name: d.label + ' 문' }; } }
+    if (!best || bd > 260) return;
+    if (this.hintT && this.t - this.hintT < 1.2) return;
+    this.hintT = this.t;
+    this.toast(`${josa(best.name, '은/는')} ${best.x > p.x ? '오른쪽' : '왼쪽'}에 있다. 가까이 가서 누르자.`, '#c9d4ff');
+  }
+  // ---- where to go next: a goal line in the HUD and an arrow toward the next door or person ----
+  objective() {
+    const c = this.c, d = c.d, ct = d.contract;
+    if (d.injury >= B.injuryDanger) return { text: '항구의원에서 부상 치료하기', loc: 'clinic', x: 400, col: '#ff8a8a' };
+    if (!d.flags.metBoss) return { text: '사장실에 가서 구만석 사장과 대화하기', loc: 'office', x: 400 };
+    if (ct && ct.title) return { text: `등대 돔 입장구에서 타이틀 매치 (~${ct.day}일)`, loc: 'dome', x: 480 };
+    if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
+    if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
+  }
+  routeTo(loc) {
+    if (!LOCATIONS[loc] || loc === this.loc) return null;
+    const prev = { [this.loc]: null }, q = [this.loc];
+    while (q.length) { const id = q.shift(); for (const dr of LOCATIONS[id].doors) { if (dr.lock && !this.unlocked(dr.lock)) continue; if (!(dr.to in prev)) { prev[dr.to] = { from: id, door: dr }; q.push(dr.to); } } }
+    if (!(loc in prev)) return null;
+    let step = prev[loc];
+    while (step && step.from !== this.loc) step = prev[step.from];
+    return step ? step.door : null;
+  }
+  findGuide() {
+    if (this.c.d.flags.noGuide) return null;
+    const ob = this.objective(); let x = null, door = null;
+    if (ob.loc === this.loc) x = ob.x; else { door = this.routeTo(ob.loc); if (door) x = door.x; }
+    return { ob, x, door };
   }
   physics(a, dt, mx) {
     const L = this.L, spd = 108;
@@ -181,12 +228,14 @@ export class WorldScene {
       a.x += a.vx * dt;
     } else a.vx = 0;
   }
+  // People win over doors and things unless those are clearly closer, so talking is easy to hit.
   findPrompt() {
-    const p = this.player, L = this.L;
-    let best = null, bd = 34;
+    const p = this.player, L = this.L, NPC_R = 48, DOOR_R = 26;
+    let best = null, bd = NPC_R;
     for (const a of this.npcs) { const d = Math.abs(a.x - p.x); if (d < bd) { bd = d; best = { kind: 'npc', a, x: a.x, label: NPCS[a.id].name, verb: '대화' }; } }
-    for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < Math.min(bd, 26)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
-    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && dd < bd + 6) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
+    const npc = !!best;
+    for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < DOOR_R && (!npc || dd < bd - 10)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
+    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
     return best;
   }
   use(pr) {
@@ -235,10 +284,10 @@ export class WorldScene {
   }
   sleepNow() {
     const c = this.c, d = c.d;
-    if (d.contract && d.contract.day <= d.day) { this.open(new Menus.Confirm(this, `오늘이 ${josa(d.contract.oppName, '과/와')}의 계약 경기 마감일입니다. 자면 기권패가 됩니다. 그래도 잘까요?`, () => this.doSleep())); return; }
+    if (d.contract && d.contract.day <= d.day) { this.open(new Menus.Confirm(this, `오늘이 ${josa(d.contract.oppName, '과/와')}의 계약 경기 마감일입니다. 자면 기권패가 됩니다. 그래도 잘까요?`, () => this.doSleep(), { danger: 1 })); return; }
     this.doSleep();
   }
-  doSleep() { const msgs = this.c.sleep(); this.fadeT = .9; this.fadeTo = () => { this.enter(this.loc, this.player.x); msgs.forEach(m => this.toast(m, '#ffb347')); this.toast(`${this.c.d.day}일차 아침. 자동 저장했다.`, '#9be36b'); }; this.game.audio.sfx('heal'); }
+  doSleep() { const msgs = this.c.sleep(); this.fadeT = this.fadeDur = .9; this.fadeTo = () => { this.enter(this.loc, this.player.x); msgs.forEach(m => this.toast(m, '#ffb347')); this.toast(`${this.c.d.day}일차 아침. 자동 저장했다.`, '#9be36b'); }; this.game.audio.sfx('heal'); }
   scheduleLines() {
     const d = this.c.d, out = [];
     out.push({ who: null, name: '경기 일정판', text: `오늘은 시즌 ${d.season}, ${d.day}일차 ${SLOT_NAMES[d.slot]}. 시즌은 ${28}일까지.` });
@@ -281,11 +330,12 @@ export class WorldScene {
     if (d.slot === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     this.hud(u);
+    if (!this.dialog && !this.overlays.length && !(this.fadeT > 0)) this.drawGuide(u, cam);
     if (this.prompt && !this.dialog && !this.overlays.length) this.drawPrompt(u, cam);
     if (this.dialog) this.dialog.draw(u);
     for (const o of this.overlays) o.draw(u, w);
     this.drawToasts(u);
-    if (this.fadeT > 0) fade(u, clamp(this.fadeT > .22 ? (.45 - this.fadeT) / .22 : this.fadeT / .22, 0, 1));
+    if (this.fadeT > 0) { const D = this.fadeDur || .45; fade(u, clamp(this.fadeT > .22 ? (D - this.fadeT) / Math.max(.05, D - .22) : this.fadeT / .22, 0, 1)); }
   }
   drawActor(g, a, cam) {
     const bc = this.bc, j = a.joints;
@@ -322,10 +372,32 @@ export class WorldScene {
     drawText(u, Math.round(d.injury) + '%', 566, 10, { size: 11, color: col });
     drawText(u, '피로 ' + Math.round(d.fatigue), 630, 10, { size: 11, align: 'r', color: d.fatigue > 70 ? '#ff8a8a' : UI.dim });
     if (lvl !== 'ok' && Math.floor(t * 2) % 2) drawText(u, lvl === 'danger' ? '! 부상 위험: 항구의원에서 치료하세요' : '! 부상 주의', 632, 34, { size: 11, align: 'r', color: col, outline: '#05060f' });
-    if (d.contract) drawText(u, `계약: ${d.contract.oppName} (~${d.contract.day}일)`, 8, 34, { size: 11, color: d.contract.day <= d.day ? '#ffb347' : '#c9d4ff', outline: '#05060f' });
-    if (d.points > 0) drawText(u, `능력치 포인트 ${d.points} (Tab)`, 8, 47, { size: 11, color: '#6be38a', outline: '#05060f' });
-    const inp = this.game.input;
-    drawText(u, `${inp.label('interact')} 대화/조사 · ${inp.label('door')} 문 · ${inp.label('info')} 정보 · ${inp.label('map')} 지도 · ${inp.label('pause')} 메뉴`, 632, 348, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
+    const inp = this.game.input, G = this.guide;
+    let ly = 34;
+    const busy = this.dialog || this.overlays.length;   // the dialogue name tag and windows sit here
+    if (G && !busy) {
+      const arrow = G.x == null ? '' : G.x > this.player.x + 8 ? ' ▶' : G.x < this.player.x - 8 ? ' ◀' : ' ▼';
+      const where = G.door ? ` — ${G.door.label} 문으로` : '';
+      rect(u, '#05060f', 5, ly - 2, 28, 15); rect(u, '#ffd65a', 6, ly - 1, 26, 13); drawText(u, '목표', 9, ly, { size: 11, color: '#141a36' });
+      drawText(u, G.ob.text + where + arrow, 36, ly, { size: 11, color: G.ob.col || '#ffe9a8', outline: '#05060f' });
+      ly += 13;
+    }
+    if (!busy && d.contract && !(G && G.ob.contract)) { drawText(u, `계약: ${d.contract.oppName} (~${d.contract.day}일)`, 8, ly, { size: 11, color: d.contract.day <= d.day ? '#ffb347' : '#c9d4ff', outline: '#05060f' }); ly += 13; }
+    if (d.points > 0 && !busy) drawText(u, `능력치 포인트 ${d.points} (${inp.label('info')})`, 8, ly, { size: 11, color: '#6be38a', outline: '#05060f' });
+    drawText(u, `${inp.label('interact')}·Enter 대화/조사 · ${inp.label('door')} 문 · ${inp.label('info')} 정보 · ${inp.label('map')} 지도 · ${inp.label('pause')} 메뉴`, 632, 348, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
+  }
+  // Yellow marker over the goal (person or door) when it is on screen, or an arrow at the screen edge.
+  drawGuide(u, cam) {
+    const G = this.guide;
+    if (!G || G.x == null) return;
+    const pr = this.prompt;
+    if (pr && Math.abs(pr.x - G.x) < 4) return;   // the use prompt is already there
+    const sx = Math.round(G.x - cam), bob = Math.round(Math.sin(this.t * 5) * 2), on = Math.floor(this.t * 2.5) % 3 !== 0;
+    if (sx < 14) { if (on) { rect(u, '#05060f', 2, 186, 16, 16); drawText(u, '◀', 10, 189, { size: 11, align: 'c', color: '#ffd65a' }); } return; }
+    if (sx > VIEW_W - 14) { if (on) { rect(u, '#05060f', VIEW_W - 18, 186, 16, 16); drawText(u, '▶', VIEW_W - 10, 189, { size: 11, align: 'c', color: '#ffd65a' }); } return; }
+    const a = !G.door && this.npcs.find(n => Math.abs(n.x - G.x) < 8);
+    const y = a ? Math.round(a.joints.y(J.head) - 36) : FLOOR - 140;
+    drawText(u, '▼', sx, y + bob, { size: 11, scale: 2, align: 'c', color: '#ffd65a', outline: '#05060f' });
   }
   drawPrompt(u, cam) {
     const pr = this.prompt, inp = this.game.input;
@@ -333,12 +405,12 @@ export class WorldScene {
     const key = pr.kind === 'door' ? inp.label('door') : inp.label('interact');
     const text = `${pr.verb}: ${pr.label}`, w = textWidth(text, 11) + 26;
     const bob = Math.round(Math.sin(this.t * 6) * 1.5);
-    rect(u, '#05060f', x - w / 2 - 1, y - 1 + bob, w + 2, 17); rect(u, pr.verb === '잠김' ? '#5a1a2a' : '#1b2450', x - w / 2, y + bob, w, 15);
+    rect(u, '#05060f', x - w / 2 - 1, y - 1 + bob, w + 2, 19); rect(u, pr.verb === '잠김' ? '#5a1a2a' : '#1b2450', x - w / 2, y + bob, w, 17);
     keycap(u, key, x - w / 2 + 2, y + 1 + bob);
-    drawText(u, text, x - w / 2 + 20, y + 2 + bob, { size: 11, color: '#ffffff' });
-    rect(u, '#1b2450', x - 2, y + 15 + bob, 4, 3);
+    drawText(u, text, x - w / 2 + 20, y + 3 + bob, { size: 11, color: '#ffffff' });
+    rect(u, '#1b2450', x - 2, y + 17 + bob, 4, 3);
   }
-  drawToasts(u) { this.toasts.forEach((t, i) => { const a = t.t > 2.9 ? (3.4 - t.t) / .5 : 1; u.globalAlpha = clamp(a, 0, 1); const w = textWidth(t.text, 11) + 12; rect(u, 'rgba(5,6,15,.8)', 320 - w / 2, 60 + i * 18, w, 15); drawText(u, t.text, 320, 62 + i * 18, { size: 11, align: 'c', color: t.col }); u.globalAlpha = 1; }); }
+  drawToasts(u) { const y0 = this.dialog ? 152 : 60; this.toasts.forEach((t, i) => { const a = t.t > 2.9 ? (3.4 - t.t) / .5 : 1; u.globalAlpha = clamp(a, 0, 1); const w = textWidth(t.text, 11) + 12; rect(u, 'rgba(5,6,15,.8)', 320 - w / 2, y0 + i * 18, w, 15); drawText(u, t.text, 320, y0 + 2 + i * 18, { size: 11, align: 'c', color: t.col }); u.globalAlpha = 1; }); }
 }
 export const worldMix = mixHex;
 export const worldPrompt = prompt;

@@ -7,12 +7,12 @@ import { panel, gauge, keycap, prompt, fade } from '../render/ui.js';
 import { STAT_GROWTH } from './CareerManager.js';
 
 const GAMES = {
-  bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}. 8번 들어 올리자. 세 번 놓치면 끝.' },
-  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}. 박자를 타자.' },
-  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}로 똑같이.' },
-  bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}로 가운데에 붙잡아 두자. 10초.' },
-  breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
-  job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}로 내려놓자. 8개.' },
+  bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}(또는 Space·E·Enter). 8번 들어 올리자. 세 번 놓치면 끝.' },
+  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
+  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
+  bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
+  breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
+  job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
 };
 
 export class Training {
@@ -73,7 +73,7 @@ export class Training {
       case 'bench': {
         s.needle += s.dir * s.speed * dt; if (s.needle > 1) { s.needle = 1; s.dir = -1; } if (s.needle < 0) { s.needle = 0; s.dir = 1; }
         s.lift = Math.max(0, s.lift - dt * 2);
-        if (inp.pressed('atk') || inp.pressed('fin')) {
+        if (inp.actPressed()) {
           const [a, b] = s.zone, inZ = s.needle >= a && s.needle <= b, mid = (a + b) / 2;
           if (inZ) { s.hits++; s.reps++; s.lift = 1; const p = Math.abs(s.needle - mid) < (b - a) * .18; if (p) s.perfect++; this.pop(p ? '완벽!' : '좋아!', p ? '#ffd65a' : '#6be38a'); A.sfx(p ? 'good' : 'stat'); this.newZone(); }
           else { s.miss++; s.reps++; this.pop('놓쳤다…', '#ff8a8a'); A.sfx('miss'); }
@@ -84,7 +84,7 @@ export class Training {
       case 'rope': {
         const T = this.t, b = s.beats[s.idx];
         if (b == null) { this.finish((s.good + s.perfect * .3) / s.beats.length); break; }
-        if (inp.pressed('up') || inp.pressed('atk')) {
+        if (inp.pressed('up') || inp.actPressed()) {
           const e = Math.abs(T - b);
           if (e < .07) { s.perfect++; s.good++; this.pop('완벽!', '#ffd65a', 320, 130); A.sfx('good'); s.idx++; this.W.player.vy = -160; this.W.player.ground = false; }
           else if (e < .15) { s.good++; this.pop('좋아', '#6be38a', 320, 130); A.sfx('tick'); s.idx++; this.W.player.vy = -140; this.W.player.ground = false; }
@@ -129,7 +129,7 @@ export class Training {
         break;
       }
       case 'breath': {
-        const hold = inp.down('atk') || inp.down('fin');
+        const hold = inp.actDown();
         if (hold) { s.holding = true; s.fill = Math.min(1.05, s.fill + dt * (.55 + s.round * .08)); }
         else if (s.holding) {
           s.holding = false;
@@ -145,7 +145,7 @@ export class Training {
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
-          if (inp.pressed('atk') || inp.pressed('fin')) { s.drop = { x: s.craneX, y: 0, vy: 0 }; A.sfx('whoosh'); }
+          if (inp.actPressed()) { s.drop = { x: s.craneX, y: 0, vy: 0 }; A.sfx('whoosh'); }
         } else {
           s.drop.vy += 900 * dt; s.drop.y += s.drop.vy * dt;
           const top = 150 - s.stack.length * 18;

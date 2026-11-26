@@ -285,7 +285,7 @@ class InputManager {
     this.keys = JSON.parse(JSON.stringify(DEFAULT_KEYS));
     this.held = new Set(); this.downNow = new Set(); this.upNow = new Set();
     this.padHeld = new Set(); this.padPrev = new Set(); this.axisX = 0; this.axisY = 0;
-    this.device = 'kb'; this.textMode = false; this.capture = null; this.any = false; this.lastCode = null;
+    this.device = 'kb'; this.textMode = false; this.textHook = null; this.capture = null; this.any = false; this.lastCode = null;
     this.focusLost = false;
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', e => this.onKey(e, true));
@@ -295,7 +295,9 @@ class InputManager {
   }
   setBindings(b) { if (b) for (const k in DEFAULT_KEYS) if (Array.isArray(b[k]) && b[k].length) this.keys[k] = b[k].slice(0, 2); }
   onKey(e, d) {
-    if (this.textMode) return;
+    // A text box is open. Keys typed into it never reach here (it stops them); keys that do arrive mean the
+    // box lost focus, so the box decides (Enter/Esc close it, anything else gives it the focus back).
+    if (this.textMode) { if (this.textHook) this.textHook(e, d); return; }
     const c = e.code;
     if (this.capture && d) { e.preventDefault(); const fn = this.capture; this.capture = null; fn(c); return; }
     if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace'].includes(c) || (c === 'F3')) e.preventDefault();
@@ -328,6 +330,9 @@ class InputManager {
     return this.pressed(a);
   }
   rawPressed(code) { return this.downNow.has(code); }
+  // "Do it" outside a match (mini-games, prompts): attack, finisher, interact or any menu confirm key.
+  actPressed() { return this.pressed('atk') || this.pressed('fin') || this.pressed('interact') || this.menuPressed('confirm'); }
+  actDown() { if (this.down('atk') || this.down('fin') || this.down('interact')) return true; for (const c of MENU.confirm) if (this.held.has(c)) return true; for (const b of PAD.confirm) if (this.padHeld.has(b)) return true; return false; }
   // Fill a fighter intent from the current state.
   fillIntent(I) {
     I.mx = (this.down('right') ? 1 : 0) - (this.down('left') ? 1 : 0);
@@ -902,6 +907,7 @@ const SYMBOLS = {
   '「': ['####', '#...', '#...', '#...', '#...'],
   '」': ['...#', '...#', '...#', '...#', '####'],
   '※': ['#..#..#', '.#...#.', '..#.#..', '#..#..#', '..#.#..', '.#...#.', '#..#..#'],
+  '✓': ['......#', '.....##', '#...##.', '##.##..', '.###...', '..#....'],
 };
 SYMBOLS['…'] = ['#...#...#', '#...#...#'];
 
@@ -1265,7 +1271,7 @@ function gauge(g, x, y, w, h, v, style, o = {}) {
   if (o.icon) icon(g, o.icon, flip ? x + w + 3 : x - 10, y + Math.round(h / 2) - 3, o.iconCol || col);
 }
 function keycap(g, label, x, y, o = {}) {
-  const w = Math.max(11, textWidth(label, 11) + 6), h = 12;
+  const w = Math.max(11, textWidth(label, 11) + 6), h = 14;   // Latin glyphs sit 2px lower than Hangul: 14 keeps their last row off the border
   x = Math.round(x); y = Math.round(y);
   rect(g, '#05060f', x - 1, y - 1, w + 2, h + 2); rect(g, o.bg || '#d8def5', x, y, w, h - 1); rect(g, '#8a93b8', x, y + h - 2, w, 1); rect(g, '#ffffff', x, y, w, 1);
   drawText(g, label, x + w / 2, y + 1, { size: 11, align: 'c', color: o.color || '#141a36' });
@@ -7151,14 +7157,40 @@ const SHOP_ITEMS = [
   { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
 ];
 
-function hasCareer(slot) { return !!Save.get('career' + slot); }
+// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
+// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
+// and move it over.
+const saveKey = n => 'save' + n;
+const LEGACY = ['career0', 'career1', 'career2'];
+const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+function legacyNewest(suffix = '') {
+  let best = null;
+  for (const k of LEGACY) {
+    const d = Save.get(k + suffix);
+    if (!d || typeof d !== 'object' || !d.name) continue;
+    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
+    if (!best || lex(score, best.score) > 0) best = { d, score };
+  }
+  return best && best.d;
+}
+function migrateLegacy(n) {
+  const d = legacyNewest();
+  if (!d) return null;
+  const chk = legacyNewest('.chk');
+  d.saveSlot = n;
+  Save.set(saveKey(n), d);
+  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
+  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
+  return d;
+}
+function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
 
 class Career {
-  static create(slot, setup) {
+  static create(n, setup) {
     const c = new Career();
     const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
     Object.assign(c.d, {
-      slot, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
+      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
       lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0 },
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
@@ -7166,20 +7198,23 @@ class Career {
     c.save(true);
     return c;
   }
-  static load(slot) { const d = Save.get('career' + slot); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.migrate(); return c; }
-  static loadCheckpoint(slot) { const d = Save.get('career' + slot + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   constructor() {
     this.d = {
-      v: 1, slot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
+      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
     };
   }
   migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; }
+  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
-    Save.set('career' + this.d.slot, this.d);
-    if (checkpoint) Save.set('career' + this.d.slot + '.chk', this.d);
+    const n = this.d.saveSlot || 1;
+    this.d.savedAt = Date.now();
+    Save.set(saveKey(n), this.d);
+    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
   }
   // ---- league ----
   newLeague(season) {
@@ -7869,6 +7904,7 @@ class Dialogue {
       if (typeof s === 'string') s = { who: this.lastWho, text: s };
       if (s.act) { s.act(); if (this.done) return; continue; }
       if (s.if) { const ok = s.if(); this.queue.unshift(...(ok ? s.then || [] : s.else || [])); continue; }
+      if (s.choice && !s.who && !s.name) s = Object.assign({}, s, { who: this.lastWho });   // the last speaker asks the question
       this.cur = s; this.shown = 0; this.t = 0; this.sel = 0; this.lastWho = s.who || this.lastWho;
       if (s.text) { const w = this.lineWidth(); this.lines = wrapText(s.text, w); this.total = this.lines.reduce((n, l) => n + visLen(l), 0); }
       return;
@@ -7910,14 +7946,20 @@ class Dialogue {
     if (look) drawPortrait(u, look, c.expr || (c.choice ? 'neutral' : Math.floor(this.t * 8) % 2 && this.shown < this.total ? 'talk' : 'neutral'), x + 9, y + 11, 80, { px: 3, dy: 10, flip: false });
     const name = c.who === 'me' ? (this.player ? this.player.name : '나') : npc ? npc.name : c.name || '';
     if (name) { const nw = Math.max(70, name.length * 14 + 14); rect(u, '#05060f', x + 98, y - 9, nw + 2, 17); rect(u, npc && npc.wrestler ? '#7a1f4a' : '#1f4a7a', x + 99, y - 8, nw, 15); drawText(u, name, x + 105, y - 7, { size: 11, color: '#ffffff' }); }
+    const inp = this.game.input, key = inp.device === 'pad' ? 'A' : inp.label('interact') + '·Enter';
     if (c.choice) {
       drawText(u, c.prompt || '어떻게 할까?', x + 104, y + 12, { color: UI.dim, size: 11 });
+      drawText(u, `↑↓ 고르기 · ${key} 결정`, x + w - 10, y + 12, { size: 11, align: 'r', color: UI.faint });
       c.choice.forEach((ch, i) => { const yy = y + 28 + i * 16, on = i === this.sel; if (on) rect(u, mixHex(UI.accent, '#0e1330', .5), x + 100, yy - 2, 300, 15); drawText(u, (on ? '▶ ' : '  ') + ch.label, x + 104, yy, { color: on ? '#ffffff' : UI.dim, size: 11 }); });
       return;
     }
     let left = Math.floor(this.shown);
     this.lines.forEach((l, i) => { if (left <= 0) return; const n = visLen(l); drawText(u, n <= left ? l : sliceTagged(l, left), x + 104, y + 14 + i * 18, { color: '#eef2ff' }); left -= n; });
-    if (this.shown >= this.total && Math.floor(this.t * 3) % 2) drawText(u, '▼', x + w - 16, y + h - 16, { size: 11, color: '#ffd65a' });
+    if (this.shown >= this.total) {
+      const last = !this.queue.some(s => typeof s === 'string' || s.text || s.choice);
+      drawText(u, `${key} ${last ? '닫기' : '다음'}`, x + w - 24, y + h - 15, { size: 11, align: 'r', color: UI.faint });
+      if (Math.floor(this.t * 3) % 2) drawText(u, '▼', x + w - 16, y + h - 16, { size: 11, color: '#ffd65a' });
+    }
     void clamp; void stripTags;
   }
 }
@@ -7957,7 +7999,7 @@ class Menu {
 }
 
 class Confirm extends Menu {
-  constructor(W, text, yes, o = {}) { super(W); this.text = text; this.yes = yes; this.o = o; this.sel = 1; }
+  constructor(W, text, yes, o = {}) { super(W); this.text = text; this.yes = yes; this.o = o; this.sel = o.danger ? 1 : 0; }   // risky questions start on '아니요'
   update(dt) {
     super.update(dt); const inp = this.game.input;
     if (inp.pressed('left') || inp.pressed('right') || inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); }
@@ -7967,7 +8009,8 @@ class Confirm extends Menu {
   draw(u) {
     this.frame(u, this.o.danger ? '경고' : '확인', 120, 110, 400, 130, this.o.danger ? '#ff5b5b' : '#ffd65a');
     wrapText(this.text, 360, 14).forEach((l, i) => drawText(u, l, 320, 138 + i * 17, { align: 'c', color: '#ffffff' }));
-    ['예', '아니요'].forEach((t, i) => { const x = 270 + i * 100, on = this.sel === i; rect(u, on ? (i === 0 && this.o.danger ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 36, 206, 72, 20); drawText(u, t, x, 209, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+    ['예', '아니요'].forEach((t, i) => { const x = 270 + i * 100, on = this.sel === i; rect(u, on ? (i === 0 && this.o.danger ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 36, 200, 72, 20); if (on) rect(u, '#ffd65a', x - 36, 219, 72, 1); drawText(u, (on ? '▶ ' : '') + t, x, 203, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+    drawText(u, '←→ 선택 · Enter/E 결정 · Esc 취소', 320, 226, { size: 11, align: 'c', color: UI.faint });
   }
 }
 
@@ -8002,7 +8045,8 @@ class OffersMenu extends Menu {
     });
     const y = 62 + list.length * 56;
     rect(u, this.sel === list.length ? '#26315f' : '#141a36', 52, y, 536, 18); drawText(u, '닫기', 320, y + 2, { size: 11, align: 'c', color: this.sel === list.length ? '#ffffff' : UI.dim });
-    this.foot(u, '부상과 피로는 경기 결과에 영향을 준다. 무리한 일정은 피하자.', 316);
+    this.foot(u, '↑↓ 고르기 · Enter/E 계약 · Esc 닫기', 300);
+    drawText(u, '부상과 피로는 경기 결과에 영향을 준다. 무리한 일정은 피하자.', 320, 316, { size: 11, align: 'c', color: UI.faint });
   }
 }
 
@@ -8029,6 +8073,7 @@ class ArenaMenu extends Menu {
   draw(u) {
     this.frame(u, '오늘의 대진', 80, 40, 480, 70 + this.items.length * 34, '#ff5fa2');
     this.items.forEach((it, i) => { const y = 66 + i * 34, on = i === this.sel; rect(u, on ? '#26315f' : '#141a36', 92, y, 456, 30); if (on) rect(u, '#ff5fa2', 92, y, 2, 30); drawText(u, it.label, 100, y + 3, { color: on ? '#ffffff' : '#c9d4ff' }); if (it.sub) drawText(u, it.sub, 100, y + 17, { size: 11, color: UI.dim }); });
+    this.foot(u, '↑↓ 고르기 · Enter/E 결정 · Esc 닫기', 40 + 70 + this.items.length * 34 - 16);
   }
 }
 
@@ -8113,6 +8158,7 @@ class ClinicMenu extends Menu {
     const o = this.opts();
     o.forEach((it, i) => { const y = 140 + i * 36, on = i === this.sel; rect(u, on ? '#1f4a4a' : '#141a36', 100, y, 440, 32); if (on) rect(u, '#6be3c8', 100, y, 2, 32); drawText(u, it.label, 110, y + 3, { color: on ? '#ffffff' : '#c9e8e0' }); if (it.sub) drawText(u, it.sub, 110, y + 18, { size: 11, color: UI.dim }); });
     drawText(u, '소지금 ' + this.c.money() + `  ·  붕대 ${d.items.bandage || 0} / 고급 붕대 ${d.items.bigBandage || 0} (Tab→소지품)`, 320, 290, { size: 11, align: 'c', color: UI.dim });
+    this.foot(u, '↑↓ 고르기 · Enter/E 치료 · Esc 나가기', 306);
   }
 }
 
@@ -8147,7 +8193,8 @@ class FoodMenu extends Menu {
   draw(u) {
     this.frame(u, '순덕 포차', 120, 60, 400, 230, '#ff8a9a');
     this.opts().forEach((it, i) => { const y = 88 + i * 34, on = i === this.sel; rect(u, on ? '#4a1a2a' : '#141a36', 134, y, 372, 30); drawText(u, it.label, 144, y + 3, { color: on ? '#ffffff' : '#f0d0d8' }); drawText(u, it.sub || '', 144, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 498, y + 8, { align: 'r', color: UI.money }); });
-    this.foot(u, '피로가 높으면 훈련 효과가 떨어지고 경기에서 부상이 더 쌓인다.', 272);
+    drawText(u, '피로가 높으면 훈련 효과가 떨어지고 경기에서 부상이 더 쌓인다.', 320, 262, { size: 11, align: 'c', color: UI.faint });
+    this.foot(u, '↑↓ 고르기 · Enter/E 주문 · Esc 나가기', 276);
   }
 }
 
@@ -8172,6 +8219,7 @@ class LearnMenu extends Menu {
     const d = this.c.d, L = this.list();
     this.frame(u, this.by === 'rival' ? '철썩 짐의 기술' : '백 관장의 기술 교실', 70, 30, 500, 300, '#6be38a');
     L.forEach((l, i) => { const m = MOVES[l.id], y = 56 + i * 32, on = i === this.sel, has = d.known.includes(l.id); rect(u, on ? '#1f3a2a' : '#141a36', 82, y, 476, 29); drawText(u, m.name + (has ? ' [습득]' : ''), 90, y + 2, { color: has ? UI.faint : on ? '#ffffff' : '#c9e8d0' }); drawText(u, m.desc, 90, y + 16, { size: 11, color: UI.dim }); drawText(u, has ? '' : fmtMoney(l.cost), 550, y + 2, { align: 'r', color: UI.money }); drawText(u, has ? '' : `명성 ${l.fame}`, 550, y + 16, { size: 11, align: 'r', color: d.fame >= l.fame ? UI.fame : '#ff8a8a' }); });
+    this.foot(u, '↑↓ 고르기 · Enter/E 배우기 · Esc 나가기 · 배운 기술은 Tab → 기술에서 장착', 312);
   }
 }
 
@@ -8273,7 +8321,7 @@ class MapMenu extends Menu {
     rect(u, '#3a3020', 486, 250, 40, 16); drawText(u, '하역장', 506, 252, { size: 11, align: 'c', color: '#ffd65a' });
     node('dome', 556, 258, '등대 돔', !W.unlocked('dome'));
     drawText(u, '지금 위치: ' + W.L.name, 320, 290, { size: 11, align: 'c', color: '#ffd65a' });
-    this.foot(u, '잠긴 곳: 철썩 짐(명성 40) · 등대 돔(타이틀전 계약)', 306);
+    this.foot(u, '잠긴 곳: 철썩 짐(명성 40) · 등대 돔(타이틀전 계약) · M/Esc 닫기', 306);
   }
 }
 
@@ -8285,6 +8333,7 @@ class RankMenu extends Menu {
     this.frame(u, '선수 랭킹', 120, 20, 400, 320, '#ffd65a');
     drawText(u, `챔피언: ${c.d.flags.champion ? c.d.name : '안개왕'}`, 320, 40, { color: '#ffd65a', align: 'c' });
     L.forEach((e, i) => { const y = 60 + i * 17, me = e.id === 'player', name = me ? c.d.name : CHARACTERS[e.id].name; if (me) rect(u, '#3a3a1a', 134, y - 2, 372, 16); drawText(u, `${i + 1}`, 150, y, { size: 11, align: 'r', color: me ? '#ffd65a' : UI.dim }); drawText(u, name, 162, y, { size: 11, color: me ? '#ffd65a' : '#ffffff' }); drawText(u, me ? CHARACTERS.rookie.nick : CHARACTERS[e.id].nick, 270, y, { size: 11, color: UI.dim }); drawText(u, `${e.w}승 ${e.l}패`, 496, y, { size: 11, align: 'r', color: UI.dim }); });
+    this.foot(u, 'Enter/Esc 닫기', 324);
   }
 }
 
@@ -8292,7 +8341,7 @@ class RankMenu extends Menu {
 class PauseMenu extends Menu {
   items() { return [{ label: '계속하기', act: () => this.W.closeTop() }, { label: '저장하기', act: () => { this.c.save(); this.W.toast('저장했다', '#9be36b'); this.W.closeTop(); } }, { label: '조작법', act: () => this.game.showControls() }, { label: '설정', act: () => this.game.openSettings() }, { label: '저장하고 타이틀로', act: () => { this.c.save(); this.game.toTitle(); } }]; }
   update(dt) { super.update(dt); const it = this.items(); this.nav(it.length); if (this.back()) return; if (this.ok()) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
-  draw(u) { this.frame(u, '메뉴', 220, 90, 200, 150, '#49d6ff'); menuList(u, this.items(), this.sel, 238, 118, { w: 164, lh: 20 }); }
+  draw(u) { this.frame(u, '메뉴', 220, 90, 200, 160, '#49d6ff'); menuList(u, this.items(), this.sel, 238, 118, { w: 164, lh: 20 }); this.foot(u, 'Enter 결정 · Esc 닫기', 232); }
 }
 
 // ---- after a match ----
@@ -8362,7 +8411,7 @@ class SeasonEndMenu extends Menu {
 // ---- career over ----
 class GameOverScene {
   constructor(game, career) { this.game = game; this.c = career; this.t = 0; this.sel = 0; game.audio.music(null); game.audio.jingle('gameover'); career.d.retired = true; }
-  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.slot); if (k && k.d.injury < 100) { k.save(); this.game.career = k; this.game.startCareer('continue'); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
+  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
   update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
   draw(w, u) {
     const d = this.c.d;
@@ -8396,12 +8445,12 @@ const { rect, ellipse } = __m["render/painter.js"];
 const { panel, gauge, keycap, prompt, fade } = __m["render/ui.js"];
 const { STAT_GROWTH } = __m["world/CareerManager.js"];
 const GAMES = {
-  bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}. 8번 들어 올리자. 세 번 놓치면 끝.' },
-  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}. 박자를 타자.' },
-  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}로 똑같이.' },
-  bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}로 가운데에 붙잡아 두자. 10초.' },
-  breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
-  job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}로 내려놓자. 8개.' },
+  bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}(또는 Space·E·Enter). 8번 들어 올리자. 세 번 놓치면 끝.' },
+  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
+  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
+  bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
+  breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
+  job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
 };
 
 class Training {
@@ -8462,7 +8511,7 @@ class Training {
       case 'bench': {
         s.needle += s.dir * s.speed * dt; if (s.needle > 1) { s.needle = 1; s.dir = -1; } if (s.needle < 0) { s.needle = 0; s.dir = 1; }
         s.lift = Math.max(0, s.lift - dt * 2);
-        if (inp.pressed('atk') || inp.pressed('fin')) {
+        if (inp.actPressed()) {
           const [a, b] = s.zone, inZ = s.needle >= a && s.needle <= b, mid = (a + b) / 2;
           if (inZ) { s.hits++; s.reps++; s.lift = 1; const p = Math.abs(s.needle - mid) < (b - a) * .18; if (p) s.perfect++; this.pop(p ? '완벽!' : '좋아!', p ? '#ffd65a' : '#6be38a'); A.sfx(p ? 'good' : 'stat'); this.newZone(); }
           else { s.miss++; s.reps++; this.pop('놓쳤다…', '#ff8a8a'); A.sfx('miss'); }
@@ -8473,7 +8522,7 @@ class Training {
       case 'rope': {
         const T = this.t, b = s.beats[s.idx];
         if (b == null) { this.finish((s.good + s.perfect * .3) / s.beats.length); break; }
-        if (inp.pressed('up') || inp.pressed('atk')) {
+        if (inp.pressed('up') || inp.actPressed()) {
           const e = Math.abs(T - b);
           if (e < .07) { s.perfect++; s.good++; this.pop('완벽!', '#ffd65a', 320, 130); A.sfx('good'); s.idx++; this.W.player.vy = -160; this.W.player.ground = false; }
           else if (e < .15) { s.good++; this.pop('좋아', '#6be38a', 320, 130); A.sfx('tick'); s.idx++; this.W.player.vy = -140; this.W.player.ground = false; }
@@ -8518,7 +8567,7 @@ class Training {
         break;
       }
       case 'breath': {
-        const hold = inp.down('atk') || inp.down('fin');
+        const hold = inp.actDown();
         if (hold) { s.holding = true; s.fill = Math.min(1.05, s.fill + dt * (.55 + s.round * .08)); }
         else if (s.holding) {
           s.holding = false;
@@ -8534,7 +8583,7 @@ class Training {
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
-          if (inp.pressed('atk') || inp.pressed('fin')) { s.drop = { x: s.craneX, y: 0, vy: 0 }; A.sfx('whoosh'); }
+          if (inp.actPressed()) { s.drop = { x: s.craneX, y: 0, vy: 0 }; A.sfx('whoosh'); }
         } else {
           s.drop.vy += 900 * dt; s.drop.y += s.drop.vy * dt;
           const top = 150 - s.stack.length * 18;
@@ -8678,7 +8727,13 @@ class WorldScene {
     this.player = new Actor(career.look(), { x: career.d.x || 240, face: 1, id: 'me' });
     this.player.name = career.d.name;
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
-    if (o.intro) this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` }, { who: 'janitor', text: '사장님 방은 저기 왼쪽 문이야. {y}F{/}를 누르면 들어갈 수 있어. 사람한테는 {y}E{/}로 말을 걸고.' }, { who: 'janitor', text: '{y}Tab{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.' }]);
+    if (o.intro) {
+      const K = a => game.input.label(a);
+      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` },
+        { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
+        { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
+        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
+    }
     if (o.after) this.afterMatch(o.after);
     game.screen.resetFx();
   }
@@ -8700,7 +8755,7 @@ class WorldScene {
     const A = this.game.audio;
     if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast(d.lock === 'rivalgym' ? '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수" ' : '"챔피언십 관계자 외 출입 금지"', '#ff8a8a'); return; }
     A.sfx('door');
-    this.fadeT = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
+    this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
   unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return (d.contract && d.contract.title) || d.flags.champion; return true; }
   say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
@@ -8769,29 +8824,70 @@ class WorldScene {
     const inp = this.game.input, A = this.game.audio, p = this.player, L = this.L;
     for (const t of this.toasts) t.t += dt;
     this.toasts = this.toasts.filter(t => t.t < 3.4);
-    if (this.fadeT > 0) { this.fadeT -= dt; if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
+    // fadeT must land on exactly 0: it is a "transition running" flag as well as a timer
+    if (this.fadeT > 0) { this.fadeT = Math.max(0, this.fadeT - dt); if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
+    const fading = this.fadeT > 0;
     for (const a of this.npcs) this.npcThink(a, dt);
+    this.guide = this.findGuide();
     if (this.overlays.length) { this.overlays[this.overlays.length - 1].update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.dialog) { this.dialog.update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
-    if (this.c.d.flags.seasonEnd && !this.fadeT) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
+    if (this.c.d.flags.seasonEnd && !fading) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
     let mx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
-    if (this.fadeT > 0) mx = 0;
+    if (fading) mx = 0;
     this.physics(p, dt, mx);
-    if (inp.pressed('up') && p.ground && !this.fadeT) { p.vy = -250; p.ground = false; A.sfx('jump'); }
+    if (inp.pressed('up') && p.ground && !fading) { p.vy = -250; p.ground = false; A.sfx('jump'); }
     p.pose(dt);
     for (const a of this.npcs) a.pose(dt);
     // what is near?
-    this.prompt = this.findPrompt();
-    if (!this.fadeT) {
-      if (inp.pressed('interact') && this.prompt && this.prompt.kind !== 'door') this.use(this.prompt);
-      else if (inp.pressed('door') && this.prompt && this.prompt.kind === 'door') this.goDoor(this.prompt.door);
-      else if (inp.pressed('interact') && this.prompt && this.prompt.kind === 'door') this.goDoor(this.prompt.door);
+    this.prompt = fading ? null : this.findPrompt();
+    if (!fading) {
+      // talk/use: E, or Enter/Space; doors: F, or any of those while standing at a door
+      const use = inp.pressed('interact') || inp.menuPressed('confirm');
+      const pr = this.prompt;
+      if (pr && pr.kind === 'door' && (use || inp.pressed('door'))) this.goDoor(pr.door);
+      else if (pr && pr.kind !== 'door' && use) this.use(pr);
+      else if (!pr && (inp.pressed('interact') || inp.pressed('door') || inp.rawPressed('Enter')) && !inp.pressed('up')) this.nothingHere();
       if (inp.pressed('info')) { A.sfx('ui'); this.openInfo(1); }
-      if (inp.pressed('map')) { A.sfx('ui'); this.open(new Menus.MapMenu(this)); }
-      if (inp.pressed('pause')) { A.sfx('ui'); this.open(new Menus.PauseMenu(this)); }
+      else if (inp.pressed('map')) { A.sfx('ui'); this.open(new Menus.MapMenu(this)); }
+      else if (inp.pressed('pause')) { A.sfx('ui'); this.open(new Menus.PauseMenu(this)); }
     }
     const want = clamp(p.x - VIEW_W / 2 + p.face * 40, 0, Math.max(0, L.w - VIEW_W));
     this.camX = damp(this.camX, want, 5, dt);
+  }
+  // Pressing talk or door with nothing in reach: say what is nearest instead of silently doing nothing.
+  nothingHere() {
+    const p = this.player; let best = null, bd = 1e9;
+    for (const a of this.npcs) { const d = Math.abs(a.x - p.x); if (d < bd) { bd = d; best = { x: a.x, name: NPCS[a.id].name }; } }
+    for (const d of this.L.doors) { const dd = Math.abs(d.x - p.x); if (dd < bd) { bd = dd; best = { x: d.x, name: d.label + ' 문' }; } }
+    if (!best || bd > 260) return;
+    if (this.hintT && this.t - this.hintT < 1.2) return;
+    this.hintT = this.t;
+    this.toast(`${josa(best.name, '은/는')} ${best.x > p.x ? '오른쪽' : '왼쪽'}에 있다. 가까이 가서 누르자.`, '#c9d4ff');
+  }
+  // ---- where to go next: a goal line in the HUD and an arrow toward the next door or person ----
+  objective() {
+    const c = this.c, d = c.d, ct = d.contract;
+    if (d.injury >= B.injuryDanger) return { text: '항구의원에서 부상 치료하기', loc: 'clinic', x: 400, col: '#ff8a8a' };
+    if (!d.flags.metBoss) return { text: '사장실에 가서 구만석 사장과 대화하기', loc: 'office', x: 400 };
+    if (ct && ct.title) return { text: `등대 돔 입장구에서 타이틀 매치 (~${ct.day}일)`, loc: 'dome', x: 480 };
+    if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
+    if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
+  }
+  routeTo(loc) {
+    if (!LOCATIONS[loc] || loc === this.loc) return null;
+    const prev = { [this.loc]: null }, q = [this.loc];
+    while (q.length) { const id = q.shift(); for (const dr of LOCATIONS[id].doors) { if (dr.lock && !this.unlocked(dr.lock)) continue; if (!(dr.to in prev)) { prev[dr.to] = { from: id, door: dr }; q.push(dr.to); } } }
+    if (!(loc in prev)) return null;
+    let step = prev[loc];
+    while (step && step.from !== this.loc) step = prev[step.from];
+    return step ? step.door : null;
+  }
+  findGuide() {
+    if (this.c.d.flags.noGuide) return null;
+    const ob = this.objective(); let x = null, door = null;
+    if (ob.loc === this.loc) x = ob.x; else { door = this.routeTo(ob.loc); if (door) x = door.x; }
+    return { ob, x, door };
   }
   physics(a, dt, mx) {
     const L = this.L, spd = 108;
@@ -8814,12 +8910,14 @@ class WorldScene {
       a.x += a.vx * dt;
     } else a.vx = 0;
   }
+  // People win over doors and things unless those are clearly closer, so talking is easy to hit.
   findPrompt() {
-    const p = this.player, L = this.L;
-    let best = null, bd = 34;
+    const p = this.player, L = this.L, NPC_R = 48, DOOR_R = 26;
+    let best = null, bd = NPC_R;
     for (const a of this.npcs) { const d = Math.abs(a.x - p.x); if (d < bd) { bd = d; best = { kind: 'npc', a, x: a.x, label: NPCS[a.id].name, verb: '대화' }; } }
-    for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < Math.min(bd, 26)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
-    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && dd < bd + 6) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
+    const npc = !!best;
+    for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < DOOR_R && (!npc || dd < bd - 10)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
+    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
     return best;
   }
   use(pr) {
@@ -8868,10 +8966,10 @@ class WorldScene {
   }
   sleepNow() {
     const c = this.c, d = c.d;
-    if (d.contract && d.contract.day <= d.day) { this.open(new Menus.Confirm(this, `오늘이 ${josa(d.contract.oppName, '과/와')}의 계약 경기 마감일입니다. 자면 기권패가 됩니다. 그래도 잘까요?`, () => this.doSleep())); return; }
+    if (d.contract && d.contract.day <= d.day) { this.open(new Menus.Confirm(this, `오늘이 ${josa(d.contract.oppName, '과/와')}의 계약 경기 마감일입니다. 자면 기권패가 됩니다. 그래도 잘까요?`, () => this.doSleep(), { danger: 1 })); return; }
     this.doSleep();
   }
-  doSleep() { const msgs = this.c.sleep(); this.fadeT = .9; this.fadeTo = () => { this.enter(this.loc, this.player.x); msgs.forEach(m => this.toast(m, '#ffb347')); this.toast(`${this.c.d.day}일차 아침. 자동 저장했다.`, '#9be36b'); }; this.game.audio.sfx('heal'); }
+  doSleep() { const msgs = this.c.sleep(); this.fadeT = this.fadeDur = .9; this.fadeTo = () => { this.enter(this.loc, this.player.x); msgs.forEach(m => this.toast(m, '#ffb347')); this.toast(`${this.c.d.day}일차 아침. 자동 저장했다.`, '#9be36b'); }; this.game.audio.sfx('heal'); }
   scheduleLines() {
     const d = this.c.d, out = [];
     out.push({ who: null, name: '경기 일정판', text: `오늘은 시즌 ${d.season}, ${d.day}일차 ${SLOT_NAMES[d.slot]}. 시즌은 ${28}일까지.` });
@@ -8914,11 +9012,12 @@ class WorldScene {
     if (d.slot === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     this.hud(u);
+    if (!this.dialog && !this.overlays.length && !(this.fadeT > 0)) this.drawGuide(u, cam);
     if (this.prompt && !this.dialog && !this.overlays.length) this.drawPrompt(u, cam);
     if (this.dialog) this.dialog.draw(u);
     for (const o of this.overlays) o.draw(u, w);
     this.drawToasts(u);
-    if (this.fadeT > 0) fade(u, clamp(this.fadeT > .22 ? (.45 - this.fadeT) / .22 : this.fadeT / .22, 0, 1));
+    if (this.fadeT > 0) { const D = this.fadeDur || .45; fade(u, clamp(this.fadeT > .22 ? (D - this.fadeT) / Math.max(.05, D - .22) : this.fadeT / .22, 0, 1)); }
   }
   drawActor(g, a, cam) {
     const bc = this.bc, j = a.joints;
@@ -8955,10 +9054,32 @@ class WorldScene {
     drawText(u, Math.round(d.injury) + '%', 566, 10, { size: 11, color: col });
     drawText(u, '피로 ' + Math.round(d.fatigue), 630, 10, { size: 11, align: 'r', color: d.fatigue > 70 ? '#ff8a8a' : UI.dim });
     if (lvl !== 'ok' && Math.floor(t * 2) % 2) drawText(u, lvl === 'danger' ? '! 부상 위험: 항구의원에서 치료하세요' : '! 부상 주의', 632, 34, { size: 11, align: 'r', color: col, outline: '#05060f' });
-    if (d.contract) drawText(u, `계약: ${d.contract.oppName} (~${d.contract.day}일)`, 8, 34, { size: 11, color: d.contract.day <= d.day ? '#ffb347' : '#c9d4ff', outline: '#05060f' });
-    if (d.points > 0) drawText(u, `능력치 포인트 ${d.points} (Tab)`, 8, 47, { size: 11, color: '#6be38a', outline: '#05060f' });
-    const inp = this.game.input;
-    drawText(u, `${inp.label('interact')} 대화/조사 · ${inp.label('door')} 문 · ${inp.label('info')} 정보 · ${inp.label('map')} 지도 · ${inp.label('pause')} 메뉴`, 632, 348, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
+    const inp = this.game.input, G = this.guide;
+    let ly = 34;
+    const busy = this.dialog || this.overlays.length;   // the dialogue name tag and windows sit here
+    if (G && !busy) {
+      const arrow = G.x == null ? '' : G.x > this.player.x + 8 ? ' ▶' : G.x < this.player.x - 8 ? ' ◀' : ' ▼';
+      const where = G.door ? ` — ${G.door.label} 문으로` : '';
+      rect(u, '#05060f', 5, ly - 2, 28, 15); rect(u, '#ffd65a', 6, ly - 1, 26, 13); drawText(u, '목표', 9, ly, { size: 11, color: '#141a36' });
+      drawText(u, G.ob.text + where + arrow, 36, ly, { size: 11, color: G.ob.col || '#ffe9a8', outline: '#05060f' });
+      ly += 13;
+    }
+    if (!busy && d.contract && !(G && G.ob.contract)) { drawText(u, `계약: ${d.contract.oppName} (~${d.contract.day}일)`, 8, ly, { size: 11, color: d.contract.day <= d.day ? '#ffb347' : '#c9d4ff', outline: '#05060f' }); ly += 13; }
+    if (d.points > 0 && !busy) drawText(u, `능력치 포인트 ${d.points} (${inp.label('info')})`, 8, ly, { size: 11, color: '#6be38a', outline: '#05060f' });
+    drawText(u, `${inp.label('interact')}·Enter 대화/조사 · ${inp.label('door')} 문 · ${inp.label('info')} 정보 · ${inp.label('map')} 지도 · ${inp.label('pause')} 메뉴`, 632, 348, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
+  }
+  // Yellow marker over the goal (person or door) when it is on screen, or an arrow at the screen edge.
+  drawGuide(u, cam) {
+    const G = this.guide;
+    if (!G || G.x == null) return;
+    const pr = this.prompt;
+    if (pr && Math.abs(pr.x - G.x) < 4) return;   // the use prompt is already there
+    const sx = Math.round(G.x - cam), bob = Math.round(Math.sin(this.t * 5) * 2), on = Math.floor(this.t * 2.5) % 3 !== 0;
+    if (sx < 14) { if (on) { rect(u, '#05060f', 2, 186, 16, 16); drawText(u, '◀', 10, 189, { size: 11, align: 'c', color: '#ffd65a' }); } return; }
+    if (sx > VIEW_W - 14) { if (on) { rect(u, '#05060f', VIEW_W - 18, 186, 16, 16); drawText(u, '▶', VIEW_W - 10, 189, { size: 11, align: 'c', color: '#ffd65a' }); } return; }
+    const a = !G.door && this.npcs.find(n => Math.abs(n.x - G.x) < 8);
+    const y = a ? Math.round(a.joints.y(J.head) - 36) : FLOOR - 140;
+    drawText(u, '▼', sx, y + bob, { size: 11, scale: 2, align: 'c', color: '#ffd65a', outline: '#05060f' });
   }
   drawPrompt(u, cam) {
     const pr = this.prompt, inp = this.game.input;
@@ -8966,12 +9087,12 @@ class WorldScene {
     const key = pr.kind === 'door' ? inp.label('door') : inp.label('interact');
     const text = `${pr.verb}: ${pr.label}`, w = textWidth(text, 11) + 26;
     const bob = Math.round(Math.sin(this.t * 6) * 1.5);
-    rect(u, '#05060f', x - w / 2 - 1, y - 1 + bob, w + 2, 17); rect(u, pr.verb === '잠김' ? '#5a1a2a' : '#1b2450', x - w / 2, y + bob, w, 15);
+    rect(u, '#05060f', x - w / 2 - 1, y - 1 + bob, w + 2, 19); rect(u, pr.verb === '잠김' ? '#5a1a2a' : '#1b2450', x - w / 2, y + bob, w, 17);
     keycap(u, key, x - w / 2 + 2, y + 1 + bob);
-    drawText(u, text, x - w / 2 + 20, y + 2 + bob, { size: 11, color: '#ffffff' });
-    rect(u, '#1b2450', x - 2, y + 15 + bob, 4, 3);
+    drawText(u, text, x - w / 2 + 20, y + 3 + bob, { size: 11, color: '#ffffff' });
+    rect(u, '#1b2450', x - 2, y + 17 + bob, 4, 3);
   }
-  drawToasts(u) { this.toasts.forEach((t, i) => { const a = t.t > 2.9 ? (3.4 - t.t) / .5 : 1; u.globalAlpha = clamp(a, 0, 1); const w = textWidth(t.text, 11) + 12; rect(u, 'rgba(5,6,15,.8)', 320 - w / 2, 60 + i * 18, w, 15); drawText(u, t.text, 320, 62 + i * 18, { size: 11, align: 'c', color: t.col }); u.globalAlpha = 1; }); }
+  drawToasts(u) { const y0 = this.dialog ? 152 : 60; this.toasts.forEach((t, i) => { const a = t.t > 2.9 ? (3.4 - t.t) / .5 : 1; u.globalAlpha = clamp(a, 0, 1); const w = textWidth(t.text, 11) + 12; rect(u, 'rgba(5,6,15,.8)', 320 - w / 2, y0 + i * 18, w, 15); drawText(u, t.text, 320, y0 + 2 + i * 18, { size: 11, align: 'c', color: t.col }); u.globalAlpha = 1; }); }
 }
 const worldMix = mixHex;
 const worldPrompt = prompt;
@@ -8988,7 +9109,7 @@ const { UI, SKINS, mixHex } = __m["render/palette.js"];
 const { rect, bands, cone } = __m["render/painter.js"];
 const { panel, prompt, gauge } = __m["render/ui.js"];
 const { Mannequin } = __m["scenes/TitleScene.js"];
-const { STYLE_BASE } = __m["world/CareerManager.js"];
+const { STYLE_BASE, hasCareer } = __m["world/CareerManager.js"];
 const { FINISHERS } = __m["data/moves.js"];
 const { STYLES } = __m["data/characters.js"];
 const COLORS = ['#157f8c', '#c2333f', '#2d63b8', '#ffd65a', '#ff8a2b', '#7c5ab8', '#e6e9f2', '#23263a', '#3fe0d0', '#ff4fa3', '#35a07a', '#8a5a34', '#5a6688', '#1c1424', '#b8323f', '#6be38a'];
@@ -9020,7 +9141,7 @@ class CreateScene {
     this.game = game; this.done = done; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
     this.v = { style: 'all', build: 'auto', skin: 'tan', face: 'square', hair: 'side', hairCol: '#2b3350', beard: 'none', mask: 'none', top: 'none', bottom: 'tights', c1: '#157f8c', c2: '#ffd65a', boots: '#23263a' };
     game.audio.music('lobby');
-    this.input = null;
+    this.input = null; this.cool = 0; this.autoT = .45; this.okT = 0; this.afterName = null; this.ask = null;
   }
   look() {
     const v = this.v, S = STYLE_BASE[v.style];
@@ -9038,36 +9159,97 @@ class CreateScene {
     v.mask = r.chance(.25) ? r.pick(OPTS.mask.slice(1)) : 'none';
     if (v.c1 === v.c2) v.c2 = r.pick(COLORS);
   }
+  // The name is typed into a real text box laid over the name row, so Korean input methods work.
+  // Enter must work in every way browsers report it: a plain Enter, an Enter that also commits a Hangul
+  // syllable (key "Process"/keyCode 229 while composing, sometimes followed by a second plain Enter),
+  // and an Enter that reaches the window because the box lost focus.
   openInput() {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || this.input) return;
+    const inp = this.game.input;
     const el = this.input = document.createElement('input');
-    el.maxLength = 8; el.value = this.name; el.placeholder = '이름 (최대 8자)';
-    const cv = document.getElementById('game'), r = cv.getBoundingClientRect(), k = r.width / VIEW_W;
-    Object.assign(el.style, { position: 'fixed', left: r.left + 120 * k + 'px', top: r.top + 74 * k + 'px', width: 170 * k + 'px', height: 16 * k + 'px', fontSize: 11 * k + 'px', background: '#0b0f22', color: '#ffffff', border: '2px solid #ffd65a', outline: 'none', padding: '0 4px', zIndex: 10, fontFamily: 'sans-serif' });
+    el.type = 'text'; el.maxLength = 8; el.value = this.name; el.placeholder = '이름 입력 후 Enter';
+    el.autocomplete = 'off'; el.spellcheck = false; el.setAttribute('enterkeyhint', 'done'); el.setAttribute('aria-label', '선수 이름 (최대 8자)');
+    Object.assign(el.style, { position: 'fixed', boxSizing: 'border-box', background: '#0b0f22', color: '#ffd65a', border: '2px solid #ffd65a', borderRadius: '0', outline: 'none', padding: '0 4px', margin: '0', zIndex: 10, fontFamily: "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif", fontWeight: 'bold' });
+    this.placeInput();
     document.body.appendChild(el);
-    this.game.input.textMode = true;
-    const finish = () => { if (!this.input) return; this.name = el.value.trim().slice(0, 8); el.remove(); this.input = null; this.game.input.textMode = false; this.game.input.clear(); this.game.audio.sfx('ok'); };
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); finish(); } e.stopPropagation(); });
-    el.addEventListener('blur', finish);
-    setTimeout(() => el.focus(), 30);
+    inp.textMode = true;
+    this.composing = false; this.wantDone = false;
+    const enterKey = e => e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
+    el.addEventListener('compositionstart', () => { this.composing = true; });
+    el.addEventListener('compositionend', () => { this.composing = false; if (this.wantDone) setTimeout(() => this.finishInput(), 0); });
+    el.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (enterKey(e)) {
+        if (e.repeat) { e.preventDefault(); return; }
+        // still composing a syllable: let the input method commit it first, then close
+        if (e.isComposing || e.keyCode === 229 || this.composing) { this.wantDone = true; setTimeout(() => { if (!this.composing) this.finishInput(); }, 40); return; }
+        e.preventDefault(); this.finishInput(); return;
+      }
+      if (e.key === 'Escape' || e.code === 'Escape') { e.preventDefault(); this.finishInput(); }
+    });
+    el.addEventListener('keyup', e => e.stopPropagation());
+    el.addEventListener('blur', () => setTimeout(() => { if (this.input === el && document.activeElement !== el) this.finishInput(); }, 0));
+    inp.textHook = (e, down) => {
+      if (!down) return;
+      if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Escape' || e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); this.finishInput(); }
+      else if (document.activeElement !== el) el.focus();
+    };
+    el.focus();
+    setTimeout(() => { if (this.input === el && document.activeElement !== el) el.focus(); }, 30);
   }
+  placeInput() {
+    const el = this.input, cv = typeof document !== 'undefined' && document.getElementById('game');
+    if (!el || !cv) return;
+    const r = cv.getBoundingClientRect(), k = r.width / VIEW_W;
+    Object.assign(el.style, { left: Math.round(r.left + 116 * k) + 'px', top: Math.round(r.top + 50 * k) + 'px', width: Math.round(222 * k) + 'px', height: Math.round(17 * k) + 'px', fontSize: Math.max(12, Math.round(11 * k)) + 'px' });
+  }
+  finishInput() {
+    const el = this.input;
+    if (!el) return;
+    const v = (el.value || '').replace(/\s+/g, ' ').trim().slice(0, 8);
+    this.input = null; this.wantDone = false; this.composing = false;
+    el.remove();
+    const inp = this.game.input;
+    inp.textMode = false; inp.textHook = null; inp.clear();
+    this.cool = .3;   // a second Enter from the same key press must not reopen the box
+    const cv = document.getElementById('game'); if (cv) cv.focus();
+    if (v) {
+      this.name = v; this.okT = 1.6; this.game.audio.sfx('ok');
+      this.row = this.afterName === 'start' ? ROWS.indexOf('start') : 1;
+    } else this.game.audio.sfx('back');
+    this.afterName = null;
+  }
+  begin() { this.ask = null; this.game.audio.sfx('ok'); this.done({ name: this.name, style: this.v.style, look: this.look() }); }
   update(dt) {
     this.t += dt;
-    if (this.input) return;
+    if (this.okT > 0) this.okT -= dt;
+    if (this.input) { this.placeInput(); return; }
+    // right after the box closes, ignore Enter/Esc (a trailing Enter must not reopen it), but let the cursor move
+    const settling = this.cool > 0;
+    if (settling) this.cool = Math.max(0, this.cool - dt);
     const inp = this.game.input, A = this.game.audio;
+    // the name comes first: open the box by itself once the screen has faded in
+    if (this.autoT > 0) { this.autoT -= dt; if (this.autoT <= 0 && !this.name && this.row === 0) { this.openInput(); return; } }
+    if (this.ask) {
+      if (inp.pressed('left') || inp.pressed('right') || inp.pressed('up') || inp.pressed('down')) { this.ask.sel ^= 1; A.sfx('ui'); }
+      if (inp.menuPressed('cancel')) { this.ask = null; A.sfx('back'); return; }
+      if (inp.menuPressed('confirm')) { if (this.ask.sel === 0) this.begin(); else { this.ask = null; A.sfx('back'); } }
+      return;
+    }
     if (inp.pressed('up')) { this.row = (this.row + ROWS.length - 1) % ROWS.length; A.sfx('ui'); }
     if (inp.pressed('down')) { this.row = (this.row + 1) % ROWS.length; A.sfx('ui'); }
     const k = ROWS[this.row];
     if (OPTS[k] && (inp.pressed('left') || inp.pressed('right'))) { const L = OPTS[k], i = L.indexOf(this.v[k]); this.v[k] = L[(i + (inp.pressed('left') ? -1 : 1) + L.length) % L.length]; A.sfx('ui', { pitch: 1.2 }); }
+    if (settling) return;
     if (inp.menuPressed('cancel')) { A.sfx('back'); this.game.toTitle(); return; }
     if (inp.menuPressed('confirm')) {
       if (k === 'name') this.openInput();
       else if (k === 'random') { this.randomize(); A.sfx('ok'); }
       else if (k === 'start') {
-        if (!this.name) { this.row = 0; this.openInput(); return; }
-        A.sfx('ok');
-        this.done({ name: this.name, style: this.v.style, look: this.look() });
-      } else if (OPTS[k]) { const L = OPTS[k], i = L.indexOf(this.v[k]); this.v[k] = L[(i + 1) % L.length]; A.sfx('ui'); }
+        if (!this.name) { this.row = 0; this.afterName = 'start'; this.openInput(); return; }
+        if (hasCareer(1)) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
+        this.begin();
+      } else if (OPTS[k]) { this.row = Math.min(ROWS.length - 1, this.row + 1); A.sfx('ui'); }   // Enter on a choice: keep it, go to the next item
     }
   }
   show(k) {
@@ -9088,19 +9270,39 @@ class CreateScene {
       const y = 53 + i * 17, on = i === this.row;
       if (on) rect(u, mixHex(UI.accent, UI.panel, .55), 18, y - 2, 322, 16);
       drawText(u, ROWNAME[k], 26, y, { size: 11, color: on ? '#ffffff' : UI.dim });
-      if (k === 'name') drawText(u, this.input ? '' : (this.name || '(Enter로 입력)'), 120, y, { size: 11, color: this.name ? '#ffd65a' : UI.faint });
+      if (k === 'name') {
+        if (!this.input) drawText(u, this.name || '(Enter를 눌러 입력)', 120, y, { size: 11, color: this.name ? '#ffd65a' : UI.faint });
+        if (!this.input && this.name && this.okT > 0) drawText(u, '✓ 확정', 334, y, { size: 11, align: 'r', color: '#6be38a' });
+        else if (!this.input && !this.name) drawText(u, '필수', 334, y, { size: 11, align: 'r', color: on ? '#ffb347' : UI.faint });
+      }
       else if (OPTS[k]) {
         if (['hairCol', 'c1', 'c2', 'boots'].includes(k)) { rect(u, '#05060f', 199, y, 42, 11); rect(u, this.v[k], 200, y + 1, 40, 9); drawText(u, '◀        ▶', 220, y, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.faint }); }
         else drawText(u, '◀ ' + this.show(k) + ' ▶', 334, y, { size: 11, align: 'r', color: on ? '#ffd65a' : '#c9d4ff' });
       }
     });
     const S = STYLE_BASE[this.v.style], st = S.stats, F = FINISHERS[S.finisher];
-    panel(u, 360, 46, 266, 120, { accent: '#ff5fa2', alpha: .9 });
+    panel(u, 360, 46, 266, 134, { accent: '#ff5fa2', alpha: .9 });
     drawText(u, STYLES[this.v.style].name, 370, 52, { color: '#ffffff', bold: true });
     drawText(u, STYLES[this.v.style].desc, 370, 68, { size: 11, color: '#ff8fc4' });
-    [['체력', (st.hp - 60) / 90], ['기절 저항', (st.stun - 60) / 80], ['공격력', (st.atk - .6) / .75], ['잡기', (st.grp - .6) / .75], ['속도', (st.spd - .6) / .75], ['점프', (st.jump - .6) / .75]].forEach(([n, v], i) => { drawText(u, n, 370, 84 + i * 11, { size: 11, color: UI.dim }); gauge(u, 440, 88 + i * 11, 100, 4, clamp(v, .05, 1), 'fin', { col: '#ff8fc4' }); });
-    drawText(u, '피니셔: ' + F.name, 370, 152, { size: 11, color: '#ffd65a' });
-    prompt(u, ['↑↓'], '항목', 20, 338, {}); prompt(u, ['←→'], '바꾸기', 90, 338, {}); prompt(u, ['Enter'], '결정', 170, 338, {}); prompt(u, ['Esc'], '타이틀', 250, 338, {});
+    [['체력', (st.hp - 60) / 90], ['기절 저항', (st.stun - 60) / 80], ['공격력', (st.atk - .6) / .75], ['잡기', (st.grp - .6) / .75], ['속도', (st.spd - .6) / .75], ['점프', (st.jump - .6) / .75]].forEach(([n, v], i) => { drawText(u, n, 370, 84 + i * 13, { size: 11, color: UI.dim }); gauge(u, 440, 88 + i * 13, 100, 4, clamp(v, .05, 1), 'fin', { col: '#ff8fc4' }); });
+    drawText(u, '피니셔: ' + F.name, 370, 164, { size: 11, color: '#ffd65a' });
+    if (this.input) {
+      rect(u, '#05060f', 14, 334, 612, 18);
+      drawText(u, '이름을 입력하세요 (한글·영문 최대 8자)', 20, 338, { size: 11, color: '#ffd65a' });
+      prompt(u, ['Enter'], '확정', 300, 338, {}); prompt(u, ['Esc'], '그만두기', 370, 338, {});
+    } else {
+      const k = ROWS[this.row];
+      prompt(u, ['↑↓'], '항목', 20, 338, {}); prompt(u, ['←→'], '바꾸기', 90, 338, {});
+      prompt(u, ['Enter'], k === 'name' ? '이름 입력' : k === 'start' ? '시작' : k === 'random' ? '무작위' : '다음 항목', 170, 338, {}); prompt(u, ['Esc'], '타이틀', 280, 338, {});
+    }
+    if (this.ask) {
+      rect(u, 'rgba(5,6,15,.6)', 0, 0, VIEW_W, VIEW_H);
+      panel(u, 130, 120, 380, 110, { accent: '#ff5b5b' });
+      drawText(u, '저장된 커리어가 있습니다', 320, 130, { align: 'c', color: '#ff8a8a', bold: true });
+      drawText(u, '새로 시작하면 이전 커리어 저장이 지워집니다. 시작할까요?', 320, 152, { size: 11, align: 'c', color: '#ffffff' });
+      ['예, 새로 시작', '아니요'].forEach((t, i) => { const x = 250 + i * 140, on = this.ask.sel === i; rect(u, on ? (i === 0 ? '#7a1f2a' : '#2a3a7a') : '#141a36', x - 56, 184, 112, 20); drawText(u, t, x, 187, { align: 'c', color: on ? '#ffffff' : UI.dim }); });
+      drawText(u, '←→ 선택 · Enter 결정 · Esc 취소', 320, 212, { size: 11, align: 'c', color: UI.dim });
+    }
   }
 }
 
@@ -9121,8 +9323,8 @@ const game = new GameManager(canvas);
 game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: hasCareer(1), onCareer: kind => startCareer(kind) }));
 game.playMatch = (cfg, after) => game.go(() => new MatchScene(game, cfg, res => after && after(res)));
 game.openSettings = () => game.push(new SettingsOverlay(game));
-function startCareer(kind) {
-  if (kind === 'continue') { const c = Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+function startCareer(kind, given) {
+  if (kind === 'continue') { const c = given || Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
   game.go(() => new CreateScene(game, look => { const c = Career.create(1, look); game.career = c; game.go(() => new WorldScene(game, c, { intro: true })); }));
 }
 game.startCareer = startCareer;

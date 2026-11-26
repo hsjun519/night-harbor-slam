@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "node serve.mjs",
-    "test": "node tests/sim.mjs 36"
+    "test": "node tests/sim.mjs 36 && node tests/scripted.mjs",
+    "test:e2e": "node build.mjs && node tests/e2e.mjs"
   }
 }

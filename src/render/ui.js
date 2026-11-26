@@ -72,7 +72,7 @@ export function gauge(g, x, y, w, h, v, style, o = {}) {
   if (o.icon) icon(g, o.icon, flip ? x + w + 3 : x - 10, y + Math.round(h / 2) - 3, o.iconCol || col);
 }
 export function keycap(g, label, x, y, o = {}) {
-  const w = Math.max(11, textWidth(label, 11) + 6), h = 12;
+  const w = Math.max(11, textWidth(label, 11) + 6), h = 14;   // Latin glyphs sit 2px lower than Hangul: 14 keeps their last row off the border
   x = Math.round(x); y = Math.round(y);
   rect(g, '#05060f', x - 1, y - 1, w + 2, h + 2); rect(g, o.bg || '#d8def5', x, y, w, h - 1); rect(g, '#8a93b8', x, y + h - 2, w, 1); rect(g, '#ffffff', x, y, w, 1);
   drawText(g, label, x + w / 2, y + 1, { size: 11, align: 'c', color: o.color || '#141a36' });

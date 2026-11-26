@@ -40,14 +40,40 @@ export const SHOP_ITEMS = [
   { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
 ];
 
-export function hasCareer(slot) { return !!Save.get('career' + slot); }
+// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
+// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
+// and move it over.
+const saveKey = n => 'save' + n;
+const LEGACY = ['career0', 'career1', 'career2'];
+const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+function legacyNewest(suffix = '') {
+  let best = null;
+  for (const k of LEGACY) {
+    const d = Save.get(k + suffix);
+    if (!d || typeof d !== 'object' || !d.name) continue;
+    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
+    if (!best || lex(score, best.score) > 0) best = { d, score };
+  }
+  return best && best.d;
+}
+function migrateLegacy(n) {
+  const d = legacyNewest();
+  if (!d) return null;
+  const chk = legacyNewest('.chk');
+  d.saveSlot = n;
+  Save.set(saveKey(n), d);
+  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
+  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
+  return d;
+}
+export function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
 
 export class Career {
-  static create(slot, setup) {
+  static create(n, setup) {
     const c = new Career();
     const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
     Object.assign(c.d, {
-      slot, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
+      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
       lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0 },
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
@@ -55,20 +81,23 @@ export class Career {
     c.save(true);
     return c;
   }
-  static load(slot) { const d = Save.get('career' + slot); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.migrate(); return c; }
-  static loadCheckpoint(slot) { const d = Save.get('career' + slot + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   constructor() {
     this.d = {
-      v: 1, slot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
+      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
     };
   }
   migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; }
+  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
-    Save.set('career' + this.d.slot, this.d);
-    if (checkpoint) Save.set('career' + this.d.slot + '.chk', this.d);
+    const n = this.d.saveSlot || 1;
+    this.d.savedAt = Date.now();
+    Save.set(saveKey(n), this.d);
+    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
   }
   // ---- league ----
   newLeague(season) {
