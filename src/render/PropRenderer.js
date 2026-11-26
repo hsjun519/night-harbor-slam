@@ -24,6 +24,18 @@ function chairSprite(dent) {
   SPR.set(dent, c);
   return c;
 }
+// Folded flat, as it lies on the floor.
+let FOLD = null;
+function foldedSprite() {
+  if (FOLD) return FOLD;
+  FOLD = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(32, 9) : Object.assign(document.createElement('canvas'), { width: 32, height: 9 });
+  const g = FOLD.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  R(0, 1, 32, 7, '#05060f'); R(1, 0, 30, 1, '#05060f');
+  R(1, 1, 30, 5, '#9aa4c0'); R(1, 1, 30, 1, '#e2e8fa'); R(1, 5, 30, 1, '#5a6584'); R(2, 3, 28, 1, '#7a84a0');
+  R(4, 2, 6, 2, '#c2333f');
+  R(0, 7, 3, 2, '#05060f'); R(29, 7, 3, 2, '#05060f'); R(14, 7, 4, 1, '#05060f');
+  return FOLD;
+}
 export function drawChairAt(g, x, y, rot = 0, face = 1, dent = 0) {
   g.save(); g.translate(Math.round(x), Math.round(y)); g.rotate(rot); if (face < 0) g.scale(-1, 1);
   g.imageSmoothingEnabled = false;
@@ -39,6 +51,7 @@ export function drawProps(g, m, camX) {
       const gy = ar.ground(p.x, p.y + 10, p.side), k = Math.max(.25, 1 - (gy - p.y) / 160);
       g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(12 * k), 2); g.globalAlpha = 1;
     }
+    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 16), Math.round(p.y + 2)); continue; }
     drawChairAt(g, x, p.y, p.rot || 0, p.face || 1, p.dent);
   }
 }

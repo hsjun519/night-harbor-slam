@@ -57,8 +57,11 @@ export class PropSystem {
       if (p.state !== 'held' || !p.holder) continue;
       const f = p.holder, jt = f.joints;
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
-      const a = Math.atan2(hy - sy, hx - sx);
-      p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; p.face = f.face; p.side = f.side;
+      const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
+      // swinging: the chair follows the arms; carrying: held upright in front of the chest
+      if (swing) { p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 4; p.y = hy - 10; p.rot = -.12 * f.face; }
+      p.face = f.face; p.side = f.side;
     }
   }
   // Thrown chairs hit whoever they meet: guard blocks, a dodge passes through, otherwise down at once.

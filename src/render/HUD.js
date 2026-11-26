@@ -248,7 +248,8 @@ export class HUD {
     g.restore();
     g.globalAlpha = 1;
   }
-  toasts(g) { this.toastList.forEach((t, i) => { const a = t.t > 2.2 ? (2.6 - t.t) / .4 : 1; g.globalAlpha = a; drawText(g, t.text, 632, 300 - i * 14, { size: 11, align: 'r', color: t.col, outline: '#05060f' }); g.globalAlpha = 1; }); }
+  // top right, under the player panels, on a dark strip so the ring and crowd behind do not swallow them
+  toasts(g) { this.toastList.forEach((t, i) => { const a = t.t > 2.2 ? (2.6 - t.t) / .4 : 1, w = textWidth(t.text, 11) + 10, y = 66 + i * 15; g.globalAlpha = clamp01(a); rect(g, 'rgba(5,6,15,.8)', 636 - w, y - 2, w, 14); drawText(g, t.text, 632, y, { size: 11, align: 'r', color: t.col }); g.globalAlpha = 1; }); }
 }
 export const hudShade = shade;
 export const hudEllipse = ellipse;

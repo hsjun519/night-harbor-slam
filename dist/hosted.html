@@ -3242,9 +3242,9 @@ const MOVES = {
   cutter: {
     name: '번개 커터', pos: 'dash', hp: 14, stun: 30, gain: 14, lift: 0, self: .5, sig: 1, desc: '돌진하다 뛰어올라 머리를 감싸 그대로 찍는다. 서 있는 상대에게 건다.',
     dur: 1.0, rel: .66, vf: -1, vel: [10, -40, -1.4], land: 'prone',
-    A: [[0, 'sp24 hd-10 a120/50 b110/50 t50/70 u-6/60 lift8', 'out'], [.16, 'r-24 sp6 hd-12 a150/70 b142/70 t70/60 u40/60 lift26 ox10', 'out'], [.34, 'r-70 sp-6 hd-6 a120/70 b112/70 t50/40 u30/50 lift12 ox16', 'in'], [.5, 'r-88 sp-8 hd-8 a96/60 b90/60 t30/40 u20/50 ox16', 'in'], [1.0, 'r-88 sp-8 hd-8 a90/60 b84/60 t28/40 u18/50 ox16']],
+    A: [[0, 'sp24 hd-10 a120/50 b110/50 t50/70 u-6/60 lift8', 'out'], [.16, 'r-24 sp6 hd-12 a150/70 b142/70 t70/60 u40/60 lift26 ox4', 'out'], [.34, 'r-70 sp-6 hd-6 a120/70 b112/70 t50/40 u30/50 lift12', 'in'], [.5, 'r-86 sp-6 hd8 a84/70 b80/62 t28/34 u8/46 ox-8', 'in'], [1.0, 'r-88 hd-6 a60/60 b60/50 t24/44 u12/50 ox-8']],
     V: [[0, 'sp6 hd0 a24/40 b36/40 t16/18 u-14/18'], [.16, 'sp34 hd34 a50/30 b40/30 t14/20 u-8/20'], [.34, 'sp30 hd30 a120/20 b110/24 t-4/20 u6/30'], [.5, 'sp6 hd-6 a150/20 b140/20 t0/10 u4/8'], [1.0, 'sp4 hd-6 a150/20 b140/20 t0/10 u4/8']],
-    R: [[0, 26, 44, 0], [.16, 28, 42, -24, 'out'], [.34, 32, 22, -70, 'in'], [.5, 36, 'g', -92, 'in'], [1.0, 36, 'g', -90]],
+    R: [[0, 26, 44, 0], [.16, 30, 42, -24, 'out'], [.34, 34, 22, -70, 'in'], [.5, 40, 'g', -92, 'in'], [1.0, 40, 'g', -90]],
     ik: [[.1, .5, 'N', 'head'], [.1, .5, 'F', 'neck']],
     ev: [[0, 'whoosh'], [.12, 'cry'], [.48, 'impact', { p: 1.2, d: 1, word: '번쩍!' }]],
   },
@@ -3589,8 +3589,11 @@ class PropSystem {
       if (p.state !== 'held' || !p.holder) continue;
       const f = p.holder, jt = f.joints;
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
-      const a = Math.atan2(hy - sy, hx - sx);
-      p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; p.face = f.face; p.side = f.side;
+      const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
+      // swinging: the chair follows the arms; carrying: held upright in front of the chest
+      if (swing) { p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 4; p.y = hy - 10; p.rot = -.12 * f.face; }
+      p.face = f.face; p.side = f.side;
     }
   }
   // Thrown chairs hit whoever they meet: guard blocks, a dodge passes through, otherwise down at once.
@@ -7301,7 +7304,8 @@ class HUD {
     g.restore();
     g.globalAlpha = 1;
   }
-  toasts(g) { this.toastList.forEach((t, i) => { const a = t.t > 2.2 ? (2.6 - t.t) / .4 : 1; g.globalAlpha = a; drawText(g, t.text, 632, 300 - i * 14, { size: 11, align: 'r', color: t.col, outline: '#05060f' }); g.globalAlpha = 1; }); }
+  // top right, under the player panels, on a dark strip so the ring and crowd behind do not swallow them
+  toasts(g) { this.toastList.forEach((t, i) => { const a = t.t > 2.2 ? (2.6 - t.t) / .4 : 1, w = textWidth(t.text, 11) + 10, y = 66 + i * 15; g.globalAlpha = clamp01(a); rect(g, 'rgba(5,6,15,.8)', 636 - w, y - 2, w, 14); drawText(g, t.text, 632, y, { size: 11, align: 'r', color: t.col }); g.globalAlpha = 1; }); }
 }
 const hudShade = shade;
 const hudEllipse = ellipse;
@@ -7335,6 +7339,18 @@ function chairSprite(dent) {
   SPR.set(dent, c);
   return c;
 }
+// Folded flat, as it lies on the floor.
+let FOLD = null;
+function foldedSprite() {
+  if (FOLD) return FOLD;
+  FOLD = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(32, 9) : Object.assign(document.createElement('canvas'), { width: 32, height: 9 });
+  const g = FOLD.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  R(0, 1, 32, 7, '#05060f'); R(1, 0, 30, 1, '#05060f');
+  R(1, 1, 30, 5, '#9aa4c0'); R(1, 1, 30, 1, '#e2e8fa'); R(1, 5, 30, 1, '#5a6584'); R(2, 3, 28, 1, '#7a84a0');
+  R(4, 2, 6, 2, '#c2333f');
+  R(0, 7, 3, 2, '#05060f'); R(29, 7, 3, 2, '#05060f'); R(14, 7, 4, 1, '#05060f');
+  return FOLD;
+}
 function drawChairAt(g, x, y, rot = 0, face = 1, dent = 0) {
   g.save(); g.translate(Math.round(x), Math.round(y)); g.rotate(rot); if (face < 0) g.scale(-1, 1);
   g.imageSmoothingEnabled = false;
@@ -7350,6 +7366,7 @@ function drawProps(g, m, camX) {
       const gy = ar.ground(p.x, p.y + 10, p.side), k = Math.max(.25, 1 - (gy - p.y) / 160);
       g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(12 * k), 2); g.globalAlpha = 1;
     }
+    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 16), Math.round(p.y + 2)); continue; }
     drawChairAt(g, x, p.y, p.rot || 0, p.face || 1, p.dent);
   }
 }
@@ -8450,12 +8467,12 @@ class MatchScene {
     m.on('chairHit', e => { A.sfx('clang', { p: e.guarded ? .7 : 1 }); S.shake(e.guarded ? .2 : .42); fx.spark(e.x, e.y, e.guarded ? .9 : 1.8, '#e6ecff'); fx.word(e.guarded ? '막았다!' : e.thrown ? '와장창!' : '깡!', e.x, e.y - 22, '#e6ecff', e.guarded ? 2 : 3); if (e.guarded) cheer(.5); else { cheer(1.3); this.ar.setScreen('체어샷!', e.v.name, '#ffd65a', true); } });
     m.on('chairParry', e => { fx.word('의자를 쳐냈다!', e.v.x, e.v.y - 104, '#9fd6ff', 2); cheer(1); });
     m.on('chairBreak', e => { A.sfx('punch3'); fx.word('의자가 부서졌다!', e.x, e.y - 26, '#ffb347', 2); fx.dust(e.x, e.y, .8); fx.spark(e.x, e.y, 1.2, '#9aa4c0'); cheer(.8); });
-    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast(`상대가 의자를 들었다! [${K('down')}] 막기 · [${K('dodge')}] 피하기 · [${K('grab')}] 뺏기`, '#ff8a8a'); } });
+    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast('상대가 의자를 들었다! 막거나, 피하거나, 뺏어라', '#ff8a8a'); } });
     m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
     m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
-    m.on('chairWarn', e => { A.sfx('warn'); if (isH(e.f)) hud.toast(`의자가 날아온다! [${K('dodge')}] 피하기 · [${K('down')}] 막기 · [${K('grab')}] 받기`, '#ffb347'); });
+    m.on('chairWarn', e => { A.sfx('warn'); });
     m.on('cameoIn', e => { hud.push(e.c.who === 'boss' ? '사장 난입!' : '코치 난입!', { col: '#ffb347', sub: e.c.name, y: 150, life: 1.6, scale: 2 }); A.cheer(.7); });
     m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
     m.on('refDistract', () => { fx.word('심판이 한눈판다!', m.ref.x, m.ref.y - 100, '#ffd65a', 1); A.boo(.5); });

@@ -120,12 +120,12 @@ export class MatchScene {
     m.on('chairHit', e => { A.sfx('clang', { p: e.guarded ? .7 : 1 }); S.shake(e.guarded ? .2 : .42); fx.spark(e.x, e.y, e.guarded ? .9 : 1.8, '#e6ecff'); fx.word(e.guarded ? '막았다!' : e.thrown ? '와장창!' : '깡!', e.x, e.y - 22, '#e6ecff', e.guarded ? 2 : 3); if (e.guarded) cheer(.5); else { cheer(1.3); this.ar.setScreen('체어샷!', e.v.name, '#ffd65a', true); } });
     m.on('chairParry', e => { fx.word('의자를 쳐냈다!', e.v.x, e.v.y - 104, '#9fd6ff', 2); cheer(1); });
     m.on('chairBreak', e => { A.sfx('punch3'); fx.word('의자가 부서졌다!', e.x, e.y - 26, '#ffb347', 2); fx.dust(e.x, e.y, .8); fx.spark(e.x, e.y, 1.2, '#9aa4c0'); cheer(.8); });
-    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast(`상대가 의자를 들었다! [${K('down')}] 막기 · [${K('dodge')}] 피하기 · [${K('grab')}] 뺏기`, '#ff8a8a'); } });
+    m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast('상대가 의자를 들었다! 막거나, 피하거나, 뺏어라', '#ff8a8a'); } });
     m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
     m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
-    m.on('chairWarn', e => { A.sfx('warn'); if (isH(e.f)) hud.toast(`의자가 날아온다! [${K('dodge')}] 피하기 · [${K('down')}] 막기 · [${K('grab')}] 받기`, '#ffb347'); });
+    m.on('chairWarn', e => { A.sfx('warn'); });
     m.on('cameoIn', e => { hud.push(e.c.who === 'boss' ? '사장 난입!' : '코치 난입!', { col: '#ffb347', sub: e.c.name, y: 150, life: 1.6, scale: 2 }); A.cheer(.7); });
     m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
     m.on('refDistract', () => { fx.word('심판이 한눈판다!', m.ref.x, m.ref.y - 100, '#ffd65a', 1); A.boo(.5); });
