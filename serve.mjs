@@ -1,6 +1,6 @@
 // Small static server for development: node serve.mjs [port]
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
-const port = Number(process.argv[2] || 4390), root = path.resolve('.');
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
+const port = Number(process.argv[2] || 4390), root = path.dirname(fileURLToPath(import.meta.url));
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json' };
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html';

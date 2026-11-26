@@ -141,7 +141,12 @@ export class CombatSystem {
     if (v.st === 'KO' || !v.alive) return;
     v.hsKind = 'launch'; v.hs = 9; v.juggle = 0;
     v.set('HITSTUN', { force: true, clip: 'limpAir' });
-    v.ragdoll(vx, vy, spin);
+    // in elimination matches an exhausted body by the ropes goes over the top
+    // a big blow against somebody leaning on the ropes can send them over the top
+    const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
+    const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
+    const over = spent || (outward && nr.dist < 34 && Math.abs(vx) > 150 && this.m.rng.chance(.25 + (1 - v.hp / v.maxHp) * .5));
+    v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;
     if (a) v.lastHitBy = a;

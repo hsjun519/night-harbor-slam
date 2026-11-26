@@ -319,6 +319,8 @@ export class AIController {
     if (P.strikes > 0 && L.strikes < P.strikes) { this.tap('atk'); P.at = L.t + .3; return; }
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
+    // rope moves need the ropes: drag the foe there first
+    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .5) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
     if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face;
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }

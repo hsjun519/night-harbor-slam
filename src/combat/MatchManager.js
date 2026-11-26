@@ -281,6 +281,11 @@ export class MatchManager extends Emitter {
       f.wantTag = mate && mate.legal && mate.alive && Math.abs(mate.x - f.x) < 90;
     }
     if (this.rules.time && this.phase === 'fight' && this.clock >= this.rules.time) this.timeUp();
+    // last two standing who cannot finish each other: the referee calls it after a long stalemate
+    if ((this.mode === 'rumble' || this.mode === 'royal') && this.phase === 'fight' && !this.queue.length && this.alive().length === 2) {
+      this.stalemate = (this.stalemate || 0) + dt;
+      if (this.stalemate > 100) { const [x, y] = this.alive(), sc = f => f.hp / f.maxHp * 2 + Math.max(0, f.stun) / f.maxStun - f.downs * .02; const w = sc(x) >= sc(y) ? x : y; this.end({ winner: w, loser: w === x ? y : x, how: 'decision', team: w.team }); }
+    } else this.stalemate = 0;
   }
   toHang(f) {
     const ar = this.arena;

@@ -2685,7 +2685,7 @@ const BALANCE = {
   downTimes: [1.5, 2.0, 2.5, 3.0, 3.5], moveDownTime: 1.05, getUpProtect: .95, hitGetUpProtect: .5, mashDown: .07,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
-  hitstunScale: .94, strikeStun: 1.32,
+  hitstunScale: .94, strikeStun: 1.22,
   // guard, dodge, counter
   guardHp: .18, guardStun: .36, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
@@ -2711,9 +2711,9 @@ const BALANCE = {
 /* Basic attacks. reach/low/high are pixels from the feet. wind-hit-follow are the three key drawings.
    lv: 1 light, 2 medium, 3 heavy, 4 launch. */
 const ATTACKS = {
-  jab: { name: '잽', startup: .085, active: .05, recover: .15, reach: 38, low: 44, high: 78, hp: 1.3, stun: 8.5, kb: 46, hs: .25, stop: .04, lv: 1, wind: 'sp4 hd-4 a20/100 b10/128 t18/18 u-22/16', hit: 'sp13 hd-8 a14/106 b93/2 t28/20 u-24/8', follow: 'sp11 hd-6 a16/104 b88/10 t26/20 u-23/9', sfx: 'punch1' },
-  cross: { name: '스트레이트', startup: .1, active: .06, recover: .2, reach: 42, low: 44, high: 78, hp: 1.8, stun: 10.5, kb: 66, hs: .28, stop: .05, lv: 1, wind: 'sp0 hd-4 a-34/116 b60/92 t14/18 u-24/18', hit: 'sp20 hd-10 a92/2 b26/116 t36/22 u-32/6 ox3', follow: 'sp18 hd-8 a86/10 b28/112 t34/22 u-30/7 ox3', sfx: 'punch1' },
-  hook: { name: '훅', startup: .17, active: .07, recover: .34, reach: 42, low: 42, high: 82, hp: 3.2, stun: 18, kb: 170, hs: .42, stop: .085, lv: 3, wind: 'sp-14 hd-4 a-66/64 b60/90 t4/12 u-12/24', hit: 'sp26 hd-14 a84/44 b4/90 t42/28 u-34/8 ox8', follow: 'sp32 hd-16 a104/60 b0/90 t44/30 u-36/10 ox8', sfx: 'punch2' },
+  jab: { name: '잽', startup: .085, active: .05, recover: .15, reach: 38, low: 44, high: 78, hp: 1.3, stun: 9.6, kb: 46, hs: .25, stop: .04, lv: 1, wind: 'sp4 hd-4 a20/100 b10/128 t18/18 u-22/16', hit: 'sp13 hd-8 a14/106 b93/2 t28/20 u-24/8', follow: 'sp11 hd-6 a16/104 b88/10 t26/20 u-23/9', sfx: 'punch1' },
+  cross: { name: '스트레이트', startup: .1, active: .06, recover: .2, reach: 42, low: 44, high: 78, hp: 1.8, stun: 12, kb: 66, hs: .28, stop: .05, lv: 1, wind: 'sp0 hd-4 a-34/116 b60/92 t14/18 u-24/18', hit: 'sp20 hd-10 a92/2 b26/116 t36/22 u-32/6 ox3', follow: 'sp18 hd-8 a86/10 b28/112 t34/22 u-30/7 ox3', sfx: 'punch1' },
+  hook: { name: '훅', startup: .17, active: .07, recover: .34, reach: 42, low: 42, high: 82, hp: 3.2, stun: 19.5, kb: 150, hs: .42, stop: .085, lv: 3, wind: 'sp-14 hd-4 a-66/64 b60/90 t4/12 u-12/24', hit: 'sp26 hd-14 a84/44 b4/90 t42/28 u-34/8 ox8', follow: 'sp32 hd-16 a104/60 b0/90 t44/30 u-36/10 ox8', sfx: 'punch2' },
   uppercut: { name: '어퍼컷', startup: .19, active: .07, recover: .42, reach: 36, low: 40, high: 96, hp: 3.6, stun: 21, kb: 80, up: 230, hs: .5, stop: .1, lv: 4, wind: 'sp32 hd-14 a-34/64 b50/100 t54/74 u6/64', hit: 'sp-10 hd-16 a146/44 b0/90 t12/6 u-18/12 lift5', follow: 'sp-16 hd-20 a168/24 b-6/80 t8/4 u-20/14 lift7', sfx: 'punch3', holdR: .4 },
   chop: { name: '손날치기', startup: .14, active: .06, recover: .26, reach: 38, low: 42, high: 76, hp: 2.3, stun: 13, kb: 60, hs: .32, stop: .06, lv: 2, hand: 'open', wind: 'sp-10 hd-6 a148/64 b50/80 t12/14 u-22/16', hit: 'sp22 hd-10 a80/14 b10/90 t32/22 u-28/8', follow: 'sp28 hd-12 a52/10 b6/90 t34/24 u-30/8', sfx: 'chop' },
   palm: { name: '장타', step: 60, startup: .13, active: .06, recover: .24, reach: 38, low: 42, high: 78, hp: 2, stun: 12, kb: 120, hs: .3, stop: .055, lv: 2, hand: 'open', wind: 'sp2 hd-6 a-10/130 b50/90 t20/26 u-22/20', hit: 'sp22 hd-12 a92/4 b30/100 t38/24 u-32/6 ox4', sfx: 'punch1' },
@@ -4175,7 +4175,12 @@ class CombatSystem {
     if (v.st === 'KO' || !v.alive) return;
     v.hsKind = 'launch'; v.hs = 9; v.juggle = 0;
     v.set('HITSTUN', { force: true, clip: 'limpAir' });
-    v.ragdoll(vx, vy, spin);
+    // in elimination matches an exhausted body by the ropes goes over the top
+    // a big blow against somebody leaning on the ropes can send them over the top
+    const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
+    const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
+    const over = spent || (outward && nr.dist < 34 && Math.abs(vx) > 150 && this.m.rng.chance(.25 + (1 - v.hp / v.maxHp) * .5));
+    v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;
     if (a) v.lastHitBy = a;
@@ -5398,6 +5403,8 @@ class AIController {
     if (P.strikes > 0 && L.strikes < P.strikes) { this.tap('atk'); P.at = L.t + .3; return; }
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
+    // rope moves need the ropes: drag the foe there first
+    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .5) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
     if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face;
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }
@@ -5725,6 +5732,11 @@ class MatchManager extends Emitter {
       f.wantTag = mate && mate.legal && mate.alive && Math.abs(mate.x - f.x) < 90;
     }
     if (this.rules.time && this.phase === 'fight' && this.clock >= this.rules.time) this.timeUp();
+    // last two standing who cannot finish each other: the referee calls it after a long stalemate
+    if ((this.mode === 'rumble' || this.mode === 'royal') && this.phase === 'fight' && !this.queue.length && this.alive().length === 2) {
+      this.stalemate = (this.stalemate || 0) + dt;
+      if (this.stalemate > 100) { const [x, y] = this.alive(), sc = f => f.hp / f.maxHp * 2 + Math.max(0, f.stun) / f.maxStun - f.downs * .02; const w = sc(x) >= sc(y) ? x : y; this.end({ winner: w, loser: w === x ? y : x, how: 'decision', team: w.team }); }
+    } else this.stalemate = 0;
   }
   toHang(f) {
     const ar = this.arena;
