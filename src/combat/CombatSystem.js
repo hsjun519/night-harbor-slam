@@ -31,6 +31,7 @@ export class CombatSystem {
       if (!hb) continue;
       const d = a.atk.def;
       for (const v of m.fighters) {
+        if (!a.atk || a.atk.def !== d) break;
         if (!a.isFoe(v) || !v.alive || a.atk.hit.has(v)) continue;
         const sd = STATES[v.st];
         const floorHit = d.ground && (v.st === 'DOWN' || v.st === 'PINNED') && v.downClock !== undefined && !(v.rag && !v.rag.ground) && v.protect <= 0;

@@ -154,6 +154,9 @@ function startJump(f, I) {
     if (Math.min(dl, dr) < 46) { beginEnter(f); return; }
   }
   f.vy = -B.jump * Math.sqrt(f.stats.jump) * (f.boost > 0 ? 1.06 : 1); f.ground = false;
+  // Vaulting over the top rope is a choice: running at the ropes and jumping, where the rules allow leaving.
+  f.vault = false;
+  if (ar.hasRing && f.side === 'in' && m.rules.ringOut === 'count' && Math.abs(f.vx) > 120) { const nr = ar.nearRope(f.x); if (nr.dist < 70 && sgn(f.vx) === nr.dir) f.vault = true; }
   f.set('JUMP');
   m.emit('jump', { f });
 }

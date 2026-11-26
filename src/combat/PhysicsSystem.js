@@ -26,11 +26,11 @@ export class PhysicsSystem {
     if (ar.hasRing) {
       const hgt = ar.matY - f.y; // feet height above the mat
       if (f.side === 'in') {
-        const pad = 11, over = hgt > ar.ropeH - 6;
+        const pad = 11, over = hgt > ar.ropeH - 6 && (f.vault || f.st === 'ENTER_RING');
         if (!over) {
           if (f.x < ar.ropeL + pad) { f.x = ar.ropeL + pad; f.touchRope = 'L'; if (f.vx < 0) { if (Math.abs(f.vx) > 60) ar.press('L', Math.min(14, Math.abs(f.vx) * .05)); f.vx = 0; } }
           else if (f.x > ar.ropeR - pad) { f.x = ar.ropeR - pad; f.touchRope = 'R'; if (f.vx > 0) { if (Math.abs(f.vx) > 60) ar.press('R', Math.min(14, Math.abs(f.vx) * .05)); f.vx = 0; } }
-        } else if (f.x < ar.ropeL - 2 || f.x > ar.ropeR + 2) { f.side = 'out'; this.m.emit('overRope', { f }); }
+        } else if (f.x < ar.ropeL - 2 || f.x > ar.ropeR + 2) { f.side = 'out'; f.vault = false; this.m.emit('overRope', { f }); }
       } else {
         const inX = f.x > ar.ropeL + 2 && f.x < ar.ropeR - 2;
         if (inX && hgt > ar.ropeH - 10) f.side = 'in';
@@ -47,7 +47,7 @@ export class PhysicsSystem {
     f.x = clamp(f.x, ar.x0 + 14, ar.x1 - 14);
     const g = ar.ground(f.x, f.y, f.side);
     if (f.y >= g) {
-      if (!f.ground && f.vy > 0) { f.landV = f.vy; f.y = g; f.vy = 0; f.ground = true; }
+      if (!f.ground && f.vy > 0) { f.landV = f.vy; f.y = g; f.vy = 0; f.ground = true; f.vault = false; }
       else { f.y = g; f.vy = 0; f.ground = true; }
     } else if (f.y < g - .5) f.ground = false;
     else { f.y = g; f.ground = true; }
@@ -76,7 +76,7 @@ export class PhysicsSystem {
       if (a.link || b.link || a.rag || b.rag || !a.alive || !b.alive || !a.ground || !b.ground || a.side !== b.side || Math.abs(a.y - b.y) > 20) continue;
       const ok = f => f.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK', 'TAUNT', 'HITSTUN', 'STAGGER');
       if (!ok(a) || !ok(b) || (a.hsKind === 'lie' && a.st === 'HITSTUN') || (b.hsKind === 'lie' && b.st === 'HITSTUN')) continue;
-      const dx = b.x - a.x, need = (a.dims.prof[4][2] + b.dims.prof[4][2]) * .72 + 4, d = Math.abs(dx);
+      const dx = b.x - a.x, need = (a.dims.prof[4][2] + b.dims.prof[4][2]) * .9 + 6, d = Math.abs(dx);
       if (d < need) {
         const p = (need - d) * Math.min(1, dt * 10) * .5, s = dx === 0 ? (a.idx < b.idx ? 1 : -1) : sgn(dx), wa = b.stats.weight / (a.stats.weight + b.stats.weight);
         a.x -= s * p * 2 * wa; b.x += s * p * 2 * (1 - wa);
