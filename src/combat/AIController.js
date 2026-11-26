@@ -83,6 +83,8 @@ export class AIController {
       const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
       // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
       const left = d.startup - s.atk.t - D.react;
+      // a chair coming up: sometimes step in and take it
+      if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
       if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }

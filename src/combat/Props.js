@@ -8,9 +8,9 @@ import { J } from '../anim/skeleton.js';
 
 ATTACKS.chairShot = { id: 'chairShot', name: '체어샷', startup: .3, active: .09, recover: .48, reach: 46, low: -12, high: 96, hp: 9, stun: 0, kb: 210, up: 140, hs: .5, stop: .17, lv: 4, chair: 1, ground: 1, wind: 'sp-16 hd-8 a176/20 b170/20 t12/12 u-16/12', hit: 'sp26 hd6 a84/6 b90/6 t32/28 u-26/16', sfx: 'clang' };
 ATTACKS.chairToss = { id: 'chairToss', name: '의자 던지기', startup: .16, active: .02, recover: .3, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp-12 hd-4 a170/30 b160/30 t10/10 u-14/10', hit: 'sp18 hd4 a100/10 b96/10 t26/20 u-20/12' };
-ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .12, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
+ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .32, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
 
-export const CHAIR = { uses: 3, pickR: 32, catchR: 44, throwV: 340, half: 12 };
+export const CHAIR = { uses: 3, pickR: 34, catchR: 48, throwV: 340, half: 18 };
 // States in which a wrestler keeps hold of a chair; any other state drops it.
 const KEEP = new Set(['IDLE', 'MOVE', 'ATTACK', 'GUARD', 'JUMP', 'FALL', 'TAUNT', 'ROPE', 'WIN', 'INTRO', 'ENTER_RING', 'EXIT_RING', 'APRON']);
 export const keepsProp = st => KEEP.has(st);
@@ -31,9 +31,16 @@ export class PropSystem {
   rest(p, ar) { p.state = 'floor'; p.vx = p.vy = p.spin = 0; p.rot = (p.rot % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) < Math.PI ? Math.PI / 2 : -Math.PI / 2; p.y = ar.ground(p.x, p.y, p.side) - 10; p.by = null; p.aim = null; p.hit.clear(); }
   update(dt) {
     const m = this.m, ar = m.arena;
+    // a pick-up finishes at the end of the crouch, if the chair is still there and nobody hit the picker first
+    for (const f of m.fighters) { const a = f.atk; if (f.st === 'ATTACK' && a && a.def.id === 'chairPick' && a.pick && !a.picked && a.t >= a.def.startup) { a.picked = true; if (a.pick.state === 'floor' && !a.pick.gone) { this.attach(a.pick, f); m.emit('propPick', { f, p: a.pick }); } } }
     for (const p of this.list) {
       p.t += dt;
-      if (p.state === 'held') { if (!p.holder || !p.holder.alive || p.holder.prop !== p) this.release(p, 0, -60); continue; }
+      if (p.state === 'held') {
+        if (!p.holder || !p.holder.alive || p.holder.prop !== p) { this.release(p, 0, -60); continue; }
+        // after a swing the chair leaves the hands: the third swing breaks it, otherwise it falls to the floor
+        if (p.swung) { const f = p.holder, a = f.atk; if (!(f.st === 'ATTACK' && a && a.def.chair && a.t < a.def.startup + a.def.active + .04)) { p.swung = false; if (p.uses <= 0) this.breakProp(p); else { this.release(p, f.face * 60, -140); m.emit('propDrop', { f, p, why: 'swing' }); } } }
+        continue;
+      }
       if (p.state !== 'fly') continue;
       p.vy = Math.min(B.maxFall, p.vy + B.gravity * dt); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.spin * dt;
       if (ar.hasRing) { // in or out of the ring, as a body would be
@@ -46,6 +53,7 @@ export class PropSystem {
       if (p.y >= g && p.vy > 0) {
         p.y = g;
         if (p.vy > 200 && p.bounces < 2) { p.vy *= -.3; p.vx *= .45; p.spin *= -.5; p.bounces++; p.by = null; p.aim = null; m.emit('propLand', { p, hard: true }); }
+        else if (p.uses <= 0) { this.breakProp(p); }
         else { this.rest(p, ar); m.emit('propLand', { p }); }
       }
     }
@@ -59,8 +67,8 @@ export class PropSystem {
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
       const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
       // swinging: the chair follows the arms; carrying: held upright in front of the chest
-      if (swing) { p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; }
-      else { p.x = hx + f.face * 4; p.y = hy - 10; p.rot = -.12 * f.face; }
+      if (swing) { p.x = hx + Math.cos(a) * 20; p.y = hy + Math.sin(a) * 20; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 2; p.y = hy - 20; p.rot = -.32 * f.face; }   // held high overhead by the legs
       p.face = f.face; p.side = f.side;
     }
   }
@@ -88,11 +96,11 @@ export class PropSystem {
     }
     if (!(v.fsm.is('IDLE', 'MOVE', 'ATTACK', 'TAUNT', 'JUMP', 'FALL', 'AIR_ATTACK', 'STAGGER', 'HITSTUN', 'ROPE', 'WHIPPED', 'GET_UP', 'PERCH', 'CLIMB', 'APRON') || v.st === 'GUARD')) return false;
     m.combat.damage(v, 6, 0, p.by, { def: ATTACKS.chairShot });
-    p.vx *= -.25; p.vy = -160; p.spin = -p.spin; p.dent = Math.min(3, p.dent + 1); p.uses--;
+    p.vx *= -.25; p.vy = -160; p.spin = -p.spin; p.dent = Math.min(3, p.dent + 1);
     const by = p.by; p.by = null; p.aim = null;
     m.addHype(10); m.hitstop(.15);
     m.emit('chairHit', { a: by, v, p, thrown: true, x: p.x, y: p.y });
-    if (v.alive && v.st !== 'KO') m.stun.breakStun(v, by, dir * 150 / v.stats.kbr, -150, dir);
+    if (v.alive && v.st !== 'KO') { if (v.chairImm > 0) { v.hs = .45; v.hsKind = 'stand'; v.set('HITSTUN', { force: true, clip: 'hitHeavy' }); v.vx = dir * 140; m.emit('chairShrug', { v }); } else m.stun.chairDown(v, by, dir); }
     if (p.uses <= 0) this.breakProp(p);
     return true;
   }
@@ -106,7 +114,7 @@ export class PropSystem {
     for (const p of this.list) {
       if (p.state !== 'fly' || p.by === f || p.vy < -40 && p.aim !== f) continue;
       const dx = p.x - f.x, dy = p.y - (f.y - f.h * .55);
-      if (Math.abs(dx) < CHAIR.catchR && Math.abs(dy) < 44 && (p.aim === f || sgn(-dx) === sgn(p.vx) || Math.abs(dx) < 16)) return p;
+      if (Math.abs(dx) < CHAIR.catchR && Math.abs(dy) < 72 && (p.aim === f || sgn(-dx) === sgn(p.vx) || Math.abs(dx) < 16)) return p;
     }
     return null;
   }
@@ -123,11 +131,21 @@ export class PropSystem {
     p.holder = null; p.state = 'fly'; p.vx = vx; p.vy = vy; p.spin = (sgn(vx) || 1) * 5; p.by = null; p.aim = null; p.bounces = 1;
   }
   pick(f, p) {
-    this.attach(p, f);
     f.vx = 0; f.face = sgn(p.x - f.x) || f.face;
-    if (!f.set('ATTACK')) return true;
-    f.atk = { def: ATTACKS.chairPick, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
-    this.m.emit('propPick', { f, p });
+    if (!f.set('ATTACK')) return false;
+    f.atk = { def: ATTACKS.chairPick, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false, pick: p };
+    this.m.emit('propReach', { f, p });
+    return true;
+  }
+  // Countered as the chair comes up: it changes hands and the swinger reels.
+  snatch(f, a) {
+    const p = a.prop;
+    if (!p) return false;
+    this.attach(p, f); p.swung = false;
+    f.face = sgn(a.x - f.x) || f.face;
+    a.atk = null; this.m.combat.stagger(a, .8, f); a.vx = f.face * 120;
+    this.m.combat.addFin(f, 6); this.m.addHype(10);
+    this.m.emit('propSnatch', { f, a, p });
     return true;
   }
   catchProp(f, p) {
@@ -143,7 +161,7 @@ export class PropSystem {
     if (!f.set('ATTACK')) return false;
     f.atk = { def: ATTACKS.chairToss, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
     f.prop = null; p.holder = null; p.state = 'fly'; p.x = f.x + f.face * 16; p.y = f.y - f.h * .72;
-    p.vx = f.face * CHAIR.throwV; p.vy = -150; p.spin = f.face * 11; p.by = f; p.aim = null; p.bounces = 0; p.hit.clear();
+    p.vx = f.face * CHAIR.throwV; p.vy = -150; p.spin = f.face * 11; p.by = f; p.aim = null; p.bounces = 0; p.hit.clear(); p.uses--;
     this.m.emit('propThrow', { f, p });
     return true;
   }

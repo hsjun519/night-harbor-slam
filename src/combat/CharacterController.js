@@ -98,7 +98,7 @@ export class Fighter {
   // ---- per frame ----
   tick(dt) {
     this.fsm.t += dt; this.clipT += dt; this.poseT += dt;
-    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd', 'chairImm']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
     if (this.chainT > 0) { this.chainT -= dt; if (this.chainT <= 0) this.chainN = 0; }
     if (this.standing) { this.freeT = (this.freeT || 0) + dt; if (this.freeT > 1.6) this.grabCount = 0; } else this.freeT = 0;
     if (this.combo.t > 0) { this.combo.t -= dt; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -133,7 +133,7 @@ function chooseAttack(f, I) {
   // a chair in the hands: every J is a chair shot (on a standing or a downed foe)
   if (f.prop) {
     if (dirHeld) f.face = sgn(I.mx); else { const n = f.nearestFoe(90, o => o.side === f.side); if (n && Math.abs(n.x - f.x) > 4) f.face = sgn(n.x - f.x); }
-    if (startAttack(f, ATTACKS.chairShot)) f.vx = dirHeld ? f.face * 70 : f.vx * .3;
+    if (startAttack(f, ATTACKS.chairShot)) { f.vx = dirHeld ? f.face * 70 : f.vx * .3; if (f.prop) { f.prop.uses--; f.prop.swung = true; } }   // every swing wears the chair: three and it is gone
     return;
   }
   // a downed foe in reach and nobody standing closer: ground attack
@@ -477,6 +477,7 @@ export function standUp(f, wait = 0, lie) {
   const quick = f.stats.spd * f.stats.jump > 1.25 && !pro && L !== 'sit';
   f.gettingUp = { wait, dur: .56, prot: f.st === 'DOWN' ? B.getUpProtect : B.hitGetUpProtect, clip: L === 'sit' ? 'getupProne' : quick ? 'kipup' : pro ? 'getupProne' : 'getupSup' };
   const wasDown = f.st === 'DOWN' || f.st === 'PINNED';
+  if (wasDown && f.chairDazed) { f.chairDazed = false; f.stun = Math.max(f.stun, f.maxStun * .6); f.chairImm = B.chairImmune; }   // for a moment another chair only rocks them
   f.set('GET_UP', { force: true });
   f.inv = Math.max(f.inv, .6);
   if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }

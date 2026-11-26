@@ -18,7 +18,7 @@ function run(name, cfg, steps, expect, o = {}) {
   const h = m.fighters[0], v = m.fighters[1];
   if (v.ai && (o.foeCtrl || 'dummy') === 'dummy') v.ai.behavior = o.behavior || 'idle';
   const ev = {};
-  for (const k of ['chairHit', 'propPick', 'propCatch', 'propSteal', 'propThrow', 'chairBreak', 'dive', 'perchDeny', 'cameoIn', 'cameoThrow', 'swing', 'down', 'eliminated', 'deny', 'moveStart', 'dashStart', 'dashSig']) m.on(k, e => { (ev[k] = ev[k] || []).push(e); });
+  for (const k of ['propSnatch', 'propReach', 'chairShrug', 'chairHit', 'propPick', 'propCatch', 'propSteal', 'propThrow', 'chairBreak', 'dive', 'perchDeny', 'cameoIn', 'cameoThrow', 'swing', 'down', 'eliminated', 'deny', 'moveStart', 'dashStart', 'dashSig']) m.on(k, e => { (ev[k] = ev[k] || []).push(e); });
   let t = 0;
   try {
     for (const s of steps) {
@@ -45,21 +45,62 @@ const chairX = AR.ropeL + 170;
 const nearChair = (m, h) => { const p = m.props.list[0]; return p && Math.abs(p.x - h.x) < 20; };
 
 // 1. pick a chair up, walk to the foe, chair shot: down at once
-run('pick up and chair shot', { events: [{ kind: 'chairs', xs: [chairX] }] }, [
-  { t: 2, mx: 1, until: nearChair }, { t: .1, press: ['grab'] }, { t: .5 },
-  { t: 3, mx: 'to', near: 36, until: (m, h, v) => Math.abs(v.x - h.x) < 40 }, { t: .05, press: ['atk'] }, { t: 1.2 },
-], (m, h, v, ev) => (ev.propPick && v.downs >= 1 && (ev.chairHit || []).length === 1 && h.prop && h.prop.uses === 2) || `pick=${!!ev.propPick} downs=${v.downs} hits=${(ev.chairHit || []).length} uses=${h.prop && h.prop.uses}`);
-
-// 2. three blows and the chair is gone (each swing waits until the foe can be hit: not mid get-up or protected)
+// walk to the chair wherever it lies and pick it up (the pick-up takes half a second)
+const toChair = (m, h) => { const p = m.props.list.find(q => q.state === 'floor'); return p ? (Math.abs(p.x - h.x) > 14 ? Math.sign(p.x - h.x) : 0) : 0; };
+const nearFloorChair = (m, h) => { const p = m.props.list.find(q => q.state === 'floor'); return !!p && Math.abs(p.x - h.x) < 18; };
+const pickUp = [{ t: 4, mx: toChair, until: nearFloorChair }, { t: .05, press: ['grab'] }, { t: .62 }];
 const hittable = (m, h, v) => Math.abs(v.x - h.x) < 40 && v.inv <= 0 && (v.fsm.is('IDLE', 'MOVE') || (v.st === 'DOWN' && !v.rag && v.protect <= 0));
-const blow = [{ t: 4, mx: 'to', near: 30, until: hittable }, { t: .05, press: ['atk'] }, { t: 1 }];
-run('chair breaks after three blows', { events: [{ kind: 'chairs', xs: [chairX] }] }, [
-  { t: 2, mx: 1, until: nearChair }, { t: .1, press: ['grab'] }, { t: .5 }, ...blow, ...blow, ...blow,
-], (m, h, v, ev) => (ev.chairBreak && !h.prop && m.props.list.length === 0) || `hits=${(ev.chairHit || []).length} break=${!!ev.chairBreak} prop=${!!h.prop}`);
+const blow = [{ t: 5, mx: 'to', near: 30, until: hittable }, { t: .05, press: ['atk'] }, { t: .9 }];
+run('pick up and chair shot: down at once, chair falls off', { events: [{ kind: 'chairs', xs: [chairX] }] }, [...pickUp, ...blow, { t: .4 }],
+  (m, h, v, ev) => { const p = m.props.list[0]; return (ev.propPick && (ev.down || []).some(e => e.f === v && e.chair) && v.downs === 0 && (ev.chairHit || []).length === 1 && !h.prop && p && p.uses === 2 && p.state !== 'held') || `pick=${!!ev.propPick} chairDown=${(ev.down || []).some(e => e.f === v && e.chair)} downs=${v.downs} hits=${(ev.chairHit || []).length} held=${!!h.prop} uses=${p && p.uses}`; });
 
+// picking up takes half a second, and a blow in the middle of it leaves the chair on the floor
+{
+  let reachT = -1, pickT = -1;
+  run('picking up takes half a second', { events: [{ kind: 'chairs', xs: [chairX] }] }, [
+    { t: 4, mx: toChair, until: nearFloorChair },
+    { t: 1, fn: (m, h, v, i, I) => { if (!i) I.grab = true; if (reachT < 0 && h.st === 'ATTACK') reachT = m.time; if (pickT < 0 && h.prop) pickT = m.time; } },
+  ], (m, h) => (h.prop && pickT - reachT > .28 && pickT - reachT < .4) || `held=${!!h.prop} took=${(pickT - reachT).toFixed(2)}s`);
+}
+run('a hit while picking up leaves the chair', { events: [{ kind: 'chairs', xs: [chairX] }] }, [
+  { t: 4, mx: toChair, until: nearFloorChair },
+  { t: .05, press: ['grab'] }, { t: .1, fn: (m, h, v, i) => { if (i === 0) { m.combat.react(v, h, { kb: 80, lv: 2, hs: .4, up: 0 }, 1, false); } } }, { t: .6 },
+], (m, h) => (!h.prop && m.props.list[0] && m.props.list[0].state === 'floor') || `held=${!!h.prop} state=${m.props.list[0] && m.props.list[0].state}`);
+
+// three swings use the chair up, picking it up again after each
+const upAgain = { t: 5, until: (m, h, v) => v.fsm.is('IDLE', 'MOVE') && v.inv <= 0 };   // K by a downed foe grabs the foe, not the chair
+run('chair breaks after three blows', { events: [{ kind: 'chairs', xs: [chairX] }] }, [...pickUp, ...blow, upAgain, ...pickUp, ...blow, upAgain, ...pickUp, ...blow],
+  (m, h, v, ev) => (ev.chairBreak && !h.prop && m.props.list.length === 0 && (ev.chairHit || []).length === 3) || `hits=${(ev.chairHit || []).length} break=${!!ev.chairBreak} prop=${!!h.prop}`);
+const air = [{ t: .05, fn: (m, h, v) => { v.x = m.arena.ropeR - 30; } }, { t: .05, press: ['atk'] }, { t: .9 }];
+run('three swings break the chair, hit or miss', { events: [{ kind: 'chairs', xs: [chairX] }] }, [...pickUp, ...air, ...pickUp, ...air, ...pickUp, ...air],
+  (m, h, v, ev) => (ev.chairBreak && !h.prop && !(ev.chairHit || []).length && m.props.list.length === 0) || `break=${!!ev.chairBreak} prop=${!!h.prop} hits=${(ev.chairHit || []).length} left=${m.props.list.map(p => p.uses)}`);
+
+// a chair down is short and does not count as a down; right after getting up another chair only rocks you
+{
+  let downT = 0;
+  run('chair down is short and separate', { events: [{ kind: 'chairs', xs: [chairX] }] }, [
+    ...pickUp, { t: 5, mx: 'to', near: 30, until: hittable }, { t: .05, press: ['atk'] },
+    { t: 4, fn: (m, h, v) => { if (v.st === 'DOWN') downT += 1 / 60; }, until: (m, h, v) => v.fsm.is('IDLE', 'MOVE') && downT > 0 },
+    ...pickUp, { t: 4, mx: 'to', near: 30, until: (m, h, v) => Math.abs(v.x - h.x) < 40 && v.inv <= 0 && v.fsm.is('IDLE', 'MOVE') }, { t: .05, press: ['atk'] }, { t: .9 },
+  ], (m, h, v, ev) => {
+    const downs = (ev.down || []).filter(e => e.f === v);
+    return (downs.length === 1 && downs[0].chair && downT < 2.6 && v.downs === 0 && (ev.chairHit || []).length === 2) || `downs=${downs.length} time=${downT.toFixed(2)} count=${v.downs} hits=${(ev.chairHit || []).length} imm=${v.chairImm}`;
+  });
+}
+
+// countering a chair swing: K while it comes up, or a timed L, takes the chair
+const armed = { t: .05, fn: (m, h, v, i) => { if (!i) { const p = m.props.spawn(v.x, v.y - 50, { state: 'floor' }); m.props.attach(p, v); v.ai.behavior = 'attack'; } } };
+run('K during the swing takes the chair', {}, [armed,
+  { t: 6, mx: (m, h, v) => (Math.abs(v.x - h.x) > 46 ? Math.sign(v.x - h.x) : 0), fn: (m, h, v, i, I) => { if (v.st === 'ATTACK' && v.atk && v.atk.def.chair && v.atk.t > .1) I.grab = true; }, until: (m, h) => !!h.prop },
+  { t: .5 },
+], (m, h, v, ev) => (ev.propSnatch && h.prop && !v.prop && !(ev.chairHit || []).length) || `snatch=${!!ev.propSnatch} h=${!!h.prop} v=${!!v.prop} hits=${(ev.chairHit || []).length}`);
+run('a timed dodge takes the chair', {}, [armed,
+  { t: 6, mx: (m, h, v) => (Math.abs(v.x - h.x) > 46 ? Math.sign(v.x - h.x) : 0), fn: (m, h, v, i, I) => { h.face = Math.sign(v.x - h.x) || 1; if (v.st === 'ATTACK' && v.atk && v.atk.def.chair && v.atk.t > .2 && v.atk.t < .26) I.dodge = true; }, until: (m, h) => !!h.prop },
+  { t: .5 },
+], (m, h, v, ev) => (ev.propSnatch && h.prop && !v.prop) || `snatch=${!!ev.propSnatch} h=${!!h.prop} v=${!!v.prop} hits=${(ev.chairHit || []).length}`);
 // 3. the boss tosses a chair at a player who just stands there
 run('boss chair hits a standing player', { events: [{ kind: 'bossChair', at: .3 }] }, [{ t: 7 }],
-  (m, h, v, ev) => (ev.cameoIn && ev.cameoThrow && (ev.chairHit || []).some(e => e.v === h) && h.downs >= 1) || `in=${!!ev.cameoIn} thrown=${!!ev.cameoThrow} hits=${(ev.chairHit || []).length} downs=${h.downs}`);
+  (m, h, v, ev) => (ev.cameoIn && ev.cameoThrow && (ev.chairHit || []).some(e => e.v === h) && (ev.down || []).some(e => e.f === h && e.chair)) || `in=${!!ev.cameoIn} thrown=${!!ev.cameoThrow} hits=${(ev.chairHit || []).length} downs=${h.downs}`);
 
 // 4. catch it with K
 run('catch the boss chair', { events: [{ kind: 'bossChair', at: .3 }] }, [

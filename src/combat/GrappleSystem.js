@@ -22,7 +22,7 @@ export class GrappleSystem {
   // K: throw the chair you hold, catch one flying at you, grab, pick a chair up, take one off a foe, or shove.
   tryGrab(f, I) {
     const m = this.m, P = m.props;
-    if (f.prop) { if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
+    if (f.prop) { const gv = this.grabTarget(f); if (gv) { P.drop(f, 'grab', -f.face); return this.beginHold(f, gv); } if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
     const inc = P.incoming(f);
     if (inc) return P.catchProp(f, inc);
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
@@ -35,6 +35,9 @@ export class GrappleSystem {
     if (v) return this.beginHold(f, v);
     const c = P.loose(f, CHAIR.pickR);
     if (c) return P.pick(f, c);
+    // counter a chair coming up: K during the swing takes it
+    const sw = f.nearestFoe(64, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
+    if (sw && P.snatch(f, sw)) return true;
     const holder = f.nearestFoe(52, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'ATTACK'));
     if (holder && P.steal(f, holder)) return true;
     if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(80);

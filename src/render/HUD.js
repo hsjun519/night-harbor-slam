@@ -167,9 +167,11 @@ export class HUD {
     const P = [];
     const ar = m.arena;
     const g2 = m.grapple.grabTarget(f), PR = m.props;
-    if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
-    else if (f.prop) P.push([[inp.label('atk')], '체어샷'], [[inp.label('grab')], '의자 던지기']);
-    if (g2) P.push([[inp.label('grab')], '잡기']);
+    const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
+    if (swinger) P.push([[inp.label('grab')], '받아쳐서 뺏기!'], [[inp.label('dodge')], '타이밍 반격']);
+    else if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
+    else if (f.prop) P.push([[inp.label('atk')], `체어샷 (남은 ${Math.max(0, f.prop.uses)}회)`], [[inp.label('grab')], g2 ? '의자 놓고 잡기' : '의자 던지기']);
+    if (g2 && !f.prop) P.push([[inp.label('grab')], '잡기']);
     else if (!f.prop && PR.loose(f)) P.push([[inp.label('grab')], '의자 줍기']);
     else if (!f.prop && f.nearestFoe(52, o => o.prop && o.side === f.side)) P.push([[inp.label('grab')], '의자 뺏기']);
     if (m.rules.pin && f.side === 'in' && f.nearestFoe(58, o => o.st === 'DOWN' && !o.rag)) P.push([[inp.label('down')], '핀폴']);

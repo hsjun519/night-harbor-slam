@@ -5,6 +5,9 @@ export const BALANCE = {
   ropeBoost: 1.42, ropeBoostTime: .75, ropeLean: .22,
   // tap a direction twice and keep holding: dash (faster than running). K while dashing into a standing foe: the dash move
   dash: 272, dashSigCost: 15, dashSigCd: 6,
+  // a chair to the head floors you at once but only briefly, does not add to the down count, and for a moment after
+  // getting up another chair only rocks you
+  chairDownTime: .9, chairImmune: 3,
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap

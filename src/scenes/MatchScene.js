@@ -69,7 +69,8 @@ export class MatchScene {
     m.on('counter', e => { fx.word('반격!', e.f.x, e.f.y - 100, '#ff5fa2', 3); A.sfx('counter'); m.slowmo(.4, .3); S.flash(1, .6, .8, .25); cheer(.8); });
     m.on('reversal', e => { fx.word(e.fin ? '피니셔 역전!!' : '역전!', e.f.x, e.f.y - 104, '#ff5fa2', 3); A.sfx('reversal'); m.slowmo(.35, .45); S.flash(1, .5, .8, .4); cheer(1.2); });
     m.on('revFail', e => { if (isH(e.v)) fx.word('너무 일찍!', e.v.x, e.v.y - 100, '#9aa6d6', 1); });
-    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a)) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
+    m.on('chairShrug', e => { fx.word('버텼다!', e.v.x, e.v.y - 100, '#ffd65a', 2); });
+    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a) && !e.chair) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
     m.on('grab', e => { A.sfx('grip'); });
     m.on('escape', e => { fx.word('탈출!', e.v.x, e.v.y - 100, '#6be38a', 2); A.sfx('whoosh'); });
     m.on('switch', () => A.sfx('grip'));
@@ -123,6 +124,9 @@ export class MatchScene {
     m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast('상대가 의자를 들었다! 막거나, 피하거나, 뺏어라', '#ff8a8a'); } });
     m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
     m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
+    m.on('propSnatch', e => { A.sfx('counter'); fx.word('받아쳤다!', e.f.x, e.f.y - 108, '#ff5fa2', 3); m.slowmo(.5, .25); cheer(1.2); });
+    m.on('propReach', () => A.sfx('step'));
+    m.on('propDrop', e => { if (e.why === 'swing') A.sfx('thud', { p: .3 }); });
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
     m.on('chairWarn', e => { A.sfx('warn'); });
@@ -316,7 +320,7 @@ export class MatchScene {
       bc.begin(tmp.x(0), tmp.y(0) - 4);
       drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
       bc.finish(); bc.drawTo(w);
-      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 12, -.5 * c.face, c.face, 0);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 20, -.5 * c.face, c.face, 0);
     }
   }
   drawBubbles(u, cam) {

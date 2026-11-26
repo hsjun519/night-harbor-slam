@@ -158,10 +158,7 @@ export class AnimationSystem {
       default: this.stance(f, p);
     }
     // carrying a chair: arms forward at chest height, or held high for a taunt or a win
-    if (f.prop && f.st !== 'ATTACK') {
-      if (f.st === 'TAUNT' || f.st === 'WIN') { p[3] = 170; p[4] = 20; p[5] = 164; p[6] = 22; }
-      else { const s = Math.sin(f.poseT * 3) * 3; p[3] = 64 + s; p[4] = 62; p[5] = 72 + s; p[6] = 56; }
-    }
+    if (f.prop && f.st !== 'ATTACK') { const s = Math.sin(f.poseT * (f.st === 'TAUNT' ? 9 : 3)) * (f.st === 'TAUNT' ? 8 : 3); p[3] = 168 + s; p[4] = 18; p[5] = 162 + s; p[6] = 20; }   // chair held high overhead
     if (f.overlay) { f.overlay.t += dt; if (f.overlay.t > f.overlay.dur) f.overlay = null; }
     const jt = f.joints;
     if (air) {

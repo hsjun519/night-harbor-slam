@@ -2709,6 +2709,9 @@ const BALANCE = {
   ropeBoost: 1.42, ropeBoostTime: .75, ropeLean: .22,
   // tap a direction twice and keep holding: dash (faster than running). K while dashing into a standing foe: the dash move
   dash: 272, dashSigCost: 15, dashSigCd: 6,
+  // a chair to the head floors you at once but only briefly, does not add to the down count, and for a moment after
+  // getting up another chair only rocks you
+  chairDownTime: .9, chairImmune: 3,
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
   // down state: seconds for the 1st, 2nd ... knock-down, then the cap
@@ -3546,9 +3549,9 @@ const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { J } = __m["anim/skeleton.js"];
 ATTACKS.chairShot = { id: 'chairShot', name: '체어샷', startup: .3, active: .09, recover: .48, reach: 46, low: -12, high: 96, hp: 9, stun: 0, kb: 210, up: 140, hs: .5, stop: .17, lv: 4, chair: 1, ground: 1, wind: 'sp-16 hd-8 a176/20 b170/20 t12/12 u-16/12', hit: 'sp26 hd6 a84/6 b90/6 t32/28 u-26/16', sfx: 'clang' };
 ATTACKS.chairToss = { id: 'chairToss', name: '의자 던지기', startup: .16, active: .02, recover: .3, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp-12 hd-4 a170/30 b160/30 t10/10 u-14/10', hit: 'sp18 hd4 a100/10 b96/10 t26/20 u-20/12' };
-ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .12, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
+ATTACKS.chairPick = { id: 'chairPick', name: '의자 줍기', startup: .32, active: .02, recover: .16, reach: 0, low: 0, high: 0, hp: 0, stun: 0, kb: 0, hs: 0, stop: 0, lv: 1, nohit: 1, wind: 'sp46 hd14 a70/10 b76/10 t70/90 u-6/70', hit: 'sp12 hd0 a64/70 b70/66 t20/16 u-20/12' };
 
-const CHAIR = { uses: 3, pickR: 32, catchR: 44, throwV: 340, half: 12 };
+const CHAIR = { uses: 3, pickR: 34, catchR: 48, throwV: 340, half: 18 };
 // States in which a wrestler keeps hold of a chair; any other state drops it.
 const KEEP = new Set(['IDLE', 'MOVE', 'ATTACK', 'GUARD', 'JUMP', 'FALL', 'TAUNT', 'ROPE', 'WIN', 'INTRO', 'ENTER_RING', 'EXIT_RING', 'APRON']);
 const keepsProp = st => KEEP.has(st);
@@ -3569,9 +3572,16 @@ class PropSystem {
   rest(p, ar) { p.state = 'floor'; p.vx = p.vy = p.spin = 0; p.rot = (p.rot % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) < Math.PI ? Math.PI / 2 : -Math.PI / 2; p.y = ar.ground(p.x, p.y, p.side) - 10; p.by = null; p.aim = null; p.hit.clear(); }
   update(dt) {
     const m = this.m, ar = m.arena;
+    // a pick-up finishes at the end of the crouch, if the chair is still there and nobody hit the picker first
+    for (const f of m.fighters) { const a = f.atk; if (f.st === 'ATTACK' && a && a.def.id === 'chairPick' && a.pick && !a.picked && a.t >= a.def.startup) { a.picked = true; if (a.pick.state === 'floor' && !a.pick.gone) { this.attach(a.pick, f); m.emit('propPick', { f, p: a.pick }); } } }
     for (const p of this.list) {
       p.t += dt;
-      if (p.state === 'held') { if (!p.holder || !p.holder.alive || p.holder.prop !== p) this.release(p, 0, -60); continue; }
+      if (p.state === 'held') {
+        if (!p.holder || !p.holder.alive || p.holder.prop !== p) { this.release(p, 0, -60); continue; }
+        // after a swing the chair leaves the hands: the third swing breaks it, otherwise it falls to the floor
+        if (p.swung) { const f = p.holder, a = f.atk; if (!(f.st === 'ATTACK' && a && a.def.chair && a.t < a.def.startup + a.def.active + .04)) { p.swung = false; if (p.uses <= 0) this.breakProp(p); else { this.release(p, f.face * 60, -140); m.emit('propDrop', { f, p, why: 'swing' }); } } }
+        continue;
+      }
       if (p.state !== 'fly') continue;
       p.vy = Math.min(B.maxFall, p.vy + B.gravity * dt); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.spin * dt;
       if (ar.hasRing) { // in or out of the ring, as a body would be
@@ -3584,6 +3594,7 @@ class PropSystem {
       if (p.y >= g && p.vy > 0) {
         p.y = g;
         if (p.vy > 200 && p.bounces < 2) { p.vy *= -.3; p.vx *= .45; p.spin *= -.5; p.bounces++; p.by = null; p.aim = null; m.emit('propLand', { p, hard: true }); }
+        else if (p.uses <= 0) { this.breakProp(p); }
         else { this.rest(p, ar); m.emit('propLand', { p }); }
       }
     }
@@ -3597,8 +3608,8 @@ class PropSystem {
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, sx = (jt.x(J.sN) + jt.x(J.sF)) / 2, sy = (jt.y(J.sN) + jt.y(J.sF)) / 2;
       const a = Math.atan2(hy - sy, hx - sx), swing = f.st === 'ATTACK' && f.atk && (f.atk.def.chair || f.atk.def.id === 'chairToss');
       // swinging: the chair follows the arms; carrying: held upright in front of the chest
-      if (swing) { p.x = hx + Math.cos(a) * 9; p.y = hy + Math.sin(a) * 9; p.rot = a + Math.PI / 2; }
-      else { p.x = hx + f.face * 4; p.y = hy - 10; p.rot = -.12 * f.face; }
+      if (swing) { p.x = hx + Math.cos(a) * 20; p.y = hy + Math.sin(a) * 20; p.rot = a + Math.PI / 2; }
+      else { p.x = hx + f.face * 2; p.y = hy - 20; p.rot = -.32 * f.face; }   // held high overhead by the legs
       p.face = f.face; p.side = f.side;
     }
   }
@@ -3626,11 +3637,11 @@ class PropSystem {
     }
     if (!(v.fsm.is('IDLE', 'MOVE', 'ATTACK', 'TAUNT', 'JUMP', 'FALL', 'AIR_ATTACK', 'STAGGER', 'HITSTUN', 'ROPE', 'WHIPPED', 'GET_UP', 'PERCH', 'CLIMB', 'APRON') || v.st === 'GUARD')) return false;
     m.combat.damage(v, 6, 0, p.by, { def: ATTACKS.chairShot });
-    p.vx *= -.25; p.vy = -160; p.spin = -p.spin; p.dent = Math.min(3, p.dent + 1); p.uses--;
+    p.vx *= -.25; p.vy = -160; p.spin = -p.spin; p.dent = Math.min(3, p.dent + 1);
     const by = p.by; p.by = null; p.aim = null;
     m.addHype(10); m.hitstop(.15);
     m.emit('chairHit', { a: by, v, p, thrown: true, x: p.x, y: p.y });
-    if (v.alive && v.st !== 'KO') m.stun.breakStun(v, by, dir * 150 / v.stats.kbr, -150, dir);
+    if (v.alive && v.st !== 'KO') { if (v.chairImm > 0) { v.hs = .45; v.hsKind = 'stand'; v.set('HITSTUN', { force: true, clip: 'hitHeavy' }); v.vx = dir * 140; m.emit('chairShrug', { v }); } else m.stun.chairDown(v, by, dir); }
     if (p.uses <= 0) this.breakProp(p);
     return true;
   }
@@ -3644,7 +3655,7 @@ class PropSystem {
     for (const p of this.list) {
       if (p.state !== 'fly' || p.by === f || p.vy < -40 && p.aim !== f) continue;
       const dx = p.x - f.x, dy = p.y - (f.y - f.h * .55);
-      if (Math.abs(dx) < CHAIR.catchR && Math.abs(dy) < 44 && (p.aim === f || sgn(-dx) === sgn(p.vx) || Math.abs(dx) < 16)) return p;
+      if (Math.abs(dx) < CHAIR.catchR && Math.abs(dy) < 72 && (p.aim === f || sgn(-dx) === sgn(p.vx) || Math.abs(dx) < 16)) return p;
     }
     return null;
   }
@@ -3661,11 +3672,21 @@ class PropSystem {
     p.holder = null; p.state = 'fly'; p.vx = vx; p.vy = vy; p.spin = (sgn(vx) || 1) * 5; p.by = null; p.aim = null; p.bounces = 1;
   }
   pick(f, p) {
-    this.attach(p, f);
     f.vx = 0; f.face = sgn(p.x - f.x) || f.face;
-    if (!f.set('ATTACK')) return true;
-    f.atk = { def: ATTACKS.chairPick, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
-    this.m.emit('propPick', { f, p });
+    if (!f.set('ATTACK')) return false;
+    f.atk = { def: ATTACKS.chairPick, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false, pick: p };
+    this.m.emit('propReach', { f, p });
+    return true;
+  }
+  // Countered as the chair comes up: it changes hands and the swinger reels.
+  snatch(f, a) {
+    const p = a.prop;
+    if (!p) return false;
+    this.attach(p, f); p.swung = false;
+    f.face = sgn(a.x - f.x) || f.face;
+    a.atk = null; this.m.combat.stagger(a, .8, f); a.vx = f.face * 120;
+    this.m.combat.addFin(f, 6); this.m.addHype(10);
+    this.m.emit('propSnatch', { f, a, p });
     return true;
   }
   catchProp(f, p) {
@@ -3681,7 +3702,7 @@ class PropSystem {
     if (!f.set('ATTACK')) return false;
     f.atk = { def: ATTACKS.chairToss, t: 0, hit: new Set(), connected: true, chain: -1, boost: 1, done: false };
     f.prop = null; p.holder = null; p.state = 'fly'; p.x = f.x + f.face * 16; p.y = f.y - f.h * .72;
-    p.vx = f.face * CHAIR.throwV; p.vy = -150; p.spin = f.face * 11; p.by = f; p.aim = null; p.bounces = 0; p.hit.clear();
+    p.vx = f.face * CHAIR.throwV; p.vy = -150; p.spin = f.face * 11; p.by = f; p.aim = null; p.bounces = 0; p.hit.clear(); p.uses--;
     this.m.emit('propThrow', { f, p });
     return true;
   }
@@ -3812,7 +3833,7 @@ class Fighter {
   // ---- per frame ----
   tick(dt) {
     this.fsm.t += dt; this.clipT += dt; this.poseT += dt;
-    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
+    for (const k of ['inv', 'grabImm', 'dodgeCd', 'counterCd', 'burstCd', 'regenDelay', 'flash', 'hitShake', 'landT', 'boost', 'exprT', 'protect', 'sigCd', 'chairImm']) if (this[k] > 0) this[k] = Math.max(0, this[k] - dt);
     if (this.chainT > 0) { this.chainT -= dt; if (this.chainT <= 0) this.chainN = 0; }
     if (this.standing) { this.freeT = (this.freeT || 0) + dt; if (this.freeT > 1.6) this.grabCount = 0; } else this.freeT = 0;
     if (this.combo.t > 0) { this.combo.t -= dt; if (this.combo.t <= 0) { this.combo.n = 0; this.combo.dmg = 0; } }
@@ -3847,7 +3868,7 @@ function chooseAttack(f, I) {
   // a chair in the hands: every J is a chair shot (on a standing or a downed foe)
   if (f.prop) {
     if (dirHeld) f.face = sgn(I.mx); else { const n = f.nearestFoe(90, o => o.side === f.side); if (n && Math.abs(n.x - f.x) > 4) f.face = sgn(n.x - f.x); }
-    if (startAttack(f, ATTACKS.chairShot)) f.vx = dirHeld ? f.face * 70 : f.vx * .3;
+    if (startAttack(f, ATTACKS.chairShot)) { f.vx = dirHeld ? f.face * 70 : f.vx * .3; if (f.prop) { f.prop.uses--; f.prop.swung = true; } }   // every swing wears the chair: three and it is gone
     return;
   }
   // a downed foe in reach and nobody standing closer: ground attack
@@ -4191,6 +4212,7 @@ function standUp(f, wait = 0, lie) {
   const quick = f.stats.spd * f.stats.jump > 1.25 && !pro && L !== 'sit';
   f.gettingUp = { wait, dur: .56, prot: f.st === 'DOWN' ? B.getUpProtect : B.hitGetUpProtect, clip: L === 'sit' ? 'getupProne' : quick ? 'kipup' : pro ? 'getupProne' : 'getupSup' };
   const wasDown = f.st === 'DOWN' || f.st === 'PINNED';
+  if (wasDown && f.chairDazed) { f.chairDazed = false; f.stun = Math.max(f.stun, f.maxStun * .6); f.chairImm = B.chairImmune; }   // for a moment another chair only rocks them
   f.set('GET_UP', { force: true });
   f.inv = Math.max(f.inv, .6);
   if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }
@@ -4350,6 +4372,7 @@ class CombatSystem {
     if (v.inv > 0) { m.emit('immune', { a, v }); return 'inv'; }
     if (v.st === 'DODGE' && v.invDodge) {
       const tech = v.char.style === 'tech';
+      if (d.chair && a.prop && v.t <= B.counterWindow * 1.4 && (facing || v.dodge.back) && m.phase === 'fight') { m.props.snatch(v, a); return 'counter'; }
       if (v.t <= B.counterWindow * (tech ? 1.25 : 1) && v.counterCd <= 0 && !d.air && !d.dive && (!d.run || tech) && (facing || v.dodge.back) && !v.dodge.dir && m.phase === 'fight') { if (m.grapple.startCounter(v, a)) return 'counter'; }
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
@@ -4420,7 +4443,7 @@ class CombatSystem {
   chairHit(a, v, d, dir, facing, hx, hy) {
     const m = this.m, P = a.prop;
     a.atk.connected = true;
-    if (P) { P.uses--; P.dent = Math.min(3, P.dent + 1); }
+    if (P) P.dent = Math.min(3, P.dent + 1);
     if (v.st === 'GUARD' && facing && v.guardT <= B.perfectGuard) {
       m.props.drop(a, 'parry', -dir); this.stagger(a, .7, v); this.addFin(v, B.finPerfect); v.perfects++;
       m.hitstop(.12); m.emit('parry', { a, v, x: hx, y: hy }); m.emit('chairParry', { a, v });
@@ -4431,7 +4454,7 @@ class CombatSystem {
       v.stun -= v.maxStun * .5; v.regenDelay = B.stunRegenDelay; this.damage(v, 2, 0, a, { chip: true });
       m.hitstop(.12); m.emit('chairHit', { a, v, p: P, guarded: true, x: hx, y: hy });
       if (v.stun <= 0) { v.stun = v.maxStun * .25; this.stagger(v, B.guardBreakStagger, a); m.emit('guardBreak', { a, v }); } else { v.vx = dir * 160; m.anim.kick(v, 'guardHit', .25); }
-      if (P && P.uses <= 0) m.props.breakProp(P);
+      if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 90, -180); P.x = hx; P.y = hy - 10; } }
       return 'block';
     }
     const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
@@ -4440,13 +4463,14 @@ class CombatSystem {
     this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
     m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
     m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
-    if (P && P.uses <= 0) m.props.breakProp(P);
+    if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 70, -200); P.x = hx; P.y = hy - 10; } }
     if (v.st === 'KO' || !v.alive) return 'ko';
     if (v.link && v.link.kind !== 'move') m.grapple.breakLink(v.link, 'hit');
     if (v.link && v.link.kind === 'move' && v.link.a === v && !v.link.committed) m.wrestle.cancel(v.link, 'hit');
     if (v.st === 'PIN') m.breakPin('hit');
-    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .6); m.anim.kickBody(v, dir); return 'hit'; }
-    m.stun.breakStun(v, a, dir * 150 / v.stats.kbr, -150, dir);
+    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .4); m.anim.kickBody(v, dir); return 'hit'; }
+    if (v.chairImm > 0) { v.hs = .45; v.hsKind = 'stand'; v.set('HITSTUN', { force: true, clip: 'hitHeavy' }); v.vx = dir * 140; m.emit('chairShrug', { v }); return 'hit'; }
+    m.stun.chairDown(v, a, dir);
     return 'hit';
   }
   react(a, v, d, dir, counterHit) {
@@ -4525,6 +4549,18 @@ class StunSystem {
     }
   }
   downTime(f) { const n = Math.min(f.downs, B.downTimes.length) - 1; return B.downTimes[Math.max(0, n)]; }
+  // Floored by a chair: a short down of its own. The stun gauge is not what dropped them and the down count stays.
+  chairDown(v, a, dir) {
+    if (!v.alive || v.st === 'DOWN' || v.st === 'PINNED') return;
+    v.downTime = B.chairDownTime; v.downClock = 0; v.postMove = false; v.chairDazed = true;
+    v.stun = Math.max(v.stun, 1);
+    v.set('DOWN', { force: true });
+    v.ragdoll(dir * 80 / v.stats.kbr, -110, dir * 2.4);
+    v.wallHit = false; v.grabImm = 0; v.combo.n = 0; v.expr = 'dizzy'; v.exprT = 1.4;
+    if (a) this.m.combat.addFin(a, 4);
+    this.m.addHype(6); this.m.hitstop(.1);
+    this.m.emit('down', { f: v, a, n: v.downs, chair: true });
+  }
   // STUN hit zero: knock the body down.
   breakStun(v, a, vx, vy, dir) {
     if (!v.alive || v.st === 'DOWN') return;
@@ -4567,7 +4603,7 @@ class GrappleSystem {
   // K: throw the chair you hold, catch one flying at you, grab, pick a chair up, take one off a foe, or shove.
   tryGrab(f, I) {
     const m = this.m, P = m.props;
-    if (f.prop) { if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
+    if (f.prop) { const gv = this.grabTarget(f); if (gv) { P.drop(f, 'grab', -f.face); return this.beginHold(f, gv); } if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
     const inc = P.incoming(f);
     if (inc) return P.catchProp(f, inc);
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
@@ -4580,6 +4616,9 @@ class GrappleSystem {
     if (v) return this.beginHold(f, v);
     const c = P.loose(f, CHAIR.pickR);
     if (c) return P.pick(f, c);
+    // counter a chair coming up: K during the swing takes it
+    const sw = f.nearestFoe(64, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
+    if (sw && P.snatch(f, sw)) return true;
     const holder = f.nearestFoe(52, o => o.prop && o.side === f.side && Math.abs(o.y - f.y) < 24 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'ATTACK'));
     if (holder && P.steal(f, holder)) return true;
     if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(80);
@@ -5331,10 +5370,7 @@ class AnimationSystem {
       default: this.stance(f, p);
     }
     // carrying a chair: arms forward at chest height, or held high for a taunt or a win
-    if (f.prop && f.st !== 'ATTACK') {
-      if (f.st === 'TAUNT' || f.st === 'WIN') { p[3] = 170; p[4] = 20; p[5] = 164; p[6] = 22; }
-      else { const s = Math.sin(f.poseT * 3) * 3; p[3] = 64 + s; p[4] = 62; p[5] = 72 + s; p[6] = 56; }
-    }
+    if (f.prop && f.st !== 'ATTACK') { const s = Math.sin(f.poseT * (f.st === 'TAUNT' ? 9 : 3)) * (f.st === 'TAUNT' ? 8 : 3); p[3] = 168 + s; p[4] = 18; p[5] = 162 + s; p[6] = 20; }   // chair held high overhead
     if (f.overlay) { f.overlay.t += dt; if (f.overlay.t > f.overlay.dur) f.overlay = null; }
     const jt = f.joints;
     if (air) {
@@ -5503,6 +5539,8 @@ class AIController {
       const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
       // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
       const left = d.startup - s.atk.t - D.react;
+      // a chair coming up: sometimes step in and take it
+      if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
       if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
@@ -7229,9 +7267,11 @@ class HUD {
     const P = [];
     const ar = m.arena;
     const g2 = m.grapple.grabTarget(f), PR = m.props;
-    if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
-    else if (f.prop) P.push([[inp.label('atk')], '체어샷'], [[inp.label('grab')], '의자 던지기']);
-    if (g2) P.push([[inp.label('grab')], '잡기']);
+    const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
+    if (swinger) P.push([[inp.label('grab')], '받아쳐서 뺏기!'], [[inp.label('dodge')], '타이밍 반격']);
+    else if (PR.threat(f)) P.push([[inp.label('dodge')], '피하기'], [[inp.label('down')], '막기'], [[inp.label('grab')], '받기!']);
+    else if (f.prop) P.push([[inp.label('atk')], `체어샷 (남은 ${Math.max(0, f.prop.uses)}회)`], [[inp.label('grab')], g2 ? '의자 놓고 잡기' : '의자 던지기']);
+    if (g2 && !f.prop) P.push([[inp.label('grab')], '잡기']);
     else if (!f.prop && PR.loose(f)) P.push([[inp.label('grab')], '의자 줍기']);
     else if (!f.prop && f.nearestFoe(52, o => o.prop && o.side === f.side)) P.push([[inp.label('grab')], '의자 뺏기']);
     if (m.rules.pin && f.side === 'in' && f.nearestFoe(58, o => o.st === 'DOWN' && !o.rag)) P.push([[inp.label('down')], '핀폴']);
@@ -7324,24 +7364,31 @@ __m["render/PropRenderer.js"] = (function () {
 // shadow and dents that grow with every blow.
 const { ellipse } = __m["render/painter.js"];
 const SPR = new Map();
+const mk = (w, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h }));
+// 40x52, side view: backrest and back legs on the left, the seat reaching right, front legs under it.
 function chairSprite(dent) {
   let c = SPR.get(dent);
   if (c) return c;
-  c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(26, 34) : Object.assign(document.createElement('canvas'), { width: 26, height: 34 });
-  const g = c.getContext('2d');
-  const O = '#05060f', M = dent >= 2 ? '#8b93ab' : '#9aa4c0', L = '#e2e8fa', D = '#5a6584';
-  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  const parts = [[4, 1, 7, 11], [6, 11, 3, 21], [6, 17, 15, 3], [18, 19, 3, 13], [8, 25, 11, 2]];  // backrest, back post, seat, front leg, brace
+  c = mk(40, 52);
+  const g = c.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const O = '#05060f', M = dent >= 2 ? '#8b93ab' : '#a2acc6', L = '#eef2ff', D = '#5a6584', DD = '#3a4258';
+  const parts = [[5, 1, 12, 21], [8, 21, 5, 29], [9, 25, 27, 5], [29, 30, 5, 20], [12, 40, 19, 3]];
   for (const [x, y, w, h] of parts) R(x - 1, y - 1, w + 2, h + 2, O);
-  R(4, 1, 7, 11, M); R(4, 1, 7, 1, L); R(4, 1, 1, 11, L); R(10, 1, 1, 11, D); R(4, 11, 7, 1, D);
-  R(5, 4, 5, 2, '#c2333f');
-  R(6, 11, 3, 21, M); R(6, 11, 1, 21, L); R(8, 11, 1, 21, D);
-  R(6, 17, 15, 3, M); R(6, 17, 15, 1, L); R(6, 19, 15, 1, D);
-  R(18, 19, 3, 13, M); R(18, 19, 1, 13, L); R(20, 19, 1, 13, D);
-  R(8, 25, 11, 1, M); R(8, 26, 11, 1, D);
-  R(5, 31, 5, 2, O); R(17, 31, 5, 2, O);
-  if (dent >= 1) { R(11, 18, 3, 1, D); R(7, 7, 2, 1, D); }
-  if (dent >= 2) { R(14, 17, 2, 2, O); R(5, 9, 3, 1, O); R(19, 24, 1, 3, O); }
+  // backrest panel with a red stripe and rivets
+  R(5, 1, 12, 21, M); R(5, 1, 12, 2, L); R(5, 1, 2, 21, L); R(15, 1, 2, 21, D); R(5, 20, 12, 2, D);
+  R(8, 6, 6, 4, '#c2333f'); R(8, 6, 6, 1, '#ff6b78'); R(7, 13, 8, 1, DD); R(7, 16, 8, 1, DD);
+  R(6, 3, 1, 1, DD); R(15, 3, 1, 1, O); R(6, 19, 1, 1, DD);
+  // back post running down into the back leg
+  R(8, 21, 5, 29, M); R(8, 21, 1, 29, L); R(12, 21, 1, 29, D);
+  // seat
+  R(9, 25, 27, 5, M); R(9, 25, 27, 2, L); R(9, 29, 27, 1, D); R(11, 27, 23, 1, '#c4ccdf');
+  // front leg and the cross brace
+  R(29, 30, 5, 20, M); R(29, 30, 1, 20, L); R(33, 30, 1, 20, D);
+  R(12, 40, 19, 3, D); R(12, 40, 19, 1, M);
+  // rubber feet
+  R(6, 49, 8, 3, O); R(27, 49, 8, 3, O);
+  if (dent >= 1) { R(19, 26, 4, 1, DD); R(9, 10, 3, 1, DD); R(30, 36, 1, 3, DD); }
+  if (dent >= 2) { R(23, 25, 3, 2, O); R(6, 12, 4, 1, O); R(10, 31, 1, 4, O); R(26, 41, 2, 2, O); }
   SPR.set(dent, c);
   return c;
 }
@@ -7349,18 +7396,18 @@ function chairSprite(dent) {
 let FOLD = null;
 function foldedSprite() {
   if (FOLD) return FOLD;
-  FOLD = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(32, 9) : Object.assign(document.createElement('canvas'), { width: 32, height: 9 });
+  FOLD = mk(46, 11);
   const g = FOLD.getContext('2d'), R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  R(0, 1, 32, 7, '#05060f'); R(1, 0, 30, 1, '#05060f');
-  R(1, 1, 30, 5, '#9aa4c0'); R(1, 1, 30, 1, '#e2e8fa'); R(1, 5, 30, 1, '#5a6584'); R(2, 3, 28, 1, '#7a84a0');
-  R(4, 2, 6, 2, '#c2333f');
-  R(0, 7, 3, 2, '#05060f'); R(29, 7, 3, 2, '#05060f'); R(14, 7, 4, 1, '#05060f');
+  R(0, 1, 46, 9, '#05060f'); R(1, 0, 44, 1, '#05060f');
+  R(1, 1, 44, 7, '#a2acc6'); R(1, 1, 44, 2, '#eef2ff'); R(1, 7, 44, 1, '#5a6584'); R(2, 4, 42, 1, '#7a84a0');
+  R(5, 2, 10, 3, '#c2333f');
+  R(0, 9, 5, 2, '#05060f'); R(41, 9, 5, 2, '#05060f'); R(20, 9, 6, 1, '#05060f');
   return FOLD;
 }
 function drawChairAt(g, x, y, rot = 0, face = 1, dent = 0) {
   g.save(); g.translate(Math.round(x), Math.round(y)); g.rotate(rot); if (face < 0) g.scale(-1, 1);
   g.imageSmoothingEnabled = false;
-  g.drawImage(chairSprite(dent | 0), -13, -17);
+  g.drawImage(chairSprite(dent | 0), -20, -26);
   g.restore();
 }
 function drawProps(g, m, camX) {
@@ -7370,9 +7417,9 @@ function drawProps(g, m, camX) {
     if (x < -40 || x > 680) continue;
     if (p.state !== 'held') {
       const gy = ar.ground(p.x, p.y + 10, p.side), k = Math.max(.25, 1 - (gy - p.y) / 160);
-      g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(12 * k), 2); g.globalAlpha = 1;
+      g.globalAlpha = .35 * k; ellipse(g, '#04030a', Math.round(x), gy, Math.round(18 * k), 2); g.globalAlpha = 1;
     }
-    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 16), Math.round(p.y + 2)); continue; }
+    if (p.state === 'floor') { g.imageSmoothingEnabled = false; g.drawImage(foldedSprite(), Math.round(x - 23), Math.round(p.y + 1)); continue; }
     drawChairAt(g, x, p.y, p.rot || 0, p.face || 1, p.dent);
   }
 }
@@ -8075,18 +8122,20 @@ function peopleAt(loc, c) {
 
 // ---- dialogue scripts -------------------------------------------------------------------------------
 const tips = [
-  '상대를 계속 때리면 노란 {y}기절 저항{/} 게이지가 줄어. 바닥나면 쓰러지지. 그때 {y}K{/}로 잡는 거야.',
-  '공격이 날아오는 순간 {y}L{/}을 누르면 피하면서 그대로 던져 버릴 수 있다더군. 너무 일찍 누르면 그냥 구르기만 하고.',
-  '{y}S{/}를 막 누른 바로 그 순간에 맞으면 {y}패리{/}야. 상대가 휘청거리지. 계속 누르고만 있으면 그냥 막기고.',
-  '로프 쪽으로 달려가 봐. 반동을 받아서 튕겨 나오면 그때 공격이 훨씬 세지.',
-  '잡은 다음엔 방향을 같이 눌러. {y}→+K{/}, {y}←+K{/}, {y}W+K{/}, {y}S+K{/}… 기술이 다 달라. {y}L{/}을 누르면 뒤로 돌아가 잡고.',
-  '같은 기술만 쓰면 관중이 금방 질려. 관중이 달아오르면 피니셔 게이지도 빨리 찬다고.',
-  '서 있는 상대가 방어만 하면 {y}K{/}로 밀쳐 버려. 가드가 깨진다.',
-  '잡혔을 땐 버튼을 마구 눌러. 기술이 시작되는 순간 {y}L!{/} 표시가 뜨면, 그때 누르면 역전이야.',
-  '정말 위험하면 {y}S+L{/}. 긴급 탈출이지. 피니셔 게이지를 꽤 먹고 한참 못 써.',
-  '코너 앞에서 {y}W{/}를 누르면 턴버클 위로 올라가. 거기서 {y}J{/}면 다이빙이지. 빗나가면… 아프고.',
-  '{v}부상 게이지{/}는 경기에서 맞은 만큼 조금씩 쌓여. 쉬어도 안 빠져. 의원에 가거나 붕대를 사서 써야 해.',
-  '피곤하면 훈련 효과가 떨어져. 소파에서 쉬거나 밤에 푹 자.',
+  '상대를 계속 두들기면 노란 {y}기절 저항{/} 줄이 깎여. 바닥나면 털썩! 그때 {y}K{/}로 잡는 거야. 걸레질도 타이밍이지.',
+  '주먹이 날아오는 바로 그 순간에 {y}L{/}. 피하면서 그대로 던져 버린다. 너무 빨리 누르면 혼자 데굴데굴 구르고.',
+  '{y}S{/}를 막 누른 찰나에 맞으면 {y}패리{/}다. 상대가 휘청하지. 계속 누르고만 있으면 그냥 막기고.',
+  '로프 쪽으로 냅다 달려 봐. 튕겨 나올 때 치는 한 방이 제일 아프다. 내 허리가 증인이야.',
+  '잡은 다음엔 방향을 같이 눌러. {y}→+K{/}, {y}←+K{/}, {y}W+K{/}, {y}S+K{/}… 기술이 다 달라. {y}L{/}이면 뒤로 돌아가 잡고.',
+  '같은 기술만 쓰면 관중이 하품해. 관중이 달아올라야 피니셔 게이지도 쭉쭉 찬다.',
+  '방어만 하는 놈은 {y}K{/}로 밀쳐 버려. 가드가 와장창 깨진다.',
+  '잡혔을 땐 버튼을 미친 듯이 눌러. 기술 들어오는 순간 {y}L!{/}이 뜨면, 그때 누르면 역전이야.',
+  '정말 끝장이다 싶으면 {y}S+L{/}. 긴급 탈출이지. 게이지를 왕창 먹으니 아껴 써.',
+  '코너 앞에서 {y}W{/}면 턴버클 위로 올라간다. {y}A·D{/}로 방향을 바꿔서 {y}J{/}! 밖을 보고 뛰면 링 밖까지 날아가지.',
+  '{v}부상 게이지{/}는 맞은 만큼 조금씩 쌓여. 자도 안 빠진다. 의원 아니면 붕대야. 30년 청소한 내 무릎도 그랬어.',
+  '피곤하면 훈련이 반도 안 남는다. 소파에서 쉬든가, 밤에 푹 자.',
+  '같은 방향을 두 번 빠르게 누르고 꾹 누르고 있으면 {y}돌진{/}이야. 돌진하다 {y}K{/}면 서 있는 놈한테도 기술이 들어가지.',
+  '링 옆에 의자가 굴러다니면 {y}K{/}로 주워. {y}J{/}면 깡! 단, 그 의자 닦는 사람이 나라는 건 잊지 말고.',
 ];
 const lastLine = (c, id, list) => { const n = c.rel(id); n.talks = (n.talks || 0) + 1; return list[(n.talks - 1) % list.length]; };
 
@@ -8098,33 +8147,33 @@ function talk(id, c, W) {
       const out = [];
       if (!d.flags.metBoss) {
         d.flags.metBoss = 1;
-        return [S(`오, 자네가 ${josa(me, '이/가')}군. 반갑네. 내가 이 야항 레슬링 연맹 사장, 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 챔피언은 {v}안개왕{/}. 3년째 아무도 그 벨트를 못 건드렸어.'),
-          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위지. 경기를 이기면 순위가 오르고, 1위가 되고 명성이 쌓이면… 챔피언에게 도전할 수 있네.`),
-          S('경기는 내가 주선하지. 계약을 받아 두고, 준비가 되면 {y}경기장 대기실{/}로 가서 입장하게. 날짜 안에만 가면 돼.'),
-          S('아, 그리고. 링에서 받은 충격은 몸에 남아. 그게 {v}부상{/}이지. 쌓이다 쌓이면… 선수 생명 끝이야. 항구의원 한 선생한테 꼭 진찰받고 다니게.', { expr: 'sad' }),
-          S('자, 첫 계약을 보여 주지.'), { act: () => W.openOffers() }];
+        return [S(`오, 자네가 ${josa(me, '이/가')}군! 반갑네. 내가 이 야항 레슬링 연맹의 선장… 아니, 사장 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 챔피언은 {v}안개왕{/}. 3년째 아무도 그 벨트에 손가락 하나 못 댔어.'),
+          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위. 걱정 말게, 꼴찌는 올라갈 일만 남은 자리니까! 이기면 오르고, 1위에 명성까지 쌓이면 챔피언에게 도전하는 거야.`),
+          S('경기는 내가 잡아 주지. 계약을 받고, 준비되면 {y}경기장 대기실{/}로 가게. 날짜 안에만 가면 돼. 늦으면… 내 잔소리가 길어지지.'),
+          S('아, 그리고. 링에서 받은 충격은 몸에 남아. 그게 {v}부상{/}이야. 쌓이고 쌓이면 선수 생명 끝이지. 항구의원 한 선생한테 꼬박꼬박 진찰받게.', { expr: 'sad' }),
+          S('자, 첫 계약서를 보여 주지. 잉크가 아직 안 말랐으니 조심하고!'), { act: () => W.openOffers() }];
       }
-      if (d.flags.noShow && !d.flags.noShowSeen) { d.flags.noShowSeen = 1; out.push(S('계약해 놓고 안 나타나다니! 관객들이 표 값을 돌려 달라고 난리였네. 다신 이러지 말게.', { expr: 'fierce' })); }
+      if (d.flags.noShow && !d.flags.noShowSeen) { d.flags.noShowSeen = 1; out.push(S('계약해 놓고 안 나타나다니! 관객들이 표 값을 돌려 달라고 난리였네. 나는 하루 종일 사과만 했어. 다신 이러지 말게!', { expr: 'fierce' })); }
       if (lr && d.flags.bossSeen !== d.history.length) {
         d.flags.bossSeen = d.history.length;
-        if (lr.kind === 'title' && lr.won) out.push(S('해냈군… 정말 해냈어! 등대 돔이 무너지는 줄 알았다네. 자네가 이 항구의 챔피언이야!', { expr: 'happy' }));
-        else if (lr.won && lr.kind === 'event') out.push(S(`${lr.opp} 우승이라니! 신문 1면은 자네 차지야.`, { expr: 'happy' }));
-        else if (lr.won) out.push(S(pick([`${lr.opp}에게 이겼다며? 관중석 반응이 좋았어. 그 기세로 가세.`, '어제 경기 봤네. 마지막 기술, 표 값 했어.', `좋아, ${rank}위까지 올라왔군. 이제 슬슬 이름이 알려지겠어.`]), { expr: 'happy' }));
-        else if (lr.draw) out.push(S('비겼다고? 관객은 끝장을 보고 싶어 하는 법인데.'));
-        else out.push(S(pick(['졌다고 고개 숙이지 말게. 이 바닥은 다시 일어나는 놈이 이기는 거야.', `${lr.opp}은 만만한 상대가 아니었지. 훈련장에 가서 백 관장한테 배우게.`, '지는 날도 있는 거야. 대신 같은 방식으로 두 번 지지는 말게.']), { expr: 'sad' }));
+        if (lr.kind === 'title' && lr.won) out.push(S('해냈군… 정말 해냈어! 등대 돔 지붕이 날아가는 줄 알았네. 자네가 이 항구의 챔피언이야!', { expr: 'happy' }));
+        else if (lr.won && lr.kind === 'event') out.push(S(`${lr.opp} 우승이라니! 내일 신문 1면은 자네 얼굴로 도배일세.`, { expr: 'happy' }));
+        else if (lr.won) out.push(S(pick([`${lr.opp}에게 이겼다며? 함성이 바다 건너까지 들렸다더군.`, '어제 마지막 기술, 표 값 제대로 했어. 다음엔 표 값을 올려도 되겠어!', `좋아, ${rank}위까지 올라왔군. 슬슬 포스터에 자네 얼굴을 넣어 볼까?`]), { expr: 'happy' }));
+        else if (lr.draw) out.push(S('비겼다고? 관객은 끝장을 보고 싶어 하는 법이야. 다음엔 꼭 결판을 내게!'));
+        else out.push(S(pick(['졌다고 고개 숙이지 말게. 이 바닥은 다시 일어나는 놈이 이기는 거야.', `${josa(lr.opp, '은/는')} 만만한 상대가 아니었지. 백 관장한테 가서 혼 좀 나고 오게.`, '지는 날도 있는 거야. 대신 같은 방식으로 두 번 지지는 말게. 그건 재미가 없거든.']), { expr: 'sad' }));
       }
-      if (inj >= B.injuryDanger) out.push(S(`이봐, 자네 몸 상태… 부상이 ${Math.round(inj)}%야. 이 상태로 링에 오르면 정말 끝날 수도 있어. 의원부터 가!`, { expr: 'sad' }));
-      else if (inj >= B.injuryWarn) out.push(S('표정이 안 좋군. 부상이 꽤 쌓였어. 경기 전에 의원에 들르는 걸 잊지 말게.'));
-      if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대는 줄을 섰다네.', { expr: 'happy' }));
-      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군.' : `1위라니 대단해. 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네.`));
-      if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게.`));
-      else if (Math.abs(c.rankOf('dohyun') - rank) <= 3 && d.day - (d.flags.rivalDay || -9) >= 5) out.push(S('그리고… 서도현이 자네와 붙고 싶다더군. 둘이 순위가 붙어 있으니 관중이 좋아할 거야. 제안 목록에 넣어 뒀네.'));
-      out.push(S('그래, 무슨 일인가?'));
+      if (inj >= B.injuryDanger) out.push(S(`이봐, 자네 몸 상태… 부상이 ${Math.round(inj)}%야. 이대로 링에 오르면 정말 끝장날 수도 있어. 의원부터 가! 사장 명령이야!`, { expr: 'sad' }));
+      else if (inj >= B.injuryWarn) out.push(S('표정이 안 좋군. 부상이 꽤 쌓였어. 경기 전에 의원에 들르게. 붕대 값은 아끼지 말고.'));
+      if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대들이 사무실 앞에 줄을 섰다네. 번호표라도 나눠 줘야 할 판이야.', { expr: 'happy' }));
+      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
+      if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게. 상대도 몸 풀고 있을 걸세.`));
+      else if (Math.abs(c.rankOf('dohyun') - rank) <= 3 && d.day - (d.flags.rivalDay || -9) >= 5) out.push(S('그리고… 서도현이 자네와 붙고 싶다더군. 둘이 순위가 붙어 있으니 관중이 좋아할 거야. 제안 목록에 넣어 뒀네. 표 팔리는 소리가 벌써 들려!'));
+      out.push(S(pick(['그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
       out.push({ choice: [
         { label: '경기 제안 보기', act: () => W.openOffers() },
-        { label: '랭킹에 대해', go: [S(`지금 자네는 ${rank}위. 위 순위를 이기면 그 자리를 빼앗고, 지면 조금 내려가지. 다른 선수들도 매일 싸우니 순위가 계속 움직여.`), S('1위가 되고 명성이 55를 넘으면 타이틀전이야. 14일엔 {y}만선 럼블{/}, 21일엔 {y}태그 대전{/}이 열리고.')] },
-        { label: '조언 듣기', go: [S(pick(['훈련만 하다 굶을 순 없지. 계약 경기는 보수가 커. 꼬박꼬박 잡게.', '도전 경기는 위험하지만 순위를 한 번에 뛰어넘을 수 있어.', '돈이 모자라면 부두 하역장에 가 보게. 장 반장이 일당을 쳐 줄 거야.', '돈 아끼다 몸 버리네. 붕대 값은 아끼지 말게.']))] },
-        { label: '그만 가 보겠습니다', go: [S('그래, 몸조심하게.')] },
+        { label: '랭킹에 대해', go: [S(`지금 자네는 ${rank}위. 위 순위를 이기면 그 자리를 빼앗고, 지면 조금 미끄러지지. 다른 놈들도 매일 싸우니 순위는 파도처럼 출렁여.`), S('1위가 되고 명성이 55를 넘으면 타이틀전이야. 14일엔 {y}만선 럼블{/}, 21일엔 {y}태그 대전{/}. 달력에 동그라미 쳐 두게.')] },
+        { label: '조언 듣기', go: [S(pick(['훈련만 하다 굶을 순 없지. 계약 경기는 보수가 커. 꼬박꼬박 잡게.', '도전 경기는 위험하지만 순위를 한 번에 뛰어넘을 수 있어. 인생도 레슬링도 한 방이야… 가끔은.', '돈이 모자라면 부두 하역장에 가 보게. 장 반장이 일당을 두둑이 쳐 줄 거야.', '돈 아끼다 몸 버리네. 붕대 값은 아끼지 말게. 내 경험담이야.', '관중은 의외성을 좋아해. 늘 하던 기술만 하지 말고 가끔 깜짝 놀라게 해 주게.']))] },
+        { label: '그만 가 보겠습니다', go: [S('그래, 몸조심하게. 아, 나가면서 문은 살살 닫게. 저번에 누가 수플렉스하듯 닫더라고.')] },
       ] });
       return out;
     }
@@ -8133,59 +8182,59 @@ function talk(id, c, W) {
       const names = { hp: '체력', stun: '기절 저항', atk: '공격력', grp: '레슬링 기술', spd: '속도', jump: '점프', rec: '기술 회복', down: '다운 회복', kbr: '넉백 저항', fin: '피니셔 충전' };
       const first = !c.rel('trainer').seen; c.rel('trainer').seen = 1;
       return [
-        ...(first ? [S('네가 새로 온 애구나. 백 관장이다. 링 위에선 근육보다 기본기가 먼저야.'), S('벤치프레스는 힘, 줄넘기는 발, 미트는 손기술, 목 브릿지는 맷집. 기구 앞에서 {y}E{/}를 눌러. 훈련 한 번에 시간이 한 칸 지나고, 돈도 조금 든다.')] : []),
-        S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐.`),
+        ...(first ? [S('네가 새로 온 애구나. 백 관장이다. 링 위에선 근육보다 기본기가 먼저야. 근육은 거짓말을 해도 기본기는 안 하거든.'), S('벤치프레스는 힘, 줄넘기는 발, 미트는 손기술, 목 브릿지는 맷집. 기구 앞에서 {y}E{/}를 눌러. 훈련 한 번에 시간이 한 칸 지나고, 돈도 조금 든다. 공짜 땀은 없어.')] : []),
+        S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아. 나머지 반은 내 잔소리로 채우게 될 거다.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐. 약점은 숨기는 게 아니라 메우는 거야.`),
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },
           { label: '조언', go: [S(pick(tips))] },
-          { label: '고맙습니다', go: [S('가 봐. 땀은 거짓말 안 한다.')] },
+          { label: '고맙습니다', go: [S('가 봐. 땀은 거짓말 안 한다. 대신 냄새는 좀 나지.')] },
         ] },
       ];
     }
     case 'doctor': {
       const first = !c.rel('doctor').seen; c.rel('doctor').seen = 1;
       return [
-        ...(first ? [S('항구의원 한 선생입니다. 레슬러들은 다 여기 단골이죠.'), S('링에서 맞은 충격은 {v}부상{/}으로 남아요. 경기에서 받은 피해만큼, 조금씩 쌓입니다. 자고 쉬어도 저절로 낫지는 않아요.'), S('100%가 되면… 다시는 링에 못 섭니다. 55%부터는 조심하고, 80%를 넘으면 경기는 말리고 싶네요.', { expr: 'sad' })] : []),
-        S(inj < 10 ? '몸 상태는 괜찮네요. 무리하지만 마세요.' : inj < B.injuryWarn ? `부상 ${Math.round(inj)}%. 아직은 버틸 만하지만 쌓이기 전에 치료하는 게 쌉니다.` : inj < B.injuryDanger ? `부상 ${Math.round(inj)}%. 주의 단계예요. 치료를 권합니다.` : `부상 ${Math.round(inj)}%! 위험합니다. 이대로 경기에 나가면 은퇴할 수도 있어요.`, { expr: inj >= B.injuryWarn ? 'sad' : 'neutral' }),
+        ...(first ? [S('항구의원 한 선생입니다. 레슬러들은 다 여기 단골이죠. 쿠폰이라도 만들까 봐요.'), S('링에서 맞은 충격은 {v}부상{/}으로 남아요. 경기에서 받은 피해만큼 조금씩 쌓이고, 자고 쉬어도 저절로 낫지는 않아요. 의학은 마법이 아니거든요.'), S('100%가 되면… 다시는 링에 못 섭니다. 55%부터는 조심하고, 80%를 넘으면 경기는 말리고 싶네요. 말려도 안 들으시겠지만.', { expr: 'sad' })] : []),
+        S(inj < 10 ? '몸 상태는 괜찮네요. 이대로만 오시면 제가 심심하겠어요.' : inj < B.injuryWarn ? `부상 ${Math.round(inj)}%. 아직은 버틸 만하지만, 쌓이기 전에 치료하는 게 쌉니다. 진짜로요.` : inj < B.injuryDanger ? `부상 ${Math.round(inj)}%. 주의 단계예요. 치료를 권합니다. 강력하게.` : `부상 ${Math.round(inj)}%! 위험합니다. 이대로 경기에 나가면 은퇴식 날짜부터 잡아야 할지도 몰라요.`, { expr: inj >= B.injuryWarn ? 'sad' : 'neutral' }),
         { act: () => W.openClinic() },
       ];
     }
-    case 'nurse': return [S(lastLine(c, 'nurse', ['붕대는 상점에서도 팔아요. 급할 땐 그거라도 감으세요.', '치료비가 부담되면 하역장 아르바이트라도… 부상 없이 벌 수 있잖아요.', '선생님이 그러는데, 피곤한 상태로 싸우면 부상이 더 쌓인대요.', '입원 치료는 하루가 꼬박 걸리지만 한 번에 많이 나아요.']))];
+    case 'nurse': return [S(lastLine(c, 'nurse', ['붕대는 상점에서도 팔아요. 급할 땐 그거라도 감으세요. 예쁘게 감는 법은 무료로 알려 드릴게요.', '치료비가 부담되면 하역장 아르바이트라도… 상자는 반격을 안 하잖아요.', '선생님이 그러는데, 피곤한 채로 싸우면 부상이 더 쌓인대요. 그러니까 주무세요. 지금 말고요.', '입원 치료는 하루가 꼬박 걸리지만 한 번에 많이 나아요. 병원 밥도 맛있고요. …거짓말이에요.']))];
     case 'shop': {
       const first = !c.rel('shop').seen; c.rel('shop').seen = 1;
-      return [...(first ? [S('어서 와! 돛대 상회의 리키야. 붕대부터 반짝이 타이츠까지 다 있지.')] : []), S(d.money < 15000 ? '음… 지갑이 좀 가볍네? 그래도 붕대 하나 정도는 챙겨 둬.' : pick(['오늘 들어온 물건 구경해 봐!', '그 의상, 링 조명 받으면 확 살 거야.', '장비는 착용하면 바로 효과가 있어.'])), { act: () => W.openShop() }];
+      return [...(first ? [S('어서 와! 돛대 상회의 리키야. 붕대부터 반짝이 타이츠까지, 없는 건 챔피언 벨트뿐이지!')] : []), S(d.money < 15000 ? '음… 지갑이 좀 가볍네? 그래도 붕대 하나는 챙겨 둬. 다치고 나서 사면 더 비싸게 느껴지거든.' : pick(['오늘 들어온 물건 구경해 봐! 아직 아무도 안 입어 본 새 타이츠야. …아마도.', '그 의상, 링 조명 받으면 확 살 거야. 상대 눈이 부셔서 반은 먹고 들어간다고!', '장비는 착용하면 바로 효과가 있어. 마음의 평화는 덤이고.'])), { act: () => W.openShop() }];
     }
-    case 'auntie': return [S(pick([`아이고 ${me} 왔네! 배고프지? 뭐라도 먹고 가.`, '오늘은 국물이 진하게 우러났어.', '레슬러들 다 여기 와서 떠들고 가. 소문은 내가 제일 빠르지.'])), { act: () => W.openFood() }];
+    case 'auntie': return [S(pick([`아이고 ${me} 왔네! 배고프지? 뭐라도 먹고 가. 레슬러는 밥심이야.`, '오늘은 국물이 진하게 우러났어. 어젯밤 경기 소식도 같이 우러났지.', '레슬러들 다 여기 와서 떠들고 가. 소문은 내가 제일 빨라. 신문보다 빨라!'])), { act: () => W.openFood() }];
     case 'staff': {
       const ct = d.contract;
       const out = [];
-      if (ct) out.push(S(ct.day > d.day ? `계약 경기는 ${josa(ct.oppName, '과/와')} ${ct.day}일까지예요. 지금 바로 해도 되고요.` : `오늘이 ${josa(ct.oppName, '과/와')}의 경기 마감일이에요!`));
-      else out.push(S('계약된 경기가 없네요. 사장님께 경기를 받거나, 자유 경기에 나가 보세요.'));
+      if (ct) out.push(S(ct.day > d.day ? `계약 경기는 ${josa(ct.oppName, '과/와')} ${ct.day}일까지예요. 지금 바로 하셔도 되고요! 저는 아무 때나 괜찮아요… 아마도요.` : `오늘이 ${josa(ct.oppName, '과/와')}의 경기 마감일이에요! 오늘 안 하시면 제가 사장님께 혼나요!`));
+      else out.push(S('계약된 경기가 없네요. 사장님께 경기를 받거나, 자유 경기에 나가 보세요. 저는 대진표를 또 고쳐야 해서… 하하.'));
       out.push({ act: () => W.openArenaList() });
       return out;
     }
-    case 'janitor': return [S(lastLine(c, 'janitor', ['어이 신인. 내가 30년째 이 체육관 바닥을 닦는데, 보는 눈은 있지.', ...tips]))];
+    case 'janitor': return [S(lastLine(c, 'janitor', ['어이 신인. 내가 30년째 이 체육관 바닥을 닦는데, 보는 눈은 있지. 넌 바닥에 자주 누울 상이야. 칭찬이야.', ...tips]))];
     case 'reporter': {
-      if (d.flags.interviewDay === d.day) return [S('오늘 인터뷰는 벌써 했잖아요. 기사 기대하세요!')];
+      if (d.flags.interviewDay === d.day) return [S('오늘 인터뷰는 벌써 했잖아요. 기사 기대하세요! 사진은 제일 잘 나온 걸로… 고르려고 노력할게요.')];
       d.flags.interviewDay = d.day;
       const opp = d.contract ? d.contract.oppName : '다음 상대';
-      return [S('주간 항구스포츠 민 기자예요! 잠깐 인터뷰 괜찮죠?'), S(`${opp}에 대해 한마디 해 주세요!`), { choice: [
-        { label: '"한 방에 끝내 주지."', go: [S('오, 자신감! 기사 제목 나왔다.'), { act: () => { d.fame += 2; W.toast('명성 +2', '#ffd65a'); } }] },
-        { label: '"배울 게 많은 상대입니다."', go: [S('겸손하시네요. 팬들이 좋아할 거예요.'), { act: () => { d.fame += 1; c.rel('trainer', 1); W.toast('명성 +1', '#ffd65a'); } }] },
-        { label: '"…(무시하고 지나간다)"', go: [S('에이, 차갑긴…'), { act: () => { d.fame = Math.max(0, d.fame - 1); W.toast('명성 -1', '#ff8a8a'); } }] },
+      return [S('주간 항구스포츠 민 기자예요! 잠깐 인터뷰 괜찮죠? 3초면 돼요. 사진은 30분이고요.'), S(`${opp}에 대해 한마디 해 주세요! 자극적일수록 좋아요!`), { choice: [
+        { label: '"한 방에 끝내 주지."', go: [S('오, 자신감! 제목 나왔다. "신인, 한 방 예고!"'), { act: () => { d.fame += 2; W.toast('명성 +2', '#ffd65a'); } }] },
+        { label: '"배울 게 많은 상대입니다."', go: [S('겸손하시네요. 팬들이 좋아할 거예요. 저는 조금 심심하지만요.'), { act: () => { d.fame += 1; c.rel('trainer', 1); W.toast('명성 +1', '#ffd65a'); } }] },
+        { label: '"…(무시하고 지나간다)"', go: [S('에이, 차갑긴… "신인, 기자 무시" 이것도 기사가 되거든요?'), { act: () => { d.fame = Math.max(0, d.fame - 1); W.toast('명성 -1', '#ff8a8a'); } }] },
       ] }];
     }
-    case 'foreman': return [S(pick(['일손이 모자라. 상자 좀 날라 볼 텐가? 링보다 안전하지.', '오늘 배가 세 척이나 들어왔어. 일당 두둑하게 쳐 주지.'])), { choice: [{ label: '아르바이트 하기 (시간 1칸)', act: () => W.startJob() }, { label: '다음에요', go: [S('언제든 오게.')] }] }];
+    case 'foreman': return [S(pick(['일손이 모자라. 상자 좀 날라 볼 텐가? 링보다 안전하지. 상자는 반격을 안 하거든.', '오늘 배가 세 척이나 들어왔어. 일당 두둑하게 쳐 주지. 떨어뜨리면 깎고.'])), { choice: [{ label: '아르바이트 하기 (시간 1칸)', act: () => W.startJob() }, { label: '다음에요', go: [S('언제든 오게. 상자는 어디 안 가.')] }] }];
     case 'fankid': {
-      if (d.flags.signDay === d.day) return [S('사인 받은 거 친구들한테 자랑했어요!', { expr: 'happy' })];
-      if (d.fame < 5) return [S('아저씨도 레슬러예요? 처음 보는데… 잘하면 사인 받으러 올게요!')];
+      if (d.flags.signDay === d.day) return [S('사인 받은 거 친구들한테 자랑했어요! 근데 다들 누구냐고 물어봤어요.', { expr: 'happy' })];
+      if (d.fame < 5) return [S('혹시 레슬러예요? 처음 보는데… 잘하면 사인 받으러 올게요! 잘해야 돼요!')];
       d.flags.signDay = d.day; d.fame += 1;
-      return [S(`우와, ${me}다! 사인해 주세요!`, { expr: 'happy' }), { act: () => W.toast('명성 +1', '#ffd65a') }, S(d.flags.champion ? '챔피언이다아! 벨트 만져 봐도 돼요?' : rank <= 3 ? '곧 챔피언 되는 거죠? 저 다 알아요!' : '다음 경기 꼭 이겨요! 저 맨 앞줄에 있을게요!', { expr: 'happy' })];
+      return [S(`우와, ${me}다! 사인해 주세요! 이 공책에요! 아니 그건 숙제 공책이고…`, { expr: 'happy' }), { act: () => W.toast('명성 +1', '#ffd65a') }, S(d.flags.champion ? '챔피언이다아! 벨트 만져 봐도 돼요? 한 번만요! 진짜 한 번만!' : rank <= 3 ? '곧 챔피언 되는 거죠? 저 다 알아요! 우리 반 애들도 다 알아요!' : '다음 경기 꼭 이겨요! 저 맨 앞줄에 있을게요! 엄마가 허락하면요!', { expr: 'happy' })];
     }
-    case 'busker': return [S(pick(['♪ 밤배가 들어오면 링에 불이 켜지고… ♪', '이 항구엔 노래가 두 개 있지. 파도 소리랑, 관중 함성.', '네 입장곡? 내가 하나 만들어 줄까. 공짜는 아니지만.']))];
-    case 'sponsor': return [S('황금등대 우유의 황 대표요. 요즘 당신 이름이 자주 들리더군.'), S('우리 우유를 링에서 마셔 주면, 매달 후원금을 드리리다.'), { choice: [{ label: '계약한다', go: [S('좋소! 첫 후원금이오.'), { act: () => { d.flags.sponsored = 1; c.earn(50000); W.toast('후원금 ' + fmtMoney(50000), '#9be36b'); } }] }, { label: '거절한다', go: [S('아쉽군. 마음 바뀌면 연락하시오.')] }] }];
+    case 'busker': return [S(pick(['♪ 밤배가 들어오면 링에 불이 켜지고, 파도가 박수 치면 너는 링에 올라~ ♪', '이 항구엔 노래가 두 개 있지. 파도 소리랑, 관중 함성. 세 번째는 네가 만들어.', '네 입장곡? 하나 만들어 줄까. 공짜는 아니지만, 후렴은 서비스야.']))];
+    case 'sponsor': return [S('황금등대 우유의 황 대표요. 요즘 당신 이름이 자주 들리더군. 우유처럼 고소하게.'), S('우리 우유를 링에서 마셔 주면, 매달 후원금을 드리리다. 흘리면 안 되오.'), { choice: [{ label: '계약한다', go: [S('좋소! 첫 후원금이오. 우유 수염은 꼭 카메라 쪽으로!'), { act: () => { d.flags.sponsored = 1; c.earn(50000); W.toast('후원금 ' + fmtMoney(50000), '#9be36b'); } }] }, { label: '거절한다', go: [S('아쉽군. 마음 바뀌면 연락하시오. 우유는 기다려 주지 않지만, 나는 기다리지.')] }] }];
     case 'merchant': {
       const first = !c.rel('merchant').seen; c.rel('merchant').seen = 1;
       return [...(first ? [S('어이쿠, 손님! 바다 건너 온 물건들이야. 오늘만 판다! 내일이면 난 다음 항구에 있거든.', { expr: 'happy' })] : []),
@@ -8195,10 +8244,10 @@ function talk(id, c, W) {
     case 'dohyun': {
       const r = c.rel('dohyun');
       const h2h = d.h2h.dohyun || { w: 0, l: 0 };
-      if (!r.met) { r.met = 1; return [S('…너도 이번에 들어온 신인이지? 서도현이다.'), S('나는 3개월 먼저 왔어. 그러니까 내가 먼저 올라간다.'), S('랭킹에서 보자.', { expr: 'smug' })]; }
-      if (h2h.w > h2h.l) return [S(pick(['지난번엔 내가 방심했을 뿐이야. 다음엔 매듭을 세 번 묶어 주지.', '…네 반격 타이밍, 어디서 배웠어? 아니, 대답 안 해도 돼.', '너 때문에 요즘 잠을 못 자. 훈련하느라.']), { expr: 'fierce' })];
-      if (h2h.l > h2h.w) return [S(pick(['이게 실력 차이야. 기본기부터 다시 해.', '실망이군. 라이벌이라고 생각했는데.']), { expr: 'smug' })];
-      return [S(lastLine(c, 'dohyun', ['훈련 중이야. 방해하지 마.', '백 관장님 미트는 순서를 외우는 게 아니야. 리듬을 타는 거지.', '태그 대전이 있다던데… 파트너가 필요하면, 생각해 보지.', `지금 ${rank}위라고? 흥. 금방 따라잡아 주지.`]))];
+      if (!r.met) { r.met = 1; return [S('…너도 이번에 들어온 신인이지? 서도현이다.'), S('나는 3개월 먼저 왔어. 그러니까 내가 먼저 올라간다. 순서는 지켜.'), S('랭킹에서 보자. 아, 그리고 내 매듭은 함부로 만지지 마.', { expr: 'smug' })]; }
+      if (h2h.w > h2h.l) return [S(pick(['지난번엔 내가 방심했을 뿐이야. 다음엔 매듭을 세 번 묶어 주지.', '…네 반격 타이밍, 어디서 배웠어? 아니, 대답 안 해도 돼. 진짜로.', '너 때문에 요즘 잠을 못 자. 훈련하느라. …오해하지 마.']), { expr: 'fierce' })];
+      if (h2h.l > h2h.w) return [S(pick(['이게 실력 차이야. 기본기부터 다시 해. …필요하면 내 노트 빌려 줄 수도 있고.', '실망이군. 라이벌이라고 생각했는데. …다음엔 실망시키지 마.']), { expr: 'smug' })];
+      return [S(lastLine(c, 'dohyun', ['훈련 중이야. 방해하지 마. …보고 가는 건 괜찮아.', '백 관장님 미트는 순서를 외우는 게 아니야. 리듬을 타는 거지. 이건 공짜 조언이다.', '태그 대전이 있다던데… 파트너가 필요하면, 생각해 보지. 생각만.', `지금 ${rank}위라고? 흥. 금방 따라잡아 주지. …아니, 내가 위였나?`]))];
     }
     default: {
       const ch = CHARACTERS[id];
@@ -8209,21 +8258,21 @@ function talk(id, c, W) {
       if (h2h && h2h.w > h2h.l) return [S(pick([`${ch.lines.lose} …다음엔 안 진다.`, '지난번 경기 얘기는 꺼내지 마.', '운이 좋았던 거야.']), { expr: 'sad' })];
       if (h2h && h2h.l > h2h.w) return [S(pick([ch.lines.win, '또 해 보고 싶어? 언제든지.']), { expr: 'smug' })];
       const gossip = {
-        taesan: ['부두에서 컨테이너 들던 시절이 그립네. 그래도 링이 더 무겁지.', '내 컨테이너 드롭은 한 번 들리면 끝이야. 무거운 놈일수록 더 높이 올라가.'],
-        haneul: ['코너 위에서 보는 링은 바다 같아. 뛰어내리고 싶어지지.', '날 잡으려면 먼저 땅으로 끌어내려야 할걸?'],
-        neon: ['조명이 나를 따라오는 게 아니라, 내가 조명을 데려가는 거야.', '도발도 기술이야. 관중을 내 편으로 만들면 게이지가 쭉쭉 차거든.'],
-        mandeok: ['밥심이 곧 체력이지. 포차 이모 파전 먹어 봤어?', '나 들어 올리려면 체력부터 깎아 놔야 할걸. 하하!'],
-        dongsu: ['용접은 타이밍이야. 주먹도 그렇고.', '보안경 쓰고 싸우는 이유? 불꽃이 튀니까.'],
-        bokja: ['새벽 어시장에서 생선 나르다 보면 팔이 저절로 굵어져.', '내 따귀 맞아 봤어? 기절 게이지가 쭉 빠지지.'],
-        dueok: ['히히, 도깨비 방망이 맛 좀 볼래?', '밤길 조심해. 뒷골목엔 링도 심판도 없다고.'],
-        palcho: ['자네 관절 각도가 흥미롭군. 해부… 아니, 분석해 보고 싶어.', '기술은 여덟 개쯤 외워 둬야 레슬러지.'],
-        baeksang: ['링 밖은 피 냄새가 더 진하지.', '물속에서 기다리는 상어처럼, 기회를 기다린다.'],
-        bjorn: ['한국 국밥, 최고. 북해엔 없어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다.'],
-        baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야.'],
+        taesan: ['부두에서 컨테이너 들던 시절이 그립네. 그래도 링이 더 무겁지. 사람은 손잡이가 없거든.', '내 컨테이너 드롭은 한 번 들리면 끝이야. 무거운 놈일수록 더 높이 올라가. 물리 법칙은 몰라.'],
+        haneul: ['코너 위에서 보는 링은 바다 같아. 뛰어내리고 싶어지지. 실제로 뛰어내리고.', '날 잡으려면 먼저 땅으로 끌어내려야 할걸? 갈매기는 잘 안 잡혀.'],
+        neon: ['조명이 나를 따라오는 게 아니라, 내가 조명을 데려가는 거야. 조명 기사님이 고생이지.', '도발도 기술이야. 관중을 내 편으로 만들면 게이지가 쭉쭉 차거든. 윙크는 덤.'],
+        mandeok: ['밥심이 곧 체력이지. 포차 이모 파전 먹어 봤어? 안 먹어 봤으면 레슬링을 논하지 마.', '나 들어 올리려면 체력부터 깎아 놔야 할걸. 하하! 그래도 무거우면 내가 알아서 누워 줄게.'],
+        dongsu: ['용접은 타이밍이야. 주먹도 그렇고. 늦으면 둘 다 탄다.', '보안경 쓰고 싸우는 이유? 불꽃이 튀니까. 그리고 멋있으니까.'],
+        bokja: ['새벽 어시장에서 생선 나르다 보면 팔이 저절로 굵어져. 고등어가 최고의 아령이야.', '내 따귀 맞아 봤어? 기절 게이지가 쭉 빠지지. 덤으로 정신도 번쩍 들고.'],
+        dueok: ['히히, 도깨비 방망이 맛 좀 볼래? 금 나와라 뚝딱 말고 별 나와라 뚝딱.', '밤길 조심해. 뒷골목엔 링도 심판도 없다고. 나는 있지만. 히히.'],
+        palcho: ['자네 관절 각도가 흥미롭군. 해부… 아니, 분석해 보고 싶어. 아주 조금만.', '기술은 여덟 개쯤 외워 둬야 레슬러지. 다리가 여덟 개면 더 좋고.'],
+        baeksang: ['링 밖은 피 냄새가 더 진하지. …농담이야. 반만.', '물속에서 기다리는 상어처럼, 기회를 기다린다. 오래 기다리면 배고프지만.'],
+        bjorn: ['한국 국밥, 최고. 북해엔 없어. 북해엔 바람만 있어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다. 그래서 국밥 먹는다.'],
+        baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔. 그땐 벨트도 지금보다 가벼웠어. 내가 젊었으니까.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야. 어깨는 거짓말을 못 하거든.'],
         galchi: ['부둣가 악동단은 의리로 뭉쳤다! …회비도 걷고.', '오늘은 기분 좋으니까 봐준다! 내일은 몰라!'],
         myeolchi: ['형님이 저보고 내일부터 다이어트래요. 근데 저 이미 멸치인데요?', '저기요, 사인 좀… 아니 아니, 형님 몰래요.'],
-        gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~'],
-        ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸.'],
+        gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지. 나머지 반은… 말로 안 되더라.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~ 걸레는 저기 있어.'],
+        ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸. 지나가려면 밟혀야 하고.'],
       }[id] || [ch.lines.intro];
       return [S(lastLine(c, id, gossip))];
     }
@@ -8422,7 +8471,8 @@ class MatchScene {
     m.on('counter', e => { fx.word('반격!', e.f.x, e.f.y - 100, '#ff5fa2', 3); A.sfx('counter'); m.slowmo(.4, .3); S.flash(1, .6, .8, .25); cheer(.8); });
     m.on('reversal', e => { fx.word(e.fin ? '피니셔 역전!!' : '역전!', e.f.x, e.f.y - 104, '#ff5fa2', 3); A.sfx('reversal'); m.slowmo(.35, .45); S.flash(1, .5, .8, .4); cheer(1.2); });
     m.on('revFail', e => { if (isH(e.v)) fx.word('너무 일찍!', e.v.x, e.v.y - 100, '#9aa6d6', 1); });
-    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a)) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
+    m.on('chairShrug', e => { fx.word('버텼다!', e.v.x, e.v.y - 100, '#ffd65a', 2); });
+    m.on('down', e => { if (!e.quiet) { A.sfx('down'); cheer(.6); if (e.n >= 2 && isH(e.a) && !e.chair) hud.toast(`${e.f.name} 다운 ${e.n}회 — 다음 다운이 더 길다`, '#ffb347'); } });
     m.on('grab', e => { A.sfx('grip'); });
     m.on('escape', e => { fx.word('탈출!', e.v.x, e.v.y - 100, '#6be38a', 2); A.sfx('whoosh'); });
     m.on('switch', () => A.sfx('grip'));
@@ -8476,6 +8526,9 @@ class MatchScene {
     m.on('propPick', e => { A.sfx('grip'); if (isH(e.f)) hud.toast(`의자를 들었다! [${K('atk')}] 체어샷 · [${K('grab')}] 던지기`, '#ffd65a'); else { fx.word('의자!', e.f.x, e.f.y - 100, '#ffb347', 1); if (this.human) hud.toast('상대가 의자를 들었다! 막거나, 피하거나, 뺏어라', '#ff8a8a'); } });
     m.on('propCatch', e => { A.sfx('grip'); fx.word('받았다!', e.f.x, e.f.y - 104, '#6be38a', 2); cheer(1.1); });
     m.on('propSteal', e => { A.sfx('slap'); fx.word('뺏었다!', e.f.x, e.f.y - 104, '#ff8fc4', 2); cheer(.8); });
+    m.on('propSnatch', e => { A.sfx('counter'); fx.word('받아쳤다!', e.f.x, e.f.y - 108, '#ff5fa2', 3); m.slowmo(.5, .25); cheer(1.2); });
+    m.on('propReach', () => A.sfx('step'));
+    m.on('propDrop', e => { if (e.why === 'swing') A.sfx('thud', { p: .3 }); });
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
     m.on('chairWarn', e => { A.sfx('warn'); });
@@ -8669,7 +8722,7 @@ class MatchScene {
       bc.begin(tmp.x(0), tmp.y(0) - 4);
       drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
       bc.finish(); bc.drawTo(w);
-      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 12, -.5 * c.face, c.face, 0);
+      if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 20, -.5 * c.face, c.face, 0);
     }
   }
   drawBubbles(u, cam) {

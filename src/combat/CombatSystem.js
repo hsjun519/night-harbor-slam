@@ -53,6 +53,7 @@ export class CombatSystem {
     if (v.inv > 0) { m.emit('immune', { a, v }); return 'inv'; }
     if (v.st === 'DODGE' && v.invDodge) {
       const tech = v.char.style === 'tech';
+      if (d.chair && a.prop && v.t <= B.counterWindow * 1.4 && (facing || v.dodge.back) && m.phase === 'fight') { m.props.snatch(v, a); return 'counter'; }
       if (v.t <= B.counterWindow * (tech ? 1.25 : 1) && v.counterCd <= 0 && !d.air && !d.dive && (!d.run || tech) && (facing || v.dodge.back) && !v.dodge.dir && m.phase === 'fight') { if (m.grapple.startCounter(v, a)) return 'counter'; }
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
@@ -123,7 +124,7 @@ export class CombatSystem {
   chairHit(a, v, d, dir, facing, hx, hy) {
     const m = this.m, P = a.prop;
     a.atk.connected = true;
-    if (P) { P.uses--; P.dent = Math.min(3, P.dent + 1); }
+    if (P) P.dent = Math.min(3, P.dent + 1);
     if (v.st === 'GUARD' && facing && v.guardT <= B.perfectGuard) {
       m.props.drop(a, 'parry', -dir); this.stagger(a, .7, v); this.addFin(v, B.finPerfect); v.perfects++;
       m.hitstop(.12); m.emit('parry', { a, v, x: hx, y: hy }); m.emit('chairParry', { a, v });
@@ -134,7 +135,7 @@ export class CombatSystem {
       v.stun -= v.maxStun * .5; v.regenDelay = B.stunRegenDelay; this.damage(v, 2, 0, a, { chip: true });
       m.hitstop(.12); m.emit('chairHit', { a, v, p: P, guarded: true, x: hx, y: hy });
       if (v.stun <= 0) { v.stun = v.maxStun * .25; this.stagger(v, B.guardBreakStagger, a); m.emit('guardBreak', { a, v }); } else { v.vx = dir * 160; m.anim.kick(v, 'guardHit', .25); }
-      if (P && P.uses <= 0) m.props.breakProp(P);
+      if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 90, -180); P.x = hx; P.y = hy - 10; } }
       return 'block';
     }
     const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
@@ -143,13 +144,14 @@ export class CombatSystem {
     this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
     m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
     m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
-    if (P && P.uses <= 0) m.props.breakProp(P);
+    if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 70, -200); P.x = hx; P.y = hy - 10; } }
     if (v.st === 'KO' || !v.alive) return 'ko';
     if (v.link && v.link.kind !== 'move') m.grapple.breakLink(v.link, 'hit');
     if (v.link && v.link.kind === 'move' && v.link.a === v && !v.link.committed) m.wrestle.cancel(v.link, 'hit');
     if (v.st === 'PIN') m.breakPin('hit');
-    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .6); m.anim.kickBody(v, dir); return 'hit'; }
-    m.stun.breakStun(v, a, dir * 150 / v.stats.kbr, -150, dir);
+    if (v.st === 'DOWN' || v.st === 'PINNED') { v.hitShake = .2; v.flash = .12; v.downClock = Math.max(0, (v.downClock || 0) - .4); m.anim.kickBody(v, dir); return 'hit'; }
+    if (v.chairImm > 0) { v.hs = .45; v.hsKind = 'stand'; v.set('HITSTUN', { force: true, clip: 'hitHeavy' }); v.vx = dir * 140; m.emit('chairShrug', { v }); return 'hit'; }
+    m.stun.chairDown(v, a, dir);
     return 'hit';
   }
   react(a, v, d, dir, counterHit) {
