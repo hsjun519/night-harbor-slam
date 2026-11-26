@@ -16,7 +16,7 @@ export class Ragdoll {
     for (let i = 0; i < N; i++) { this.x[i] = this.px[i] = P[SRC[i] * 2]; this.y[i] = this.py[i] = P[SRC[i] * 2 + 1]; }
     const d = dims;
     this.con = [[0, 1, d.spine], [1, 2, d.nk + d.hd], [1, 3, d.ua], [3, 4, d.fa], [1, 5, d.ua], [5, 6, d.fa], [0, 7, d.th], [7, 8, d.sh], [0, 9, d.th], [9, 10, d.sh]];
-    this.t = 0; this.still = 0; this.ground = false; this.over = false; this.side = 'in'; this.hitGround = 0; this.hitWall = 0; this.ropeHit = 0; this.lastDt = 1 / 60; this.maxT = 2.4;
+    this.t = 0; this.still = 0; this.ground = false; this.over = false; this.side = 'in'; this.hitGround = 0; this.hitWall = 0; this.ropeHit = 0; this.lastDt = 1 / 60; this.maxT = 1.9;
     this.dragT = 0;
   }
   // vx, vy in px/s, spin in rad/s around the chest-pelvis middle.
@@ -43,9 +43,12 @@ export class Ragdoll {
     const { x, y, px, py, r, m } = this;
     // Verlet keeps velocity as a position difference; rescale it for this step, but never by a wild ratio.
     const k = Math.min(3, Math.max(1 / 3, h / (this.lastDt || h))); this.lastDt = h;
-    const damp = this.ground ? .985 : .998;
+    const damp = this.ground ? .97 : .998, vmax = (this.ground ? 520 : 950) * h;
     for (let i = 0; i < N; i++) {
-      const vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;
+      let vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;
+      // a hard cap: no joint may fling faster than a thrown body
+      const sp = Math.hypot(vx, vy);
+      if (sp > vmax) { vx *= vmax / sp; vy *= vmax / sp; }
       px[i] = x[i]; py[i] = y[i];
       x[i] += vx; y[i] += vy + G * h * h;
     }
@@ -55,7 +58,7 @@ export class Ragdoll {
       // keep the head off the hips and the knees off the chest
       this.minDist(2, 0, d.spine * .86 + d.hd * .5, .5); this.minDist(7, 1, d.spine * .62, .4); this.minDist(9, 1, d.spine * .62, .4);
       this.minDist(2, 7, d.hd * .8, .2); this.minDist(2, 9, d.hd * .8, .2);
-      this.limit(0, 7, 8, f); this.limit(0, 9, 10, f); this.limit(1, 3, 4, -f); this.limit(1, 5, 6, -f);
+      if (it >= 4) { this.limit(0, 7, 8, f); this.limit(0, 9, 10, f); this.limit(1, 3, 4, -f); this.limit(1, 5, 6, -f); }
       if (it > 2) this.collide(arena, h);
     }
     void m; void r;
@@ -70,7 +73,7 @@ export class Ragdoll {
     const { x, y } = this, ux = x[b] - x[a], uy = y[b] - y[a], vx = x[c] - x[b], vy = y[c] - y[b], cr = (ux * vy - uy * vx) * s;
     if (cr >= 0) return;
     const L = Math.hypot(ux, uy) || 1, V = Math.hypot(vx, vy) || 1, tx = x[b] + ux / L * V, ty = y[b] + uy / L * V;
-    x[c] += (tx - x[c]) * .35; y[c] += (ty - y[c]) * .35;
+    x[c] += (tx - x[c]) * .18; y[c] += (ty - y[c]) * .18;
   }
   collide(ar, h) {
     const { x, y, px, py, r } = this;
@@ -91,8 +94,9 @@ export class Ragdoll {
           const hgt = ar.matY - y[i];
           if (hgt < ar.ropeH + 6) {
             const lo = ar.ropeL + r[i] * .3, hi = ar.ropeR - r[i] * .3;
-            if (x[i] < lo) { const p = lo - x[i]; x[i] += p * .5; if (px[i] > x[i]) px[i] = x[i] + (x[i] - px[i]) * .25; ar.press('L', p * 1.4); this.ropeHit = 1; }
-            else if (x[i] > hi) { const p = x[i] - hi; x[i] -= p * .5; if (px[i] < x[i]) px[i] = x[i] + (x[i] - px[i]) * .25; ar.press('R', p * 1.4); this.ropeHit = 1; }
+            // project onto the rope line and reflect only the outward motion, so the rope never adds energy
+            if (x[i] < lo) { const v = x[i] - px[i], p = lo - x[i]; x[i] = lo; px[i] = v < 0 ? lo + v * .3 : lo - v; if (hgt > 4) { ar.press('L', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
+            else if (x[i] > hi) { const v = x[i] - px[i], p = x[i] - hi; x[i] = hi; px[i] = v > 0 ? hi + v * .3 : hi - v; if (hgt > 4) { ar.press('R', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
           }
         }
         if (this.side === 'out' && y[i] > ar.matY + 6) { // apron face
@@ -113,7 +117,7 @@ export class Ragdoll {
       }
     }
   }
-  done() { return (this.still > .14 && this.t > .3) || this.t > this.maxT; }
+  done() { return (this.still > .12 && this.t > .3) || (this.ground && this.t > 1.1 && this.speed() < 140) || this.t > this.maxT; }
   // Writes joints with exact limb lengths.
   toJoints(j) {
     const { x, y, d, face: f } = this, P = j.p;

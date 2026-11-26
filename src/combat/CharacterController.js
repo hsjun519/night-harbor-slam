@@ -213,6 +213,7 @@ export const CONTROL = {
     const d = a.def;
     a.t += dt;
     if (d.run) { const k = d.carry || .8; if (a.t < d.startup + d.active) f.vx = f.face * Math.max(Math.abs(f.vx) * (1 - dt * .9), 120 * k); else friction(f, dt, .55); }
+    else if (d.step && a.t < d.startup + d.active) f.vx = f.face * d.step * f.stats.spd; // pushing strikes walk the body forward
     else if (a.t > d.startup * .6) friction(f, dt, .6);
     let rec = d.recover;
     const repeats = f.staleList.filter(x => x === d.id).length;

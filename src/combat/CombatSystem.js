@@ -39,6 +39,8 @@ export class CombatSystem {
         if (!sd.hit && !floorHit && !helpOut) continue;
         if (d.floorOnly && !floorHit) continue;
         if (v.st === 'HITSTUN' && v.hsKind === 'lie' && !d.ground && !d.lowHit && !d.air) continue;
+        // a flying body can be juggled only twice, and not at all once it lies on the mat
+        if (v.st === 'HITSTUN' && v.hsKind === 'launch' && ((v.juggle || 0) >= 2 || (v.rag && v.rag.ground && !d.ground))) continue;
         const b = this.hurtbox(v);
         if (hb.x1 < b.x0 || hb.x0 > b.x1 || hb.y1 < b.y0 || hb.y0 > b.y1) continue;
         a.atk.hit.add(v);
@@ -121,7 +123,8 @@ export class CombatSystem {
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
     const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON';
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
-    if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak || (v.rag && v.st === 'HITSTUN')) {
+    if (v.rag && v.st === 'HITSTUN') { v.juggle = (v.juggle || 0) + 1; const k = .55 / v.juggle; v.rag.kick(dir * kb * k, -(d.up || 90) * k, dir * 2); return; }
+    if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak) {
       this.launch(v, dir * kb * (onPerch ? .9 : 1), -(d.up || 90) / Math.sqrt(v.stats.kbr), dir * (d.up > 180 ? 5.5 : 3.2), a);
       if (v.combo.n >= B.comboBreak) { v.inv = .55; v.combo.n = 0; }
       return;
@@ -136,7 +139,7 @@ export class CombatSystem {
   }
   launch(v, vx, vy, spin, a) {
     if (v.st === 'KO' || !v.alive) return;
-    v.hsKind = 'launch'; v.hs = 9;
+    v.hsKind = 'launch'; v.hs = 9; v.juggle = 0;
     v.set('HITSTUN', { force: true, clip: 'limpAir' });
     v.ragdoll(vx, vy, spin);
     v.wallHit = false;

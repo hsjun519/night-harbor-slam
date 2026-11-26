@@ -2677,7 +2677,7 @@ __m["data/balance.js"] = (function () {
 // Every tunable number of the fight, in one place. Change values here; no system hard-codes them.
 const BALANCE = {
   // movement
-  gravity: 980, walk: 104, run: 196, runAfter: .42, doubleTap: .24, accel: 1250, decel: 1500, airAccel: 520, jump: 322, maxFall: 620,
+  gravity: 980, walk: 104, run: 196, runAfter: .85, doubleTap: .24, accel: 1250, decel: 1500, airAccel: 520, jump: 322, maxFall: 620,
   ropeBoost: 1.42, ropeBoostTime: .75, ropeLean: .22,
   // stun gauge
   stunRegenDelay: 1.8, stunRegen: 8.5, stunAfterDown: .92, stunAfterDownLoss: .05, stunAfterDownMin: .7, stunAfterMove: .62,
@@ -2716,23 +2716,23 @@ const ATTACKS = {
   hook: { name: '훅', startup: .17, active: .07, recover: .34, reach: 42, low: 42, high: 82, hp: 3.2, stun: 18, kb: 170, hs: .42, stop: .085, lv: 3, wind: 'sp-14 hd-4 a-66/64 b60/90 t4/12 u-12/24', hit: 'sp26 hd-14 a84/44 b4/90 t42/28 u-34/8 ox8', follow: 'sp32 hd-16 a104/60 b0/90 t44/30 u-36/10 ox8', sfx: 'punch2' },
   uppercut: { name: '어퍼컷', startup: .19, active: .07, recover: .42, reach: 36, low: 40, high: 96, hp: 3.6, stun: 21, kb: 80, up: 230, hs: .5, stop: .1, lv: 4, wind: 'sp32 hd-14 a-34/64 b50/100 t54/74 u6/64', hit: 'sp-10 hd-16 a146/44 b0/90 t12/6 u-18/12 lift5', follow: 'sp-16 hd-20 a168/24 b-6/80 t8/4 u-20/14 lift7', sfx: 'punch3', holdR: .4 },
   chop: { name: '손날치기', startup: .14, active: .06, recover: .26, reach: 38, low: 42, high: 76, hp: 2.3, stun: 13, kb: 60, hs: .32, stop: .06, lv: 2, hand: 'open', wind: 'sp-10 hd-6 a148/64 b50/80 t12/14 u-22/16', hit: 'sp22 hd-10 a80/14 b10/90 t32/22 u-28/8', follow: 'sp28 hd-12 a52/10 b6/90 t34/24 u-30/8', sfx: 'chop' },
-  palm: { name: '장타', startup: .13, active: .06, recover: .24, reach: 38, low: 42, high: 78, hp: 2, stun: 12, kb: 120, hs: .3, stop: .055, lv: 2, hand: 'open', wind: 'sp2 hd-6 a-10/130 b50/90 t20/26 u-22/20', hit: 'sp22 hd-12 a92/4 b30/100 t38/24 u-32/6 ox4', sfx: 'punch1' },
+  palm: { name: '장타', step: 60, startup: .13, active: .06, recover: .24, reach: 38, low: 42, high: 78, hp: 2, stun: 12, kb: 120, hs: .3, stop: .055, lv: 2, hand: 'open', wind: 'sp2 hd-6 a-10/130 b50/90 t20/26 u-22/20', hit: 'sp22 hd-12 a92/4 b30/100 t38/24 u-32/6 ox4', sfx: 'punch1' },
   lowkick: { name: '로우킥', startup: .12, active: .06, recover: .22, reach: 40, low: 6, high: 40, hp: 1.9, stun: 11, kb: 40, hs: .28, stop: .05, lv: 1, lowHit: 1, wind: 'sp2 hd-4 a30/90 b56/80 t-24/60 u-4/10', hit: 'sp-10 hd2 a-10/60 b50/80 t54/4 u-8/10', follow: 'sp-8 hd2 a-6/64 b50/80 t62/12 u-8/10', sfx: 'kick1' },
   midkick: { name: '미들킥', startup: .16, active: .07, recover: .28, reach: 46, low: 26, high: 66, hp: 2.7, stun: 15, kb: 130, hs: .36, stop: .07, lv: 2, wind: 'sp-4 hd0 a20/80 b60/80 t70/104 u-8/10', hit: 'sp-24 hd10 a-24/40 b44/80 t94/2 u-8/8', follow: 'sp-22 hd8 a-20/44 b44/80 t90/20 u-8/8', sfx: 'kick2' },
   spinkick: { name: '돌려차기', startup: .23, active: .08, recover: .36, reach: 50, low: 34, high: 88, hp: 3.7, stun: 20, kb: 200, up: 60, hs: .46, stop: .09, lv: 3, spin: 1, wind: 'sp10 hd-6 a30/60 b40/60 t30/60 u-10/20', hit: 'sp-34 hd16 a-30/30 b30/60 t112/2 u-6/8', follow: 'sp-26 hd10 a-24/34 b34/60 t96/10 u-6/8', sfx: 'kick2' },
   knee: { name: '니킥', startup: .13, active: .07, recover: .26, reach: 32, low: 28, high: 64, hp: 2.6, stun: 14, kb: 80, hs: .34, stop: .065, lv: 2, wind: 'sp14 hd-6 a70/40 b76/40 t-10/60 u-6/10', hit: 'sp-2 hd-6 a20/60 b24/60 t96/116 u-12/8 lift3', sfx: 'kick1' },
   headbutt: { name: '박치기', startup: .19, active: .06, recover: .36, reach: 34, low: 50, high: 86, hp: 3.4, stun: 23, kb: 90, hs: .44, stop: .1, lv: 3, armor: 1, wind: 'sp-18 hd-18 a-30/50 b-20/50 t16/14 u-24/16', hit: 'sp40 hd18 a-24/50 b-14/50 t36/34 u-30/10 ox9', sfx: 'punch3' },
-  belly: { name: '배치기', startup: .2, active: .1, recover: .34, reach: 38, low: 20, high: 70, hp: 2.8, stun: 18, kb: 220, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
+  belly: { name: '배치기', step: 120, startup: .2, active: .1, recover: .34, reach: 38, low: 20, high: 70, hp: 2.8, stun: 18, kb: 220, hs: .4, stop: .08, lv: 3, armor: 1, wind: 'sp16 hd-4 a-10/40 b0/40 t26/26 u-20/20', hit: 'sp-22 hd6 a-50/20 b-40/20 t34/20 u-34/6 ox12', sfx: 'belly' },
   slap: { name: '따귀', startup: .11, active: .06, recover: .2, reach: 38, low: 48, high: 82, hp: 1.5, stun: 13.5, kb: 40, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp-8 hd-4 a-64/10 b56/70 t18/18 u-22/16', hit: 'sp14 hd-6 a100/0 b50/70 t26/22 u-24/10', follow: 'sp20 hd-6 a136/16 b46/70 t28/22 u-24/10', sfx: 'slap' },
   backhand: { name: '손등 따귀', startup: .1, active: .06, recover: .24, reach: 38, low: 48, high: 82, hp: 1.7, stun: 14, kb: 60, hs: .3, stop: .06, lv: 1, hand: 'open', wind: 'sp18 hd-6 a140/40 b46/70 t28/22 u-24/10', hit: 'sp4 hd-4 a84/0 b50/70 t22/20 u-22/12', follow: 'sp-6 hd-4 a20/10 b54/70 t18/18 u-22/14', sfx: 'slap' },
   elbow: { name: '팔꿈치', startup: .11, active: .06, recover: .22, reach: 32, low: 46, high: 80, hp: 2.2, stun: 12.5, kb: 70, hs: .32, stop: .06, lv: 2, wind: 'sp-4 hd-4 a20/130 b40/90 t18/18 u-22/16', hit: 'sp24 hd-8 a92/128 b10/90 t36/24 u-30/8 ox5', sfx: 'punch2' },
   overhand: { name: '내려찍기', startup: .23, active: .07, recover: .4, reach: 40, low: 34, high: 90, hp: 4, stun: 21, kb: 120, hs: .5, stop: .1, lv: 3, armor: 1, wind: 'sp-18 hd-10 a168/50 b172/46 t12/12 u-22/14', hit: 'sp38 hd-12 a66/10 b70/10 t44/44 u-24/30 ox4', sfx: 'punch3' },
-  claw: { name: '할퀴기', startup: .12, active: .07, recover: .22, reach: 42, low: 34, high: 80, hp: 1.9, stun: 11, kb: 56, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp6 hd-12 a150/40 b40/60 t30/40 u-24/34', hit: 'sp34 hd-18 a70/20 b10/50 t46/44 u-32/24 ox4', follow: 'sp42 hd-20 a30/20 b6/50 t48/46 u-34/24 ox4', sfx: 'slash' },
+  claw: { name: '할퀴기', step: 60, startup: .12, active: .07, recover: .22, reach: 42, low: 34, high: 80, hp: 1.9, stun: 11, kb: 56, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp6 hd-12 a150/40 b40/60 t30/40 u-24/34', hit: 'sp34 hd-18 a70/20 b10/50 t46/44 u-32/24 ox4', follow: 'sp42 hd-20 a30/20 b6/50 t48/46 u-34/24 ox4', sfx: 'slash' },
   claw2: { name: '되할퀴기', startup: .11, active: .07, recover: .26, reach: 44, low: 30, high: 84, hp: 2.2, stun: 12, kb: 70, hs: .3, stop: .055, lv: 2, hand: 'open', wind: 'sp40 hd-18 a30/30 b0/60 t46/44 u-32/24', hit: 'sp16 hd-10 a20/40 b100/10 t34/34 u-28/20 ox4', follow: 'sp4 hd-6 a24/40 b140/20 t28/30 u-26/18', sfx: 'slash' },
   whipA: { name: '촉수 채찍', startup: .13, active: .07, recover: .2, reach: 52, low: 30, high: 76, hp: 1.6, stun: 10, kb: 40, hs: .28, stop: .045, lv: 1, hand: 'open', wind: 'sp-6 hd-4 a120/60 b40/60 t18/20 u-22/18', hit: 'sp20 hd-8 a88/0 b20/80 t34/22 u-30/8 ox4', sfx: 'whip' },
   spinback: { name: '스핀 블로', startup: .2, active: .07, recover: .32, reach: 44, low: 46, high: 84, hp: 3, stun: 18, kb: 160, hs: .42, stop: .085, lv: 3, spin: 1, wind: 'sp10 hd-6 a-40/60 b60/60 t20/24 u-20/20', hit: 'sp8 hd-8 a96/0 b-40/40 t30/22 u-28/10 ox4', follow: 'sp2 hd-4 a130/10 b-40/40 t24/20 u-24/12 ox4', sfx: 'punch2' },
   capoeira: { name: '풍차 발차기', startup: .2, active: .1, recover: .32, reach: 50, low: 10, high: 78, hp: 3.2, stun: 19, kb: 170, up: 70, hs: .44, stop: .08, lv: 3, spin: 1, wind: 'sp50 hd-10 a30/60 b40/60 t60/90 u20/70', hit: 'r-90 sp-10 hd0 a160/10 b120/20 t96/4 u40/30', follow: 'r-70 sp-10 hd0 a160/10 b120/20 t80/10 u30/40', sfx: 'kick2' },
-  sumoPush: { name: '밀어치기', startup: .12, active: .07, recover: .2, reach: 40, low: 36, high: 78, hp: 1.7, stun: 11.5, kb: 70, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
+  sumoPush: { name: '밀어치기', step: 95, startup: .12, active: .07, recover: .2, reach: 40, low: 36, high: 78, hp: 1.7, stun: 11.5, kb: 70, hs: .28, stop: .05, lv: 1, hand: 'open', wind: 'sp10 hd-6 a10/120 b70/40 t26/30 u-24/26', hit: 'sp20 hd-10 a88/4 b20/110 t34/30 u-28/22 ox5', sfx: 'punch1' },
   // running
   lariat: { name: '래리어트', startup: .09, active: .18, recover: .34, reach: 40, low: 50, high: 86, hp: 4.4, stun: 24, kb: 230, up: 150, hs: .6, stop: .11, lv: 4, run: 1, carry: .9, wind: 'sp6 hd-4 a30/20 b50/60 t40/40 u-30/30', hit: 'sp16 hd-8 a96/4 b-40/60 t46/20 u-40/30', follow: 'sp26 hd-12 a120/10 b-30/60 t50/24 u-40/20', sfx: 'punch3' },
   shoulder: { name: '숄더 태클', startup: .07, active: .2, recover: .34, reach: 32, low: 30, high: 76, hp: 4, stun: 22, kb: 300, up: 110, hs: .55, stop: .1, lv: 4, run: 1, carry: 1, armor: 1, wind: 'sp30 hd-16 a30/100 b30/90 t40/40 u-30/30', hit: 'sp46 hd-32 a34/116 b24/90 t56/44 u-42/20', sfx: 'punch3' },
@@ -3256,7 +3256,7 @@ class Ragdoll {
     for (let i = 0; i < N; i++) { this.x[i] = this.px[i] = P[SRC[i] * 2]; this.y[i] = this.py[i] = P[SRC[i] * 2 + 1]; }
     const d = dims;
     this.con = [[0, 1, d.spine], [1, 2, d.nk + d.hd], [1, 3, d.ua], [3, 4, d.fa], [1, 5, d.ua], [5, 6, d.fa], [0, 7, d.th], [7, 8, d.sh], [0, 9, d.th], [9, 10, d.sh]];
-    this.t = 0; this.still = 0; this.ground = false; this.over = false; this.side = 'in'; this.hitGround = 0; this.hitWall = 0; this.ropeHit = 0; this.lastDt = 1 / 60; this.maxT = 2.4;
+    this.t = 0; this.still = 0; this.ground = false; this.over = false; this.side = 'in'; this.hitGround = 0; this.hitWall = 0; this.ropeHit = 0; this.lastDt = 1 / 60; this.maxT = 1.9;
     this.dragT = 0;
   }
   // vx, vy in px/s, spin in rad/s around the chest-pelvis middle.
@@ -3283,9 +3283,12 @@ class Ragdoll {
     const { x, y, px, py, r, m } = this;
     // Verlet keeps velocity as a position difference; rescale it for this step, but never by a wild ratio.
     const k = Math.min(3, Math.max(1 / 3, h / (this.lastDt || h))); this.lastDt = h;
-    const damp = this.ground ? .985 : .998;
+    const damp = this.ground ? .97 : .998, vmax = (this.ground ? 520 : 950) * h;
     for (let i = 0; i < N; i++) {
-      const vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;
+      let vx = (x[i] - px[i]) * k * damp, vy = (y[i] - py[i]) * k * damp;
+      // a hard cap: no joint may fling faster than a thrown body
+      const sp = Math.hypot(vx, vy);
+      if (sp > vmax) { vx *= vmax / sp; vy *= vmax / sp; }
       px[i] = x[i]; py[i] = y[i];
       x[i] += vx; y[i] += vy + G * h * h;
     }
@@ -3295,7 +3298,7 @@ class Ragdoll {
       // keep the head off the hips and the knees off the chest
       this.minDist(2, 0, d.spine * .86 + d.hd * .5, .5); this.minDist(7, 1, d.spine * .62, .4); this.minDist(9, 1, d.spine * .62, .4);
       this.minDist(2, 7, d.hd * .8, .2); this.minDist(2, 9, d.hd * .8, .2);
-      this.limit(0, 7, 8, f); this.limit(0, 9, 10, f); this.limit(1, 3, 4, -f); this.limit(1, 5, 6, -f);
+      if (it >= 4) { this.limit(0, 7, 8, f); this.limit(0, 9, 10, f); this.limit(1, 3, 4, -f); this.limit(1, 5, 6, -f); }
       if (it > 2) this.collide(arena, h);
     }
     void m; void r;
@@ -3310,7 +3313,7 @@ class Ragdoll {
     const { x, y } = this, ux = x[b] - x[a], uy = y[b] - y[a], vx = x[c] - x[b], vy = y[c] - y[b], cr = (ux * vy - uy * vx) * s;
     if (cr >= 0) return;
     const L = Math.hypot(ux, uy) || 1, V = Math.hypot(vx, vy) || 1, tx = x[b] + ux / L * V, ty = y[b] + uy / L * V;
-    x[c] += (tx - x[c]) * .35; y[c] += (ty - y[c]) * .35;
+    x[c] += (tx - x[c]) * .18; y[c] += (ty - y[c]) * .18;
   }
   collide(ar, h) {
     const { x, y, px, py, r } = this;
@@ -3331,8 +3334,9 @@ class Ragdoll {
           const hgt = ar.matY - y[i];
           if (hgt < ar.ropeH + 6) {
             const lo = ar.ropeL + r[i] * .3, hi = ar.ropeR - r[i] * .3;
-            if (x[i] < lo) { const p = lo - x[i]; x[i] += p * .5; if (px[i] > x[i]) px[i] = x[i] + (x[i] - px[i]) * .25; ar.press('L', p * 1.4); this.ropeHit = 1; }
-            else if (x[i] > hi) { const p = x[i] - hi; x[i] -= p * .5; if (px[i] < x[i]) px[i] = x[i] + (x[i] - px[i]) * .25; ar.press('R', p * 1.4); this.ropeHit = 1; }
+            // project onto the rope line and reflect only the outward motion, so the rope never adds energy
+            if (x[i] < lo) { const v = x[i] - px[i], p = lo - x[i]; x[i] = lo; px[i] = v < 0 ? lo + v * .3 : lo - v; if (hgt > 4) { ar.press('L', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
+            else if (x[i] > hi) { const v = x[i] - px[i], p = x[i] - hi; x[i] = hi; px[i] = v > 0 ? hi + v * .3 : hi - v; if (hgt > 4) { ar.press('R', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
           }
         }
         if (this.side === 'out' && y[i] > ar.matY + 6) { // apron face
@@ -3353,7 +3357,7 @@ class Ragdoll {
       }
     }
   }
-  done() { return (this.still > .14 && this.t > .3) || this.t > this.maxT; }
+  done() { return (this.still > .12 && this.t > .3) || (this.ground && this.t > 1.1 && this.speed() < 140) || this.t > this.maxT; }
   // Writes joints with exact limb lengths.
   toJoints(j) {
     const { x, y, d, face: f } = this, P = j.p;
@@ -3688,6 +3692,7 @@ const CONTROL = {
     const d = a.def;
     a.t += dt;
     if (d.run) { const k = d.carry || .8; if (a.t < d.startup + d.active) f.vx = f.face * Math.max(Math.abs(f.vx) * (1 - dt * .9), 120 * k); else friction(f, dt, .55); }
+    else if (d.step && a.t < d.startup + d.active) f.vx = f.face * d.step * f.stats.spd; // pushing strikes walk the body forward
     else if (a.t > d.startup * .6) friction(f, dt, .6);
     let rec = d.recover;
     const repeats = f.staleList.filter(x => x === d.id).length;
@@ -4068,6 +4073,8 @@ class CombatSystem {
         if (!sd.hit && !floorHit && !helpOut) continue;
         if (d.floorOnly && !floorHit) continue;
         if (v.st === 'HITSTUN' && v.hsKind === 'lie' && !d.ground && !d.lowHit && !d.air) continue;
+        // a flying body can be juggled only twice, and not at all once it lies on the mat
+        if (v.st === 'HITSTUN' && v.hsKind === 'launch' && ((v.juggle || 0) >= 2 || (v.rag && v.rag.ground && !d.ground))) continue;
         const b = this.hurtbox(v);
         if (hb.x1 < b.x0 || hb.x0 > b.x1 || hb.y1 < b.y0 || hb.y0 > b.y1) continue;
         a.atk.hit.add(v);
@@ -4150,7 +4157,8 @@ class CombatSystem {
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
     const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON';
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
-    if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak || (v.rag && v.st === 'HITSTUN')) {
+    if (v.rag && v.st === 'HITSTUN') { v.juggle = (v.juggle || 0) + 1; const k = .55 / v.juggle; v.rag.kick(dir * kb * k, -(d.up || 90) * k, dir * 2); return; }
+    if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak) {
       this.launch(v, dir * kb * (onPerch ? .9 : 1), -(d.up || 90) / Math.sqrt(v.stats.kbr), dir * (d.up > 180 ? 5.5 : 3.2), a);
       if (v.combo.n >= B.comboBreak) { v.inv = .55; v.combo.n = 0; }
       return;
@@ -4165,7 +4173,7 @@ class CombatSystem {
   }
   launch(v, vx, vy, spin, a) {
     if (v.st === 'KO' || !v.alive) return;
-    v.hsKind = 'launch'; v.hs = 9;
+    v.hsKind = 'launch'; v.hs = 9; v.juggle = 0;
     v.set('HITSTUN', { force: true, clip: 'limpAir' });
     v.ragdoll(vx, vy, spin);
     v.wallHit = false;

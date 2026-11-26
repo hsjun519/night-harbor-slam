@@ -27,7 +27,7 @@ function run(name, me, foe, script, o = {}) {
         if (step.mx === 'to') I.mx = Math.abs(d) > (step.near || 34) ? Math.sign(d) : 0; else if (step.mx) I.mx = step.mx;
         if (step.hold) for (const k of step.hold) I[k] = true;
         if (i === 0 && step.press) for (const k of step.press) I[k] = true;
-        if (step.rate && i % step.rate === 0 && step.tap) for (const k of step.tap) I[k] = true;
+        if (step.rate && i % step.rate === 0 && step.tap && (step.tap[0] !== 'atk' || Math.abs(d) < 62)) for (const k of step.tap) I[k] = true;
         if (step.fn) step.fn(m, h, v, i);
         m.update(1 / 60); t += 1 / 60;
         check(m, `${name} @${t.toFixed(2)}s`);
@@ -38,7 +38,7 @@ function run(name, me, foe, script, o = {}) {
   } catch (e) { fails++; log(`FAIL ${name}: ${e.message}`); }
   return m;
 }
-const punchDown = [{ t: .9, mx: 'to' }, { t: 6, mx: 'to', near: 30, tap: ['atk'], rate: 9 }];
+const punchDown = [{ t: .9, mx: 'to' }, { t: 6, mx: 'to', near: 30, tap: ['atk'], rate: 9, fn: (m, h) => { h.running = false; } }];
 const slots = [['n', {}], ['f', { fwd: 1 }], ['b', { back: 1 }], ['u', { up: 1 }], ['d', { down: 1 }]];
 for (const me of ['rookie', 'taesan', 'haneul', 'mandeok', 'bokja']) {
   run(`${me} punches`, me, 'dohyun', [...punchDown, { t: .1, expect: (m, h, v) => v.downs >= 1 }]);
