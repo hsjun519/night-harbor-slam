@@ -3,6 +3,7 @@
 //   { kind: 'coachChair', when, below, at } the opponent's coach distracts the referee and slides a chair in
 //   { kind: 'chairs', xs: [x, ...] }        chairs lying around from the start
 // The people who run in are "cameos": not fighters, no hit boxes. MatchScene draws them and their speech.
+import { CHARACTERS } from '../data/characters.js';
 import { clamp, sgn, pick } from '../core/util.js';
 import { BALANCE as B } from '../data/balance.js';
 import { LOOKS } from '../data/looks.js';
@@ -12,6 +13,10 @@ const LINES = {
   bossHit: ['하하! 시청률 폭발이다!', '바로 그거야! 신문 1면이다!', '좋아, 관객이 일어섰어!'],
   bossMiss: ['…피하면 어떡하나! 의자 값이 얼만데!', '어허, 몸놀림은 좋군!', '그 의자, 써먹기라도 하게!'],
   bossCatch: ['오호, 받아 냈군! 쓸 줄은 알지?', '역시 내가 고른 선수야!'],
+  rivalIn: ['BLACK ROPE를 잊었나?', '재밌어 보이는군. 끼워 줘야지!', '이건 축하 선물이다!'],
+  rivalHit: ['다음은 링 위에서 보자.', '이게 BLACK ROPE다!', '박수! 박수!'],
+  rivalMiss: ['…쳇, 운 좋은 녀석.', '피했다고? 다음엔 안 놓친다.'],
+  rivalCatch: ['내 의자를…?!', '…돌려줘라, 그거.'],
   coachIn: ['심판님! 저기 관객석에 흉기가!', '심판! 신발 끈 풀렸어요, 신발 끈!', '심판님, 저 사람 손에 기름 발랐어요!'],
   coachSlide: ['받아! 이걸로 끝내 버려!', '지금이야! 의자!'],
   coachCheer: ['때려! 때려!', '그렇지! 그거야!', '심판은 내가 붙잡고 있을게!'],
@@ -44,6 +49,7 @@ export class MatchEvents {
   begin(e) {
     const m = this.m, ar = m.arena, h = m.human;
     if (e.kind === 'bossChair') this.walkIn({ who: 'boss', name: '구만석 사장', look: LOOKS.boss, target: h, e, speed: 120, stance: 'arms' });
+    else if (e.kind === 'rivalRunIn') { const C = CHARACTERS[e.who]; if (C && h) { m.runIn = { who: e.who, hit: false, nc: false }; this.walkIn({ who: 'rival', id: e.who, name: C.name, look: C.look, target: h, e, speed: 200, stance: 'street' }); } }
     else if (e.kind === 'coachChair') { const foe = this.foeOf(h); if (foe) this.walkIn({ who: 'coach', name: e.coachName || '상대 코치', look: LOOKS.coach || LOOKS.foreman, target: foe, e, speed: 230, stance: 'calm' }); }
     void ar;
   }
@@ -69,6 +75,7 @@ export class MatchEvents {
     const T = c.target;
     switch (c.act) {
       case 'enter':
+        if (c.who === 'rival') { if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, 'shout'); this.say(c, pick(LINES.rivalIn), 1.4); } break; }
         if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, c.who === 'boss' ? 'shout' : 'distract'); if (c.who === 'boss') this.say(c, pick(LINES.bossShout), 1.5); else { this.say(c, pick(LINES.coachIn), 1.6); m.ref.distract = { t: 3.2, x: c.x }; m.emit('refDistract', { c }); } }
         break;
       // ---- the boss ----
@@ -79,8 +86,11 @@ export class MatchEvents {
         if (p && !c.reacted && (p.state !== 'fly' || p.hit.size)) {
           c.reacted = true;
           const caught = p.state === 'held' && p.holder === T, hit = p.hit.has(T) && T.st === 'DOWN';
-          this.say(c, pick(caught ? LINES.bossCatch : hit ? LINES.bossHit : LINES.bossMiss), 1.8);
+          const rv = c.who === 'rival';
+          this.say(c, pick(rv ? (caught ? LINES.rivalCatch : hit ? LINES.rivalHit : LINES.rivalMiss) : caught ? LINES.bossCatch : hit ? LINES.bossHit : LINES.bossMiss), 1.8);
           m.emit('bossReact', { c, caught, hit });
+          // a rival's chair that lands in front of the referee ends it: no contest (the run-in never decides a winner)
+          if (rv && m.runIn) { m.runIn.hit = hit; if (hit && !(m.ref.distract && m.ref.distract.t > 0) && m.phase === 'fight' && m.rng.chance(c.e.noContest || .35)) { m.runIn.nc = true; m.emit('noContest', { c }); m.end({ draw: true, how: 'nocontest', team: null }); } }
         }
         if (c.t > 2.6) this.go(c, 'leave');
         break;

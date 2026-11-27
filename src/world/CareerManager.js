@@ -1,4 +1,5 @@
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
+import { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } from './blackRope.js';
 import { RNG, clamp, deepClone, fmtMoney } from '../core/util.js';
 import { Save } from '../core/SaveManager.js';
 import { CHARACTERS, ROSTER_IDS } from '../data/characters.js';
@@ -167,7 +168,10 @@ export class Career {
   newLeague(season) {
     const base = ['baekpa', 'bjorn', 'taesan', 'neon', 'baeksang', 'mandeok', 'haneul', 'dongsu', 'dohyun', 'dueok', 'palcho', 'bokja'];
     if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
-    return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
+    const L = base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
+    // BLACK ROPE stays in the league once you have met them
+    if (this.d && this.d.br && this.d.br.stage !== 'NONE') BR.ids.forEach((id, i) => L.push({ id, pts: 60 + (id === 'brLeader' ? 14 : 8 - i * 2), w: 0, l: 0 }));
+    return L;
   }
   get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
   // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
@@ -248,6 +252,7 @@ export class Career {
     if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
     d.day++;
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
+    if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
     if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
     // league simulation: others win and lose too
     const r = new RNG(d.season * 100 + d.day);
@@ -300,6 +305,8 @@ export class Career {
       const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
       out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
     }
+    // BLACK ROPE: their special match (a rematch after a raid or a run-in, otherwise a challenge every few days)
+    { const bo = brOffer(this, mk); if (bo && !out.some(o => o.opp === bo.opp)) out.unshift(bo); }
     // events
     if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
     if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
@@ -341,6 +348,7 @@ export class Career {
       if (!won && (kind === 'brawl' || kind === 'revenge')) { money = 0; fame = kind === 'revenge' ? -1 : 0; }
       xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
       if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
+      if (c.opp && isBR(c.opp)) { out.lines.push(...brAfterMatch(this, c.opp, won, draw)); if (c.br) { const B = brState(d); B.rematch = 0; B.lastOffer = d.day; } }
       // ranking points
       if (kind === 'official' || kind === 'title') {
         d.record.official++;

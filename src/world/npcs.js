@@ -168,7 +168,8 @@ export function talk(id, c, W) {
       out.push({ act: () => W.openArenaList() });
       return out;
     }
-    case 'janitor': return [S(lastLine(c, 'janitor', ['어이 신인. 내가 30년째 이 체육관 바닥을 닦는데, 보는 눈은 있지. 넌 바닥에 자주 누울 상이야. 칭찬이야.', ...tips]))];
+    case 'janitor': if (d.br && d.br.lobby === 'damaged') return brRepairTalk(c, W, S);
+      return [S(lastLine(c, 'janitor', ['어이 신인. 내가 30년째 이 체육관 바닥을 닦는데, 보는 눈은 있지. 넌 바닥에 자주 누울 상이야. 칭찬이야.', ...tips]))];
     case 'reporter': {
       if (d.flags.interviewDay === d.day) return [S('오늘 인터뷰는 벌써 했잖아요. 기사 기대하세요! 사진은 제일 잘 나온 걸로… 고르려고 노력할게요.')];
       d.flags.interviewDay = d.day;
@@ -253,6 +254,15 @@ export const PRE = {
   galchi: { first: '이 동네는 우리 구역이야!', won: '또 털리러 왔냐?', lost: '지난번은 연습이었다고!', ring: '이 동네는 우리 구역이야! 얘들아, 쳐라!' },
   myeolchi: { first: '형님 말이 맞아요! 아마도요!', won: '헤헤, 또 이길 거예요. …아마도요.', lost: '형님, 저 사람 또 왔어요!', ring: '형님! 저 사람 진짜 커요! …아, 쳐요? 칠게요!' },
 };
+// after a lost LOBBY BRAWL: pay for the repair, help clean up (a time slot), or leave it to him for a few days
+function brRepairTalk(c, W, S) {
+  const d = c.d;
+  return [S('난장판이야. 소파는 뒤집히고, 액자는 깨지고, 훈련장 문짝은 떨어져 나갔어.'), S(`${d.br.fixAt}일까지 혼자 치울 생각이었는데… 도와줄 텐가?`), { choice: [
+    { label: '수리비 내기 (20,000원)', go: [{ if: () => c.canPay(20000), then: [{ act: () => { c.pay(20000); W.brLobbyFixed(); } }, S('돈이면 금방이지! 업자 불러서 오늘 안에 끝낸다.', { expr: 'happy' })], else: [S('…지갑 사정이 안 좋구먼. 같이 치우는 게 낫겠어.')] }] },
+    { label: '같이 치우기 (시간 1칸)', act: () => W.startTraining('cleanup') },
+    { label: '나중에', go: [S('그래, 천천히 해. 며칠 지나면 나 혼자서라도 끝내 놓지.')] },
+  ] }];
+}
 export function preFightLine(id, c) {
   const P = PRE[id], ch = CHARACTERS[id];
   if (!P) return ch ? ch.lines.intro : '…';

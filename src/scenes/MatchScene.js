@@ -27,7 +27,7 @@ import { drawPortrait } from '../render/head.js';
 
 import { MOVES } from '../data/moves.js';
 const MOVES_NAME = id => (MOVES[id] ? MOVES[id].name : id);
-const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃', ladder: '가방 획득', escape: '철창 탈출', iron: '아이언맨 폴 판정', falls: '폴 판정' };
+const HOW = { nocontest: '노 콘테스트 (난입)', ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃', ladder: '가방 획득', escape: '철창 탈출', iron: '아이언맨 폴 판정', falls: '폴 판정' };
 export class MatchScene {
   constructor(game, cfg, onEnd) {
     this.game = game; this.cfg = cfg; this.onEnd = onEnd;
@@ -49,6 +49,7 @@ export class MatchScene {
     this.online = cfg.online || null;
     if (this.online) { this.lock = new Lockstep(this.online.net, this.online.localIdx, this.online.delay || 4); this.online.net.on('close', () => { this.netLost = true; }); this.online.net.on('data', d => { if (d && d.t === 'bye') this.netLost = true; }); }
     { const SP0 = this.m.special; this.ar.setScreen(this.titleText(), (SP0 && SP0.type ? SPECIAL[SP0.type].name : MODES[this.m.mode].name) + (SP0 && SP0.falls ? ' · 3판 2선승' : SP0 && SP0.iron ? ' · 아이언맨' : ''), '#ffd65a'); }
+    { const hm = this.m.human, bf = this.m.fighters.find(f => f.char.br && (!hm || f.team !== hm.team)); if (bf) { this.ar.setScreen('BLACK ROPE', `${bf.name} — ${bf.char.nick}`, '#b066d8', true); this.game.screen.flash(.7, .3, 1, .3); } }   // their entrance: the crew's name on the board, purple light
   }
   titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
   get human() { return this.m.human; }
@@ -179,7 +180,8 @@ export class MatchScene {
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
     m.on('chairWarn', e => { A.sfx('warn'); });
-    m.on('cameoIn', e => { hud.push(e.c.who === 'boss' ? '사장 난입!' : '코치 난입!', { col: '#ffb347', sub: e.c.name, y: 150, life: 1.6, scale: 2 }); A.cheer(.7); });
+    m.on('cameoIn', e => { const rv = e.c.who === 'rival'; hud.push(e.c.who === 'boss' ? '사장 난입!' : rv ? 'BLACK ROPE 난입!' : '코치 난입!', { col: rv ? '#b066d8' : '#ffb347', sub: e.c.name, y: 150, life: 1.8, scale: 2 }); A.cheer(.7); if (rv) { A.sfx('warn'); S.flash(.7, .3, 1, .25); this.ar.setScreen('BLACK ROPE', e.c.name + ' 난입!', '#b066d8', true); } });
+    m.on('noContest', () => { A.sfx('bell3'); hud.push('노 콘테스트!', { col: '#b066d8', scale: 3, y: 100, life: 2.2, sub: '심판이 난입을 보고 경기를 멈췄다' }); });
     m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
     m.on('refDistract', () => { fx.word('심판이 한눈판다!', m.ref.x, m.ref.y - 100, '#ffd65a', 1); A.boo(.5); });
   }

@@ -30,6 +30,7 @@ export class Cutscene {
     this.run = [];
     while (this.q.length) {
       const s = this.q.shift();
+      if (s.when && !s.when()) continue;   // a step for the other branch of the story
       this.begin(s);
       this.run.push(s);
       if (!(this.q[0] && this.q[0].with)) break;

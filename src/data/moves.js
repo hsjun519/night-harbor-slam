@@ -456,6 +456,9 @@ export const MOVES = {
   },
 };
 // 선항 레슬링's finishers: 흰상아 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
+// BLACK ROPE: the leader's knot (a dragon suplex into the bridge), the wall's quarry slam (a power slam from higher up)
+MOVES.fKnot = Object.assign({}, MOVES.dragonSuplex, { name: '블랙 매듭', pos: 'fin', hp: 35, stun: 58, gain: 0, evo: null, desc: '양팔로 목을 묶어 브리지로 넘긴다. BLACK ROPE 리더의 피니셔.', ev: [[.1, 'cry'], [.18, 'grunt'], [.56, 'lift'], [.68, 'whoosh'], [.84, 'impact', { p: 2.2, d: 1, word: '블랙 매듭!' }]] });
+MOVES.fQuarry = Object.assign({}, MOVES.powerSlam, { name: '채석장 슬램', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, quake: 70, desc: '바위를 옮기듯 들어 올려 온몸으로 내리찍는다.', ev: [[.1, 'cry'], [.14, 'grunt'], [.42, 'lift'], [.62, 'whoosh'], [.78, 'impact', { p: 2.4, d: 1, word: '쿠구궁!!' }]] });
 MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '상아 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는 흰상아의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
 MOVES.fGodong = Object.assign({}, MOVES.powerbomb, { name: '선장의 닻', pos: 'fin', hp: 40, stun: 60, gain: 0, quake: 80, desc: '배 위에서 단련한 팔로 하늘까지 들어 올려 내리꽂는다.', ev: [[.1, 'cry'], [.2, 'grunt'], [.6, 'lift'], [.94, 'whoosh'], [1.12, 'impact', { p: 2.6, d: 1, word: '뱃고동!!' }]] });
 for (const id in MOVES) MOVES[id].id = id;
@@ -484,6 +487,11 @@ export const FINISHERS = {
   ink: { name: '먹물 문어발', type: 'stance', parts: ['fInk'], reach: 40, rear: 1, color: '#b066d8', line: '다리는 여덟, 팔도 여덟.' },
   shark: { name: '상어 이빨', type: 'dive', parts: ['fShark'], reach: 190, color: '#6f93bd', line: '피 냄새가 나는군.' },
   north: { name: '북해 폭풍밤', type: 'grab', parts: ['fNorth1', 'fNorth2'], reach: 48, armor: 1, color: '#c9a25a', line: '북쪽 바다를 보여주지!' },
+  knot: { name: '블랙 매듭', type: 'grab', parts: ['fKnot'], reach: 44, rear: 1, color: '#b066d8', line: '묶였으면 끝이다.' },
+  quarry: { name: '채석장 슬램', type: 'grab', parts: ['fQuarry'], reach: 48, armor: 1, color: '#c2333f', line: '…무너져라.' },
+  swallow: { name: '제비 낙하', type: 'dive', parts: ['fTyphoon'], reach: 180, color: '#d98cff', line: '하늘은 내 거야!' },
+  stitch: { name: '바늘땀 수플렉스', type: 'stance', parts: ['gRoll', 'gRoll', 'dragonSuplex'], reach: 40, rear: 1, color: '#9be3ff', line: '세 땀이면 충분해.' },
+  encore: { name: '앙코르 스핀', type: 'strike', parts: ['fNeon'], reach: 84, color: '#ffd65a', line: '앙코르! 앙코르!' },
   ivory: { name: '상아 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
   godong: { name: '선장의 닻', type: 'grab', parts: ['fGodong'], reach: 50, armor: 1, color: '#c9a22e', line: '닻을 내려라!' },
   blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },

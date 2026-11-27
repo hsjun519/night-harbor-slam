@@ -1,4 +1,5 @@
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
+import { BR } from './blackRope.js';
 import { clamp, fmtMoney, fmtTime, josa, RNG } from '../core/util.js';
 import { drawText, textWidth, wrapText } from '../render/pixelfont.js';
 import { UI, mixHex } from '../render/palette.js';
@@ -89,7 +90,7 @@ export class OffersMenu extends Menu {
       rect(u, on ? '#26315f' : '#141a36', 52, y, 536, 52); if (on) rect(u, '#ffd65a', 52, y, 2, 52);
       rect(u, '#05060f', 58, y + 4, 44, 44);
       if (ch) drawPortrait(u, ch.look, 'smug', 58, y + 4, 44, { px: 1, dy: 4 }); else { drawText(u, o.mode === 'rumble' ? '럼블' : '태그', 80, y + 18, { size: 11, align: 'c', color: '#ffd65a' }); }
-      const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀', rival: '라이벌' }[o.kind];
+      const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀', rival: '라이벌', brmatch: 'BLACK ROPE' }[o.kind];
       drawText(u, `[${tag}] ${o.oppName}${o.rank ? ` (${o.rank}위)` : ''}`, 110, y + 4, { color: o.kind === 'title' ? '#ffd65a' : '#ffffff' });
       drawText(u, `${matchName(o)} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
       drawText(u, o.desc, 110, y + 35, { size: 11, color: '#c9d4ff' });
@@ -423,6 +424,7 @@ export class InfoMenu extends Menu {
       const inj = d.injury, lvl = c.injuryLevel, col = lvl === 'danger' ? '#ff5b5b' : lvl === 'warn' ? '#ffb347' : UI.inj;
       const L = [[`전적`, `${d.record.w}승 ${d.record.l}패 ${d.record.d}무 (KO ${d.record.ko} · 핀 ${d.record.pin})`], ['랭킹', d.flags.champion ? '챔피언' : `${c.rank}위 / ${c.rankList().length}명`], ['명성', String(d.fame)], ['소지금', c.money()], ['날짜', c.timeText], ['계약', d.contract ? `${d.contract.oppName} (${d.contract.day}일까지)` : '없음'], ['연승', d.record.streak > 0 ? d.record.streak + '연승' : d.record.streak < 0 ? -d.record.streak + '연패' : '-'], ['타이틀', d.titles.length ? d.titles.map(t => t.name).join(', ') : '없음']];
       L.forEach(([k, v], i) => { drawText(u, k, 50, 140 + i * 17, { size: 11, color: UI.dim }); drawText(u, v, 130, 140 + i * 17, { size: 11, color: '#ffffff' }); });
+      if (d.br && d.br.stage !== 'NONE') { const R = d.br.rivals.brLeader || { w: 0, l: 0, hostility: 0 }, all = BR.ids.reduce((n, id) => { const r = d.br.rivals[id] || { w: 0, l: 0 }; n.w += r.l; n.l += r.w; return n; }, { w: 0, l: 0 }); drawText(u, `${BR.name}: ${all.w}승 ${all.l}패 · 리더 적대 ${R.hostility}${d.br.lobby === 'damaged' ? ' · 로비 파손' : ''}`, 50, 282, { size: 11, color: '#b066d8' }); }
       // injuries: visible here, never in the ring
       panel(u, 340, 136, 252, 92, { accent: col, cut: 2 });
       icon(u, 'bandage', 350, 146, col, { scale: 2 }); drawText(u, `부상 ${Math.round(inj)}%`, 372, 144, { color: col, bold: true });

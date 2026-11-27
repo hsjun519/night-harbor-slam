@@ -69,6 +69,15 @@ export function lobbyLive(g, c, cam) {
   // the ranking board's last line names the belt holder of the day (the board is baked with the old champion)
   rect(g, '#22304a', 795 + ox, 191, 80, 12);
   drawText(g, me ? d.name.slice(0, 6) : ch ? ch.name : '공석', 795 + ox, 191, { size: 11, color: me ? '#ffd65a' : '#d9e6dc' });
+  // after a lost LOBBY BRAWL: cracked frames, a toppled plant, debris and the gym door taped off
+  if (d.br && d.br.lobby === 'damaged') {
+    for (let i = 0; i < 4; i++) { const px = 372 + i * 46 + ox; rect(g, 'rgba(10,8,16,.55)', px, 100 + (i % 2) * 6, 40, 58); rect(g, '#d9e6dc', px + 6, 112 + i * 3, 26, 1); rect(g, '#d9e6dc', px + 14, 104 + i * 4, 1, 30); }
+    rect(g, '#8a4a3a', 1000 + ox, 292, 16, 8); for (const [dx, w] of [[18, 10], [30, 6]]) rect(g, '#3f9a5a', 1000 + dx + ox, 294, w, 4);
+    for (const [x, w, h, col] of [[300, 18, 6, '#6a4a3a'], [470, 12, 5, '#9aa4c0'], [700, 22, 7, '#5a3a2a'], [850, 14, 5, '#9aa4c0'], [930, 20, 6, '#3a6a8c']]) { rect(g, '#120c1e', x - 1 + ox, 300 - h - 1, w + 2, h + 1); rect(g, col, x + ox, 300 - h, w, h); }
+    const gx = 564 + ox;
+    for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', gx - 6, 218 + i * 26, 48, 4); for (let k = 0; k < 48; k += 8) rect(g, '#1a1a1a', gx - 6 + k, 218 + i * 26, 4, 4); }
+    rect(g, '#120c1e', gx - 8, 182, 52, 14); rect(g, '#c2333f', gx - 7, 183, 50, 12); drawText(g, '보수 중', gx + 18, 183, { size: 11, align: 'c', color: '#ffffff' });
+  }
   // the banner
   const B = banner(c);
   if (B) {
