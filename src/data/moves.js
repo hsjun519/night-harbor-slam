@@ -386,6 +386,17 @@ export const MOVES = {
     ik: [[0, 2.36, 'N', 'neck'], [.2, 2.36, 'F', 'pelvis']],
     ev: [[.1, 'cry'], [.7, 'lift'], [1.0, 'charge'], [2.12, 'whoosh'], [2.36, 'impact', { p: 2.5, d: 1, word: '쏴아— 쾅!!' }]],
   },
+  // 검은 파도: 골목 영감's old finisher. Shoulders, pressed overhead, held for the crowd, spun one and a half times and driven face first
+  fBlackwave: {
+    name: '검은 파도', pos: 'fin', hp: 36, stun: 58, gain: 0, lift: 9, self: .5, desc: '어깨에 메고, 머리 위로 들어 올리고, 한 바퀴 반 돌려 얼굴부터 내리꽂는다.',
+    dur: 2.5, rel: 2.1, vf: -1, vel: [30, -40, .6], land: 'prone', quake: 50,
+    A: [[0, HOLD_A], [.22, 'sp50 hd-22 a54/30 b60/28 t60/82 u16/72', 'io'], [.56, 'sp4 hd10 a140/60 b144/56 t16/16 u-18/16', 'out'], [.95, 'sp-6 hd18 a166/24 b168/24 t18/14 u-16/14', 'out'], [1.5, 'sp-8 hd20 a168/22 b170/22 t20/12 u-14/16'], [1.62, 'sp-14 hd14 a160/34 b150/40 t24/20 u-10/30', 'io'], [1.9, 'sp36 hd-12 a96/12 b70/24 t48/14 u-24/42', 'in'], [2.06, 'sp54 hd-16 a62/10 b52/16 t66/26 u6/68', 'out'], [2.5, IDLE, 'io']],
+    V: [[0, HOLD_V], [.22, 'sp30 hd0 a40/20 b60/20 t30/30 u20/30'], [.56, 'sp30 hd20 a100/20 b110/20 t40/30 u50/40'], [.95, 'sp6 hd10 a120/20 b130/20 t20/20 u30/30'], [1.5, 'sp8 hd12 a124/20 b132/20 t22/20 u32/30'], [1.9, 'sp6 hd10 a150/20 b140/24 t10/20 u10/20'], [2.06, 'sp4 hd-10 a160/20 b150/30 t-4/10 u4/14'], [2.5, 'sp4 hd-6 a156/30 b146/40 t0/8 u4/8']],
+    R: [[0, 24, 42, -20], [.22, 20, 46, -60], [.56, 0, 88, -90, 'out'], [.95, 0, 106, -90, 'out'], [1.5, 0, 108, -92], [1.62, -2, 104, -96], [1.9, -18, 74, -98, 'in'], [2.06, -44, 'g', -90, 'in'], [2.5, -46, 'g', -90]],
+    yaw: [[1.5, 0, 'lin', 'V'], [2.06, 540, 'io']],
+    ik: [[.2, 1.86, 'N', 'kN'], [.2, 1.88, 'F', 'chest']],
+    ev: [[.1, 'cry'], [.5, 'lift'], [.9, 'lift'], [1.1, 'cheer'], [1.55, 'spin'], [1.72, 'spin'], [1.88, 'whoosh'], [2.06, 'impact', { p: 2.4, d: 1, word: '검은 파도!!' }]],
+  },
   // ------------------------------------------------------------------ evolved: a move used until its mastery is MAX grows into these
   runningBulldog: {
     name: '러닝 불도그', pos: 'rear', hp: 16, stun: 24, gain: 14, lift: 0, self: .36, evo: 'bulldog', desc: '머리를 감싼 채 달려가 뛰어올라 얼굴부터 찍는다. 불도그가 진화한 기술.',
@@ -470,6 +481,7 @@ export const FINISHERS = {
   ink: { name: '먹물 문어발', type: 'stance', parts: ['fInk'], reach: 40, rear: 1, color: '#b066d8', line: '다리는 여덟, 팔도 여덟.' },
   shark: { name: '상어 이빨', type: 'dive', parts: ['fShark'], reach: 190, color: '#6f93bd', line: '피 냄새가 나는군.' },
   north: { name: '북해 폭풍밤', type: 'grab', parts: ['fNorth1', 'fNorth2'], reach: 48, armor: 1, color: '#c9a25a', line: '북쪽 바다를 보여주지!' },
+  blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },
   whitewave: { name: '백파 수플렉스', type: 'grab', parts: ['fWhitewave'], reach: 46, color: '#e6e9f2', line: '파도는 늙지 않는다.' },
 };
 for (const id in FINISHERS) FINISHERS[id].id = id;

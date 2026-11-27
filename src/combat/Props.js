@@ -182,9 +182,16 @@ export class PropSystem {
     p.x = f.x + f.face * 10; p.y = f.y - f.h * .6;
     this.m.emit('propDrop', { f, p, why });
   }
-  breakProp(p) {
+  breakProp(p, why) {
     if (p.holder && p.holder.prop === p) p.holder.prop = null;
     p.gone = true; p.holder = null;
-    this.m.emit('chairBreak', { p, x: p.x, y: p.y });
+    this.m.emit('chairBreak', { p, x: p.x, y: p.y, why });
+  }
+  // a chair lying on the mat under a body that is slammed down (pelvis to head, a little either side)
+  under(v) {
+    const J = v.joints; let lo = 1e9, hi = -1e9;
+    for (const j of [0, 1, 3]) { const x = J.x(j); lo = Math.min(lo, x); hi = Math.max(hi, x); }
+    for (const p of this.list) if (p.state === 'floor' && !p.gone && p.side === v.side && p.x > lo - 16 && p.x < hi + 16) return p;
+    return null;
   }
 }

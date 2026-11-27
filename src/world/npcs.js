@@ -4,6 +4,7 @@ import { CHARACTERS } from '../data/characters.js';
 import { BALANCE as B } from '../data/balance.js';
 import { josa, fmtMoney, pick } from '../core/util.js';
 import { merchantOn } from './CareerManager.js';
+import { beggarTalk } from './beggar.js';
 
 export const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
@@ -21,6 +22,7 @@ export const NPCS = {
   sponsor: { name: '황 대표', look: LOOKS.sponsor, stance: 'lean', voice: .9 },
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
   merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
+  beggar: { name: '골목 영감', look: LOOKS.beggar, stance: 'elder', voice: .62 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
 
@@ -37,6 +39,7 @@ export function peopleAt(loc, c) {
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
       if (day % 4 === 0) add('dohyun', 620, 1);
+      if (d.flags.champion) { add('fankid', 232, 1, { stance: 'cheer' }); if (day % 2) add('reporter', 900, -1); }   // the champion's lobby: fans and the press
       // a wrestler beaten earlier waits by the stairs to the basement
       if (d.revenge && !d.revenge.invited && day >= d.revenge.day && day <= d.revenge.until) add(d.revenge.opp, 1080, -1, { stance: 'arms', revenge: 1 });
       break;
@@ -58,11 +61,13 @@ export function peopleAt(loc, c) {
       add('oldman', 2040, 1);
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
+      if (!d.flags.hideout && day >= 2) add('beggar', 812, 1, { stance: 'elder' });   // by the alley, until he takes you in
       break;
     case 'clinic': add('doctor', 400, -1); add('nurse', 200, 1); break;
     case 'shop': add('shop', 465, -1); break;
     case 'rivalgym': add('ironma', 300, 1, { stance: 'box' }); add('gosu', 470, -1, { stance: 'dance' }); break;
     case 'dome': add('staff', 420, -1); break;
+    case 'hideout': add('beggar', 330, -1, { stance: 'elder' }); break;
   }
   return out;
 }
@@ -188,6 +193,7 @@ export function talk(id, c, W) {
       return [...(first ? [S('어이쿠, 손님! 바다 건너 온 물건들이야. 오늘만 판다! 내일이면 난 다음 항구에 있거든.', { expr: 'happy' })] : []),
         S(pick(['이 너클? 고래도 한 방에 눕힌다는 전설의 너클이지. …물론 고래는 안 때려 봤어.', '의자는 왜 파냐고? 손님, 레슬링에서 의자보다 좋은 친구는 없어.', '장어즙 한 병이면 밤새 훈련해도 멀쩡해! …낮엔 자야 하지만.', '붕대는 특별히 싸게 줄게. 병원엔 비밀이야.'])), { act: () => W.openMerchant() }];
     }
+    case 'beggar': return beggarTalk(c, W);
     case 'oldman': return [S(lastLine(c, 'oldman', ['나는 저 등대를 40년 지켰지. 안개왕이 처음 나타난 날도 기억해.', '안개왕의 마지막 기술은 {v}목을 잡는 기술{/}이야. 잡히기 전에 피하는 수밖에 없어.', '그 친구, 안개 속에서 싸우는 걸 좋아하지. 링 밖으로 끌어내지 말게. 거긴 그의 바다야.', '불이 꺼지면 당황하지 마. 다시 켜질 때 네가 서 있으면 되는 거야.', '파도는 부서져도 다시 와. 진 날엔 그 말을 기억하게.']))];
     case 'dohyun': {
       const r = c.rel('dohyun');

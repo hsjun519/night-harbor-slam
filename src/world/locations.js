@@ -4,6 +4,8 @@ import { rampHex, shade, mixHex } from '../render/palette.js';
 import { drawText } from '../render/pixelfont.js';
 import { canvas, rect, bands, dither, line, ellipse, poly, neon, truss, lamp, poster, brick, planks, tiles, windowPane, box, shelf, sofa, door, board, frameArt, trophy, plant, wave } from '../render/painter.js';
 
+import { lobbyLive } from './liveDecor.js';
+
 export const FLOOR = 300;
 // Sky colours by time of day for windows and the street.
 export const SKY = [
@@ -55,9 +57,10 @@ const PAINT = {
     neon(g, '야항 체육관', 560, 50, '#ff5fa2', { scale: 2, align: 'c' });
     drawText(g, '로비 · 휴게실', 560, 82, { size: 11, align: 'c', color: '#49d6ff' });
     // posters of the roster
-    [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['비에른', '#8a6a3c']].forEach(([n, c], i) => poster(g, 250 + i * 46, 104, 36, 50, c, n.slice(0, 3), { figure: 1, top: i === 0 ? '챔피언' : '' }));
+    // the poster wall (the posters on it follow the ranking and the belt: liveDecor.js)
+    rect(g, '#120c1e', 362, 90, 198, 80); rect(g, '#3a2a24', 364, 92, 194, 76); for (let x = 368; x < 556; x += 12) rect(g, '#33251f', x, 92, 1, 76);
     // trophy case
-    rect(g, '#120c1e', 40, 160, 70, 92); rect(g, '#2a2440', 42, 162, 66, 88); rect(g, 'rgba(150,200,255,.12)', 44, 164, 62, 84); for (const [x, y] of [[56, 196], [76, 196], [94, 196], [66, 236], [88, 236]]) trophy(g, x, y, x % 2 ? '#e6e9f2' : '#ffd65a'); rect(g, '#4a3a5a', 42, 198, 66, 2); rect(g, '#4a3a5a', 42, 238, 66, 2);
+    rect(g, '#120c1e', 140, 160, 70, 92); rect(g, '#2a2440', 142, 162, 66, 88); rect(g, 'rgba(150,200,255,.12)', 144, 164, 62, 84); for (const [x, y] of [[156, 196], [176, 196], [194, 196], [166, 222], [188, 222]]) trophy(g, x, y, x % 2 ? '#e6e9f2' : '#ffd65a'); rect(g, '#4a3a5a', 142, 198, 66, 2); rect(g, '#4a3a5a', 142, 224, 66, 2); rect(g, '#4a3a5a', 142, 246, 66, 2);
     // vending machine
     box(g, 630, 196, 34, 104, '#c2333f'); rect(g, '#120c1e', 634, 202, 20, 54); for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) rect(g, ['#49d6ff', '#ffd65a', '#6be38a'][i], 637 + k * 9, 206 + i * 16, 6, 10); rect(g, '#ffd65a', 656, 240, 5, 8); drawText(g, '음료', 647, 262, { size: 11, align: 'c', color: '#ffe6e6' });
     // boards
@@ -202,6 +205,30 @@ const PAINT = {
     for (const h of [212, 226, 240]) rect(g, '#3fd46b', 268, h, 186, 1);
     door(g, 30, 196, 34, 104, '#2a3a2a', { sign: '나가기' });
   },
+  hideout(g, L) {
+    const W = L.w;
+    wallBase(g, W, 36, '#3a2e2a', '#2a2220', '#2e2622', { planks: 1, ceil: ['#060508', '#0a080c', '#0e0b10'] });
+    for (let y = 44; y < FLOOR - 52; y += 16) for (let x = ((y / 16) % 2) * 18; x < W; x += 36) rect(g, '#33282a', x, y, 34, 1);
+    // an old ring, ropes sagging, the apron faded
+    const rx = 300, rw = 260, my = 262;
+    rect(g, '#05060f', rx - 2, my, rw + 4, FLOOR - my); rect(g, '#4a2a26', rx, my + 1, rw, FLOOR - my - 2); rect(g, '#6a4a3a', rx, my + 4, rw, 2);
+    drawText(g, '검은 파도 도장', rx + rw / 2, my + 14, { size: 11, align: 'c', color: '#8a6a5a' });
+    rect(g, '#5a4a40', rx + 4, my - 8, rw - 8, 9); rect(g, '#6a5a4a', rx + 4, my - 8, rw - 8, 2);
+    for (const px of [rx + 4, rx + rw - 6]) { rect(g, '#05060f', px - 1, my - 62, 5, 55); rect(g, '#7a6a5a', px, my - 61, 3, 53); rect(g, '#4a5a8a', px - 1, my - 64, 5, 6); }
+    line(g, '#9a8a6a', rx + 6, my - 56, rx + rw - 6, my - 50); line(g, '#9a8a6a', rx + 6, my - 40, rx + rw / 2, my - 28); line(g, '#9a8a6a', rx + rw / 2, my - 28, rx + rw - 6, my - 36); line(g, '#9a8a6a', rx + 6, my - 22, rx + rw - 6, my - 22);
+    // posters of a champion nobody remembers
+    poster(g, 120, 112, 52, 72, '#1f2a4a', '검은 파도', { figure: 1, top: '1994' });
+    poster(g, 182, 124, 40, 56, '#4a1f2a', '방어전', { figure: 1, top: '9차' });
+    // the belt in a dusty glass case
+    rect(g, '#120c1e', 604, 168, 70, 60); rect(g, '#2a2232', 606, 170, 66, 56); rect(g, 'rgba(200,220,255,.10)', 608, 172, 62, 52);
+    rect(g, '#120c1e', 614, 190, 50, 14); rect(g, '#6a5a2a', 615, 191, 48, 12); rect(g, '#c9a22e', 630, 188, 18, 18); rect(g, '#ffe9a8', 634, 192, 10, 10);
+    rect(g, '#3a2e2a', 600, 228, 78, 72); rect(g, '#2a2220', 600, 228, 78, 3);
+    // a bench, a bucket, a single bulb
+    rect(g, '#5a4636', 200, 270, 70, 6); rect(g, '#3a2a22', 206, 276, 5, 24); rect(g, '#3a2a22', 258, 276, 5, 24);
+    rect(g, '#6a6a7a', 560, 284, 16, 16); rect(g, '#8a8a9a', 560, 284, 16, 3);
+    lamp(g, 430, 36, '#ffcf7a', { len: 30 });
+    door(g, 30, 196, 36, 104, '#3a2e26', { sign: '골목' });
+  },
   dome(g, L) {
     const W = L.w;
     wallBase(g, W, 40, '#2a2246', '#3b2d5a', '#2a2440', { tiles: 1, ceil: ['#0b0a1c', '#151330', '#1f1a40'] });
@@ -232,6 +259,13 @@ function paintStreet(g, L) {
   door(g, 470, 210, 34, 90, '#5a7a8a', { glass: 1 });
   bld(640, 190, 160, '#6a4a2a', '돛대 상회', '#ffb347', { brick: 1 });
   door(g, 720, 210, 34, 90, '#6a4a2a', {});
+  // the narrow alley between the shop and the tent: at its end, the old gym
+  rect(g, '#05060f', 834, FLOOR - 172, 50, 172); bands(g, 836, FLOOR - 170, 46, 170, ['#0b0a16', '#0e0c1c', '#120f22', '#161226']);
+  for (let y = FLOOR - 160; y < FLOOR - 8; y += 24) rect(g, '#1c1830', 836, y, 46, 1);
+  rect(g, '#ffd27a', 857, FLOOR - 150, 4, 3); rect(g, 'rgba(255,210,122,.08)', 846, FLOOR - 147, 24, 60);
+  rect(g, '#2a2236', 862, FLOOR - 30, 14, 30); rect(g, '#3a3046', 862, FLOOR - 30, 14, 3);
+  box(g, 798, FLOOR - 14, 26, 14, '#8a6a4a', {}); rect(g, '#b8b8c0', 804, FLOOR - 20, 6, 6);
+  drawText(g, '골목', 859, FLOOR - 186, { size: 11, align: 'c', color: '#8a8aa0' });
   // pojangmacha tent
   const tx = 900;
   poly(g, '#c2333f', [[tx, FLOOR - 92], [tx + 150, FLOOR - 92], [tx + 166, FLOOR - 60], [tx - 16, FLOOR - 60]]);
@@ -273,7 +307,7 @@ export function streetFar(L, slot) {
 export const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
     doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
-    objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 75, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 380, w: 220, act: 'poster', label: '선수 포스터' }] },
+    objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 175, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 458, w: 150, act: 'poster', label: '선수 포스터' }], live: lobbyLive },
   basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
   gym: { name: '훈련장', w: 1100, music: 'gym', rim: '#ffcf8a', light: .04, doors: [{ x: 63, to: 'lobby', at: 582, label: '로비' }],
@@ -281,11 +315,12 @@ export const LOCATIONS = {
   arena: { name: '경기장 대기실', w: 820, music: 'gym', rim: '#49d6ff', light: 0, doors: [{ x: 57, to: 'lobby', at: 1112, label: '로비' }],
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2300, music: 'street', rim: '#ff5fa2', light: -.02, street: 1,
-    doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
+    doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
     objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
   rivalgym: { name: '철썩 짐', w: 700, music: 'gym', rim: '#3fd46b', light: 0, doors: [{ x: 47, to: 'street', at: 1563, label: '부둣길' }], objects: [{ x: 360, w: 200, act: 'dojo', label: '도장 깨기 링' }] },
+  hideout: { name: '골목 끝 도장', w: 700, music: 'office', rim: '#d8a62e', light: -.06, doors: [{ x: 48, to: 'street', at: 859, label: '부둣길' }], objects: [{ x: 430, w: 200, act: 'oldRing', label: '낡은 링' }, { x: 160, w: 70, act: 'oldPoster', label: '빛바랜 포스터' }, { x: 640, w: 60, act: 'oldBelt', label: '먼지 쌓인 벨트' }] },
   dome: { name: '등대 돔', w: 640, music: 'boss', rim: '#ffd65a', light: .03, doors: [{ x: 47, to: 'street', at: 2170, label: '부둣길' }], objects: [{ x: 480, w: 120, act: 'domeGate', label: '챔피언십 입장구' }, { x: 180, w: 120, act: 'trophy', label: '역대 챔피언' }] },
 };
 export function bakeLocation(id) {

@@ -31,7 +31,7 @@ export class Fighter {
     this.inv = 0; this.grabImm = 0; this.dodgeCd = 0; this.counterCd = 0; this.burstCd = 0; this.regenDelay = 0; this.flash = 0; this.hitShake = 0; this.landT = 0; this.boost = 0; this.staleList = []; this.moveStale = {};
     this.combo = { n: 0, t: 0, dmg: 0 }; this.chainN = 0; this.chainT = 0; this.holdT = 0; this.running = false; this.lastTap = { dir: 0, t: -9 }; this.prevMx = 0; this.guardT = 0; this.whip = null; this.expr = 'neutral'; this.exprT = 0; this.mash = 0; this.escape = 0; this.protect = 0;
     this.outCount = 0; this.eliminated = false; this.tagged = true; this.partner = null; this.legal = true; this.ai = null; this.tails = null; this.sweat = 0; this.touchRope = null; this.gettingUp = null; this.pinTries = 0; this.tagRecover = 0; this.kills = 0; this.perfects = 0;
-    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0; this.boss = !!o.boss; this.climb = null; this.aiBoost = o.aiBoost || 0;
+    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0; this.boss = !!o.boss; this.climb = null; this.aiBoost = o.aiBoost || 0; this.waitTurn = o.waitTurn || 0;
   }
   get st() { return this.fsm.cur; }
   get t() { return this.fsm.t; }

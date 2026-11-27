@@ -143,14 +143,14 @@ export class ComboSystem {
     // a cover straight out of the move's last pose (roll-up, anchor hammer)
     const F = a.follow;
     if ((move.toPin || (F && F.want && F.want.direct)) && a.alive) {
-      const want = move.id === 'rollUp' || (F && F.want && F.want.direct);
+      const auto = move.id === 'rollUp' || !!move.autoPin, want = auto || (F && F.want && F.want.direct);
       const v = F ? F.v : a.nearestFoe(70, o => o.st === 'DOWN');
       if (want && v && v.alive && m.rules.pin && v.side === 'in' && !m.pin) {
         this.close(a);
         v.dropRag(); v.set('DOWN', { force: true });
         a.set('IDLE', { force: true }); a.gettingUp = null;
-        m.startPin(a, v, { bonus: move.id === 'rollUp' ? 1.35 : (F.want.pin || 1.3), follow: true, quick: move.id === 'rollUp' });
-        if (a.pin) { m.emit('followUp', { a, v, o: { pin: 1 }, name: move.id === 'rollUp' ? '기습 핀' : '그대로 누르기' }); this.chainPush(a, 'pin'); }
+        m.startPin(a, v, { bonus: auto ? move.autoPin || 1.35 : (F.want.pin || 1.3), follow: true, quick: auto });
+        if (a.pin) { m.emit('followUp', { a, v, o: { pin: 1 }, name: move.id === 'rollUp' ? '기습 핀' : move.autoPin ? move.name + ' 핀!' : '그대로 누르기' }); this.chainPush(a, 'pin'); }
       }
     }
     void move;

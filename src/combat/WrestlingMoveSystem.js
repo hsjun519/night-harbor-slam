@@ -212,9 +212,11 @@ export class WrestlingMoveSystem {
   event(L, t, k, o) {
     const m = this.m, { a, move } = L, v = L.v || L.relV;
     if (o.d && v) {
+      // slammed onto a chair lying on the mat: the chair breaks and the rest of the move hits twice as hard
+      if (k === 'impact' && !L.chairK) { const ch = m.props.under(v); if (ch) { L.chairK = L.fin ? B.chairSlamFin : B.chairSlam; m.emit('chairSlam', { a, v, x: ch.x, y: ch.y, k: L.chairK }); m.props.breakProp(ch, 'slam'); } }
       // career mastery: a little more damage per level; each landed move (a finisher once) counts as one use
       const key = L.fin ? 'fin:' + L.fin.id : move.id, tag = L.fin ? 'fin' : L.part;
-      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)), st = move.stun * o.d;
+      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)) * (L.chairK || 1), st = move.stun * o.d * (L.chairK ? 1.3 : 1);
       if (L.usedTag !== tag) { L.usedTag = tag; a.moveUses[key] = (a.moveUses[key] || 0) + 1; }
       m.combat.damage(v, hp, st, a, { move });
       if (!L.fin) m.combat.addFin(a, move.gain * o.d); else if (v) v.finishersTaken += o.d > .4 ? 1 : 0;

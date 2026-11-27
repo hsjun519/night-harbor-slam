@@ -25,6 +25,7 @@ function moveOnce(id, o = {}) {
   for (let i = 0; i < 20; i++) m.update(1 / 60);
   const face = o.face || 1, rear = mv && mv.pos === 'rear';
   h.face = face; h.x = o.at != null ? o.at : 400; v.x = h.x + face * (rear ? 18 : 24); v.face = rear ? face : -face;
+  if (o.setup) o.setup(m, h, v);
   const hp0 = v.hp, ar = m.arena;
   const ok = F ? m.finisher.connect(h, v, F, false) : m.wrestle.start(h, v, id, { noReverse: true });
   let t = 0, out = 0, released = null;
@@ -68,6 +69,17 @@ for (const [from, to] of Object.entries(EVOLVE)) {
 {
   const r = moveOnce('powerSlam', { mode: 'pin', press: (m, h, v, t) => { const on = t > .92 && t < .95; h.intent.down = on; h.intent.downEdge = on; } });
   check(!!(r.m.pin || r.m.result), 'power slam: S covers straight out of it', JSON.stringify({ pin: !!r.m.pin, st: [r.h.st, r.v.st] }));
+}
+// ---- slammed onto a chair lying on the mat: the chair breaks, the move does twice the damage
+for (const [id, dx] of [['suplex', -40], ['german', -36], ['bodySlam', 40]]) {
+  let slams = 0;
+  const plain = moveOnce(id), onChair = moveOnce(id, { setup: (m, h, v) => { m.props.spawn(h.x + dx, 0, { side: 'in', state: 'floor' }); m.on('chairSlam', () => slams++); } });
+  const k = onChair.dmg / plain.dmg, left = onChair.m.props.list.filter(p => !p.gone).length;
+  check(slams === 1 && Math.abs(k - 2) < .05 && left === 0, `${MOVES[id].name} onto a chair: it breaks and the damage doubles (x${k.toFixed(2)})`, JSON.stringify({ slams, left }));
+}
+{
+  const far = moveOnce('suplex', { setup: (m, h) => { m.props.spawn(h.x + 150, 0, { side: 'in', state: 'floor' }); } });
+  check(far.m.props.list.filter(p => !p.gone).length === 1, 'a chair that is not under the body stays whole');
 }
 // ---- career: experience, levels, the cap, evolution
 {

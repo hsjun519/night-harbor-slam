@@ -343,6 +343,14 @@ try {
   await ev(`const W=__NHS.game.scene, d=W.c.d; for (let k=0;k<10;k++){ if ((d.day + d.season) % 5 === 2) break; d.day++; } d.money=90000; d.flags.newsDay=0; return d.day`);
   r = await st(); if (r.wov.length) { await tap('Escape'); await step(3); }
   r = await walk('KeyA', q => q.prompt && q.prompt.includes('건물 밖'), 3000); await tap('KeyF'); await step(50);
+  // ---- 골목 영감 walks up by the alley once a day and asks for help: a coin counts
+  r = await walk('KeyD', q => q.dialog, 3000);
+  const asker = await ev(`const W=__NHS.game.scene; return W.dialog && W.dialog.cur ? W.dialog.cur.who : null`);
+  check(r.dialog && asker === 'beggar', 'the old man by the alley walks up and asks for help', JSON.stringify(r) + ' ' + asker);
+  for (let i = 0; i < 10; i++) { r = await st(); if (r.dlg === '[choice]') break; await tap('KeyE'); await step(2); }
+  await tap('Enter'); await step(3); r = await advanceDialog();
+  const bh = await ev(`const d=__NHS.game.scene.c.d; return JSON.stringify({ help: d.beggar && d.beggar.help, day: d.beggar && d.beggar.day, today: d.day, money: d.money })`).then(JSON.parse);
+  check(bh.help === 1 && bh.day === bh.today && bh.money === 85000 && !r.dialog, 'a coin counts as his help for the day', JSON.stringify(bh));
   r = await walk('KeyD', q => q.prompt && q.prompt.startsWith('npc:떠돌이'), 6000);
   check(r.prompt === 'npc:떠돌이 상인 보부', 'the merchant is on the street today', JSON.stringify(r));
   await tap('KeyE'); await step(3); for (let i = 0; i < 6; i++) { r = await st(); if (r.wov.includes('MerchantMenu')) break; await tap('KeyE'); await step(2); }
@@ -350,7 +358,7 @@ try {
   await p.shot('e2e_20_merchant');
   await tap('Enter'); await step(3);
   const bought = await ev(`const d=__NHS.game.scene.c.d; return JSON.stringify({ m: d.money, ids: d.flags.merchant && d.flags.merchant.ids, buffs: d.buffs, items: d.items })`).then(JSON.parse);
-  check(bought.m < 90000 && bought.ids && bought.ids.length === 1, 'bought one rare item', JSON.stringify(bought));
+  check(bought.m < 85000 && bought.ids && bought.ids.length === 1, 'bought one rare item', JSON.stringify(bought));
   await tap('Escape'); await step(3);
   // ---- the basics from the title: a few steps by hand, the rest skipped from the pause menu
   await ev(`__NHS.game.toTitle(); return 1`); await step(50);
@@ -369,7 +377,8 @@ try {
   await kd('KeyD'); for (let i = 0; i < 90; i++) { await step(2); if (await ev(`const m=__NHS.game.scene.m; return Math.abs(m.fighters[0].x-m.fighters[1].x) < 46`)) break; } await ku('KeyD');
   for (let k = 0; k < 4; k++) { for (let i = 0; i < 3; i++) { await tap('KeyJ', 2); await step(6); } await step(60); if ((await tut()).i === 4) break; }
   await step(90); T = await tut(); check(T.i === 4, 'basics: a three-hit string clears step 4', JSON.stringify(T));
-  for (let i = 0; i < 9; i++) { await tap('Escape'); await tap('ArrowDown'); await tap('Enter'); await step(4); }
+  const left = await ev(`return __m['scenes/Tutorial.js'].TUTORIAL.length - __NHS.game.scene.tut.i`);   // the basics grow: skip whatever is left
+  for (let i = 0; i < left + 1; i++) { await tap('Escape'); await tap('ArrowDown'); await tap('Enter'); await step(4); }
   await step(200);
   r = await st(); check(r.scene === 'TitleScene', 'skipping the rest of the basics returns to the title', JSON.stringify(r));
 } catch (e) { fails.push('exception ' + e.message); console.log('ERR', e.stack); }

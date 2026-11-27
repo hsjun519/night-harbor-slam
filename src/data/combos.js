@@ -157,6 +157,15 @@ Object.assign(MOVES, {
     R: [[0, 30, 43, 0], [.25, 26, 50, 20], [.5, 20, 52, 120, 'out'], [.8, 34, 'g', 92, 'in']],
     ev: [[.1, 'grunt'], [.5, 'whoosh'], [.78, 'impact', { p: .8, d: 1, word: '롤업!' }]],
   },
+  smallPackage: {
+    id: 'smallPackage', name: '스몰 패키지', pos: 'front', hp: 6, stun: 12, gain: 8, lift: 0, self: 0, toPin: 1, autoPin: 1.3, desc: '잡자마자 다리를 걸어 몸을 말아 넣고 그대로 누른다. 핀이 있는 경기에서 기운이 남은 상대도 덜컥 어깨가 닿는다. 골목 영감의 기술.',
+    dur: .86, rel: 9, vf: -1,
+    A: [[0, HOLD_A], [.25, 'sp60 hd-20 a100/40 b100/40 t70/100 u50/90', 'io'], [.52, 'r-40 sp40 hd-10 a90/60 b90/60 t80/100 u60/90', 'out'], [.86, PIN_A, 'in']],
+    V: [[0, HOLD_V], [.25, 'sp60 hd30 a60/40 b60/40 t40/40 u20/40'], [.52, 'sp80 hd40 a80/40 b80/40 t120/60 u120/60'], [.86, PIN_V]],
+    R: [[0, 24, 42, -20], [.25, 26, 50, 20], [.52, 20, 52, 120, 'out'], [.86, 34, 'g', 92, 'in']],
+    ik: [[.05, .8, 'N', 'neck'], [.05, .8, 'F', 'kN']],
+    ev: [[.1, 'grunt'], [.52, 'whoosh'], [.84, 'impact', { p: .8, d: 1, word: '스몰 패키지!' }]],
+  },
   calfLock: {
     id: 'calfLock', name: '종아리 꺾기', pos: 'counter', hp: 12, stun: 22, gain: 10, lift: 9, self: .5, sub: [.7, 2.3], desc: '짓밟으러 든 발목을 잡아 넘어뜨리고 종아리를 꺾는다.',
     dur: 2.6, rel: 2.4, vf: -1, vel: [-10, -20, 0], land: 'prone',

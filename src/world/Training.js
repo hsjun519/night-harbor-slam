@@ -12,12 +12,13 @@ const GAMES = {
   mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec', 'brk'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
   bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
+  scrap: { name: '고물 정리 돕기', kind: '타이밍', stats: [], pose: 'carry', x: 812, mech: 'job', desc: '영감이 주워 온 고물을 수레에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
 };
 
 export class Training {
   constructor(W, id, cost) {
-    this.W = W; this.game = W.game; this.c = W.c; this.id = id; this.G = GAMES[id]; this.cost = cost; this.phase = 'intro'; this.t = 0; this.score = 0; this.rng = new RNG(Date.now() & 0xffff); this.fx = [];
+    this.W = W; this.game = W.game; this.c = W.c; this.id = id; this.G = GAMES[id]; this.mech = GAMES[id].mech || id; this.cost = cost; this.phase = 'intro'; this.t = 0; this.score = 0; this.rng = new RNG(Date.now() & 0xffff); this.fx = [];
     this.savedStance = W.player.stance; this.savedX = W.player.x;
     W.player.x = this.G.x + (id === 'bench' ? 0 : 0);
     if (id === 'mitt') { W.player.x = this.G.x - 30; W.player.face = 1; }
@@ -28,7 +29,7 @@ export class Training {
     if (this.cost && !c.pay(this.cost)) { this.W.toast('돈이 모자란다', '#ff8a8a'); this.close(); return; }
     this.phase = 'play'; this.t = 0; this.W.player.stance = this.G.pose;
     const r = this.rng;
-    switch (this.id) {
+    switch (this.mech) {
       case 'bench': this.s = { needle: 0, dir: 1, speed: .9, zone: [.4, .62], reps: 0, miss: 0, hits: 0, perfect: 0, lift: 0 }; this.newZone(); break;
       case 'rope': this.s = { beats: Array.from({ length: 20 }, (_, i) => 1.4 + i * .5 + (i > 9 ? -(i - 9) * .03 : 0)), idx: 0, good: 0, perfect: 0, hit: [] }; break;
       case 'mitt': this.s = { round: 0, len: 3, seq: [], show: 0, input: [], ok: 0, phase: 'show', st: 0 }; this.newSeq(); break;
@@ -48,7 +49,8 @@ export class Training {
     this.grade = grade;
     const fatK = d.fatigue > 70 ? .5 : d.fatigue > 40 ? .8 : 1;
     this.gains = [];
-    if (this.id === 'job') {
+    if (this.id === 'scrap') { this.helpPts = { S: 3, A: 3, B: 2, C: 1 }[grade]; d.fatigue = Math.min(100, d.fatigue + 8); }
+    else if (this.id === 'job') {
       const pay = Math.round((6000 + this.s.good * 1800 + d.season * 1000) / 500) * 500;
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
     } else {
@@ -69,9 +71,9 @@ export class Training {
     for (const f of this.fx) f.t += dt;
     this.fx = this.fx.filter(f => f.t < .8);
     if (this.phase === 'intro') { if (inp.menuPressed('confirm')) { A.sfx('ok'); this.start(); } else if (inp.menuPressed('cancel')) { A.sfx('back'); this.close(); } return; }
-    if (this.phase === 'result') { if (this.t > .5 && (inp.menuPressed('confirm') || inp.menuPressed('cancel'))) { (this.msgs || []).forEach(m => this.W.toast(m, '#ffb347')); this.close(); } return; }
+    if (this.phase === 'result') { if (this.t > .5 && (inp.menuPressed('confirm') || inp.menuPressed('cancel'))) { (this.msgs || []).forEach(m => this.W.toast(m, '#ffb347')); this.close(); if (this.id === 'scrap') this.W.beggarHelped(this.helpPts || 1); } return; }
     const s = this.s;
-    switch (this.id) {
+    switch (this.mech) {
       case 'bench': {
         s.needle += s.dir * s.speed * dt; if (s.needle > 1) { s.needle = 1; s.dir = -1; } if (s.needle < 0) { s.needle = 0; s.dir = 1; }
         s.lift = Math.max(0, s.lift - dt * 2);
@@ -172,22 +174,23 @@ export class Training {
     if (this.phase === 'intro') {
       drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
-      else drawText(u, '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
-      drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +14` : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
+      else drawText(u, this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
+      drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +14` : this.id === 'scrap' ? '시간 1칸 · 피로 +8' : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
       if (this.c.d.fatigue > 40) drawText(u, `피로 ${Math.round(this.c.d.fatigue)}: 훈련 효과 ${this.c.d.fatigue > 70 ? '50%' : '80%'}`, 320, 134, { size: 11, align: 'c', color: '#ff8a8a' });
       prompt(u, ['Enter'], '시작', 270, 210, {}); prompt(u, ['Esc'], '그만두기', 350, 210, {});
       return;
     }
     if (this.phase === 'result') {
       drawText(u, this.grade, 320, 74, { scale: 4, align: 'c', color: { S: '#ffd65a', A: '#6be38a', B: '#49d6ff', C: '#c9d4ff' }[this.grade], bold: true, outline: '#05060f' });
-      if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
+      if (this.id === 'scrap') drawText(u, `영감이 고개를 꾸벅 숙였다. (도움 +${this.helpPts})`, 320, 140, { align: 'c', color: '#ffd65a' });
+      else if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
       else this.gains.forEach(([k, g], i) => drawText(u, `${STAT_GROWTH[k][1]} Lv +${g.toFixed(2)}  (Lv ${this.c.d.lv[k].toFixed(1)})`, 320, 136 + i * 16, { size: 11, align: 'c', color: '#6be38a' }));
       if (this.fatK && this.fatK < 1) drawText(u, '피곤해서 효과가 줄었다…', 320, 172, { size: 11, align: 'c', color: '#ff8a8a' });
       if (this.boosted) drawText(u, '단백질 셰이크 효과 +15%!', 320, 186, { size: 11, align: 'c', color: '#6be38a' });
       prompt(u, ['Enter'], '확인', 320, 212, { align: 'c' });
       return;
     }
-    switch (this.id) {
+    switch (this.mech) {
       case 'bench': {
         const x = 160, y = 90, w = 320;
         rect(u, '#05060f', x - 1, y - 1, w + 2, 18); rect(u, '#1a1d33', x, y, w, 16);
@@ -232,7 +235,7 @@ export class Training {
         rect(u, '#ffb52e', base + s.craneX - 6, 60, 12, 8);
         if (!s.drop) { rect(u, '#1a1d33', base + s.craneX, 68, 1, 10); rect(u, '#c2333f', base + s.craneX - 16, 78, 32, 16); }
         else { rect(u, '#c2333f', cx - 16, 78 + s.drop.y - 16, 32, 16); }
-        s.stack.forEach((x, i) => { rect(u, '#05060f', base + x - 17, gy - i * 18 - 1, 34, 18); rect(u, ['#1f8fa6', '#d8a62e', '#35a07a', '#c2333f'][i % 4], base + x - 16, gy - i * 18, 32, 16); });
+        const pal = this.id === 'scrap' ? ['#7a7a8a', '#8a6a4a', '#5a5a66', '#9a8a6a'] : ['#1f8fa6', '#d8a62e', '#35a07a', '#c2333f']; s.stack.forEach((x, i) => { rect(u, '#05060f', base + x - 17, gy - i * 18 - 1, 34, 18); rect(u, pal[i % 4], base + x - 16, gy - i * 18, 32, 16); });
         drawText(u, `${s.n}/8`, 500, 130, { size: 11, color: UI.dim });
         break;
       }

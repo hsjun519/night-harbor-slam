@@ -183,6 +183,18 @@ export class AIController {
     const tDown = t.st === 'DOWN' && !t.rag, tGrab = t.grabbable && t.side === f.side;
     const tUp = !!t.climb || t.st === 'CASE_HANG';   // up a ladder or a wall: only the special goals reach them
     const hpK = f.hp / f.maxHp, stK = f.stun / f.maxStun;
+    // a gang against one: while a mate is already on the foe the others hang back, joining in now and then
+    if (f.waitTurn && !tUp && f.side === t.side) {
+      const now = m.time, mine = Math.abs(t.x - f.x);
+      const on = m.fighters.filter(o => o !== f && o.team === f.team && o.alive && !o.eliminated && !o.fsm.is('DOWN', 'KO', 'GET_UP', 'HITSTUN') && Math.abs(o.x - t.x) < Math.min(150, mine)).length;
+      if (!on) this.turnAt = 0;
+      else if (on >= 2) { if (!this.goal || this.goal.name !== 'hangBack') { this.goal = { name: 'hangBack', data: t, t: 0 }; this.goalT = 0; } this.note = '차례 기다리기'; return; }   // never three at once
+      else {
+        if (!this.turnAt) this.turnAt = now + f.waitTurn * (.7 + this.rng.next() * .6);
+        if (now < this.turnAt) { if (!this.goal || this.goal.name !== 'hangBack') { this.goal = { name: 'hangBack', data: t, t: 0 }; this.goalT = 0; } this.note = '차례 기다리기'; return; }
+        if (now > this.turnAt + 2.6 + this.rng.next()) this.turnAt = now + f.waitTurn * (.7 + this.rng.next() * .6);
+      }
+    }
     // chairs: swing the one in hand; otherwise fetch a loose one or take it off the foe
     if (f.prop && f.side === t.side) { if (!this.goal || this.goal.name !== 'chairSwing' || this.goal.data !== t) { this.goal = { name: 'chairSwing', data: t, t: 0 }; this.goalT = 0; } this.note = '체어샷'; return; }
     const loose = m.props.any && !f.prop ? m.props.loose(f, 260) : null;
@@ -298,6 +310,15 @@ export class AIController {
           if (f.chainN === 0 && this.rng.chance(.35 * (1 - D.combo))) this.wait += .4; // breathe between strings
         }
         if (g.t > 2.6) this.planT = 0;
+        break;
+      }
+      case 'hangBack': {   // keep a step back from the foe, facing them; now and then a taunt
+        const lo = ar.hasRing ? ar.ropeL + 30 : ar.x0 + 30, hi = ar.hasRing ? ar.ropeR - 30 : ar.x1 - 30;
+        let spot = t.x - dir * 170; if (spot < lo || spot > hi) spot = clamp(t.x + dir * 170, lo, hi);
+        if (dist < 120) this.move(spot, 10); else if (dist > 220) this.move(t.x - dir * 175, 10); else f.intent.mx = 0;
+        if (f.fsm.is('IDLE', 'MOVE')) f.face = dir;
+        if (g.t > 1.4 && dist > 130 && f.fin < B.finMax && f.fsm.is('IDLE') && this.rng.chance(.01)) this.tap('fin');
+        if (g.t > .8) this.planT = Math.min(this.planT, .2);
         break;
       }
       case 'retreat': {

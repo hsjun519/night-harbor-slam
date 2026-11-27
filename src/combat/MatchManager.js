@@ -62,6 +62,7 @@ export class MatchManager extends Emitter {
     if (f.ctrl === 'ai' || f.ctrl === 'dummy') f.ai = new AIController(f, e.difficulty || 'normal', this.rng);
     this.fighters.push(f);
     this.anim.solo(f, 0);
+    if (e.armed) this.props.attach(this.props.spawn(f.x, 0, { side: f.side, state: 'floor' }), f);
     return f;
   }
   setup() {
@@ -85,9 +86,10 @@ export class MatchManager extends Emitter {
       const F = this.fighters;
       if (F.length === 4) { F[0].partner = F[1]; F[1].partner = F[0]; F[2].partner = F[3]; F[3].partner = F[2]; }
     } else {
-      const n = E.length;
+      const now = E.filter(e => !e.late), n = now.length;
+      this.lateQ = E.filter(e => e.late).map(e => Object.assign({}, e, { idx0: E.indexOf(e) })); this.lateT = 0;
       const xs = n === 2 ? [L, R] : Array.from({ length: n }, (_, i) => ar.ropeL + 60 + (ar.ropeR - ar.ropeL - 120) * (n === 1 ? .5 : i / (n - 1)));
-      E.forEach((e, i) => this.addFighter(e, i, { x: xs[i], y: ar.matY, face: xs[i] < ar.mid ? 1 : -1, side: 'in', lane: n > 2 ? (i % 3) * 3 - 3 : 0 }));
+      now.forEach((e, i) => this.addFighter(e, E.indexOf(e), { x: xs[i], y: ar.matY, face: xs[i] < ar.mid ? 1 : -1, side: 'in', lane: n > 2 ? (i % 3) * 3 - 3 : 0 }));
     }
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
     if (this.cfg.skipIntro) this.beginFight(true);
@@ -284,6 +286,12 @@ export class MatchManager extends Emitter {
       // a ragdoll flying over the ropes may grab the top rope
       if (f.ropeChance > 0) { f.ropeChance -= dt; if (f.rag && f.has('dodge') && f.hp > 0) { f.ropeChance = 0; this.toHang(f); } else if (f.rag && f.hangRoll) { f.ropeChance = 0; this.toHang(f); } }
     }
+    // a late entrant runs in after its time, or as soon as one of its team goes down
+    if (this.lateQ && this.lateQ.length && this.phase === 'fight') {
+      this.lateT += dt;
+      const e = this.lateQ[0];
+      if (this.lateT >= e.late || this.fighters.some(f => f.team === e.team && f.st === 'KO')) this.lateEntry();
+    }
     // rumble entries
     if (this.mode === 'rumble' && this.phase === 'fight' && this.queue.length) {
       this.nextEntry -= dt;
@@ -312,6 +320,13 @@ export class MatchManager extends Emitter {
     this.emit('hang', { f });
   }
   onOverRope(f) { if (this.rules.ringOut === 'elim' && f.rag && !f.eliminated) { f.ropeChance = .32; f.hangRoll = !!(f.ai && f.ctrl !== 'dummy' && f.ai.wantsHang()); } }
+  lateEntry() {
+    const e = this.lateQ.shift(), ar = this.arena, h = this.human;
+    const left = h ? h.x > ar.mid : this.rng.chance(.5);   // from the far side of the player
+    const f = this.addFighter(e, e.idx0, { x: left ? (ar.hasRing ? ar.ropeL + 30 : ar.x0 + 24) : (ar.hasRing ? ar.ropeR - 30 : ar.x1 - 24), y: ar.matY, face: left ? 1 : -1, side: 'in', lane: 0 });
+    f.inv = 1; f.fsm.set('IDLE', { force: true });
+    this.emit('lateEntry', { f });
+  }
   rumbleEntry() {
     const e = this.queue.shift(), ar = this.arena;
     const left = this.rng.chance(.5);
@@ -348,6 +363,7 @@ export class MatchManager extends Emitter {
     const alive = this.alive();
     if (this.mode === 'rumble' && this.queue.length) return;
     const teams = new Set(alive.map(f => f.team));
+    if (teams.size <= 1 && this.lateQ && this.lateQ.some(e => !teams.has(e.team))) { this.lateEntry(); return; }   // their last hope runs in
     if (teams.size <= 1) {
       const w = alive[0] || null, loser = this.fighters.filter(f => f !== w).sort((a, b) => (b.outAt || 9999) - (a.outAt || 9999))[0];
       const how = loser ? (loser.st === 'KO' ? 'ko' : loser.outHow || 'ko') : 'ko';

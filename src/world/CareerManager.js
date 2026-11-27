@@ -93,8 +93,23 @@ export const RARE_ITEMS = [
   { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
 ];
 export const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
+// 부둣가 악동단 in the lobby: weak at first; as you grow (level, and each time you beat them) they come back with
+// chairs in hand and then a third man who runs in later (late: seconds, or as soon as one of them is down).
+// k scales their health (and a little of their power); wait: seconds the others hang back while one is on you.
+export const GANG = [
+  { k: .72, ai: 'easy', who: ['galchi', 'myeolchi'], armed: [], wait: 5 },
+  { k: .8, ai: 'easy', who: ['galchi', 'myeolchi'], armed: ['galchi'], wait: 4.6 },
+  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi'], wait: 5, late: { kkongchi: 60 } },
+  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi', 'kkongchi'], wait: 5, late: { kkongchi: 55 } },
+];
 export const SLOTS = 3;
+// 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
+export const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
 // a mastery key: a move id, or 'fin:' + finisher id
+// the Tab → 기술 list a move shows up in
+export const SLOT_OF = { front: '정면 잡기', rear: '뒤 잡기', any: '정면·뒤 잡기', catch: '받아치기', counter: '반격' };
+export const moveSlotName = id => (MOVES[id] && SLOT_OF[MOVES[id].pos]) || '기술';
+export const learnedText = id => `${MOVES[id].name} 습득! Tab → 기술 → ${moveSlotName(id)}에서 장착`;
 export const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
 // Builds before the slots had one career: it counts as slot 1.
 export function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
@@ -332,7 +347,7 @@ export class Career {
       }
       if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
       if (c.mitb) {
-        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
+        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; d.flags.mitbWon = (d.flags.mitbWon || 0) + 1; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
         else { const w = res.result && res.result.winner, id = w && w.charId && CHARACTERS[w.charId] ? w.charId : null; if (id) { d.mitb = { holder: id, until: d.day + 7 }; out.lines.push(`${CHARACTERS[id].name}이(가) 가방을 땄다. 네가 챔피언이 되면 노리러 온다.`); } }
       }
       if (c === d.contract) d.contract = null;
@@ -359,7 +374,36 @@ export class Career {
   money() { return fmtMoney(this.d.money); }
   learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
   learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
+  weeklyOffer() {
+    const d = this.d, key = 'wf' + d.season + '_' + d.day;
+    if (!weeklyOn(d) || d.events[key]) return null;
+    const champ = this.champion, all = this.rankList();
+    const top = all.filter(e => e.id !== 'player' && e.id !== champ && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 5);
+    if (!top.length) return null;
+    const e = top[(d.day * 3 + d.season) % top.length], ch = CHARACTERS[e.id];
+    return { kind: 'weekly', opp: e.id, oppName: ch.name, rank: all.indexOf(e) + 1, mode: 'single', arena: 'hall', reward: 25000 + d.season * 10000, fame: 4, difficulty: d.season >= 2 ? 'expert' : 'hard', day: d.day, event: key, desc: '주간 파이널: 이기면 상대가 기술을 직접 가르쳐 준다' };
+  }
+  // what a beaten finalist teaches: one of their grapple moves you lack, else their finisher
+  weeklyLesson(opp) {
+    const ch = CHARACTERS[opp], d = this.d;
+    if (!ch) return null;
+    const pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((id, i, a) => MOVES[id] && !d.known.includes(id) && a.indexOf(id) === i);
+    if (pool.length) return { move: pool[(d.day + d.season) % pool.length] };
+    if (ch.finisher && FINISHERS[ch.finisher] && !this.finKnown().includes(ch.finisher)) return { fin: ch.finisher };
+    return null;
+  }
+  gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
+  // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
+  gangMatch() {
+    const d = this.d, G = GANG[this.gangTier()], up = { easy: 'normal', normal: 'hard', hard: 'hard' };
+    const gang = G.who.map(id => { const S = CHARACTERS[id].stats, k = G.k * (id === 'myeolchi' ? .92 : 1), p = .55 + .45 * k; return { char: id, ctrl: 'ai', difficulty: d.season >= 2 ? up[G.ai] : G.ai, team: 1, waitTurn: G.wait, armed: G.armed.includes(id) ? 1 : 0, late: G.late && G.late[id] || 0, stats: { hp: S.hp * k, stun: S.stun * Math.min(1, k + .06), atk: S.atk * p, grp: S.grp * p } }; });
+    return { G, gang, events: [] };
+  }
   equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  equipSpecial(kind, id) { if (MOVES[id] && this.d.known.includes(id) && MOVES[id].pos === kind) this.d.moves[kind] = id; }
+  // finishers you can switch between (Tab → 기술 → F)
+  finKnown() { const d = this.d; if (!d.finKnown) d.finKnown = [d.finisher]; if (!d.finKnown.includes(d.finisher)) d.finKnown.unshift(d.finisher); return d.finKnown; }
+  learnFinisher(id) { const L = this.finKnown(); if (FINISHERS[id] && !L.includes(id)) L.push(id); }
   // ---- move mastery ----
   masteryPower() { const o = {}, M = this.d.mastery || {}; for (const k in M) { const lv = masteryLv(M[k]); if (lv) o[k] = lv * MASTERY.bonus; } return o; }
   masteryOf(k) { return (this.d.mastery || {})[k] || 0; }

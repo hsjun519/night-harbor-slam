@@ -151,6 +151,14 @@ export const CHARACTERS = {
     finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .45, def: .3, rope: .2, taunt: .45, dirty: .9 }, voice: 1.05,
     lines: { intro: '이 동네는 우리 구역이야!', win: '지갑은 놓고 가라~', lose: '다, 다음엔 진짜 안 봐준다!' },
   },
+  kkongchi: {
+    name: '꽁치', nick: '부둣가 악동단 행동대장', style: 'power', look: LOOKS.kkongchi, stance: 'street', color: '#ff8a8a', thug: 1,
+    stats: { hp: 104, stun: 100, atk: 1.04, grp: 1.02, spd: .92, jump: .88, rec: .95, down: .96, fin: .96, weight: 118, lift: 1.7, kbr: 1.12 },
+    chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', ground: 'stomp',
+    moves: { front: front('bodySlam', 'irishWhip', 'backbreaker', 'powerbomb', 'gutBuster'), rear: front('backdropDriver', 'ringOut', 'german', 'atomic', 'bulldog'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'container', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .7, air: .1, grab: .6, def: .4, rope: .2, taunt: .4, dirty: .8 }, voice: .8,
+    lines: { intro: '형님, 이놈이에요? …생각보다 크네.', win: '형님, 끝났습니다.', lose: '…형님, 저 먼저 쉬겠습니다.' },
+  },
   myeolchi: {
     name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1, topStand: 'topCrossbody',
     stats: { hp: 76, stun: 84, atk: .9, grp: .9, spd: 1.14, jump: 1.16, rec: 1.02, down: 1.05, fin: 1.05, weight: 62, lift: 1.1, kbr: .9 },

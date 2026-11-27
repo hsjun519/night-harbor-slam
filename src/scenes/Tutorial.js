@@ -31,12 +31,34 @@ export const TUTORIAL = [
   { say: '잡은 다음 {y}K{/}만 누르면 기본기, {y}→+K{/}·{y}←+K{/}·{y}W+K{/}·{y}S+K{/}마다 기술이 다르다. 레슬링 기술을 두 번 걸어 봐.', goal: '레슬링 기술 2번', need: 2,
     setup: (m, h, v) => { m.practice.stunLock = true; },
     on: { moveStart: (e, h) => e.a === h && !e.fin } },
+  { say: '기술이 끝나고 상대가 누워 있는 잠깐 사이, 화면 아래에 뜨는 키를 누르면 {y}연계{/}다. 바디 슬램 뒤엔 {y}J{/}로 엘보 드롭, 수플렉스 뒤엔 {y}K{/}로 끌어올려 한 번 더, DDT 뒤엔 {y}S{/}로 핀! 연계를 한 번 이어 봐.', goal: '기술 뒤 연계 1번', need: 1,
+    setup: (m, h, v) => { m.practice.stunLock = true; fresh(v); },
+    on: { followUp: (e, h) => e.a === h } },
   { say: '쓰러진 상대 옆에서 {y}S{/}를 누르면 {y}핀폴{/}이다. 심판이 바닥을 두 번 칠 때까지 눌러 봐.', goal: '핀폴 카운트 2', need: 1,
     setup: (m, h, v) => { m.practice.stunLock = true; },
     on: { count: (e, h, v, m) => { if (e.pin && e.a === h && e.n >= 2) { m.breakPin('let'); return true; } return false; } } },
+  { say: '{y}조르기{/}는 누운 상대를 꺾어 체력과 기절 저항을 깎는 기술이다. 잡고 {y}K{/}로 백브레이커, 끝나는 순간 {y}K{/}를 한 번 더 누르면 {y}등 꺾기 조르기{/}! 오늘만 백브레이커를 빌려주지.', goal: '백브레이커 뒤 K로 조르기 걸기', need: 1,
+    setup: (m, h, v, T) => { m.practice.stunLock = true; fresh(v); T.moves0 = h.moves; h.moves = JSON.parse(JSON.stringify(h.moves)); h.moves.front.n = 'backbreaker'; },
+    on: { moveStart: (e, h) => e.a === h && !!e.mv.sub } },
+  { say: '거꾸로 조르기에 걸리면 {y}J{/}·{y}K{/}·{y}L{/}·{y}W{/}를 마구 연타해서 빠져나와야 한다. 체력이 많이 남았을수록 빨리 풀린다. 도현아, 걸어 봐라!', goal: '연타로 조르기 풀기', need: 1,
+    setup: (m, h, v, T) => { if (T.moves0) { h.moves = T.moves0; T.moves0 = null; } m.practice.stunLock = false; fresh(h); fresh(v); T.subT = .8; },
+    check: (m, h, v, T, dt) => {   // 도현 puts the hold on again until the player breaks out
+      if (h.link || v.link || !h.alive || !v.alive) return 0;
+      T.subT -= dt;
+      if (T.subT <= 0) { T.subT = 1.4; h.set('DOWN', { force: true }); h.lieClip = 'downProne'; m.wrestle.start(v, h, 'backStretch', { noReverse: true }); }
+      return 0;
+    },
+    on: { subEscape: (e, h) => e.v === h } },
   { say: '이제 하늘을 날아 보자. 로프 끝 코너 앞에서 {y}W{/}로 올라가. 위에서 {y}A·D{/}로 방향을 고르고 {y}J{/}로 다이빙!', goal: '코너에서 다이빙', need: 1,
     setup: (m) => { m.practice.stunLock = true; },
     on: { dive: (e, h) => e.f === h } },
+  { say: '링 밖으로 나갈 땐 로프 앞에서 {y}S{/}를 누른 채 로프 쪽 방향키. 돌아올 땐 링 옆에서 {y}W{/}. 실전에선 밖에 있는 동안 카운트가 올라가니 10 전에 돌아와야 해. 나갔다 들어와 봐!', goal: '링 밖으로 나갔다가 다시 들어오기', need: 2,
+    setup: (m, h, v, T) => { T.outStage = 0; m.practice.stunLock = true; },
+    check: (m, h, v, T) => {
+      if (T.outStage === 0 && h.side === 'out' && h.st !== 'EXIT_RING') { T.outStage = 1; return 1; }
+      if (T.outStage === 1 && h.side === 'in' && h.st !== 'ENTER_RING') { T.outStage = 2; return 1; }
+      return 0;
+    } },
   { say: '돌진하다가 서 있는 상대에게 {y}K{/}! 돌진 기술이다. 게이지가 조금 필요한데, 오늘은 내가 채워 주마.', goal: '돌진 중 K로 돌진 기술', need: 1,
     setup: (m, h, v) => { m.practice.stunLock = false; fresh(v); h.fin = Math.max(h.fin, 40); h.sigCd = 0; },
     check: (m, h) => { if (h.fin < B.dashSigCost) h.fin = 40; return 0; },
@@ -46,7 +68,7 @@ export const TUTORIAL = [
     check: (m, h) => { if (h.fin < B.finMax && !h.finPhase && h.st !== 'FINISHER') h.fin = B.finMax; return 0; },
     on: { finisherStart: (e, h) => e.f === h } },
 ];
-const EVENTS = ['rope', 'jump', 'hit', 'block', 'parry', 'dodge', 'counter', 'grab', 'moveStart', 'count', 'dive', 'dashSig', 'finisherStart'];
+const EVENTS = ['rope', 'jump', 'hit', 'block', 'parry', 'dodge', 'counter', 'grab', 'moveStart', 'count', 'dive', 'dashSig', 'finisherStart', 'followUp', 'subEscape'];
 
 export class Tutorial {
   constructor(scene) {
@@ -86,16 +108,16 @@ export class Tutorial {
     if (this.doneT > 0) { this.doneT -= dt; if (this.doneT <= 0) this.begin(this.i + 1); }
   }
   draw(u) {
-    const x = 60, y = 62, w = VIEW_W - 120, h = 62, st = this.step;
+    const x = 60, y = 62, w = VIEW_W - 120, h = 76, st = this.step;
     panel(u, x, y, w, h, { accent: '#ff8a2b', bg: '#0e1330', alpha: .94 });
     rect(u, '#05060f', x + 6, y + 6, 50, 50); rect(u, '#1b2450', x + 7, y + 7, 48, 48);
     drawPortrait(u, LOOKS.trainer, this.doneT > 0 || this.endT > 0 ? 'happy' : 'neutral', x + 7, y + 7, 48, { px: 2, dy: 6 });
     drawText(u, '백 관장', x + 64, y + 4, { size: 11, color: '#ff8a2b' });
     drawText(u, `기초 훈련 ${Math.min(this.i + 1, TUTORIAL.length)}/${TUTORIAL.length}`, x + w - 8, y + 4, { size: 11, align: 'r', color: UI.dim });
-    wrapText(this.text, w - 76, 11).slice(0, 2).forEach((l, k) => drawText(u, l, x + 64, y + 18 + k * 14, { size: 11, color: '#eef2ff' }));
+    wrapText(this.text, w - 76, 11).slice(0, 3).forEach((l, k) => drawText(u, l, x + 64, y + 18 + k * 14, { size: 11, color: '#eef2ff' }));
     if (st && this.doneT <= 0) {
-      drawText(u, '목표: ' + st.goal, x + 64, y + 47, { size: 11, color: '#ffd65a' });
-      gauge(u, x + w - 128, y + 50, 120, 5, this.n / st.need, 'fin', { col: '#6be38a' });
+      drawText(u, '목표: ' + st.goal, x + 64, y + 61, { size: 11, color: '#ffd65a' });
+      gauge(u, x + w - 128, y + 64, 120, 5, this.n / st.need, 'fin', { col: '#6be38a' });
     }
     drawText(u, `${this.s.game.input.label('pause')} 건너뛰기`, x + w - 8, y + h + 3, { size: 11, align: 'r', color: UI.faint, outline: '#05060f' });
   }
