@@ -1,4 +1,5 @@
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
+import { playerStage } from '../data/entrances.js';
 import { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } from './blackRope.js';
 import { RNG, clamp, deepClone, fmtMoney } from '../core/util.js';
 import { Save } from '../core/SaveManager.js';
@@ -432,6 +433,13 @@ export class Career {
   }
   owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
   owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }
+  // the entrance plan for a match: your stage of the career, who holds the belt, who you have seen walk out before
+  entranceOpt(kind, o, settings) {
+    const d = this.d, on = settings && settings.entrance != null ? settings.entrance : 1;
+    if (!on) return null;
+    const belt = d.flags.champion ? 'player' : o && o.opp && o.opp === this.champion ? o.opp : null;
+    return { player: { stage: playerStage(d) }, belt, seen: Object.assign({}, d.flags.seenEnt || {}), short: on === .5 };
+  }
   gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
   // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
   gangMatch() {

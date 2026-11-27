@@ -63,6 +63,14 @@ export class MatchEvents {
     this.m.emit('cameoIn', { c });
     return c;
   }
+  escort(f, ids, right) {
+    const ar = this.m.arena;
+    ids.forEach((id, k) => {
+      const C = CHARACTERS[id]; if (!C) return;
+      const off = (30 + k * 34) * (right ? 1 : -1);
+      this.cameos.push({ who: 'escort', id, name: C.name, look: C.look, x: f.x + off, y: ar.floorY, face: f.face, vx: 0, act: 'escort', t: 0, target: f, off, spot: right ? ar.ropeR + ar.apron + 44 + k * 26 : ar.ropeL - ar.apron - 44 - k * 26, home: right ? ar.x1 - 6 : ar.x0 + 6, speed: 110, stance: 'arms', say: null, gone: false });
+    });
+  }
   say(c, text, life = 1.8) { c.say = { text, t: 0, life }; this.m.emit('cameoSay', { c, text }); }
   go(c, act) { c.act = act; c.t = 0; }
   tick(c, dt) {
@@ -70,10 +78,17 @@ export class MatchEvents {
     c.t += dt;
     if (c.say) { c.say.t += dt; if (c.say.t > c.say.life) c.say = null; }
     const ended = m.phase !== 'fight';
-    if (ended && c.act !== 'leave') this.go(c, 'leave');
+    if (c.who === 'escort') { if ((m.phase === 'fight' || m.phase === 'end') && c.act !== 'leave') this.go(c, 'leave'); }
+    else if (ended && c.act !== 'leave') this.go(c, 'leave');
     const walk = (to, spd) => { const d = to - c.x; if (Math.abs(d) < 3) { c.vx = 0; return true; } c.vx = sgn(d) * spd; c.x += c.vx * dt; if (Math.abs(to - c.x) < 3 || sgn(to - c.x) !== sgn(d)) { c.x = to; c.vx = 0; return true; } return false; };
     const T = c.target;
     switch (c.act) {
+      case 'escort': {   // a step behind their wrestler down the aisle, then at ringside facing the ring
+        const f = c.target;
+        if (f && f.side === 'out' && !f.hidden) walk(f.x + c.off, Math.max(c.speed, Math.abs(f.vx) + 20));
+        else if (f && f.side === 'in' && walk(c.spot, c.speed)) c.face = sgn(ar.mid - c.x) || c.face;
+        break;
+      }
       case 'enter':
         if (c.who === 'rival') { if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, 'shout'); this.say(c, pick(LINES.rivalIn), 1.4); } break; }
         if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, c.who === 'boss' ? 'shout' : 'distract'); if (c.who === 'boss') this.say(c, pick(LINES.bossShout), 1.5); else { this.say(c, pick(LINES.coachIn), 1.6); m.ref.distract = { t: 3.2, x: c.x }; m.emit('refDistract', { c }); } }

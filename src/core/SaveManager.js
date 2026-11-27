@@ -15,6 +15,6 @@ export const Save = {
   },
   del(key) { const s = store(); try { if (s) s.removeItem(PREFIX + key); } catch { } memory.delete(key); },
 };
-export const DEFAULT_SETTINGS = { master: .8, music: .55, sfx: .85, shake: 1, flash: 1, scan: 0, keys: null, hints: 1, typeSpeed: 1, career: 'normal' };
+export const DEFAULT_SETTINGS = { master: .8, music: .55, sfx: .85, shake: 1, flash: 1, scan: 0, keys: null, hints: 1, typeSpeed: 1, career: 'normal', entrance: 1 };
 export function loadSettings() { return Object.assign({}, DEFAULT_SETTINGS, Save.get('settings', {})); }
 export function saveSettings(s) { Save.set('settings', s); }

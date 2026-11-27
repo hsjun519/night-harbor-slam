@@ -168,6 +168,14 @@ try {
   await p.shot('e2e_10_arena_list');
   await tap('Enter'); await step(80);
   r = await st(); check(r.scene === 'MatchScene', 'contract match starts', JSON.stringify(r));
+  // the entrance: somebody walks the aisle before the bell; Enter skips the rest
+  let ent = null;
+  for (let i = 0; i < 40; i++) { ent = await ev(`const m=__NHS.game.scene.m; return m.entrance ? JSON.stringify({ done: m.entrance.done, walking: m.fighters.some(f => f.side === 'out' && !f.hidden), cur: m.entrance.current && m.entrance.current.f.name }) : null`).then(x => x && JSON.parse(x)); if (ent && ent.walking) break; await step(10); }
+  check(ent && ent.walking, 'an entrance: a wrestler walks out of the aisle toward the ring', JSON.stringify(ent));
+  await p.shot('e2e_10c_entrance');
+  await tap('Enter'); await step(10);
+  r = await ev(`const m=__NHS.game.scene.m; return JSON.stringify({ done: m.entrance.done, inside: m.fighters.every(f => f.side === 'in' && !f.hidden) })`).then(JSON.parse);
+  check(r.done && r.inside, 'Enter skips the entrances: both stand in the ring', JSON.stringify(r));
   for (let i = 0; i < 40; i++) { if (await ev(`return !!__NHS.game.scene.talk`)) break; await step(10); }
   check(await ev(`return !!__NHS.game.scene.talk`), 'face to face in the ring: the opponent talks before the bell', '');
   await p.shot('e2e_10b_ringtalk');

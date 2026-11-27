@@ -61,7 +61,7 @@ export class FighterRenderer {
     const seen = new Set();
     for (const L of m.links) { if (L.a.gone) continue; items.push({ z: L.a.y + L.a.lane + .5, pair: L }); seen.add(L.a); if (L.v) seen.add(L.v); }
     if (m.pin) { items.push({ z: m.pin.a.y + .4, pin: m.pin }); seen.add(m.pin.a); seen.add(m.pin.v); }
-    for (const f of m.fighters) if (!seen.has(f) && !f.gone) items.push({ z: f.y + (f.side === 'in' ? f.lane : 6) + (f.st === 'DOWN' || f.st === 'KO' ? -1 : 0) + (f.ctrl === 'human' ? .2 : 0), f });
+    for (const f of m.fighters) if (!seen.has(f) && !f.gone && !f.hidden) items.push({ z: f.y + (f.side === 'in' ? f.lane : 6) + (f.st === 'DOWN' || f.st === 'KO' ? -1 : 0) + (f.ctrl === 'human' ? .2 : 0), f });
     if (ar.hasRing && m.ref && m.ref.visible !== false) items.push({ z: ar.matY - 6, ref: 1 });
     items.sort((a, b) => a.z - b.z);
     for (const it of items) {

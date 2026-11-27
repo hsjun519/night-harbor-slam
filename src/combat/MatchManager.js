@@ -1,4 +1,5 @@
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
+import { EntranceDirector } from './Entrance.js';
 import { Emitter, RNG, clamp, sgn } from '../core/util.js';
 import { BALANCE as B } from '../data/balance.js';
 import { CHARACTERS } from '../data/characters.js';
@@ -93,9 +94,12 @@ export class MatchManager extends Emitter {
     }
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
     if (this.cfg.skipIntro) this.beginFight(true);
+    // entrances: singles in a ring (a cage match starts with both already inside)
+    else if (this.cfg.entrances && this.arena.hasRing && this.fighters.length === 2 && !['cage', 'cell'].includes(this.cfg.special)) this.entrance = new EntranceDirector(this, this.cfg.entrances);
   }
   get human() { return this.fighters.find(f => f.ctrl === 'human' && (f.legal || this.mode !== 'tag')) || this.fighters.find(f => f.ctrl === 'human'); }
   beginFight(instant) {
+    if (this.entrance && !this.entrance.done) this.entrance.skipAll();
     this.phase = instant ? 'fight' : 'ready'; this.introT = 0;
     for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true });
     if (instant) this.emit('bell', { start: true });
@@ -116,7 +120,8 @@ export class MatchManager extends Emitter {
     if (this.phase === 'fight') { this.clock += dt; this.hype = Math.max(10, this.hype - dt * .8); }
     for (const f of this.fighters) {
       if (f.gone) continue;
-      if (f.ai && (this.phase === 'fight' || f.st === 'INTRO')) f.ai.update(dt);
+      if (this.entrance && this.entrance.drives(f)) this.entrance.drive(f, dt);
+      else if (f.ai && (this.phase === 'fight' || f.st === 'INTRO')) f.ai.update(dt);
       else if ((f.ctrl !== 'human' && f.ctrl !== 'remote') || this.phase !== 'fight') this.blankIntent(f);
       if (this.practice && f.ctrl !== 'human') this.practiceTick(f, dt);
       f.tick(dt);
@@ -144,6 +149,7 @@ export class MatchManager extends Emitter {
   }
   blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
   introTick(dt) {
+    if (this.entrance && !this.entrance.done) { if (this.phase === 'intro') this.entrance.update(dt); else this.entrance.skipAll(); }   // the bell never rings on somebody still in the aisle
     this.introT += dt;
     if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
     if (this.phase === 'ready' && this.introT > 1.3) { this.phase = 'fight'; for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true }); this.emit('bell', { start: true }); }

@@ -31,6 +31,16 @@ function crowdAtlas(seed) {
   return { c, n, cw, ch };
 }
 
+// little pictures for the big screen during entrances: a knotted rope, mist, waves, a whale, a belt, a star
+function screenIcon(g, kind, x, y, col, t) {
+  const px = (dx, dy, w = 1, h = 1, c = col) => rect(g, c, x + dx, y + dy, w, h);
+  if (kind === 'rope') { for (let i = 0; i < 10; i++) px(i, 6 + Math.round(Math.sin(i * .9 + t * 3) * 2), 1, 2); px(4, 3, 3, 3); }
+  else if (kind === 'fog') { for (let i = 0; i < 3; i++) px((i * 4 + Math.round(t * 6)) % 10, 4 + i * 4, 7, 2, '#9aa3c2'); }
+  else if (kind === 'wave') { for (let i = 0; i < 12; i++) px(i, 8 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#e6f2ff'); px(1, 14, 11, 1, '#9fd6ff'); }
+  else if (kind === 'whale') { px(0, 6, 14, 6, '#9fd6ff'); px(2, 4, 8, 2, '#9fd6ff'); px(14, 4, 2, 4, '#9fd6ff'); px(16, 2, 2, 3, '#9fd6ff'); px(3, 8, 1, 1, '#05060c'); px(5, 12, 7, 1, '#e6f2ff'); if (Math.floor(t * 2) % 2) px(6, 0, 1, 3, '#e6f2ff'); }
+  else if (kind === 'belt') { px(0, 6, 16, 4, '#8a6a2a'); px(5, 4, 6, 8, '#ffd65a'); px(7, 6, 2, 4, '#fff3b0'); }
+  else if (kind === 'star') { px(5, 0, 2, 12); px(0, 5, 12, 2); px(2, 2, 8, 8, col); px(4, 4, 4, 4, '#ffffff'); }
+}
 export class ArenaRenderer {
   constructor(arena, def) {
     this.ar = arena; this.def = def; this.t = 0; this.cheer = 0; this.flashes = []; this.screen = { text: '', sub: '', col: '#49d6ff', t: 0 };
@@ -255,10 +265,11 @@ export class ArenaRenderer {
       const blink = s.blink && Math.floor(s.t * 4) % 2;
       drawText(g, s.text, x + w / 2, y + 5, { align: 'c', color: blink ? '#ffffff' : s.col, bold: true });
       if (s.sub) drawText(g, s.sub, x + w / 2, y + 24, { size: 11, align: 'c', color: '#c9d4ff' });
+      if (s.icon) screenIcon(g, s.icon, x + 4, y + 4, s.col, s.t);
     }
     for (let yy = 0; yy < h; yy += 2) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y + yy, w, 1); }
   }
-  setScreen(text, sub = '', col = '#49d6ff', blink = false) { this.screen = { text, sub, col, t: 0, blink }; }
+  setScreen(text, sub = '', col = '#49d6ff', blink = false, icon = null) { this.screen = { text, sub, col, t: 0, blink, icon }; }
   // Light pass after the bodies.
   drawLights(g, camX, focus) {
     const id = this.def.id;

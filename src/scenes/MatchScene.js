@@ -180,6 +180,37 @@ export class MatchScene {
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
     m.on('chairWarn', e => { A.sfx('warn'); });
+    // ---- entrances
+    m.on('entranceStart', e => {
+      const E = e.E, f = e.f;
+      this.ent = { f, E, t: 0, k: 0, out: false, fog: 0, flameT: -1, titles: [], walk: false, queue: [] };
+      if (E.fadeOut) { this.game.audio.music(null); this.ent.musicAt = 1.6; } else A.music(E.theme);
+      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0), fn: () => A.sfx('horn') });
+      this.ar.setScreen(f.name, E.screen.en || (f.ctrl === 'human' && E.label ? E.label : f.char.nick), E.screen.col || f.char.color, true, E.screen.icon);
+      if (E.crowd === 'hush') A.cheer(0); else if (E.crowd === 'boo') A.sfx('boo'); else if (E.crowd === 'mixed') { A.sfx('boo'); A.cheer(.8); } else A.cheer(E.tier === 'normal' ? .4 : .9);
+    });
+    m.on('entranceAppear', e => {
+      const E = e.E; if (!this.ent) return;
+      this.ent.walk = true; this.ent.flameT = E.flames ? 0 : -1;
+      if (E.flames) A.sfx('pyro', { p: E.flames });
+      if (E.tier === 'king') S.shake(.35);
+      if (E.crowd === 'sailors') fx.word('선항! 선항!', e.f.x, e.f.y - 120, '#9fd6ff', 2);
+      if (E.crowd === 'chant') fx.word('챔-피-언!', e.f.x, e.f.y - 120, '#ffd65a', 2);
+    });
+    m.on('entranceInRing', e => {
+      const E = e.E; if (!this.ent) return;
+      this.ent.walk = false;
+      if (E.fog) { fx.ring(e.f.x, e.f.y - 20, 120, '#c9d4ff', .8); this.ent.fog = -1; }   // the fog lifts
+      if (E.crowd === 'hush') A.cheer(2); else A.cheer(E.tier === 'normal' ? .5 : 1.2);
+    });
+    m.on('entrancePose', e => {
+      const E = e.E, f = e.f; if (!this.ent) return;
+      if (E.belt) { fx.word('★ 챔피언 ★', f.x, f.y - 128, '#ffd65a', 2); A.cheer(1.6); }
+      if (E.titles) E.titles.forEach((tx, i) => this.ent.queue.push({ at: this.ent.t + i * .52, fn: () => hud.push(tx, { col: i === E.titles.length - 1 ? '#ffffff' : E.screen.col || '#ffd65a', scale: i === E.titles.length - 1 ? 3 : 2, y: 70 + i * 34, life: Math.max(1.4, E.hold - i * .5) }) }));
+      else if (E.tier !== 'normal' || f.ctrl === 'human') hud.push(f.name, { col: E.screen.col || f.char.color, sub: f.ctrl === 'human' && E.label ? E.label : f.char.nick, y: 92, life: Math.min(1.6, E.hold + .3), scale: 2 });
+      if (E.crowd === 'mixed') fx.word('우우~! / 와아!', f.x, f.y - 120, '#d98cff', 2);
+    });
+    m.on('entrancesDone', () => { this.ent = null; A.music(this.m.cfg.music || 'match'); this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#49d6ff'); });
     m.on('cameoIn', e => { const rv = e.c.who === 'rival'; hud.push(e.c.who === 'boss' ? '사장 난입!' : rv ? 'BLACK ROPE 난입!' : '코치 난입!', { col: rv ? '#b066d8' : '#ffb347', sub: e.c.name, y: 150, life: 1.8, scale: 2 }); A.cheer(.7); if (rv) { A.sfx('warn'); S.flash(.7, .3, 1, .25); this.ar.setScreen('BLACK ROPE', e.c.name + ' 난입!', '#b066d8', true); } });
     m.on('noContest', () => { A.sfx('bell3'); hud.push('노 콘테스트!', { col: '#b066d8', scale: 3, y: 100, life: 2.2, sub: '심판이 난입을 보고 경기를 멈췄다' }); });
     m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
@@ -245,7 +276,8 @@ export class MatchScene {
     const h = this.human;
     if (h && m.phase === 'fight' && !this.online) inp.fillIntent(h.intent);
     for (const f of m.fighters) if (f.bossPhase > 1 && f.alive && Math.random() < dt * (f.bossPhase === 3 ? 9 : 4)) this.fx.spark(f.x + (Math.random() - .5) * 30, f.y - 20 - Math.random() * 70, .5, f.bossPhase === 3 ? '#ff5b5b' : '#ff8a2b');
-    if (m.phase === 'intro' && !this.online && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
+    if (m.phase === 'intro' && !this.online && (inp.menuPressed('confirm') || inp.pressed('atk'))) { if (m.entrance && !m.entrance.done) m.entrance.skipAll(); else m.introT = 99; }
+    if (this.ent) this.entranceFx(dt);
     if (this.online) this.onlineTick(dt); else m.update(dt);
     if (this.tut) this.tut.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
@@ -283,7 +315,12 @@ export class MatchScene {
     const m = this.m, S = this.game.screen, ar = m.arena;
     let tx;
     const act = m.fighters.filter(f => !f.gone && (f.alive || f.st === 'KO') && f.st !== 'TAGWAIT');
-    if (m.phase === 'intro') {
+    if (m.phase === 'intro' && m.entrance && !m.entrance.done) {   // follow whoever is walking out
+      const g = m.entrance.current, f = g && g.f, E = g && g.E;
+      tx = f ? f.x : ar.mid;
+      if (f && !f.hidden) S.focus(f.x - this.camX, f.y - (E.cam === 'low' ? 46 : 62), E.cam === 'close' ? 1.32 : E.cam === 'low' ? 1.42 : 1.16);
+      else S.unfocus();
+    } else if (m.phase === 'intro') {
       const F = m.fighters.filter(f => f.st === 'INTRO'), n = F.length, step = n ? Math.min(n - 1, Math.floor(m.introT / ((m.cfg.introTime || 3.2) / n))) : -1;
       if (step !== this.introStep && F[step]) { this.introStep = step; const f = F[step]; this.hud.push(f.name, { col: f.char.color, sub: f.char.nick + ' · ' + (DIFFICULTY[f.difficulty] && f.ctrl !== 'human' ? DIFFICULTY[f.difficulty].name : '플레이어'), y: 188, life: (m.cfg.introTime || 3.2) / n, scale: 3, from: f.x < ar.mid ? -1 : 1 }); for (const o of F) o.spot = o === f; this.game.audio.cheer(.7); }
       const f = F[Math.max(0, step)];
@@ -357,6 +394,7 @@ export class MatchScene {
     this.fx.draw(w, cam);
     const h = this.human;
     this.ar.drawLights(w, cam, h ? h.x : null);
+    if (this.ent && this.ent.E.light) this.drawEntranceLight(w, cam);
     if (this.fx.ink > 0) { w.globalAlpha = Math.min(.55, this.fx.ink * .4); rect(w, '#14081e', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     if (this.dark > .02) { w.globalAlpha = this.dark; rect(w, '#020208', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; const L = m.links.find(l => l.fin); if (L) for (const f of [L.a, L.v]) if (f) { rect(w, '#ffffff', Math.round(f.joints.x(J.head) - cam) + f.face * 3, Math.round(f.joints.y(J.head)) - 1, 2, 1); } }
     this.fx.drawLines(w, VIEW_W, VIEW_H);
@@ -394,6 +432,35 @@ export class MatchScene {
     else { m.addHype(10); A.cheer(.7); this.hud.toast('기싸움! 관중 열기 +10', '#c9d4ff'); }
   }
   // People who run in at the ring side (boss, coach): posed like townspeople, drawn behind the wrestlers.
+  // the hall dims, a spotlight in their colour follows them down the aisle
+  drawEntranceLight(w, cam) {
+    const e = this.ent, E = e.E, f = e.f, k = e.k;
+    if (k <= 0) return;
+    w.globalAlpha = Math.min(.92, E.light.dim * k); rect(w, '#03040a', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1;
+    if (f.hidden) return;
+    const sx = Math.round(f.x - cam), top = 0, bot = f.y + 6, wTop = 26, wBot = 64;
+    w.save(); w.globalCompositeOperation = 'lighter'; w.globalAlpha = .22 * k; w.fillStyle = E.light.col;
+    w.beginPath(); w.moveTo(sx - wTop / 2, top); w.lineTo(sx + wTop / 2, top); w.lineTo(sx + wBot / 2, bot); w.lineTo(sx - wBot / 2, bot); w.closePath(); w.fill();
+    w.globalAlpha = .18 * k; w.beginPath(); w.ellipse(sx, bot - 2, wBot / 2 + 6, 7, 0, 0, Math.PI * 2); w.fill();
+    w.restore();
+  }
+  // mist along the floor, pyro at the aisle, the hall's light coming up and down
+  entranceFx(dt) {
+    const e = this.ent, E = e.E, f = e.f, ar = this.m.arena, fx = this.fx, A = this.game.audio;
+    e.t += dt;
+    e.k = Math.min(1, e.k + dt * 1.6);
+    if (e.musicAt && e.t >= e.musicAt) { e.musicAt = 0; A.music(E.theme); }
+    for (const q of e.queue) if (!q.done && e.t >= q.at) { q.done = true; q.fn(); }
+    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, '#8a84b8', 2); } }
+    if (e.flameT >= 0 && e.flameT < (E.flames > 1 ? 2.4 : 1.4)) {
+      e.flameT += dt;
+      if (Math.floor(e.flameT * 8) !== Math.floor((e.flameT - dt) * 8)) {
+        const right = f.x > ar.mid, x0 = right ? ar.x1 - 24 : ar.x0 + 24, x1 = right ? ar.ropeR + ar.apron + 30 : ar.ropeL - ar.apron - 30;
+        const col = E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
+        for (const x of E.flames > 1 ? [x0, (x0 + x1) / 2, x1] : [x0, x1]) { fx.spark(x, ar.floorY - 10, E.flames > 1 ? 1.6 : 1, col, -Math.PI / 2); fx.spark(x, ar.floorY - 40, .8, '#ffffff', -Math.PI / 2); }
+      }
+    }
+  }
   drawCameos(w, cam) {
     const E = this.m.events, ar = this.m.arena;
     for (const c of [...this.cameoActors.keys()]) if (!E.cameos.includes(c)) this.cameoActors.delete(c);
@@ -403,7 +470,7 @@ export class MatchScene {
       let a = this.cameoActors.get(c);
       if (!a) { a = new Actor(c.look, { x: c.x, face: c.face, stance: c.stance, y: ar.floorY - FLOOR }); this.cameoActors.set(c, a); }
       a.x = c.x; a.vx = c.vx; a.face = c.face;
-      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' ? 'arms' : c.stance;
+      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' || c.act === 'escort' ? 'arms' : c.stance;
       if (c.say && c.act !== 'cheer' && c.act !== 'windup') a.talkT = Math.max(a.talkT, .15);
       a.pose(this.lastDt);
       const bc = this.cbc, tmp = this.ctmp;
@@ -419,8 +486,9 @@ export class MatchScene {
     for (const c of this.m.events.cameos) {
       const a = this.cameoActors.get(c);
       if (!a) continue;
-      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24;
-      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : '#ff8fc4', outline: '#05060f' });
+      const esc = c.who === 'escort' ? this.m.events.cameos.filter(o => o.who === 'escort').indexOf(c) : 0;
+      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24 - esc * 13;
+      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : c.who === 'escort' ? '#c9d4ff' : '#ff8fc4', outline: '#05060f' });
       if (!c.say) continue;
       const tw = textWidth(c.say.text, 11), bw = tw + 12, bx = clamp(Math.round(x - bw / 2), 4, VIEW_W - bw - 4), by = hy - 24;
       rect(u, '#05060f', bx - 1, by - 1, bw + 2, 18); rect(u, '#f6f2e6', bx, by, bw, 16);

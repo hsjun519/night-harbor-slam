@@ -12,6 +12,7 @@ export class SettingsOverlay {
     if (this.page === 0) return [
       { label: '전체 음량', value: pct(s.master), k: 'master', step: .1 }, { label: '음악', value: pct(s.music), k: 'music', step: .1 }, { label: '효과음', value: pct(s.sfx), k: 'sfx', step: .1 },
       { label: '화면 흔들림', value: pct(s.shake), k: 'shake', step: .25 }, { label: '번쩍임 효과', value: pct(s.flash), k: 'flash', step: .25 }, { label: '주사선 효과', value: s.scan ? '켬' : '끔', k: 'scan', toggle: 1 },
+      { label: '입장 연출', value: s.entrance === 0 ? '끄기' : s.entrance === .5 ? '짧게' : '전체', k: 'entrance', list: [1, .5, 0] },
       { label: '대화 속도', value: ['느림', '보통', '빠름'][Math.round(s.typeSpeed * 2) - 1] || '보통', k: 'typeSpeed', list: [.5, 1, 1.5] },
       { label: '키 설정 →', act: () => { this.page = 1; this.sel = 0; } }, { label: '닫기', act: () => this.close() },
     ];

@@ -418,7 +418,7 @@ function neutral(f, I, dt) {
     return;
   }
   if (f.landT > 0) { friction(f, dt, 1); if (f.landT > .06) return; }
-  if (m.phase !== 'fight') { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }
+  if (m.phase !== 'fight' && !(m.entrance && !m.entrance.done && m.entrance.drives(f))) { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }   // before the bell only an entrance walk moves
   if (f.has('fin')) { const sv = m.combo.seatedFoe(f); if (sv) { f.consume('fin'); if (m.combo.seatedMove(f, sv, true)) return; } }
   if (f.has('fin')) { f.consume('fin'); if (f.fin >= B.finMax) { if (m.finisher.start(f)) return; } else if (Math.abs(f.vx) < 60) { if (f.set('TAUNT')) { f.vx = 0; m.emit('taunt', { f }); return; } } }
   if (f.has('dodge') && !I.down) { f.consume('dodge'); if (startDodge(f, I)) return; }

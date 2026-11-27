@@ -154,7 +154,7 @@ export class QuickScene {
     if (v.mode === 'tag') E = [me, { char: v.mate, ctrl: 'ai', difficulty: lv }, { char: v.foe, ctrl: 'ai', difficulty: lv }, { char: v.foe2, ctrl: 'ai', difficulty: lv }];
     else if (v.mode === 'royal' || v.mode === 'rumble') { const pool = rng.shuffle(PLAY_IDS.filter(x => x !== v.me)); E = [me, ...pool.slice(0, v.count - 1).map(c => ({ char: c, ctrl: 'ai', difficulty: lv }))]; if (v.mode === 'rumble') E = [E[0], ...rng.shuffle(E.slice(1))]; }
     else E = [me, { char: v.foe, ctrl: this.kind === 'practice' ? 'dummy' : 'ai', difficulty: this.kind === 'practice' ? 'normal' : lv }];
-    const cfg = { mode: v.mode, arena: v.mode === 'street' ? 'alley' : v.arena, entrants: E, practice: this.kind === 'practice' ? { infinite: true, fullFin: false } : null, skipIntro: this.kind === 'practice' };
+    const cfg = { mode: v.mode, arena: v.mode === 'street' ? 'alley' : v.arena, entrants: E, practice: this.kind === 'practice' ? { infinite: true, fullFin: false } : null, skipIntro: this.kind === 'practice', entrances: this.kind !== 'practice' && v.mode !== 'tag' && this.game.settings.entrance !== 0 ? { short: this.game.settings.entrance === .5 } : null };
     this.game.playMatch(cfg, () => this.game.go(() => new QuickScene(this.game, this.kind)));
   }
   draw(w, u) {

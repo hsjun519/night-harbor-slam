@@ -475,6 +475,8 @@ class AudioManager {
       case 'coin': this.tone('square', 988, 988, .06, .09); this.tone('square', 1319, 1319, .22, .09, .06); break;
       case 'buy': this.tone('square', 784, 784, .06, .09); this.tone('square', 1047, 1047, .06, .09, .06); this.tone('square', 1319, 1319, .16, .09, .12); break;
       case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone('sine', f, f, .18, .14, i * .07)); break;
+      case 'boo': for (let i = 0; i < 3; i++) { this.tone('sawtooth', 150 + i * 23, 120 + i * 18, 1.1, .05 * p, i * .05); } this.burst(.9, .12 * p, 'lowpass', 420, .9); break;
+      case 'pyro': for (let i = 0; i < 4 * p; i++) this.burst(.08, .22, 'highpass', 1800 + i * 300, .5, i * .11); this.tone('sine', 70, 40, .5, .3, 0); break;
       case 'horn': this.tone('sawtooth', 84, 78, 2.2, .16 * p); this.tone('sine', 42, 40, 2.4, .3 * p); this.tone('triangle', 126, 118, 1.8, .06 * p); break;
       case 'warn': for (let i = 0; i < 2; i++) { this.tone('square', 740, 740, .12, .1, i * .26); this.tone('square', 554, 554, .12, .1, i * .26 + .13); } break;
       case 'door': this.burst(.14, .3, 'lowpass', 500, .8); this.tone('sine', 110, 70, .12, .3); this.tone('triangle', 300, 520, .2, .05, .06); break;
@@ -615,7 +617,7 @@ const Save = {
   },
   del(key) { const s = store(); try { if (s) s.removeItem(PREFIX + key); } catch { } memory.delete(key); },
 };
-const DEFAULT_SETTINGS = { master: .8, music: .55, sfx: .85, shake: 1, flash: 1, scan: 0, keys: null, hints: 1, typeSpeed: 1, career: 'normal' };
+const DEFAULT_SETTINGS = { master: .8, music: .55, sfx: .85, shake: 1, flash: 1, scan: 0, keys: null, hints: 1, typeSpeed: 1, career: 'normal', entrance: 1 };
 function loadSettings() { return Object.assign({}, DEFAULT_SETTINGS, Save.get('settings', {})); }
 function saveSettings(s) { Save.set('settings', s); }
 
@@ -2888,6 +2890,201 @@ for (const id in ATTACKS) ATTACKS[id].id = id;
 
 return { BALANCE, ATTACKS };
 })();
+// ---- data/entrances.js
+__m["data/entrances.js"] = (function () {
+// Ring entrances as data. A tier sets the defaults; a wrestler's own entry changes only what makes them different,
+// so a new officer or world champion needs a line here and nothing in the entrance code.
+//   tier      normal | known | rival | officer | champion | king | world   (stronger tiers walk out last)
+//   theme     music track while they walk out
+//   screen    { col, icon, en }: big-screen colour, a small picture (rope | fog | wave | whale | belt | star), an English billing
+//   light     { col, dim }: the hall darkens by dim (0..1) and a spotlight in col follows them
+//   fog       mist creeping along the floor     flames: 0 | 1 (pyro at the aisle) | 2 (big columns, both sides)
+//   cam       follow | close | low              walk: px/s down the aisle      pose: none | taunt | belt | bow | roar
+//   crowd     cheer | boo | mixed | sailors | chant | hush (then a roar)          escort: ids who walk out with them
+//   titles    lines shown big once they stand in the ring      horn: foghorn blasts      fadeOut: hall music dies first
+//   pre       seconds of light and sound before they show       hold: seconds of the pose       skip: Enter skips it
+const TIER_RANK = { normal: 0, known: 1, rival: 2, officer: 3, champion: 4, king: 5, world: 6 };
+const ENTRANCE_TIERS = {
+  normal: { theme: 'match', light: null, fog: 0, flames: 0, cam: 'follow', walk: 150, pose: 'none', crowd: 'cheer', pre: .3, hold: .5, skip: 1 },
+  known: { theme: 'match', light: { col: '#49d6ff', dim: .25 }, fog: 0, flames: 0, cam: 'follow', walk: 125, pose: 'taunt', crowd: 'cheer', pre: .6, hold: 1, skip: 1 },
+  rival: { theme: 'rival', light: { col: '#b066d8', dim: .35 }, fog: 0, flames: 0, cam: 'follow', walk: 115, pose: 'taunt', crowd: 'mixed', pre: .9, hold: 1.3, skip: 1 },
+  officer: { theme: 'boss', light: { col: '#e6f2ff', dim: .35 }, fog: 0, flames: 1, cam: 'close', walk: 105, pose: 'bow', crowd: 'cheer', pre: 1.2, hold: 1.3, skip: 1 },
+  champion: { theme: 'title', light: { col: '#ffd65a', dim: .3 }, fog: 0, flames: 1, cam: 'close', walk: 110, pose: 'belt', crowd: 'chant', pre: 1, hold: 1.7, skip: 1, belt: 1 },
+  king: { theme: 'boss', light: { col: '#5a5aa8', dim: .8 }, fog: 0, flames: 0, cam: 'close', walk: 70, pose: 'roar', crowd: 'hush', pre: 2.2, hold: 2.2, skip: 1 },
+  world: { theme: 'title', light: { col: '#ffffff', dim: .5 }, fog: 0, flames: 2, cam: 'close', walk: 95, pose: 'belt', crowd: 'chant', pre: 2, hold: 2.4, skip: 1, belt: 1 },
+};
+const ENTRANCES = {
+  // 야항 레슬링의 왕: the hall goes dark, mist along the floor, a shape in the fog walking slowly; the fog lifts at the ring
+  fogking: { tier: 'king', fog: 1, light: { col: '#6a5ab8', dim: .82 }, screen: { col: '#9aa3c2', icon: 'fog', en: 'KING OF THE FOG' }, silhouette: 1, walk: 60, crowd: 'hush', titles: ['야항 레슬링의 왕', '안개왕'] },
+  // 선항 레슬링 간부: a ship's horn, cold white light, waves on the board, pyro on both sides of the aisle, the deckhands cheering
+  whiteivory: { tier: 'officer', horn: 1, light: { col: '#e6f2ff', dim: .38 }, screen: { col: '#e6f2ff', icon: 'wave', en: 'WHITE IVORY' }, flames: 1, crowd: 'sailors', pose: 'bow', escort: ['owsailor'], titles: ['WHITE IVORY', '흰상아'] },
+  // 선항 레슬링의 왕: everything fades, a low call and the horn, the whale on the board, blue-white light, huge flames,
+  // the officers and deckhands react, a slow walk the camera keeps close to, a roar at the ring and three lines of billing
+  godong: { tier: 'king', fadeOut: 1, horn: 2, light: { col: '#9fd6ff', dim: .9 }, screen: { col: '#9fd6ff', icon: 'whale', en: 'KING OF THE OCEAN' }, flames: 2, escort: ['whiteivory', 'owsailor'], walk: 52, cam: 'low', crowd: 'hush', pre: 3, hold: 2.8, titles: ['OCEAN WRESTLING', 'KING OF THE OCEAN', '고동 — 흰긴수염고래'] },
+  // BLACK ROPE: red-purple light, their theme, the crew's name on the board, boos and cheers at once, a taunt at you
+  brLeader: { tier: 'rival', screen: { col: '#b066d8', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#b066d8', dim: .42 }, escort: ['brPower', 'brShow'], crowd: 'mixed', pose: 'taunt' },
+  brPower: { tier: 'rival', screen: { col: '#c2333f', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#c2333f', dim: .4 }, walk: 95, pose: 'roar' },
+  brSpeed: { tier: 'rival', screen: { col: '#d98cff', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#d98cff', dim: .38 }, walk: 160 },
+  brTech: { tier: 'rival', screen: { col: '#9be3ff', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#9be3ff', dim: .38 }, pose: 'bow' },
+  brShow: { tier: 'rival', screen: { col: '#ffd65a', icon: 'star', en: 'BLACK ROPE' }, light: { col: '#ffd65a', dim: .35 }, flames: 1, crowd: 'mixed' },
+  // the rest of the league: a few well-known names get their light
+  dohyun: { tier: 'rival', theme: 'match', light: { col: '#49d6ff', dim: .3 }, crowd: 'cheer', pose: 'taunt' },
+  baekpa: { tier: 'known', light: { col: '#e6e9f2', dim: .3 }, pose: 'bow' },
+  bjorn: { tier: 'known', light: { col: '#c9a25a', dim: .3 }, pose: 'roar' },
+  taesan: { tier: 'known', light: { col: '#ff8a2b', dim: .25 } },
+  ironma: { tier: 'known', light: { col: '#3fd46b', dim: .3 } },
+  gosu: { tier: 'known', light: { col: '#3fd46b', dim: .3 } },
+};
+// the player's entrance grows with the career: 신인 → 지역 유망주 → 유명 선수 → 지역 챔피언 → 전국적인 스타 → 세계 챔피언
+const PLAYER_STAGES = {
+  rookie: { tier: 'normal', label: '신인', crowd: 'cheer', pose: 'none' },
+  prospect: { tier: 'normal', label: '지역 유망주', crowd: 'cheer', pose: 'taunt', screen: { col: '#49d6ff' } },
+  known: { tier: 'known', label: '유명 선수', theme: 'gym', light: { col: '#3fe0d0', dim: .3 } },
+  champion: { tier: 'champion', label: '지역 챔피언', screen: { col: '#ffd65a', icon: 'belt' } },
+  star: { tier: 'champion', label: '전국적인 스타', flames: 2, screen: { col: '#ffd65a', icon: 'star' }, pre: 1.4, hold: 2 },
+  world: { tier: 'world', label: '세계 챔피언', screen: { col: '#ffffff', icon: 'star', en: 'WORLD CHAMPION' } },
+};
+function playerStage(d) {
+  if (!d) return 'rookie';
+  const f = d.flags || {}, titles = (d.titles || []).length;
+  if (f.worldChampion) return 'world';
+  if (f.champion && (titles >= 2 || d.fame >= 90)) return 'star';
+  if (f.champion) return 'champion';
+  if (d.fame >= 30) return 'known';
+  if (d.fame >= 10) return 'prospect';
+  return 'rookie';
+}
+// one fighter's entrance: tier defaults, then the wrestler's own line (or the player's stage), then the match's say
+function resolveEntrance(id, o = {}) {
+  const own = o.player ? PLAYER_STAGES[o.stage || 'rookie'] : ENTRANCES[id] || {};
+  let tier = own.tier || 'normal';
+  if (o.belt && TIER_RANK[tier] < TIER_RANK.champion) tier = 'champion';   // whoever holds the belt tonight walks out as the champion
+  const base = ENTRANCE_TIERS[tier], E = Object.assign({}, base, own, { tier });
+  if (o.belt && !own.screen) E.screen = { col: '#ffd65a', icon: 'belt' };
+  if (o.belt) E.belt = 1;
+  E.screen = Object.assign({ col: '#ffffff', icon: null, en: null }, E.screen || {});
+  if (o.seen && tier === 'normal') { E.pre = .15; E.hold = .2; E.walk = Math.max(E.walk, 190); E.pose = 'none'; }   // a familiar face: keep it short
+  const k = o.short ? .45 : 1;
+  E.pre *= k; E.hold *= k; if (o.short) E.walk *= 1.6;
+  return E;
+}
+
+return { playerStage, resolveEntrance, TIER_RANK, ENTRANCE_TIERS, ENTRANCES, PLAYER_STAGES };
+})();
+// ---- combat/Entrance.js
+__m["combat/Entrance.js"] = (function () {
+// Ring entrances, played in the match's intro before the bell. One wrestler at a time, weakest first: lights and
+// their music (pre), they appear at the end of the aisle (with anyone who walks out with them), walk the aisle on
+// their own feet, climb in at the apron, walk to their corner, pose, and wait there while the next one comes out.
+// Nobody can hit anybody: the director writes every entrant's intent until the last one is in. Enter skips it all.
+// MatchScene draws the light, mist, flames, the big screen and the crowd from the events this emits.
+const { clamp, sgn } = __m["core/util.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { CHARACTERS } = __m["data/characters.js"];
+const { resolveEntrance, TIER_RANK } = __m["data/entrances.js"];
+class EntranceDirector {
+  constructor(m, opt = {}) {
+    this.m = m; this.done = false; this.t = 0; this.groups = []; this.i = -1; this.cur = null;
+    const ar = m.arena, h = m.human;
+    // who walks out how, and in which order: stronger tiers last; on a tie the belt holder, then you, come last
+    for (const f of m.fighters) {
+      const player = f.ctrl === 'human' && !!opt.player;
+      const E = resolveEntrance(f.charId, { player, stage: player ? opt.player.stage : null, belt: opt.belt === (player ? 'player' : f.charId), seen: opt.seen && opt.seen[f.charId], short: opt.short });
+      const right = f.x > ar.mid;
+      this.groups.push({ f, E, right, spot: f.x, face: f.face, rank: TIER_RANK[E.tier] + (E.belt ? .5 : 0) + (f === h ? .25 : 0), stage: 'wait', t: 0, fin0: f.fin });
+    }
+    this.groups.sort((a, b) => a.rank - b.rank);
+    // everybody waits behind the curtain at the end of their side's aisle
+    for (const g of this.groups) this.hide(g);
+    m.holdIntro = true;   // the first one starts on the first update, once the scene listens
+  }
+  get current() { return this.cur; }
+  drives(f) { return !this.done && this.groups.some(g => g.f === f); }
+  hide(g) {
+    const ar = this.m.arena, f = g.f;
+    f.side = 'out'; f.y = ar.floorY; f.ground = true; f.vx = f.vy = 0; f.hidden = true;
+    f.x = g.right ? ar.x1 - 18 : ar.x0 + 18; f.face = g.right ? -1 : 1;
+    f.set('IDLE', { force: true });
+  }
+  next() {
+    this.i++;
+    this.cur = this.groups[this.i] || null;
+    if (!this.cur) { this.finish(); return; }
+    const g = this.cur; g.stage = 'pre'; g.t = 0;
+    this.m.emit('entranceStart', { f: g.f, E: g.E, i: this.i, n: this.groups.length });
+  }
+  // the intent of every entrant while the director runs: only the one walking out moves
+  drive(f, dt) {
+    const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false;
+    const g = this.cur;
+    if (!g || g.f !== f) return;
+    const ar = this.m.arena;
+    if (g.stage === 'walk') {
+      const apron = g.right ? ar.ropeR + ar.apron + 16 : ar.ropeL - ar.apron - 16, d = apron - f.x;
+      if (f.side === 'out' && Math.abs(d) > 20) { I.mx = sgn(d) * clamp(g.E.walk / (B.walk || 150), .35, 1); f.running = false; }
+      else if (f.side === 'out' && f.st !== 'ENTER_RING' && f.ground) { I.jump = true; I.up = true; f.buf.jump = B.inputBuffer; }
+    } else if (g.stage === 'corner') {
+      const d = g.spot - f.x;
+      if (Math.abs(d) > 6) I.mx = sgn(d) * .7;
+    } else if (g.stage === 'pose' && !g.posed && g.t > .15) {
+      g.posed = true;
+      if (g.E.pose !== 'none' && f.fin < B.finMax) { I.fin = true; f.buf.fin = B.inputBuffer; }   // the taunt is their pose
+    }
+  }
+  update(dt) {
+    if (this.done) return;
+    if (this.i < 0) { this.next(); return; }
+    const g = this.cur, m = this.m, ar = m.arena;
+    if (!g) return;
+    const f = g.f;
+    g.t += dt; this.t += dt;
+    switch (g.stage) {
+      case 'pre':
+        if (g.t >= g.E.pre) { g.stage = 'walk'; g.t = 0; f.hidden = false; if (g.E.escort && g.E.escort.length) m.events.escort(f, g.E.escort, g.right); m.emit('entranceAppear', { f, E: g.E }); }
+        break;
+      case 'walk':
+        if (f.side === 'in' && f.st !== 'ENTER_RING') { g.stage = 'corner'; g.t = 0; m.emit('entranceInRing', { f, E: g.E }); }
+        else if (g.t > 12) this.place(g);   // never stuck in the aisle
+        break;
+      case 'corner':
+        if (Math.abs(g.spot - f.x) <= 6 || g.t > 3) { f.x = g.spot; f.vx = 0; f.face = g.right ? -1 : 1; g.stage = 'pose'; g.t = 0; m.emit('entrancePose', { f, E: g.E }); }
+        break;
+      case 'pose':
+        if (g.t >= g.E.hold && !['ATTACK', 'TAUNT'].includes(f.st)) { this.settle(g); this.next(); }
+        break;
+    }
+  }
+  // straight to their corner, standing, gauge as it was
+  place(g) {
+    const f = g.f, ar = this.m.arena;
+    f.hidden = false; f.side = 'in'; f.y = ar.matY; f.x = g.spot; f.ground = true; f.vx = f.vy = 0; f.enter = null; f.entering = null; f.face = g.right ? -1 : 1;
+    f.set('IDLE', { force: true });
+  }
+  settle(g) {
+    const f = g.f;
+    if (f.side !== 'in' || f.st === 'ENTER_RING') this.place(g);
+    f.fin = g.fin0; g.stage = 'done';
+    f.set('INTRO', { force: true });   // stands in the corner (the intro idle) until the bell
+  }
+  skipAll() {
+    if (this.done) return;
+    for (const g of this.groups) if (g.stage !== 'done') { this.place(g); this.settle(g); }
+    this.finish(true);
+  }
+  finish(skipped) {
+    if (this.done) return;
+    this.done = true; this.cur = null;
+    const m = this.m;
+    for (const g of this.groups) g.f.hidden = false;
+    m.holdIntro = false;
+    m.introT = (m.cfg.introTime || 3.2) - .1;   // the face to face (if any) and the bell come next
+    m.emit('entrancesDone', { skipped: !!skipped });
+  }
+}
+const entranceName = f => (CHARACTERS[f.charId] ? CHARACTERS[f.charId].name : f.name);
+
+return { EntranceDirector, entranceName };
+})();
 // ---- combat/arena.js
 __m["combat/arena.js"] = (function () {
 // Arena geometry and the elastic side ropes. Pure simulation; ArenaRenderer draws it.
@@ -4846,7 +5043,7 @@ function neutral(f, I, dt) {
     return;
   }
   if (f.landT > 0) { friction(f, dt, 1); if (f.landT > .06) return; }
-  if (m.phase !== 'fight') { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }
+  if (m.phase !== 'fight' && !(m.entrance && !m.entrance.done && m.entrance.drives(f))) { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }   // before the bell only an entrance walk moves
   if (f.has('fin')) { const sv = m.combo.seatedFoe(f); if (sv) { f.consume('fin'); if (m.combo.seatedMove(f, sv, true)) return; } }
   if (f.has('fin')) { f.consume('fin'); if (f.fin >= B.finMax) { if (m.finisher.start(f)) return; } else if (Math.abs(f.vx) < 60) { if (f.set('TAUNT')) { f.vx = 0; m.emit('taunt', { f }); return; } } }
   if (f.has('dodge') && !I.down) { f.consume('dodge'); if (startDodge(f, I)) return; }
@@ -7366,6 +7563,14 @@ class MatchEvents {
     this.m.emit('cameoIn', { c });
     return c;
   }
+  escort(f, ids, right) {
+    const ar = this.m.arena;
+    ids.forEach((id, k) => {
+      const C = CHARACTERS[id]; if (!C) return;
+      const off = (30 + k * 34) * (right ? 1 : -1);
+      this.cameos.push({ who: 'escort', id, name: C.name, look: C.look, x: f.x + off, y: ar.floorY, face: f.face, vx: 0, act: 'escort', t: 0, target: f, off, spot: right ? ar.ropeR + ar.apron + 44 + k * 26 : ar.ropeL - ar.apron - 44 - k * 26, home: right ? ar.x1 - 6 : ar.x0 + 6, speed: 110, stance: 'arms', say: null, gone: false });
+    });
+  }
   say(c, text, life = 1.8) { c.say = { text, t: 0, life }; this.m.emit('cameoSay', { c, text }); }
   go(c, act) { c.act = act; c.t = 0; }
   tick(c, dt) {
@@ -7373,10 +7578,17 @@ class MatchEvents {
     c.t += dt;
     if (c.say) { c.say.t += dt; if (c.say.t > c.say.life) c.say = null; }
     const ended = m.phase !== 'fight';
-    if (ended && c.act !== 'leave') this.go(c, 'leave');
+    if (c.who === 'escort') { if ((m.phase === 'fight' || m.phase === 'end') && c.act !== 'leave') this.go(c, 'leave'); }
+    else if (ended && c.act !== 'leave') this.go(c, 'leave');
     const walk = (to, spd) => { const d = to - c.x; if (Math.abs(d) < 3) { c.vx = 0; return true; } c.vx = sgn(d) * spd; c.x += c.vx * dt; if (Math.abs(to - c.x) < 3 || sgn(to - c.x) !== sgn(d)) { c.x = to; c.vx = 0; return true; } return false; };
     const T = c.target;
     switch (c.act) {
+      case 'escort': {   // a step behind their wrestler down the aisle, then at ringside facing the ring
+        const f = c.target;
+        if (f && f.side === 'out' && !f.hidden) walk(f.x + c.off, Math.max(c.speed, Math.abs(f.vx) + 20));
+        else if (f && f.side === 'in' && walk(c.spot, c.speed)) c.face = sgn(ar.mid - c.x) || c.face;
+        break;
+      }
       case 'enter':
         if (c.who === 'rival') { if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, 'shout'); this.say(c, pick(LINES.rivalIn), 1.4); } break; }
         if (walk(c.spot, c.speed)) { c.face = sgn(ar.mid - c.x) || c.face; this.go(c, c.who === 'boss' ? 'shout' : 'distract'); if (c.who === 'boss') this.say(c, pick(LINES.bossShout), 1.5); else { this.say(c, pick(LINES.coachIn), 1.6); m.ref.distract = { t: 3.2, x: c.x }; m.emit('refDistract', { c }); } }
@@ -7447,6 +7659,7 @@ return { MatchEvents };
 // ---- combat/MatchManager.js
 __m["combat/MatchManager.js"] = (function () {
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
+const { EntranceDirector } = __m["combat/Entrance.js"];
 const { Emitter, RNG, clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { CHARACTERS } = __m["data/characters.js"];
@@ -7540,9 +7753,12 @@ class MatchManager extends Emitter {
     }
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
     if (this.cfg.skipIntro) this.beginFight(true);
+    // entrances: singles in a ring (a cage match starts with both already inside)
+    else if (this.cfg.entrances && this.arena.hasRing && this.fighters.length === 2 && !['cage', 'cell'].includes(this.cfg.special)) this.entrance = new EntranceDirector(this, this.cfg.entrances);
   }
   get human() { return this.fighters.find(f => f.ctrl === 'human' && (f.legal || this.mode !== 'tag')) || this.fighters.find(f => f.ctrl === 'human'); }
   beginFight(instant) {
+    if (this.entrance && !this.entrance.done) this.entrance.skipAll();
     this.phase = instant ? 'fight' : 'ready'; this.introT = 0;
     for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true });
     if (instant) this.emit('bell', { start: true });
@@ -7563,7 +7779,8 @@ class MatchManager extends Emitter {
     if (this.phase === 'fight') { this.clock += dt; this.hype = Math.max(10, this.hype - dt * .8); }
     for (const f of this.fighters) {
       if (f.gone) continue;
-      if (f.ai && (this.phase === 'fight' || f.st === 'INTRO')) f.ai.update(dt);
+      if (this.entrance && this.entrance.drives(f)) this.entrance.drive(f, dt);
+      else if (f.ai && (this.phase === 'fight' || f.st === 'INTRO')) f.ai.update(dt);
       else if ((f.ctrl !== 'human' && f.ctrl !== 'remote') || this.phase !== 'fight') this.blankIntent(f);
       if (this.practice && f.ctrl !== 'human') this.practiceTick(f, dt);
       f.tick(dt);
@@ -7591,6 +7808,7 @@ class MatchManager extends Emitter {
   }
   blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
   introTick(dt) {
+    if (this.entrance && !this.entrance.done) { if (this.phase === 'intro') this.entrance.update(dt); else this.entrance.skipAll(); }   // the bell never rings on somebody still in the aisle
     this.introT += dt;
     if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
     if (this.phase === 'ready' && this.introT > 1.3) { this.phase = 'fight'; for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true }); this.emit('bell', { start: true }); }
@@ -8021,7 +8239,7 @@ class QuickScene {
     if (v.mode === 'tag') E = [me, { char: v.mate, ctrl: 'ai', difficulty: lv }, { char: v.foe, ctrl: 'ai', difficulty: lv }, { char: v.foe2, ctrl: 'ai', difficulty: lv }];
     else if (v.mode === 'royal' || v.mode === 'rumble') { const pool = rng.shuffle(PLAY_IDS.filter(x => x !== v.me)); E = [me, ...pool.slice(0, v.count - 1).map(c => ({ char: c, ctrl: 'ai', difficulty: lv }))]; if (v.mode === 'rumble') E = [E[0], ...rng.shuffle(E.slice(1))]; }
     else E = [me, { char: v.foe, ctrl: this.kind === 'practice' ? 'dummy' : 'ai', difficulty: this.kind === 'practice' ? 'normal' : lv }];
-    const cfg = { mode: v.mode, arena: v.mode === 'street' ? 'alley' : v.arena, entrants: E, practice: this.kind === 'practice' ? { infinite: true, fullFin: false } : null, skipIntro: this.kind === 'practice' };
+    const cfg = { mode: v.mode, arena: v.mode === 'street' ? 'alley' : v.arena, entrants: E, practice: this.kind === 'practice' ? { infinite: true, fullFin: false } : null, skipIntro: this.kind === 'practice', entrances: this.kind !== 'practice' && v.mode !== 'tag' && this.game.settings.entrance !== 0 ? { short: this.game.settings.entrance === .5 } : null };
     this.game.playMatch(cfg, () => this.game.go(() => new QuickScene(this.game, this.kind)));
   }
   draw(w, u) {
@@ -8101,6 +8319,16 @@ function crowdAtlas(seed) {
   return { c, n, cw, ch };
 }
 
+// little pictures for the big screen during entrances: a knotted rope, mist, waves, a whale, a belt, a star
+function screenIcon(g, kind, x, y, col, t) {
+  const px = (dx, dy, w = 1, h = 1, c = col) => rect(g, c, x + dx, y + dy, w, h);
+  if (kind === 'rope') { for (let i = 0; i < 10; i++) px(i, 6 + Math.round(Math.sin(i * .9 + t * 3) * 2), 1, 2); px(4, 3, 3, 3); }
+  else if (kind === 'fog') { for (let i = 0; i < 3; i++) px((i * 4 + Math.round(t * 6)) % 10, 4 + i * 4, 7, 2, '#9aa3c2'); }
+  else if (kind === 'wave') { for (let i = 0; i < 12; i++) px(i, 8 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#e6f2ff'); px(1, 14, 11, 1, '#9fd6ff'); }
+  else if (kind === 'whale') { px(0, 6, 14, 6, '#9fd6ff'); px(2, 4, 8, 2, '#9fd6ff'); px(14, 4, 2, 4, '#9fd6ff'); px(16, 2, 2, 3, '#9fd6ff'); px(3, 8, 1, 1, '#05060c'); px(5, 12, 7, 1, '#e6f2ff'); if (Math.floor(t * 2) % 2) px(6, 0, 1, 3, '#e6f2ff'); }
+  else if (kind === 'belt') { px(0, 6, 16, 4, '#8a6a2a'); px(5, 4, 6, 8, '#ffd65a'); px(7, 6, 2, 4, '#fff3b0'); }
+  else if (kind === 'star') { px(5, 0, 2, 12); px(0, 5, 12, 2); px(2, 2, 8, 8, col); px(4, 4, 4, 4, '#ffffff'); }
+}
 class ArenaRenderer {
   constructor(arena, def) {
     this.ar = arena; this.def = def; this.t = 0; this.cheer = 0; this.flashes = []; this.screen = { text: '', sub: '', col: '#49d6ff', t: 0 };
@@ -8325,10 +8553,11 @@ class ArenaRenderer {
       const blink = s.blink && Math.floor(s.t * 4) % 2;
       drawText(g, s.text, x + w / 2, y + 5, { align: 'c', color: blink ? '#ffffff' : s.col, bold: true });
       if (s.sub) drawText(g, s.sub, x + w / 2, y + 24, { size: 11, align: 'c', color: '#c9d4ff' });
+      if (s.icon) screenIcon(g, s.icon, x + 4, y + 4, s.col, s.t);
     }
     for (let yy = 0; yy < h; yy += 2) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y + yy, w, 1); }
   }
-  setScreen(text, sub = '', col = '#49d6ff', blink = false) { this.screen = { text, sub, col, t: 0, blink }; }
+  setScreen(text, sub = '', col = '#49d6ff', blink = false, icon = null) { this.screen = { text, sub, col, t: 0, blink, icon }; }
   // Light pass after the bodies.
   drawLights(g, camX, focus) {
     const id = this.def.id;
@@ -8419,7 +8648,7 @@ class FighterRenderer {
     const seen = new Set();
     for (const L of m.links) { if (L.a.gone) continue; items.push({ z: L.a.y + L.a.lane + .5, pair: L }); seen.add(L.a); if (L.v) seen.add(L.v); }
     if (m.pin) { items.push({ z: m.pin.a.y + .4, pin: m.pin }); seen.add(m.pin.a); seen.add(m.pin.v); }
-    for (const f of m.fighters) if (!seen.has(f) && !f.gone) items.push({ z: f.y + (f.side === 'in' ? f.lane : 6) + (f.st === 'DOWN' || f.st === 'KO' ? -1 : 0) + (f.ctrl === 'human' ? .2 : 0), f });
+    for (const f of m.fighters) if (!seen.has(f) && !f.gone && !f.hidden) items.push({ z: f.y + (f.side === 'in' ? f.lane : 6) + (f.st === 'DOWN' || f.st === 'KO' ? -1 : 0) + (f.ctrl === 'human' ? .2 : 0), f });
     if (ar.hasRing && m.ref && m.ref.visible !== false) items.push({ z: ar.matY - 6, ref: 1 });
     items.sort((a, b) => a.z - b.z);
     for (const it of items) {
@@ -9342,6 +9571,7 @@ return { masteryLv, masteryInfo, MASTERY, MAX_LV, EVOLVE, EVOLVED_FROM, finKey, 
 // ---- world/CareerManager.js
 __m["world/CareerManager.js"] = (function () {
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
+const { playerStage } = __m["data/entrances.js"];
 const { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } = __m["world/blackRope.js"];
 const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
 const { Save } = __m["core/SaveManager.js"];
@@ -9774,6 +10004,13 @@ class Career {
   }
   owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
   owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }
+  // the entrance plan for a match: your stage of the career, who holds the belt, who you have seen walk out before
+  entranceOpt(kind, o, settings) {
+    const d = this.d, on = settings && settings.entrance != null ? settings.entrance : 1;
+    if (!on) return null;
+    const belt = d.flags.champion ? 'player' : o && o.opp && o.opp === this.champion ? o.opp : null;
+    return { player: { stage: playerStage(d) }, belt, seen: Object.assign({}, d.flags.seenEnt || {}), short: on === .5 };
+  }
   gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
   // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
   gangMatch() {
@@ -11078,6 +11315,37 @@ class MatchScene {
     m.on('propThrow', () => A.sfx('whoosh', { pitch: .8 }));
     m.on('propLand', e => A.sfx(e.hard ? 'clang' : 'thud', { p: .45 }));
     m.on('chairWarn', e => { A.sfx('warn'); });
+    // ---- entrances
+    m.on('entranceStart', e => {
+      const E = e.E, f = e.f;
+      this.ent = { f, E, t: 0, k: 0, out: false, fog: 0, flameT: -1, titles: [], walk: false, queue: [] };
+      if (E.fadeOut) { this.game.audio.music(null); this.ent.musicAt = 1.6; } else A.music(E.theme);
+      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0), fn: () => A.sfx('horn') });
+      this.ar.setScreen(f.name, E.screen.en || (f.ctrl === 'human' && E.label ? E.label : f.char.nick), E.screen.col || f.char.color, true, E.screen.icon);
+      if (E.crowd === 'hush') A.cheer(0); else if (E.crowd === 'boo') A.sfx('boo'); else if (E.crowd === 'mixed') { A.sfx('boo'); A.cheer(.8); } else A.cheer(E.tier === 'normal' ? .4 : .9);
+    });
+    m.on('entranceAppear', e => {
+      const E = e.E; if (!this.ent) return;
+      this.ent.walk = true; this.ent.flameT = E.flames ? 0 : -1;
+      if (E.flames) A.sfx('pyro', { p: E.flames });
+      if (E.tier === 'king') S.shake(.35);
+      if (E.crowd === 'sailors') fx.word('선항! 선항!', e.f.x, e.f.y - 120, '#9fd6ff', 2);
+      if (E.crowd === 'chant') fx.word('챔-피-언!', e.f.x, e.f.y - 120, '#ffd65a', 2);
+    });
+    m.on('entranceInRing', e => {
+      const E = e.E; if (!this.ent) return;
+      this.ent.walk = false;
+      if (E.fog) { fx.ring(e.f.x, e.f.y - 20, 120, '#c9d4ff', .8); this.ent.fog = -1; }   // the fog lifts
+      if (E.crowd === 'hush') A.cheer(2); else A.cheer(E.tier === 'normal' ? .5 : 1.2);
+    });
+    m.on('entrancePose', e => {
+      const E = e.E, f = e.f; if (!this.ent) return;
+      if (E.belt) { fx.word('★ 챔피언 ★', f.x, f.y - 128, '#ffd65a', 2); A.cheer(1.6); }
+      if (E.titles) E.titles.forEach((tx, i) => this.ent.queue.push({ at: this.ent.t + i * .52, fn: () => hud.push(tx, { col: i === E.titles.length - 1 ? '#ffffff' : E.screen.col || '#ffd65a', scale: i === E.titles.length - 1 ? 3 : 2, y: 70 + i * 34, life: Math.max(1.4, E.hold - i * .5) }) }));
+      else if (E.tier !== 'normal' || f.ctrl === 'human') hud.push(f.name, { col: E.screen.col || f.char.color, sub: f.ctrl === 'human' && E.label ? E.label : f.char.nick, y: 92, life: Math.min(1.6, E.hold + .3), scale: 2 });
+      if (E.crowd === 'mixed') fx.word('우우~! / 와아!', f.x, f.y - 120, '#d98cff', 2);
+    });
+    m.on('entrancesDone', () => { this.ent = null; A.music(this.m.cfg.music || 'match'); this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#49d6ff'); });
     m.on('cameoIn', e => { const rv = e.c.who === 'rival'; hud.push(e.c.who === 'boss' ? '사장 난입!' : rv ? 'BLACK ROPE 난입!' : '코치 난입!', { col: rv ? '#b066d8' : '#ffb347', sub: e.c.name, y: 150, life: 1.8, scale: 2 }); A.cheer(.7); if (rv) { A.sfx('warn'); S.flash(.7, .3, 1, .25); this.ar.setScreen('BLACK ROPE', e.c.name + ' 난입!', '#b066d8', true); } });
     m.on('noContest', () => { A.sfx('bell3'); hud.push('노 콘테스트!', { col: '#b066d8', scale: 3, y: 100, life: 2.2, sub: '심판이 난입을 보고 경기를 멈췄다' }); });
     m.on('cameoThrow', e => A.sfx('whoosh', { pitch: e.slide ? 1.2 : .7 }));
@@ -11143,7 +11411,8 @@ class MatchScene {
     const h = this.human;
     if (h && m.phase === 'fight' && !this.online) inp.fillIntent(h.intent);
     for (const f of m.fighters) if (f.bossPhase > 1 && f.alive && Math.random() < dt * (f.bossPhase === 3 ? 9 : 4)) this.fx.spark(f.x + (Math.random() - .5) * 30, f.y - 20 - Math.random() * 70, .5, f.bossPhase === 3 ? '#ff5b5b' : '#ff8a2b');
-    if (m.phase === 'intro' && !this.online && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
+    if (m.phase === 'intro' && !this.online && (inp.menuPressed('confirm') || inp.pressed('atk'))) { if (m.entrance && !m.entrance.done) m.entrance.skipAll(); else m.introT = 99; }
+    if (this.ent) this.entranceFx(dt);
     if (this.online) this.onlineTick(dt); else m.update(dt);
     if (this.tut) this.tut.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
@@ -11181,7 +11450,12 @@ class MatchScene {
     const m = this.m, S = this.game.screen, ar = m.arena;
     let tx;
     const act = m.fighters.filter(f => !f.gone && (f.alive || f.st === 'KO') && f.st !== 'TAGWAIT');
-    if (m.phase === 'intro') {
+    if (m.phase === 'intro' && m.entrance && !m.entrance.done) {   // follow whoever is walking out
+      const g = m.entrance.current, f = g && g.f, E = g && g.E;
+      tx = f ? f.x : ar.mid;
+      if (f && !f.hidden) S.focus(f.x - this.camX, f.y - (E.cam === 'low' ? 46 : 62), E.cam === 'close' ? 1.32 : E.cam === 'low' ? 1.42 : 1.16);
+      else S.unfocus();
+    } else if (m.phase === 'intro') {
       const F = m.fighters.filter(f => f.st === 'INTRO'), n = F.length, step = n ? Math.min(n - 1, Math.floor(m.introT / ((m.cfg.introTime || 3.2) / n))) : -1;
       if (step !== this.introStep && F[step]) { this.introStep = step; const f = F[step]; this.hud.push(f.name, { col: f.char.color, sub: f.char.nick + ' · ' + (DIFFICULTY[f.difficulty] && f.ctrl !== 'human' ? DIFFICULTY[f.difficulty].name : '플레이어'), y: 188, life: (m.cfg.introTime || 3.2) / n, scale: 3, from: f.x < ar.mid ? -1 : 1 }); for (const o of F) o.spot = o === f; this.game.audio.cheer(.7); }
       const f = F[Math.max(0, step)];
@@ -11255,6 +11529,7 @@ class MatchScene {
     this.fx.draw(w, cam);
     const h = this.human;
     this.ar.drawLights(w, cam, h ? h.x : null);
+    if (this.ent && this.ent.E.light) this.drawEntranceLight(w, cam);
     if (this.fx.ink > 0) { w.globalAlpha = Math.min(.55, this.fx.ink * .4); rect(w, '#14081e', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     if (this.dark > .02) { w.globalAlpha = this.dark; rect(w, '#020208', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; const L = m.links.find(l => l.fin); if (L) for (const f of [L.a, L.v]) if (f) { rect(w, '#ffffff', Math.round(f.joints.x(J.head) - cam) + f.face * 3, Math.round(f.joints.y(J.head)) - 1, 2, 1); } }
     this.fx.drawLines(w, VIEW_W, VIEW_H);
@@ -11292,6 +11567,35 @@ class MatchScene {
     else { m.addHype(10); A.cheer(.7); this.hud.toast('기싸움! 관중 열기 +10', '#c9d4ff'); }
   }
   // People who run in at the ring side (boss, coach): posed like townspeople, drawn behind the wrestlers.
+  // the hall dims, a spotlight in their colour follows them down the aisle
+  drawEntranceLight(w, cam) {
+    const e = this.ent, E = e.E, f = e.f, k = e.k;
+    if (k <= 0) return;
+    w.globalAlpha = Math.min(.92, E.light.dim * k); rect(w, '#03040a', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1;
+    if (f.hidden) return;
+    const sx = Math.round(f.x - cam), top = 0, bot = f.y + 6, wTop = 26, wBot = 64;
+    w.save(); w.globalCompositeOperation = 'lighter'; w.globalAlpha = .22 * k; w.fillStyle = E.light.col;
+    w.beginPath(); w.moveTo(sx - wTop / 2, top); w.lineTo(sx + wTop / 2, top); w.lineTo(sx + wBot / 2, bot); w.lineTo(sx - wBot / 2, bot); w.closePath(); w.fill();
+    w.globalAlpha = .18 * k; w.beginPath(); w.ellipse(sx, bot - 2, wBot / 2 + 6, 7, 0, 0, Math.PI * 2); w.fill();
+    w.restore();
+  }
+  // mist along the floor, pyro at the aisle, the hall's light coming up and down
+  entranceFx(dt) {
+    const e = this.ent, E = e.E, f = e.f, ar = this.m.arena, fx = this.fx, A = this.game.audio;
+    e.t += dt;
+    e.k = Math.min(1, e.k + dt * 1.6);
+    if (e.musicAt && e.t >= e.musicAt) { e.musicAt = 0; A.music(E.theme); }
+    for (const q of e.queue) if (!q.done && e.t >= q.at) { q.done = true; q.fn(); }
+    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, '#8a84b8', 2); } }
+    if (e.flameT >= 0 && e.flameT < (E.flames > 1 ? 2.4 : 1.4)) {
+      e.flameT += dt;
+      if (Math.floor(e.flameT * 8) !== Math.floor((e.flameT - dt) * 8)) {
+        const right = f.x > ar.mid, x0 = right ? ar.x1 - 24 : ar.x0 + 24, x1 = right ? ar.ropeR + ar.apron + 30 : ar.ropeL - ar.apron - 30;
+        const col = E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
+        for (const x of E.flames > 1 ? [x0, (x0 + x1) / 2, x1] : [x0, x1]) { fx.spark(x, ar.floorY - 10, E.flames > 1 ? 1.6 : 1, col, -Math.PI / 2); fx.spark(x, ar.floorY - 40, .8, '#ffffff', -Math.PI / 2); }
+      }
+    }
+  }
   drawCameos(w, cam) {
     const E = this.m.events, ar = this.m.arena;
     for (const c of [...this.cameoActors.keys()]) if (!E.cameos.includes(c)) this.cameoActors.delete(c);
@@ -11301,7 +11605,7 @@ class MatchScene {
       let a = this.cameoActors.get(c);
       if (!a) { a = new Actor(c.look, { x: c.x, face: c.face, stance: c.stance, y: ar.floorY - FLOOR }); this.cameoActors.set(c, a); }
       a.x = c.x; a.vx = c.vx; a.face = c.face;
-      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' ? 'arms' : c.stance;
+      a.stance = c.act === 'cheer' ? 'cheer' : c.act === 'windup' ? 'hawk' : c.act === 'watch' || c.act === 'escort' ? 'arms' : c.stance;
       if (c.say && c.act !== 'cheer' && c.act !== 'windup') a.talkT = Math.max(a.talkT, .15);
       a.pose(this.lastDt);
       const bc = this.cbc, tmp = this.ctmp;
@@ -11317,8 +11621,9 @@ class MatchScene {
     for (const c of this.m.events.cameos) {
       const a = this.cameoActors.get(c);
       if (!a) continue;
-      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24;
-      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : '#ff8fc4', outline: '#05060f' });
+      const esc = c.who === 'escort' ? this.m.events.cameos.filter(o => o.who === 'escort').indexOf(c) : 0;
+      const x = Math.round(c.x - cam), hy = Math.round(a.joints.y(J.head)) - 24 - esc * 13;
+      drawText(u, c.name, x, hy, { size: 11, align: 'c', color: c.who === 'boss' ? '#ffd65a' : c.who === 'escort' ? '#c9d4ff' : '#ff8fc4', outline: '#05060f' });
       if (!c.say) continue;
       const tw = textWidth(c.say.text, 11), bw = tw + 12, bx = clamp(Math.round(x - bw / 2), 4, VIEW_W - bw - 4), by = hy - 24;
       rect(u, '#05060f', bx - 1, by - 1, bw + 2, 18); rect(u, '#f6f2e6', bx, by, bw, 16);
@@ -11387,6 +11692,7 @@ class SettingsOverlay {
     if (this.page === 0) return [
       { label: '전체 음량', value: pct(s.master), k: 'master', step: .1 }, { label: '음악', value: pct(s.music), k: 'music', step: .1 }, { label: '효과음', value: pct(s.sfx), k: 'sfx', step: .1 },
       { label: '화면 흔들림', value: pct(s.shake), k: 'shake', step: .25 }, { label: '번쩍임 효과', value: pct(s.flash), k: 'flash', step: .25 }, { label: '주사선 효과', value: s.scan ? '켬' : '끔', k: 'scan', toggle: 1 },
+      { label: '입장 연출', value: s.entrance === 0 ? '끄기' : s.entrance === .5 ? '짧게' : '전체', k: 'entrance', list: [1, .5, 0] },
       { label: '대화 속도', value: ['느림', '보통', '빠름'][Math.round(s.typeSpeed * 2) - 1] || '보통', k: 'typeSpeed', list: [.5, 1, 1.5] },
       { label: '키 설정 →', act: () => { this.page = 1; this.sel = 0; } }, { label: '닫기', act: () => this.close() },
     ];
@@ -13115,9 +13421,9 @@ class WorldScene {
     const lv = o && o.difficulty || 'normal';
     const foe = id => { const e = Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id)); if (isBR(id) && kind !== 'tutorial') { const M = brMods(c, id, e.stats); e.stats = M.stats; e.moves = M.moves; } return e; };
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
-    if (kind === 'invasion') return { mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'invasion') return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
     if (kind === 'invasion2') return { mode: 'tag', arena: 'pier', entrants: [me, o.partner === 'brLeader' ? Object.assign(foe('brLeader'), { team: 0 }) : { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('whiteivory'), foe('owsailor')], career: 1, title: '선항 레슬링 2차 침공 · 태그', music: 'boss', introTime: 4.2 };
-    if (kind === 'invasion3') return { mode: 'single', arena: 'pier', entrants: [me, Object.assign(foe('godong'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 3 }, title: '선항 레슬링 3차 침공 · 선장 고동', music: 'boss', introTime: 4.8, preTalk: this.preTalk('godong', o) };
+    if (kind === 'invasion3') return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: 'pier', entrants: [me, Object.assign(foe('godong'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 3 }, title: '선항 레슬링 3차 침공 · 선장 고동', music: 'boss', introTime: 4.8, preTalk: this.preTalk('godong', o) };
     if (kind === 'brRaid') {
       const lu = o.lineup, crew = lu.who.map(id => Object.assign(foe(id), { team: 1, waitTurn: 4.4, difficulty: d.season >= 2 ? 'hard' : 'normal' }));
       if (lu.late) crew.push(Object.assign(foe(lu.late), { team: 1, waitTurn: 4.4, late: 50, armed: 1, difficulty: d.season >= 2 ? 'hard' : 'normal' }));
@@ -13136,7 +13442,7 @@ class WorldScene {
     if (o && o.cashIn === 'player' && bossF) bossF.hpStart = .62;   // cashing in on a champion still worn from a defence
     if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
     const runIn = brRunInDue(c, kind, o); if (runIn) brRunInMark(c, runIn);
-    return { music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    return { entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
@@ -13158,6 +13464,7 @@ class WorldScene {
     else if (offer && isBR(offer.opp) && !res.quit) this.lesson = (this.lesson || []).concat([{ who: offer.opp, text: brAfterLine(c.d, offer.opp, !!res.won), expr: res.won ? 'hurt' : 'happy' }]);
     const RI = res.match && res.match.runIn;
     if (RI && CHARACTERS[RI.who]) { brState(c.d).rematch = 1; this.lesson = (this.lesson || []).concat([{ who: RI.who, text: RI.nc ? '심판이 경기를 끊었군. 아쉽게 됐어, 챔피언 후보님.' : RI.hit ? '내 선물은 잘 받았나? 다음엔 링 위에서 직접 주지.' : '피했다고 끝난 줄 알아? 사장실에 도전장 넣어 뒀다.', expr: 'fierce' }, { who: null, name: BR.name, text: `${CHARACTERS[RI.who].name}의 재대결 요구가 사장실 제안에 올라왔다.` }]); }
+    if (offer && offer.opp && CHARACTERS[offer.opp] && !res.quit) { const S0 = c.d.flags.seenEnt || (c.d.flags.seenEnt = {}); S0[offer.opp] = 1; }
     // 주간 파이널: the beaten finalist keeps the promise
     if (kind === 'weekly' && offer && res.won) {
       c.d.flags.weeklyWins = (c.d.flags.weeklyWins || 0) + 1;
