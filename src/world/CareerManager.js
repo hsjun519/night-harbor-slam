@@ -7,6 +7,7 @@ import { CHARACTERS, ROSTER_IDS } from '../data/characters.js';
 import { BALANCE as B } from '../data/balance.js';
 import { MOVES, FINISHERS } from '../data/moves.js';
 import { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } from '../data/mastery.js';
+import { harborBegin, harborAdd, harborBroken, leagueShare, morningGifts } from './harbor.js';
 
 export const SLOT_NAMES = ['오전', '오후', '저녁'];
 export const SEASON_DAYS = 28;
@@ -127,7 +128,7 @@ export function slotInfo(n) {
   const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
   if (!d || typeof d !== 'object' || !d.name) return null;
   const rec = d.record || {};
-  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
+  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, ending: d.ending ? d.ending.id : null, savedAt: d.savedAt || d.created || 0 };
 }
 // the slot played most recently (for 커리어 이어하기)
 export function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
@@ -157,7 +158,10 @@ export class Career {
       dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
+  // careers from before the story log: the first match, win and loss from the history if it still holds them all
+  storyFromHistory() { const d = this.d, h = d.history || [], n = (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0); if (!n) return {}; if (n > h.length) return { lost: 1 }; return { firstMatch: h[0], firstWin: h.find(x => x.won) || null, firstLoss: h.find(x => !x.won && !x.draw) || null }; }
+  markStory(e) { const st = this.d.story || (this.d.story = {}); if (st.lost) return; if (!st.firstMatch) st.firstMatch = e; if (e.won && !st.firstWin) st.firstWin = e; if (!e.won && !e.draw && !st.firstLoss) st.firstLoss = e; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -251,6 +255,7 @@ export class Career {
     if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
     // the champion's royalties: shirts, posters, a milk advert
     if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
+    msgs.push(...morningGifts(d));   // the harbour's people and the sponsor, for the pier
     d.day++;
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
@@ -359,7 +364,7 @@ export class Career {
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
         if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
-        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
+        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; d.flags.defenses = (d.flags.defenses || 0) + 1; }
         else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
         if (c.cashIn) d.mitb = null;
       }
@@ -379,10 +384,13 @@ export class Career {
     d.fame = clamp(d.fame + fame, 0, 999);
     this.earn(Math.max(0, money));
     out.money = money; out.fame = fame; out.xp = xp;
+    // 부두 복구 기금: the league adds a tenth of every prize while the pier is down
+    if (money > 0 && kind !== 'practice' && harborBroken(d)) { const g = harborAdd(d, 'league', leagueShare(money)); if (g) out.lines.push(`연맹이 상금의 10%를 부두 복구 기금에 보탰다 +${fmtMoney(g)}`); }
     out.ups = this.addXp(xp);
     out.rankAfter = this.rank;
-    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
+    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null, season: d.season };
     d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
+    if (kind !== 'practice') this.markStory(d.lastResult);
     d.seasonLog.matches.push(d.lastResult);
     this.save();
     return out;
@@ -429,7 +437,7 @@ export class Career {
     if (!o) return;
     if (kind === 'invasion') { o.state = 'INVADED'; o.day1 = d.day; o.won1 = !!won; }
     else if (kind === 'invasion2') { o.state = 'REGROUP'; o.day2 = d.day; o.won2 = !!won; }
-    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
+    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; harborBegin(d); } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
   }
   owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
   owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }

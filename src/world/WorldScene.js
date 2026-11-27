@@ -24,6 +24,10 @@ import { SLOT_NAMES, saleOn, merchantOn, BUFF_NAMES, GANG, LEARNABLE, learnedTex
 import * as Menus from './menus.js';
 import { Training } from './Training.js';
 import { Actor } from './Actor.js';
+import { HARBOR, harborRepaired, harborFull, harborLeft, harborRatio, worldReady, donate, signReport } from './harbor.js';
+import { ENDINGS, canFinish, finishOptions, stayOk } from './endings.js';
+import { newWaveCine, worldCallCine, stayCine, ENDING_CINES } from './endingStory.js';
+import { EndingScene } from '../scenes/EndingScene.js';
 
 const P = new Float32Array(16);
 export class WorldScene {
@@ -108,6 +112,11 @@ export class WorldScene {
         if (due === 'rebuilt') { this.playCine(rebuiltCine(this)); }
         return;
       }
+    }
+    // the pier: the fund is full (A NEW WAVE), then 구만석 사장 brings the invitation to the world stage
+    if ((id === 'street' || id === 'lobby') && !instant && !this.endBusy && !d.ending) {
+      if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
+      if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
     // the next opponent comes over in the waiting room, once per contract
     if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
@@ -414,6 +423,7 @@ export class WorldScene {
     if (ct && ct.title) { const V = this.c.titleVenue; return { text: `${V.name}에서 타이틀 매치 (~${ct.day}일)`, loc: V.loc, x: V.x }; }
     if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
     if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    if (worldReady(d) && d.harbor.called) return { text: '부두 끝에서 세계로 가는 배에 오르기', loc: 'street', x: HARBOR.end - 10, col: '#49d6ff' };
     return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
   }
   routeTo(loc) {
@@ -448,7 +458,10 @@ export class WorldScene {
     a.vy += 900 * dt;
     a.x += a.vx * dt; a.y += a.vy * dt;
     if (a.y >= a.y0) { if (!a.ground && a.vy > 200) this.game.audio.sfx('land', { p: .4 }); a.y = a.y0; a.vy = 0; a.ground = true; }
-    a.x = clamp(a.x, 18, L.w - 18);
+    // the broken pier past the dome is closed off until it is rebuilt
+    const hi = a === this.player && L.street && !harborRepaired(this.c.d) ? HARBOR.x : L.w - 18;
+    if (a === this.player && a.x > hi && mx > 0 && this.t - (this.bumpT || -9) > 3) { this.bumpT = this.t; this.toast(this.c.d.harbor ? '무너진 부두다. 표지판을 읽어 보자.' : '낡은 여객 부두 — 붕괴 위험, 출입 금지.', '#c9d4ff'); }
+    a.x = clamp(a.x, 18, hi);
     if (a.ground && Math.abs(a.vx) > 30) { a.stepT = (a.stepT || 0) + dt; if (a.stepT > (Math.abs(a.vx) > 150 ? .2 : .3)) { a.stepT = 0; this.game.audio.sfx('step'); } }
     if (a.dust > 0) a.dust -= dt;
   }
@@ -472,7 +485,7 @@ export class WorldScene {
     const npc = !!best;
     for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < DOOR_R && (!npc || dd < bd - 10)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
     const atDoor = best && best.kind === 'door';
-    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : atDoor ? dd < bd - 14 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
+    for (const o of L.objects) { if (o.when && !o.when(this.c.d)) continue; const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : atDoor ? dd < bd - 14 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: typeof o.label === 'function' ? o.label(this.c.d) : o.label, verb: '조사' }; } }
     return best;
   }
   use(pr) {
@@ -517,8 +530,64 @@ export class WorldScene {
       case 'undergroundRing': if (d.contract && d.contract.title && this.c.titleVenue.loc === 'basement') this.startMatch('title', d.contract); else if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
+      case 'dockSign': this.say(this.signLines()); break;
+      case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- 부두 복구와 세계 무대, and the endings ----
+  signLines() {
+    const c = this.c, d = c.d, R = signReport(d), S = text => ({ who: null, name: '부두 표지판', text });
+    if (!R) return [S('"낡은 여객 부두 — 붕괴 위험, 출입 금지." 판자 너머로 무너진 잔교가 바닷물에 잠겨 있다.')];
+    if (harborRepaired(d)) return [S(`{y}${R.order}{/}`), S('"국제 부두". 기둥에 새겨진 기부자 명단 맨 위에 내 이름이 있다.'), S(worldReady(d) ? '부두 끝에서 세계로 가는 배가 기다린다.' : `${R.fame}. 세계는 아직 내 이름을 모른다.`)];
+    const out = [S(`{y}${R.order}{/}`), S(`${R.fund} · ${R.fame}`)];
+    if (!d.harbor.read) { d.harbor.read = 1; out.push(S('작은 글씨: "연맹은 상금의 10%를, 항구 사람들은 매일 아침 명성만큼 보탭니다. 명성 200이 넘으면 스폰서도 나섭니다."')); }
+    out.push(S(R.givers));
+    const left = harborLeft(d), opts = [];
+    for (const g of HARBOR.gifts) if (d.money >= g && left >= g) opts.push({ label: `${fmtMoney(g)} 기부하기`, act: () => this.donateAt(g) });
+    if (d.money > 0 && left > 0) opts.push({ label: `가진 돈 전부 기부하기 (${fmtMoney(Math.min(d.money, left))})`, act: () => this.donateAt(Math.min(d.money, left)) });
+    opts.push({ label: '그만두기', go: [] });
+    out.push({ prompt: '부두 복구 기금', choice: opts });
+    return out;
+  }
+  donateAt(n) {
+    const c = this.c, d = c.d, got = donate(c, n);
+    if (!got) { this.toast('돈이 모자라다.', '#ff8a8a'); return; }
+    this.game.audio.sfx('coin');
+    this.toast(`부두 복구 기금에 ${fmtMoney(got)} 기부 — ${Math.floor(harborRatio(d) * 100)}%`, '#49d6ff');
+    c.save();
+    if (harborFull(d) && !this.endBusy) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); }
+  }
+  pierEnd() {
+    const d = this.c.d;
+    if (!worldReady(d)) { this.say([{ who: 'me', text: `수평선 너머가 세계 무대다. 명성 ${d.fame} / ${HARBOR.fame}. 아직은 바라만 볼 뿐이다.` }]); return; }
+    this.say([{ who: null, name: '세계로 가는 배', text: '갑판에서 구만석 사장이 손을 흔든다. 출항하면 이 커리어는 엔딩을 맞는다.' }, { prompt: '세계 무대', choice: [
+      { label: '세계로 떠난다 (엔딩)', act: () => this.confirmEnding('world') },
+      ...(stayOk(d) ? [{ label: '이 항구에 남는다 (엔딩)', act: () => this.confirmEnding('stay', { fromShip: 1 }) }] : []),
+      { label: '아직은 아니다', go: [{ who: 'me', text: '…조금만 더. 인사할 사람이 남았다.' }] },
+    ] }]);
+  }
+  // 구만석 사장 → 커리어 마무리하기 (npcs.js)
+  finishTalk() {
+    const d = this.c.d, L = { stay: '챔피언으로 남는다', mentor: '후배를 키운다', retire: '링을 떠난다 (은퇴)', unknown: '링을 떠난다 (은퇴)' };
+    this.say([
+      { who: 'boss', text: '…그 얘기를 꺼낼 날이 올 줄 알았지. 앉게. 차라도 한 잔… 아, 차도 없군.' },
+      { who: 'boss', text: d.flags.champion ? '벨트를 허리에 감은 채로 그런 얼굴이라니. 어떻게 하고 싶은가?' : '어떻게 마무리하고 싶은가? 어떤 선택이든 나는 자네 편일세.' },
+      { prompt: '커리어 마무리', choice: [...finishOptions(d).map(id => ({ label: `${L[id]} (엔딩)`, act: () => this.confirmEnding(id, { from: 'office' }) })), { label: '아직은 아닙니다', go: [{ who: 'boss', text: '그래야지! 표 팔 날이 아직 많이 남았어.', expr: 'happy' }] }] },
+    ]);
+  }
+  confirmEnding(id, o = {}) {
+    const E = ENDINGS[id];
+    this.open(new Menus.Confirm(this, `엔딩 "${E.name}"을(를) 시작할까요? 커리어는 여기서 끝나고 슬롯에 엔딩 기록이 남습니다.`, () => this.startEnding(id, o), { danger: 1 }));
+  }
+  // the last scene of the ending here in town, then THE FINAL BELL
+  startEnding(id, o = {}) {
+    const c = this.c, d = c.d;
+    d.ending = { id, season: d.season, day: d.day, at: Date.now(), from: o.from || (o.fromShip ? 'ship' : null) };
+    d.retired = true; d.contract = null; c.save();
+    this.endBusy = true;
+    const script = id === 'stay' ? stayCine(this, !!o.fromShip) : ENDING_CINES[id](this);
+    this.playCine(script, { onEnd: () => { this.blackout = true; this.game.go(() => new EndingScene(this.game, c, { id })); } });
   }
   restMenu() {
     const c = this.c, d = c.d;
@@ -559,22 +628,23 @@ export class WorldScene {
   }
   // ---- draw ----
   draw(w, u) {
-    const L = this.L, cam = Math.round(this.camX), d = this.c.d;
+    const L = this.L, cam = Math.round(this.camX), d = this.c.d, sl = this.skyOver != null ? this.skyOver : d.slot;   // a cutscene may borrow another sky
     if (L.street) {
-      const key = 'far' + d.slot;
-      if (!this.farCache[key]) this.farCache[key] = streetFar(L, d.slot);
+      const key = 'far' + sl;
+      if (!this.farCache[key]) this.farCache[key] = streetFar(L, sl);
       w.drawImage(this.farCache[key], Math.round(-cam * .4), 0);
     } else rect(w, '#05060f', 0, 0, VIEW_W, VIEW_H);
-    drawWindows(w, L, cam, d.slot);
+    drawWindows(w, L, cam, sl);
     w.drawImage(L.bg, -cam, 0);
-    if (L.live) L.live(w, this.c, cam);   // what changes with the career (posters, trophies, banners)
+    if (L.live) L.live(w, this.c, cam, this);   // what changes with the career (posters, trophies, banners)
     drawWindows.after && drawWindows.after(w);
     // people
     const all = [...this.npcs, this.player].sort((a, b) => a.y - b.y);
-    for (const a of all) this.drawActor(w, a, cam);
+    for (const a of all) if (!a.hidden) this.drawActor(w, a, cam);
+    if (L.liveTop) L.liveTop(w, this.c, cam, this);
     // lights
     this.lights(w, cam);
-    if (d.slot === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
+    if (sl === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     if (!this.cine) this.hud(u);
     if (!this.dialog && !this.overlays.length && !(this.fadeT > 0) && !this.cine) this.drawGuide(u, cam);
@@ -583,6 +653,7 @@ export class WorldScene {
     if (this.dialog) this.dialog.draw(u);
     for (const o of this.overlays) o.draw(u, w);
     this.drawToasts(u);
+    if (this.blackout) { rect(u, '#000000', 0, 0, VIEW_W, VIEW_H); return; }   // an ending hands over to THE FINAL BELL
     if (this.fadeT > 0) { const D = this.fadeDur || .45; fade(u, clamp(this.fadeT > .22 ? (D - this.fadeT) / Math.max(.05, D - .22) : this.fadeT / .22, 0, 1)); }
   }
   drawActor(g, a, cam) {
@@ -602,7 +673,7 @@ export class WorldScene {
     else if (this.loc === 'gym') for (const x of [420, 700, 980]) glow(w, x - cam, 62, 70, '#ffe0b0', .16);
     else if (this.loc === 'office') glow(w, 400 - cam, 70, 90, '#ffcf7a', .2);
     else if (this.loc === 'arena') { glow(w, 724 - cam, 110, 70, '#ff5fa2', .2); glow(w, 300 - cam, 64, 60, '#ffcf7a', .16); }
-    else if (L.street) { if (d.slot === 2) for (let x = 30; x < L.w; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
+    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
   }
   hud(u) {
     const c = this.c, d = c.d, t = this.t;

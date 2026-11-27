@@ -9,6 +9,7 @@ import { WorldScene } from './world/WorldScene.js';
 import { CreateScene } from './world/CreateScene.js';
 import { TutorialOffer } from './scenes/Tutorial.js';
 import { OnlineScene } from './scenes/OnlineScene.js';
+import { EndingScene } from './scenes/EndingScene.js';
 
 const canvas = document.getElementById('game');
 const game = new GameManager(canvas);
@@ -22,7 +23,7 @@ function playTutorial(c, after) {
 }
 game.playTutorial = playTutorial;
 function startCareer(kind, given, slot, confirmed) {
-  if (kind === 'continue') { const c = given || Career.load(slot || latestSlot()); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+  if (kind === 'continue') { const c = given || Career.load(slot || latestSlot()); if (c && c.d.ending) { game.go(() => new EndingScene(game, c, { replay: true })); return; } if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
   const n = slot || 1;
   game.go(() => new CreateScene(game, look => {
     const c = Career.create(n, look); game.career = c;

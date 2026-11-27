@@ -11,6 +11,9 @@
 //   { say: [steps] }             a dialogue (Dialogue steps); waits until it closes
 //   { title: text, sub, dur }    a big title card;  { caption: text, dur } a line at the bottom
 //   { shake: k } { flash: [r, g, b, a] } { sfx: name } { music: name } { wait: t } { bars: 0|1 } { act: fn } { remove: id }
+//   { sky: 0|1|2|null }          the sky of another time of day (1: the sunset) until the scene ends
+//   { fx: { ... } }              scene effects the place draws (the pier: belt, waves, ships, ship, shipGo)
+//   { dark: 0..1 }               fade the picture towards black (the title cards stay on top)   { hide: id } somebody leaves the picture
 import { VIEW_W, VIEW_H, clamp } from '../core/util.js';
 import { drawText } from '../render/pixelfont.js';
 import { rect } from '../render/painter.js';
@@ -22,7 +25,7 @@ export class Cutscene {
   constructor(W, script, o = {}) {
     this.W = W; this.q = script.slice(); this.run = []; this.t = 0; this.bars = 0; this.barsWant = o.bars === false ? 0 : 1;
     this.card = null; this.cap = null; this.cam = null; this.camFrom = 0; this.camT = 0; this.camDur = 0; this.cast = {}; this.done = false;
-    this.onEnd = o.onEnd || null; this.id = o.id || ''; this.skipT = 0; this.borrowed = [];
+    this.onEnd = o.onEnd || null; this.id = o.id || ''; this.skipT = 0; this.borrowed = []; this.dark = 0; this.darkWant = 0;
   }
   actor(id) { if (id === 'me') return this.W.player; return this.cast[id] || this.W.npcs.find(a => a.id === id) || null; }
   start() { this.next(); }
@@ -65,6 +68,10 @@ export class Cutscene {
     if (s.sfx) A.sfx(s.sfx);
     if (s.music) A.music(s.music);
     if (s.bars != null) this.barsWant = s.bars ? 1 : 0;
+    if (s.sky !== undefined) W.skyOver = s.sky;
+    if (s.fx) { const F = W.cineFx || (W.cineFx = {}); for (const k in s.fx) { if (s.fx[k] && !F[k]) F[k + 'T'] = W.t; F[k] = s.fx[k]; } }   // each effect remembers when it started (k + 'T')
+    if (s.dark != null) this.darkWant = s.dark;
+    if (s.hide) { const a = this.actor(s.hide); if (a) a.hidden = true; }
     if (s.act) s.act(W);
   }
   // true when the step is over
@@ -89,6 +96,7 @@ export class Cutscene {
     const W = this.W, inp = W.game.input;
     this.t += dt;
     this.bars += (this.barsWant - this.bars) * Math.min(1, dt * 6);
+    this.dark += (this.darkWant - this.dark) * Math.min(1, dt * 2.4);
     if (this.card) { this.card.t += dt; if (this.card.t > this.card.dur) this.card = null; }
     if (this.cap) { this.cap.t += dt; if (this.cap.t > this.cap.dur) this.cap = null; }
     if (this.cam != null) { this.camT += dt; const k = clamp(this.camT / this.camDur, 0, 1), e = k * k * (3 - 2 * k); W.camX = this.camFrom + (this.cam - this.camFrom) * e; }
@@ -117,10 +125,12 @@ export class Cutscene {
     for (const a of W.npcs) if (a.cine) a.gone = true;
     for (const id in this.cast) this.cast[id].scripted = false;
     for (const b of this.borrowed) { b.a.x = b.x; b.a.face = b.face; b.a.stance = b.stance; b.a.vx = 0; }
-    W.player.scripted = false;
+    W.player.scripted = false; W.player.hidden = false; W.skyOver = null; W.cineFx = null;
+    for (const b of this.borrowed) b.a.hidden = false;
     if (this.onEnd) this.onEnd(W);
   }
   draw(u) {
+    if (this.dark > .01) { u.globalAlpha = Math.min(1, this.dark); rect(u, '#000000', 0, 0, VIEW_W, VIEW_H); u.globalAlpha = 1; }
     const b = Math.round(this.bars * 34);
     if (b > 0) { rect(u, '#000000', 0, 0, VIEW_W, b); rect(u, '#000000', 0, VIEW_H - b, VIEW_W, b); }
     if (this.card) {

@@ -15,6 +15,8 @@ import { ARENAS } from '../combat/arena.js';
 import { DIFFICULTY } from '../combat/AIController.js';
 import { SPECIAL } from '../combat/SpecialRules.js';
 import { EVOLVE, masteryInfo, lvText, finKey } from '../data/mastery.js';
+import { retireKind } from './endings.js';
+import { EndingScene } from '../scenes/EndingScene.js';
 // ---- move mastery: a level tag with a small bar, and a one-line summary ----
 function masteryTag(u, xp, xr, y, evolves) {
   const I = masteryInfo(xp), col = I.max ? '#ffd65a' : I.lv ? '#9be3ff' : UI.faint;
@@ -510,6 +512,7 @@ export class MapMenu extends Menu {
     rect(u, '#3a4688', 196, 166, 8, 44);
     // street
     rect(u, '#2a2a3a', 60, 214, 520, 18); drawText(u, '부둣길', 320, 217, { size: 11, align: 'c', color: UI.dim });
+    { const H = W.c.d.harbor, ok = H && H.stage === 'REPAIRED'; rect(u, ok ? '#1f6a8a' : '#3a3046', 586, 214, 40, 18); drawText(u, '부두', 606, 217, { size: 11, align: 'c', color: ok ? '#bff3ff' : '#8a8aa0' }); }
     node('street', 200, 222, '정문');
     node('clinic', 150, 258, '항구의원'); node('shop', 230, 258, '돛대 상회');
     rect(u, '#5a2a3a', 300, 250, 50, 16); drawText(u, '포차', 325, 252, { size: 11, align: 'c', color: '#ffd0d8' });
@@ -619,8 +622,9 @@ export class SeasonEndMenu extends Menu {
 // ---- career over ----
 export class GameOverScene {
   constructor(game, career) { this.game = game; this.c = career; this.t = 0; this.sel = 0; game.audio.music(null); game.audio.jingle('gameover'); career.d.retired = true; }
-  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
-  update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
+  items() { return [{ label: '마지막 벨 (엔딩 보기)', act: () => { const d = this.c.d; d.ending = { id: this.endKind(), season: d.season, day: d.day, at: Date.now(), cause: 'injury' }; d.retired = true; this.c.save(); this.game.go(() => new EndingScene(this.game, this.c, { id: d.ending.id })); } }, { label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
+  endKind() { return retireKind(this.c.d); }
+  update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel = (this.sel + (inp.pressed('up') ? it.length - 1 : 1)) % it.length; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
   draw(w, u) {
     const d = this.c.d;
     bands(w, 0, 0, 640, 360, ['#05060f', '#0a0b18', '#0e1022', '#120f26']);
@@ -631,7 +635,7 @@ export class GameOverScene {
     drawText(u, '부상 게이지가 100%에 도달했다. 더는 링에 설 수 없다.', 320, 116, { align: 'c', color: '#eef2ff' });
     drawPortrait(u, this.c.look(), 'sad', 280, 140, 80, { px: 3, dy: 10 });
     drawText(u, `${d.name} · 시즌 ${d.season} ${d.day}일 · ${d.record.w}승 ${d.record.l}패 · 최고 랭킹 ${this.c.rank}위`, 320, 230, { size: 11, align: 'c', color: UI.dim });
-    menuList(u, this.items(), this.sel, 230, 262, { w: 180 });
+    menuList(u, this.items(), this.sel, 230, 252, { w: 180 });
     u.globalAlpha = 1;
   }
 }

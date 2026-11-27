@@ -167,6 +167,8 @@ export function retreatCine(W) {
       { who: 'fankid', text: '챔피언이 바다 괴물을 물리쳤다아!', expr: 'happy' },
     ] },
     { act: () => { W.c.d.fame += 10; W.toast('항구의 영웅! 명성 +10', '#ffd65a'); W.c.save(); } },
+    { cam: 1990, dur: 1.6 }, { caption: '그날 밤, 무너진 옛 부두 앞에 표지판 하나가 세워졌다.', dur: 3.2 },
+    { act: () => W.toast('부두 표지판이 생겼다 — 등대 돔 오른쪽 끝', '#49d6ff') }, { cam: null },
     { bars: 0 },
   ];
 }
@@ -178,10 +180,10 @@ export function rebuiltCine(W) {
     { spawn: 'boss', x: 2060, face: -1 }, { spawn: 'oldman', x: 1860, face: 1, with: 1 },
     { say: [
       { who: 'boss', text: '새 지붕, 새 링, 새 조명! 타이틀전은 오늘부터 다시 등대 돔에서 연다!', expr: 'happy' },
-      { who: 'oldman', text: '그리고… 바다 건너 항로가 열렸다네. 선항 레슬링이 다니던 그 뱃길 말일세.' },
-      { who: 'oldman', text: '이제 이 항구의 챔피언이 바다 밖으로 나갈 차례야. {y}세계 무대{/}가 기다리고 있어.' },
+      { who: 'oldman', text: '그런데 큰 배가 댈 옛 여객 부두는 오래전에 무너진 채라네. 선항 놈들도 먼바다에 닻을 내리고 작은 배로 건너왔지.' },
+      { who: 'oldman', text: '부두를 다시 세우면 바다 건너 항로가 열려. 이 항구의 챔피언이 {y}세계 무대{/}로 나갈 길 말일세. 돔 옆 부두 표지판을 읽어 보게.' },
     ] },
-    { act: () => { c.owRebuilt(); c.save(); W.toast('국제 항로 개방 — 세계 무대는 다음 장에서', '#49d6ff'); } },
+    { act: () => { c.owRebuilt(); c.save(); W.toast('세계로 가는 길 — 등대 돔 오른쪽, 부두 표지판', '#49d6ff'); } },
     { cam: null }, { bars: 0 },
   ];
 }

@@ -19,6 +19,9 @@ export const TRACKS = {
   rival: { bpm: 124, swing: .06, chords: ['D:m', 'D:m', 'Bb:M', 'C:M', 'D:m', 'F:M', 'G:m', 'A:7'], lead: ['D5 . . D5 . F5 . A5 - - . G5 . F5 . .', 'D5 . . D5 . F5 . A5 - - . C6 . A5 . .', 'Bb5 - - . A5 . G5 . F5 - - . G5 . A5 .', 'C6 - - . Bb5 . A5 . G5 - - . . . . .', 'D6 . . D6 . C6 . A5 - - . F5 . A5 . .', 'F5 . A5 . C6 . F6 . E6 - - . D6 . C6 .', 'Bb5 . . Bb5 . A5 . G5 - - . F5 . G5 . .', 'A5 - - - C#6 - - - E6 - - - A5 - - -'], bass: '1 . 1 . 5 . 1 . 8 . 5 . 1 . 5 .', drums: 'k . h . s . h k k . h . s . h o', lead2: 'square', drive: .8 },
   rumble: { bpm: 160, chords: ['A:m', 'F:M', 'G:M', 'E:M', 'A:m', 'F:M', 'D:m', 'E:7'], lead: ['A5 . C6 . E6 . A6 . G6 . E6 . C6 . E6 .', 'F6 - - . C6 . A5 . C6 - - . F6 . E6 .', 'D6 . G5 . B5 . D6 . G6 . F6 . D6 . B5 .', 'G#5 - - . B5 . E6 . G#6 - - . . . . .', 'A5 . C6 . E6 . A6 . C7 . B6 . A6 . E6 .', 'F6 - - . A6 . F6 . C6 - - . A5 . C6 .', 'D6 . F6 . A6 . F6 . D6 . A5 . F5 . A5 .', 'B5 - - - D6 - - - E6 - - - G#6 - - -'], bass: '1 1 1 1 1 1 5 5 1 1 1 1 8 8 5 5', drums: 'k . h k s . h k k . h k s . h o', lead2: 'square', drive: 1 },
 };
+// the main theme, slowed and softened: A NEW WAVE (keys, a little lift) and THE FINAL BELL (a pad, no drums)
+TRACKS.wave = Object.assign({}, TRACKS.title, { bpm: 70, soft: 1, keys: 1, pad: 0, drums: '. . . . . . . . k . . . . . . .', bass: '1 . . . . . . . 5 . . . . . . .' });
+TRACKS.ending = Object.assign({}, TRACKS.title, { bpm: 62, soft: 1, pad: 1, drums: '. . . . . . . . . . . . . . . .', bass: '1 . . . . . . . . . . . 5 . . .' });
 export const JINGLES = {
   win: { bpm: 150, notes: 'C5 E5 G5 C6 - - G5 C6 E6 - - - - - - -', chord: 'C:M' },
   lose: { bpm: 90, notes: 'G4 - F4 - E4 - D4 - C4 - - - - - - -', chord: 'C:m' },
@@ -134,6 +137,8 @@ export class AudioManager {
       case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone('sine', f, f, .18, .14, i * .07)); break;
       case 'boo': for (let i = 0; i < 3; i++) { this.tone('sawtooth', 150 + i * 23, 120 + i * 18, 1.1, .05 * p, i * .05); } this.burst(.9, .12 * p, 'lowpass', 420, .9); break;
       case 'pyro': for (let i = 0; i < 4 * p; i++) this.burst(.08, .22, 'highpass', 1800 + i * 300, .5, i * .11); this.tone('sine', 70, 40, .5, .3, 0); break;
+      case 'gull': for (let i = 0; i < 2; i++) { this.tone('sine', 1900, 1250, .16, .05 * p, i * .22); this.tone('sine', 1500, 2100, .08, .03 * p, i * .22 + .14); } break;
+      case 'wave': this.burst(1.6, .16 * p, 'lowpass', 700, .9); this.burst(1.1, .06 * p, 'highpass', 2400, .7, .35); break;
       case 'horn': this.tone('sawtooth', 84, 78, 2.2, .16 * p); this.tone('sine', 42, 40, 2.4, .3 * p); this.tone('triangle', 126, 118, 1.8, .06 * p); break;
       case 'warn': for (let i = 0; i < 2; i++) { this.tone('square', 740, 740, .12, .1, i * .26); this.tone('square', 554, 554, .12, .1, i * .26 + .13); } break;
       case 'door': this.burst(.14, .3, 'lowpass', 500, .8); this.tone('sine', 110, 70, .12, .3); this.tone('triangle', 300, 520, .2, .05, .06); break;

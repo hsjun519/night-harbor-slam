@@ -2,21 +2,146 @@
 // applied): in the lobby the champion's poster with the belt holder's face, the top of the ranking, the belts and
 // cases you won in the trophy case, and a banner for whatever the gym is talking about today.
 import { CHARACTERS } from '../data/characters.js';
-import { rect, bands, trophy } from '../render/painter.js';
+import { rect, bands, trophy, poly, glow } from '../render/painter.js';
 import { drawText } from '../render/pixelfont.js';
 import { drawPortrait } from '../render/head.js';
 import { shade } from '../render/palette.js';
 import { OW } from './CareerManager.js';
+import { HARBOR, pierStage, harborRatio, worldReady } from './harbor.js';
 
-// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken
-export function streetLive(g, c, cam) {
+// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken; past the dome,
+// the old passenger pier (broken, then cleared, rebuilt step by step as the fund grows, then lit and flagged, and a
+// ship at its end once the world calls). W: the town scene, for the cutscene effects (sunset, belt, waves, ships).
+export function streetLive(g, c, cam, W) {
   const d = c.d, ox = -Math.round(cam);
-  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
-  const x = 2140 + ox;
-  if (x < -200 || x > 900) return;
-  for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
-  rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
-  for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+  if (d.ow && OW.damaged.includes(d.ow.state)) {
+    const x = 2140 + ox;
+    if (x > -200 && x < 900) {
+      for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
+      rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
+      for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+    }
+  }
+  if (PIER.x0 + ox < 680) pier(g, d, ox, cam, W);
+}
+// ---- the pier ----
+export const PIER = { x0: 2286, x1: 2780, deck: 300, dh: 22, gap: [2400, 2520], mid: [2520, 2640], far: 2640 };
+// a plank at x: 0 missing, 1 old, 2 new
+export function plankAt(x, st) {
+  const P = PIER, i = Math.floor((x - P.x0) / 6), gap = x >= P.gap[0] && x < P.gap[1], mid = x >= P.mid[0] && x < P.mid[1], far = x >= P.far;
+  if (st >= 4) return 2;
+  if (st === 3) return x < P.gap[0] ? (i % 5 === 3 ? 2 : 1) : 2;
+  if (st === 2) { if (far) return 0; if (gap) return 2; if (mid) return i % 3 === 1 ? 2 : 1; return i % 5 === 3 ? 2 : 1; }
+  if (gap || far) return 0;
+  if (mid) return i % 3 === 1 ? 0 : 1;
+  return i % 5 === 3 ? 0 : 1;
+}
+const FLAGS = ['#c2333f', '#2d63b8', '#3fd46b', '#ffd65a', '#ff8fc4', '#f2efe4'];
+function pier(g, d, ox, cam, W) {
+  const P = PIER, st = pierStage(d), fx = (W && W.cineFx) || {}, t = W ? W.t : 0, sl = W && W.skyOver != null ? W.skyOver : d.slot;
+  // the sunset on the water (the far sea sits behind the open pier)
+  if (sl === 1) { const sx = Math.round(1100 - cam * .4), lo = P.x0 + ox; for (let y = 238; y < 298; y += 3) { const w = 6 + ((y * 7 + Math.floor(t * 6)) % 13), j = Math.round(Math.sin(y * .7 + t * 3) * 6), x = sx + j - w / 2; if (x >= lo) rect(g, y % 2 ? '#ffb347' : '#ffd08a', x, y, w, 1); } }
+  if (fx.ships) farShips(g, cam, t - (fx.shipsT || t));
+  const shipOn = st === 4 && (fx.ship || (worldReady(d) && d.harbor.called));
+  if (shipOn) ship(g, ox, fx.shipGoT != null ? t - fx.shipGoT : -1, t);
+  // the deck: planks, the front beam, and the pilings under it
+  for (let x = P.x0; x < P.x1; x += 6) {
+    const k = plankAt(x, st);
+    if (!k) continue;
+    const odd = Math.floor(x / 6) % 2;
+    rect(g, '#1a1410', x + ox, P.deck, 6, P.dh); rect(g, k === 2 ? (odd ? '#a8835a' : '#b48e62') : (odd ? '#5a4a3e' : '#4e4036'), x + ox, P.deck, 5, P.dh);
+    if (k === 1 && x % 30 === 0) rect(g, '#3a2e26', x + ox + 1, P.deck + 7, 3, 2);
+    rect(g, k === 2 ? '#6a4a2e' : '#33281f', x + ox, P.deck + P.dh, 6, 7);
+  }
+  for (let x = P.x0 + 14; x < P.x1; x += 40) {
+    const bad = st < 2 && ((x > P.gap[0] && x < P.gap[1]) || x > P.far), top = P.deck + P.dh + 7, h = bad ? 8 + (x % 3) * 5 : 31;
+    rect(g, '#0e0a08', x + ox - 1, top, 8, h); rect(g, st >= 3 && !bad ? '#5a4030' : '#3a2a22', x + ox, top, 6, h);
+  }
+  if (st <= 1) {
+    // the collapsed span, sliding into the water
+    poly(g, '#3a2e26', [[P.gap[0] + 4 + ox, 302], [P.gap[0] + 62 + ox, 322], [P.gap[0] + 62 + ox, 334], [P.gap[0] + 4 + ox, 314]]);
+    for (let k = 0; k < 9; k++) rect(g, '#1a1410', P.gap[0] + 10 + k * 6 + ox, 304 + k * 2, 1, 10);
+    poly(g, '#4e4036', [[P.gap[1] - 50 + ox, 326], [P.gap[1] - 4 + ox, 304], [P.gap[1] - 4 + ox, 314], [P.gap[1] - 50 + ox, 336]]);
+    if (st === 0) for (const [x, y, w] of [[2560, 338, 14], [2610, 346, 9], [2700, 340, 18], [2750, 350, 8]]) { const b = Math.round(Math.sin(t * 1.6 + x) * 1.5); rect(g, '#0e0a08', x + ox - 1, y + b - 1, w + 2, 4); rect(g, '#5a4a3e', x + ox, y + b, w, 2); }
+  }
+  // scaffolding where they are working
+  if (st === 1 || st === 2) {
+    const [a, b] = st === 1 ? P.gap : [P.far, P.x1 - 10];
+    for (let x = a + 6; x < b; x += 38) rect(g, '#8a94b0', x + ox, 262, 2, 68);
+    for (const y of [270, 292]) rect(g, '#8a94b0', a + 6 + ox, y, b - a - 10, 2);
+    rect(g, '#ffd65a', a + 20 + ox, 256, 34, 8); drawText(g, '공사', a + 37 + ox, 255, { size: 11, align: 'c', color: '#1a1a1a' });
+  }
+  // lamp posts go up when the deck is down; flags, rails and lights when it is open
+  if (st >= 3) for (const x of [2380, 2520, 2660]) {
+    rect(g, '#05060f', x + ox - 1, 238, 5, 62); rect(g, '#3a3a52', x + ox, 238, 3, 62); rect(g, '#3a3a52', x + ox - 5, 236, 13, 3);
+    if (st === 4) { rect(g, '#ffe0a0', x + ox - 4, 239, 11, 2); glow(g, x + ox + 1, 242, sl === 2 ? 46 : 22, '#ffe0a0', sl === 2 ? .35 : .16); }
+  }
+  if (st === 4) {
+    for (let x = P.x0 + 6; x < P.x1; x += 32) { rect(g, '#05060f', x + ox - 1, 283, 5, 17); rect(g, '#8a6a4a', x + ox, 284, 3, 16); }
+    for (let x = P.x0 + 6; x < P.x1 - 6; x += 2) rect(g, '#c9b48a', x + ox, 287 + Math.round(Math.sin((x - P.x0) / 32 * Math.PI) * 2), 2, 1);
+    FLAGS.forEach((col, i) => {
+      const x = 2330 + i * 72 + ox; rect(g, '#05060f', x - 1, 208, 4, 92); rect(g, '#c9ccd8', x, 208, 2, 92);
+      for (let k = 0; k < 16; k++) { const y = 210 + Math.round(Math.sin(t * 3 + i + k * .45) * 2 * (k / 16)); rect(g, k < 2 ? shade(col, -.2) : col, x + 2 + k, y, 1, 11); }
+    });
+    rect(g, '#120c1e', 2338 + ox, 226, 62, 16); rect(g, '#1f6a8a', 2339 + ox, 227, 60, 14); drawText(g, '국제 부두', 2369 + ox, 227, { size: 11, align: 'c', color: '#ffffff' });
+  } else {
+    // the barrier across the pier
+    const bx = HARBOR.x + 8 + ox;
+    for (const dx of [0, 34]) { rect(g, '#05060f', bx + dx - 1, 272, 4, 28); rect(g, '#8a6a4a', bx + dx, 272, 2, 28); }
+    rect(g, '#05060f', bx - 5, 270, 46, 8); for (let k = 0; k < 44; k += 8) rect(g, k % 16 ? '#1a1a1a' : '#ffd65a', bx - 4 + k, 271, 8, 6);
+    rect(g, '#120c1e', bx - 2, 250, 40, 16); rect(g, '#c2333f', bx - 1, 251, 38, 14); drawText(g, st ? '공사 중' : '출입 금지', bx + 18, 251, { size: 11, align: 'c', color: '#ffffff' });
+  }
+  // the sign (once 고동 has sailed away): "명성을 모으고 부두를 고쳐 세계로 진출하라", and how full the fund is
+  if (d.harbor) {
+    const sx = HARBOR.x - 22 + ox;
+    rect(g, '#05060f', sx - 1, 250, 4, 50); rect(g, '#6a4a2e', sx, 250, 2, 50);
+    rect(g, '#05060f', sx - 23, 222, 48, 32); rect(g, '#d8c8a0', sx - 22, 223, 46, 30); rect(g, '#8a6a4a', sx - 22, 223, 46, 2);
+    drawText(g, '세계로', sx + 1, 226, { size: 11, align: 'c', color: '#3a2418' });
+    rect(g, '#3a2418', sx - 17, 243, 36, 5); rect(g, '#3fd46b', sx - 16, 244, Math.round(34 * harborRatio(d)), 3);
+  }
+  // A NEW WAVE: bigger waves, spray at the pier's end, and the light on the belt
+  if (fx.waves) {
+    const k = Math.min(1, (t - (fx.wavesT || t)) / 2);
+    for (let x = P.x0; x < P.x1; x += 3) { const y = 291 + Math.round(Math.sin(x * .045 + t * 2.4) * 2 * (1 + k)); rect(g, '#bfe6ff', x + ox, y, 2, 1); if ((x + Math.floor(t * 20)) % 23 === 0) rect(g, '#ffffff', x + ox, y - 1, 2, 1); }
+    for (let i = 0; i < 14; i++) { const ph = (t * .9 + i * .23) % 1, px = P.x1 - 18 - i * 3 + ox, py = 296 - Math.sin(ph * Math.PI) * (18 + i * 2) * k; rect(g, sl === 1 ? '#ffe9c8' : '#e6f6ff', px, py, 2, 2); }
+  }
+}
+// drawn over the people: the champion's belt catching the sunset (A NEW WAVE)
+export function streetTop(g, c, cam, W) {
+  const d = c.d, fx = (W && W.cineFx) || {};
+  if (!fx.belt || !W || !W.player || !(d.flags.champion || (d.titles || []).length)) return;
+  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0)) - Math.round(cam), by = Math.round(J.y(0)) - 2, k = .6 + Math.sin(t * 5) * .4;
+  rect(g, '#120c1e', bx - 13, by - 4, 26, 8); rect(g, '#c9a22e', bx - 12, by - 3, 24, 6); rect(g, '#120c1e', bx - 6, by - 6, 12, 12); rect(g, '#ffe9a8', bx - 5, by - 5, 10, 10); rect(g, '#c9a22e', bx - 3, by - 3, 6, 6);
+  glow(g, bx, by, 40, '#ffd65a', .5 * k);
+  rect(g, '#fff6d0', bx - Math.round(9 * k), by, Math.round(18 * k) + 1, 1); rect(g, '#fff6d0', bx, by - Math.round(9 * k), 1, Math.round(18 * k) + 1);
+}
+// ships under other flags far out on the horizon, coming in (A NEW WAVE)
+function farShips(g, cam, dt) {
+  for (let i = 0; i < 3; i++) {
+    const x = Math.round(1180 + i * 150 - cam * .4 - dt * (5 + i)), y = 238 - (i === 1 ? 2 : 0), w = 30 + i * 6;
+    rect(g, '#1a1f3a', x, y, w, 5); rect(g, '#1a1f3a', x + 4, y + 5, w - 8, 2); rect(g, '#1a1f3a', x + w / 2 - 1, y - 18, 2, 18);
+    poly(g, '#2a2f4a', [[x + w / 2 + 1, y - 17], [x + w / 2 + 12, y - 4], [x + w / 2 + 1, y - 4]]);
+    rect(g, FLAGS[(i * 2 + 1) % FLAGS.length], x + w / 2 + 1, y - 22, 6, 4);
+  }
+}
+// the ship to the world at the end of the pier; go: seconds since it cast off (-1: moored)
+function ship(g, ox, go, t) {
+  const dx = go > 0 ? Math.round(go * go * 8 + go * 12) : 0, x0 = 2508 + ox + dx, y0 = 298;
+  if (x0 > 700) return;
+  poly(g, '#05060f', [[x0 - 3, y0 - 51], [x0 + 303, y0 - 51], [x0 + 288, y0 + 2], [x0 + 17, y0 + 2]]);
+  poly(g, '#e8e4d8', [[x0, y0 - 48], [x0 + 298, y0 - 48], [x0 + 285, y0], [x0 + 20, y0]]);
+  rect(g, '#c2333f', x0 + 10, y0 - 14, 280, 5); rect(g, '#1d2148', x0 + 22, y0 - 7, 262, 7);
+  for (let i = 0; i < 10; i++) rect(g, (i + Math.floor(t)) % 4 ? '#2a3150' : '#ffd27a', x0 + 36 + i * 24, y0 - 34, 5, 5);
+  drawText(g, '새벽 파도호', x0 + 226, y0 - 44, { size: 11, align: 'c', color: '#1d2148' });
+  rect(g, '#05060f', x0 + 79, y0 - 95, 132, 48); rect(g, '#f2efe4', x0 + 80, y0 - 94, 130, 46);
+  for (let i = 0; i < 6; i++) rect(g, '#49d6ff', x0 + 88 + i * 20, y0 - 84, 12, 8);
+  rect(g, '#05060f', x0 + 109, y0 - 115, 72, 22); rect(g, '#f2efe4', x0 + 110, y0 - 114, 70, 20); for (let i = 0; i < 4; i++) rect(g, '#1d2148', x0 + 116 + i * 16, y0 - 108, 10, 6);
+  rect(g, '#05060f', x0 + 219, y0 - 141, 28, 48); rect(g, '#ffd65a', x0 + 220, y0 - 140, 26, 46); rect(g, '#1d2148', x0 + 220, y0 - 140, 26, 8);
+  rect(g, '#3a3a52', x0 + 50, y0 - 156, 3, 108);
+  for (let k = 0; k < 9; k++) { const fx = x0 + 52 - k * 5, fy = y0 - 154 + k * 11; rect(g, FLAGS[k % FLAGS.length], fx - 3, fy, 4, 4); }
+  for (let k = 0; k < 9; k++) { const fx = x0 + 54 + k * 18, fy = y0 - 152 + k * 6; rect(g, FLAGS[(k + 3) % FLAGS.length], fx, fy, 4, 4); }
+  if (go < 0) { poly(g, '#05060f', [[2688 + ox, 300], [2700 + ox, 300], [2672 + ox, 252], [2660 + ox, 252]]); poly(g, '#a8835a', [[2690 + ox, 299], [2698 + ox, 299], [2671 + ox, 253], [2663 + ox, 253]]); }
+  else for (let i = 0; i < 5; i++) { const s = (go * .8 + i * .2) % 1; rect(g, '#c9ccd8', x0 + 226 - Math.round(s * 30), y0 - 148 - Math.round(s * 40), 4 + Math.round(s * 6), 4); }
 }
 // the basement on a title night: a banner over the cage
 export function basementLive(g, c, cam) {

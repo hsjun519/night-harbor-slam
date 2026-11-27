@@ -7,6 +7,7 @@ import { rect, bands } from '../render/painter.js';
 import { panel, prompt } from '../render/ui.js';
 import { drawPortrait } from '../render/head.js';
 import { slotInfo, deleteCareer, SLOTS } from '../world/CareerManager.js';
+import { ENDINGS } from '../world/endings.js';
 
 export class SlotScene {
   constructor(game, mode, o = {}) {
@@ -63,7 +64,8 @@ export class SlotScene {
       if (I.look) drawPortrait(u, I.look, I.champion ? 'happy' : 'neutral', x + 71, y + 9, 50, { px: 2, dy: 6 });
       drawText(u, I.name + (I.champion ? '  ★ 챔피언' : ''), x + 132, y + 8, { color: I.champion ? '#ffd65a' : '#ffffff', bold: true });
       drawText(u, `시즌 ${I.season} · ${I.day}일차 · 레벨 ${I.level} · 명성 ${I.fame}`, x + 132, y + 28, { size: 11, color: '#c9d4ff' });
-      drawText(u, `${I.w}승 ${I.l}패${I.titles ? ` · 타이틀 ${I.titles}개` : ''}${I.over ? ' · 은퇴/부상' : ''}`, x + 132, y + 44, { size: 11, color: UI.dim });
+      drawText(u, `${I.w}승 ${I.l}패${I.titles ? ` · 타이틀 ${I.titles}개` : ''}${I.over && !I.ending ? ' · 은퇴/부상' : ''}`, x + 132, y + 44, { size: 11, color: UI.dim });
+      if (I.ending && ENDINGS[I.ending]) drawText(u, `엔딩: ${ENDINGS[I.ending].name} (고르면 다시 보기)`, x + 590, y + 44, { size: 11, align: 'r', color: ENDINGS[I.ending].col });
       if (I.savedAt) drawText(u, new Date(I.savedAt).toLocaleDateString('ko-KR') + ' 저장', x + 590, y + 8, { size: 11, align: 'r', color: UI.dim });
     }
     const by = 66 + SLOTS * 76, onB = this.sel === SLOTS;

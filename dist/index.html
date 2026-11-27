@@ -390,6 +390,9 @@ const TRACKS = {
   rival: { bpm: 124, swing: .06, chords: ['D:m', 'D:m', 'Bb:M', 'C:M', 'D:m', 'F:M', 'G:m', 'A:7'], lead: ['D5 . . D5 . F5 . A5 - - . G5 . F5 . .', 'D5 . . D5 . F5 . A5 - - . C6 . A5 . .', 'Bb5 - - . A5 . G5 . F5 - - . G5 . A5 .', 'C6 - - . Bb5 . A5 . G5 - - . . . . .', 'D6 . . D6 . C6 . A5 - - . F5 . A5 . .', 'F5 . A5 . C6 . F6 . E6 - - . D6 . C6 .', 'Bb5 . . Bb5 . A5 . G5 - - . F5 . G5 . .', 'A5 - - - C#6 - - - E6 - - - A5 - - -'], bass: '1 . 1 . 5 . 1 . 8 . 5 . 1 . 5 .', drums: 'k . h . s . h k k . h . s . h o', lead2: 'square', drive: .8 },
   rumble: { bpm: 160, chords: ['A:m', 'F:M', 'G:M', 'E:M', 'A:m', 'F:M', 'D:m', 'E:7'], lead: ['A5 . C6 . E6 . A6 . G6 . E6 . C6 . E6 .', 'F6 - - . C6 . A5 . C6 - - . F6 . E6 .', 'D6 . G5 . B5 . D6 . G6 . F6 . D6 . B5 .', 'G#5 - - . B5 . E6 . G#6 - - . . . . .', 'A5 . C6 . E6 . A6 . C7 . B6 . A6 . E6 .', 'F6 - - . A6 . F6 . C6 - - . A5 . C6 .', 'D6 . F6 . A6 . F6 . D6 . A5 . F5 . A5 .', 'B5 - - - D6 - - - E6 - - - G#6 - - -'], bass: '1 1 1 1 1 1 5 5 1 1 1 1 8 8 5 5', drums: 'k . h k s . h k k . h k s . h o', lead2: 'square', drive: 1 },
 };
+// the main theme, slowed and softened: A NEW WAVE (keys, a little lift) and THE FINAL BELL (a pad, no drums)
+TRACKS.wave = Object.assign({}, TRACKS.title, { bpm: 70, soft: 1, keys: 1, pad: 0, drums: '. . . . . . . . k . . . . . . .', bass: '1 . . . . . . . 5 . . . . . . .' });
+TRACKS.ending = Object.assign({}, TRACKS.title, { bpm: 62, soft: 1, pad: 1, drums: '. . . . . . . . . . . . . . . .', bass: '1 . . . . . . . . . . . 5 . . .' });
 const JINGLES = {
   win: { bpm: 150, notes: 'C5 E5 G5 C6 - - G5 C6 E6 - - - - - - -', chord: 'C:M' },
   lose: { bpm: 90, notes: 'G4 - F4 - E4 - D4 - C4 - - - - - - -', chord: 'C:m' },
@@ -505,6 +508,8 @@ class AudioManager {
       case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone('sine', f, f, .18, .14, i * .07)); break;
       case 'boo': for (let i = 0; i < 3; i++) { this.tone('sawtooth', 150 + i * 23, 120 + i * 18, 1.1, .05 * p, i * .05); } this.burst(.9, .12 * p, 'lowpass', 420, .9); break;
       case 'pyro': for (let i = 0; i < 4 * p; i++) this.burst(.08, .22, 'highpass', 1800 + i * 300, .5, i * .11); this.tone('sine', 70, 40, .5, .3, 0); break;
+      case 'gull': for (let i = 0; i < 2; i++) { this.tone('sine', 1900, 1250, .16, .05 * p, i * .22); this.tone('sine', 1500, 2100, .08, .03 * p, i * .22 + .14); } break;
+      case 'wave': this.burst(1.6, .16 * p, 'lowpass', 700, .9); this.burst(1.1, .06 * p, 'highpass', 2400, .7, .35); break;
       case 'horn': this.tone('sawtooth', 84, 78, 2.2, .16 * p); this.tone('sine', 42, 40, 2.4, .3 * p); this.tone('triangle', 126, 118, 1.8, .06 * p); break;
       case 'warn': for (let i = 0; i < 2; i++) { this.tone('square', 740, 740, .12, .1, i * .26); this.tone('square', 554, 554, .12, .1, i * .26 + .13); } break;
       case 'door': this.burst(.14, .3, 'lowpass', 500, .8); this.tone('sine', 110, 70, .12, .3); this.tone('triangle', 300, 520, .2, .05, .06); break;
@@ -2529,6 +2534,7 @@ const LOOKS = {
   janitor: { build: 'elder', scale: 1.02, skin: 'brown', head: { face: 'long', hair: 'buzz', hairCol: '#c9c6d4', hat: 'cap', hatCol: '#3f6f5a', beard: 'mustache', wrinkle: 1 }, top: { kind: 'overall', c1: '#3f6f5a', c2: '#d8cfb8' }, bottom: { kind: 'pants', c1: '#3f6f5a' }, boots: { c1: '#2c2a30', c2: '#6a6672', h: 0 }, sleeve: { c: '#d8cfb8', len: 1.2 } },
   foreman: { build: 'power', scale: 1.0, skin: 'brown', head: { face: 'jaw', hair: 'buzz', hairCol: '#2a2030', hat: 'hard', hatCol: '#ffb52e', beard: 'stubble' }, top: { kind: 'hivis', c1: '#ff7a2b', c2: '#f3f0a8' }, bottom: { kind: 'pants', c1: '#3b4668' }, boots: { c1: '#7a5a34', c2: '#c9a25a', h: 0 }, sleeve: { c: '#4a566e', len: 1.5 }, glove: '#d8cfb8' },
   sponsor: { build: 'slim', scale: 1.03, skin: 'pale', head: { face: 'long', hair: 'slick', hairCol: '#4a3a2a', glass: 'shades' }, top: { kind: 'suit', c1: '#5a2c6a', c2: '#ffe6b0', c3: '#23d5c8' }, bottom: { kind: 'pants', c1: '#5a2c6a' }, boots: { c1: '#1c1424', c2: '#5a2c6a', h: 0 }, sleeve: { c: '#5a2c6a', len: 1.85 } },
+  newbie: { build: 'athletic', scale: .97, skin: 'light', head: { face: 'round', hair: 'spiky', hairCol: '#6a3a24', browTilt: .2, blush: 1 }, top: { kind: 'tee', c1: '#f2efe4', c2: '#3fe0d0' }, bottom: { kind: 'shorts', c1: '#22294d', c2: '#3fe0d0', pat: 'side' }, boots: { c1: '#3a3a52', c2: '#f2efe4', h: .4 }, sleeve: { c: '#f2efe4', len: .6 } },
   fankid: { build: 'elder', scale: .74, skin: 'light', head: { face: 'round', hair: 'bob', hairCol: '#2a2030', blush: 1, lashes: 0 }, top: { kind: 'hoodie', c1: '#ffd65a', c2: '#e0405a', c3: '#e0405a' }, bottom: { kind: 'shorts', c1: '#2d63b8' }, boots: { c1: '#e0405a', c2: '#ffffff', h: 0 }, sleeve: { c: '#ffd65a', len: 1.8 } },
   beggar: { build: 'elder', scale: .94, skin: 'tan', head: { face: 'long', hair: 'curly', beard: 'long', hairCol: '#b8b8b0', wrinkle: 1 }, top: { kind: 'coat', c1: '#6a5a44', c2: '#3a3026' }, bottom: { kind: 'pants', c1: '#4a4236' }, boots: { c1: '#3a2a22', c2: '#5a4a3a', h: 0 }, sleeve: { c: '#6a5a44', len: 1.8 }, coat: { c1: '#6a5a44', len: .6, open: 1 } },
   brLeader: { build: 'athletic', scale: 1.02, skin: 'tan', head: { face: 'jaw', hair: 'slick', hairCol: '#14101c', browTilt: .75, beard: 'stubble' }, top: { kind: 'jacket', c1: '#14101c', c2: '#b066d8' }, bottom: { kind: 'tights', c1: '#14101c', c2: '#b066d8', pat: 'side' }, boots: { c1: '#0e0c14', c2: '#b066d8', h: .7 }, wrist: { c: '#b066d8', len: .5 }, tattoo: 'chest' },
@@ -9596,6 +9602,88 @@ const lvText = lv => (lv >= MAX_LV ? 'MAX' : 'Lv' + lv);
 
 return { masteryLv, masteryInfo, MASTERY, MAX_LV, EVOLVE, EVOLVED_FROM, finKey, lvText };
 })();
+// ---- world/harbor.js
+__m["world/harbor.js"] = (function () {
+// 부두 복구와 세계 무대. Once 선장 고동 sails away (선항 레슬링, chapter three) a sign goes up at the old pier past
+// the dome: "명성을 모으고 부두를 고쳐 세계로 진출하라". Rebuilding the pier costs HARBOR.need. Most of it is yours to
+// give at the sign, but you are not alone in it: the league adds a share of every prize, the harbour's people chip
+// in every day by your fame, and a sponsor comes in once you are famous enough. When the fund is full the pier is
+// rebuilt (A NEW WAVE); once it stands and your fame reaches HARBOR.fame, 구만석 사장 has a ship and a berth for the
+// two of you (the world stage: an ending). Everything here works on the career data, so it is testable in Node.
+//   d.harbor = { stage: 'BROKEN' | 'REPAIRED', fund, mine, league, fans, sponsor, since, season, repairedDay, called }
+const { fmtMoney: won } = __m["core/util.js"];
+const HARBOR = {
+  need: 3000000,          // the pier
+  fame: 300,              // the world will not take a ship of nobodies
+  league: .1,             // the league adds 10% of every prize you win (on top of it, not out of it)
+  fans: 20,               // the harbour's people give fame × this every morning (rounded to ₩1,000)
+  sponsorFame: 200, sponsor: 300000,   // 황 대표's milk company, once
+  gifts: [100000, 1000000],            // what the sign offers to give
+  x: 2330,                // the barrier across the broken pier (the street's walkable end until it is rebuilt)
+  end: 2738,              // the end of the pier
+};
+const harborOf = d => d.harbor || null;
+function harborBegin(d) {
+  if (!d.harbor) d.harbor = { stage: 'BROKEN', fund: 0, mine: 0, league: 0, fans: 0, sponsor: 0, since: d.day, season: d.season || 1, repairedDay: null, called: 0 };
+  return d.harbor;
+}
+const harborBroken = d => !!(d.harbor && d.harbor.stage === 'BROKEN');
+const harborRepaired = d => !!(d.harbor && d.harbor.stage === 'REPAIRED');
+const harborRatio = d => (d.harbor ? (d.harbor.stage === 'REPAIRED' ? 1 : Math.min(1, d.harbor.fund / HARBOR.need)) : 0);
+const harborLeft = d => (d.harbor && d.harbor.stage === 'BROKEN' ? Math.max(0, HARBOR.need - d.harbor.fund) : 0);
+const harborFull = d => harborBroken(d) && d.harbor.fund >= HARBOR.need;
+const worldReady = d => harborRepaired(d) && (d.fame || 0) >= HARBOR.fame && !d.ending;
+// money into the fund, never past what the pier needs. src: 'mine' (out of your pocket, see donate) or a giver
+function harborAdd(d, src, amount) {
+  const H = d.harbor;
+  if (!H || H.stage !== 'BROKEN' || !(amount > 0)) return 0;
+  const n = Math.min(Math.round(amount), HARBOR.need - H.fund);
+  if (n <= 0) return 0;
+  H.fund += n; H[src] = (H[src] || 0) + n;
+  return n;
+}
+// you give at the sign: out of your pocket, as much as the pier still needs
+function donate(c, amount) {
+  const d = c.d, n = Math.min(Math.round(amount), harborLeft(d), d.money);
+  if (!(n > 0) || !c.pay(n)) return 0;
+  return harborAdd(d, 'mine', n);
+}
+// the league's share of a prize (called after every paid match while the pier is broken)
+const leagueShare = money => Math.round(money * HARBOR.league / 1000) * 1000;
+// the morning's gifts: the harbour's people every day, the sponsor once
+function morningGifts(d) {
+  const msgs = [];
+  if (!harborBroken(d)) return msgs;
+  const f = harborAdd(d, 'fans', Math.round((d.fame || 0) * HARBOR.fans / 1000) * 1000);
+  if (f) msgs.push(`항구 사람들이 부두 복구 기금을 모았다 +${won(f)}`);
+  if ((d.fame || 0) >= HARBOR.sponsorFame && !d.harbor.sponsor) { const s = harborAdd(d, 'sponsor', HARBOR.sponsor); if (s) msgs.push(`황 대표의 황금등대 우유가 부두 복구 기금에 ${won(s)}을 냈다!`); }
+  return msgs;
+}
+// the fund is full: the pier is rebuilt
+function harborRebuild(d) { const H = d.harbor; if (H && H.stage === 'BROKEN') { H.stage = 'REPAIRED'; H.fund = HARBOR.need; H.repairedDay = d.day; H.repairedSeason = d.season || 1; } }
+// what the sign says: the order, the money, the fame
+function signReport(d) {
+  const H = d.harbor;
+  if (!H) return null;
+  const pct = Math.floor(harborRatio(d) * 100);
+  return {
+    order: '명성을 모으고 부두를 고쳐 세계로 진출하라',
+    fund: `부두 복구 기금 ${won(H.fund)} / ${won(HARBOR.need)} (${pct}%)`,
+    fame: `명성 ${d.fame || 0} / ${HARBOR.fame}`,
+    givers: `내 기부 ${won(H.mine)} · 연맹 ${won(H.league)} · 항구 사람들 ${won(H.fans)} · 스폰서 ${won(H.sponsor)}`,
+    pct,
+  };
+}
+// the pier's look: 0 broken, 1 cleared and scaffolded, 2 half rebuilt, 3 decked, 4 rebuilt with lights and flags
+function pierStage(d) {
+  if (!d.harbor) return 0;
+  if (d.harbor.stage === 'REPAIRED') return 4;
+  const r = harborRatio(d);
+  return r >= .75 ? 3 : r >= .5 ? 2 : r >= .2 ? 1 : 0;
+}
+
+return { harborBegin, harborAdd, donate, morningGifts, harborRebuild, signReport, pierStage, HARBOR, harborOf, harborBroken, harborRepaired, harborRatio, harborLeft, harborFull, worldReady, leagueShare };
+})();
 // ---- world/CareerManager.js
 __m["world/CareerManager.js"] = (function () {
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
@@ -9607,6 +9695,7 @@ const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES, FINISHERS } = __m["data/moves.js"];
 const { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } = __m["data/mastery.js"];
+const { harborBegin, harborAdd, harborBroken, leagueShare, morningGifts } = __m["world/harbor.js"];
 const SLOT_NAMES = ['오전', '오후', '저녁'];
 const SEASON_DAYS = 28;
 // Growth per trained level (levels go 0..20).
@@ -9726,7 +9815,7 @@ function slotInfo(n) {
   const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
   if (!d || typeof d !== 'object' || !d.name) return null;
   const rec = d.record || {};
-  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
+  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, ending: d.ending ? d.ending.id : null, savedAt: d.savedAt || d.created || 0 };
 }
 // the slot played most recently (for 커리어 이어하기)
 function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
@@ -9756,7 +9845,10 @@ class Career {
       dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
+  // careers from before the story log: the first match, win and loss from the history if it still holds them all
+  storyFromHistory() { const d = this.d, h = d.history || [], n = (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0); if (!n) return {}; if (n > h.length) return { lost: 1 }; return { firstMatch: h[0], firstWin: h.find(x => x.won) || null, firstLoss: h.find(x => !x.won && !x.draw) || null }; }
+  markStory(e) { const st = this.d.story || (this.d.story = {}); if (st.lost) return; if (!st.firstMatch) st.firstMatch = e; if (e.won && !st.firstWin) st.firstWin = e; if (!e.won && !e.draw && !st.firstLoss) st.firstLoss = e; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -9850,6 +9942,7 @@ class Career {
     if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
     // the champion's royalties: shirts, posters, a milk advert
     if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
+    msgs.push(...morningGifts(d));   // the harbour's people and the sponsor, for the pier
     d.day++;
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
@@ -9958,7 +10051,7 @@ class Career {
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
         if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
-        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
+        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; d.flags.defenses = (d.flags.defenses || 0) + 1; }
         else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
         if (c.cashIn) d.mitb = null;
       }
@@ -9978,10 +10071,13 @@ class Career {
     d.fame = clamp(d.fame + fame, 0, 999);
     this.earn(Math.max(0, money));
     out.money = money; out.fame = fame; out.xp = xp;
+    // 부두 복구 기금: the league adds a tenth of every prize while the pier is down
+    if (money > 0 && kind !== 'practice' && harborBroken(d)) { const g = harborAdd(d, 'league', leagueShare(money)); if (g) out.lines.push(`연맹이 상금의 10%를 부두 복구 기금에 보탰다 +${fmtMoney(g)}`); }
     out.ups = this.addXp(xp);
     out.rankAfter = this.rank;
-    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
+    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null, season: d.season };
     d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
+    if (kind !== 'practice') this.markStory(d.lastResult);
     d.seasonLog.matches.push(d.lastResult);
     this.save();
     return out;
@@ -10028,7 +10124,7 @@ class Career {
     if (!o) return;
     if (kind === 'invasion') { o.state = 'INVADED'; o.day1 = d.day; o.won1 = !!won; }
     else if (kind === 'invasion2') { o.state = 'REGROUP'; o.day2 = d.day; o.won2 = !!won; }
-    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
+    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; harborBegin(d); } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
   }
   owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
   owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }
@@ -10082,20 +10178,145 @@ __m["world/liveDecor.js"] = (function () {
 // applied): in the lobby the champion's poster with the belt holder's face, the top of the ranking, the belts and
 // cases you won in the trophy case, and a banner for whatever the gym is talking about today.
 const { CHARACTERS } = __m["data/characters.js"];
-const { rect, bands, trophy } = __m["render/painter.js"];
+const { rect, bands, trophy, poly, glow } = __m["render/painter.js"];
 const { drawText } = __m["render/pixelfont.js"];
 const { drawPortrait } = __m["render/head.js"];
 const { shade } = __m["render/palette.js"];
 const { OW } = __m["world/CareerManager.js"];
-// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken
-function streetLive(g, c, cam) {
+const { HARBOR, pierStage, harborRatio, worldReady } = __m["world/harbor.js"];
+// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken; past the dome,
+// the old passenger pier (broken, then cleared, rebuilt step by step as the fund grows, then lit and flagged, and a
+// ship at its end once the world calls). W: the town scene, for the cutscene effects (sunset, belt, waves, ships).
+function streetLive(g, c, cam, W) {
   const d = c.d, ox = -Math.round(cam);
-  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
-  const x = 2140 + ox;
-  if (x < -200 || x > 900) return;
-  for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
-  rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
-  for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+  if (d.ow && OW.damaged.includes(d.ow.state)) {
+    const x = 2140 + ox;
+    if (x > -200 && x < 900) {
+      for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
+      rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
+      for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+    }
+  }
+  if (PIER.x0 + ox < 680) pier(g, d, ox, cam, W);
+}
+// ---- the pier ----
+const PIER = { x0: 2286, x1: 2780, deck: 300, dh: 22, gap: [2400, 2520], mid: [2520, 2640], far: 2640 };
+// a plank at x: 0 missing, 1 old, 2 new
+function plankAt(x, st) {
+  const P = PIER, i = Math.floor((x - P.x0) / 6), gap = x >= P.gap[0] && x < P.gap[1], mid = x >= P.mid[0] && x < P.mid[1], far = x >= P.far;
+  if (st >= 4) return 2;
+  if (st === 3) return x < P.gap[0] ? (i % 5 === 3 ? 2 : 1) : 2;
+  if (st === 2) { if (far) return 0; if (gap) return 2; if (mid) return i % 3 === 1 ? 2 : 1; return i % 5 === 3 ? 2 : 1; }
+  if (gap || far) return 0;
+  if (mid) return i % 3 === 1 ? 0 : 1;
+  return i % 5 === 3 ? 0 : 1;
+}
+const FLAGS = ['#c2333f', '#2d63b8', '#3fd46b', '#ffd65a', '#ff8fc4', '#f2efe4'];
+function pier(g, d, ox, cam, W) {
+  const P = PIER, st = pierStage(d), fx = (W && W.cineFx) || {}, t = W ? W.t : 0, sl = W && W.skyOver != null ? W.skyOver : d.slot;
+  // the sunset on the water (the far sea sits behind the open pier)
+  if (sl === 1) { const sx = Math.round(1100 - cam * .4), lo = P.x0 + ox; for (let y = 238; y < 298; y += 3) { const w = 6 + ((y * 7 + Math.floor(t * 6)) % 13), j = Math.round(Math.sin(y * .7 + t * 3) * 6), x = sx + j - w / 2; if (x >= lo) rect(g, y % 2 ? '#ffb347' : '#ffd08a', x, y, w, 1); } }
+  if (fx.ships) farShips(g, cam, t - (fx.shipsT || t));
+  const shipOn = st === 4 && (fx.ship || (worldReady(d) && d.harbor.called));
+  if (shipOn) ship(g, ox, fx.shipGoT != null ? t - fx.shipGoT : -1, t);
+  // the deck: planks, the front beam, and the pilings under it
+  for (let x = P.x0; x < P.x1; x += 6) {
+    const k = plankAt(x, st);
+    if (!k) continue;
+    const odd = Math.floor(x / 6) % 2;
+    rect(g, '#1a1410', x + ox, P.deck, 6, P.dh); rect(g, k === 2 ? (odd ? '#a8835a' : '#b48e62') : (odd ? '#5a4a3e' : '#4e4036'), x + ox, P.deck, 5, P.dh);
+    if (k === 1 && x % 30 === 0) rect(g, '#3a2e26', x + ox + 1, P.deck + 7, 3, 2);
+    rect(g, k === 2 ? '#6a4a2e' : '#33281f', x + ox, P.deck + P.dh, 6, 7);
+  }
+  for (let x = P.x0 + 14; x < P.x1; x += 40) {
+    const bad = st < 2 && ((x > P.gap[0] && x < P.gap[1]) || x > P.far), top = P.deck + P.dh + 7, h = bad ? 8 + (x % 3) * 5 : 31;
+    rect(g, '#0e0a08', x + ox - 1, top, 8, h); rect(g, st >= 3 && !bad ? '#5a4030' : '#3a2a22', x + ox, top, 6, h);
+  }
+  if (st <= 1) {
+    // the collapsed span, sliding into the water
+    poly(g, '#3a2e26', [[P.gap[0] + 4 + ox, 302], [P.gap[0] + 62 + ox, 322], [P.gap[0] + 62 + ox, 334], [P.gap[0] + 4 + ox, 314]]);
+    for (let k = 0; k < 9; k++) rect(g, '#1a1410', P.gap[0] + 10 + k * 6 + ox, 304 + k * 2, 1, 10);
+    poly(g, '#4e4036', [[P.gap[1] - 50 + ox, 326], [P.gap[1] - 4 + ox, 304], [P.gap[1] - 4 + ox, 314], [P.gap[1] - 50 + ox, 336]]);
+    if (st === 0) for (const [x, y, w] of [[2560, 338, 14], [2610, 346, 9], [2700, 340, 18], [2750, 350, 8]]) { const b = Math.round(Math.sin(t * 1.6 + x) * 1.5); rect(g, '#0e0a08', x + ox - 1, y + b - 1, w + 2, 4); rect(g, '#5a4a3e', x + ox, y + b, w, 2); }
+  }
+  // scaffolding where they are working
+  if (st === 1 || st === 2) {
+    const [a, b] = st === 1 ? P.gap : [P.far, P.x1 - 10];
+    for (let x = a + 6; x < b; x += 38) rect(g, '#8a94b0', x + ox, 262, 2, 68);
+    for (const y of [270, 292]) rect(g, '#8a94b0', a + 6 + ox, y, b - a - 10, 2);
+    rect(g, '#ffd65a', a + 20 + ox, 256, 34, 8); drawText(g, '공사', a + 37 + ox, 255, { size: 11, align: 'c', color: '#1a1a1a' });
+  }
+  // lamp posts go up when the deck is down; flags, rails and lights when it is open
+  if (st >= 3) for (const x of [2380, 2520, 2660]) {
+    rect(g, '#05060f', x + ox - 1, 238, 5, 62); rect(g, '#3a3a52', x + ox, 238, 3, 62); rect(g, '#3a3a52', x + ox - 5, 236, 13, 3);
+    if (st === 4) { rect(g, '#ffe0a0', x + ox - 4, 239, 11, 2); glow(g, x + ox + 1, 242, sl === 2 ? 46 : 22, '#ffe0a0', sl === 2 ? .35 : .16); }
+  }
+  if (st === 4) {
+    for (let x = P.x0 + 6; x < P.x1; x += 32) { rect(g, '#05060f', x + ox - 1, 283, 5, 17); rect(g, '#8a6a4a', x + ox, 284, 3, 16); }
+    for (let x = P.x0 + 6; x < P.x1 - 6; x += 2) rect(g, '#c9b48a', x + ox, 287 + Math.round(Math.sin((x - P.x0) / 32 * Math.PI) * 2), 2, 1);
+    FLAGS.forEach((col, i) => {
+      const x = 2330 + i * 72 + ox; rect(g, '#05060f', x - 1, 208, 4, 92); rect(g, '#c9ccd8', x, 208, 2, 92);
+      for (let k = 0; k < 16; k++) { const y = 210 + Math.round(Math.sin(t * 3 + i + k * .45) * 2 * (k / 16)); rect(g, k < 2 ? shade(col, -.2) : col, x + 2 + k, y, 1, 11); }
+    });
+    rect(g, '#120c1e', 2338 + ox, 226, 62, 16); rect(g, '#1f6a8a', 2339 + ox, 227, 60, 14); drawText(g, '국제 부두', 2369 + ox, 227, { size: 11, align: 'c', color: '#ffffff' });
+  } else {
+    // the barrier across the pier
+    const bx = HARBOR.x + 8 + ox;
+    for (const dx of [0, 34]) { rect(g, '#05060f', bx + dx - 1, 272, 4, 28); rect(g, '#8a6a4a', bx + dx, 272, 2, 28); }
+    rect(g, '#05060f', bx - 5, 270, 46, 8); for (let k = 0; k < 44; k += 8) rect(g, k % 16 ? '#1a1a1a' : '#ffd65a', bx - 4 + k, 271, 8, 6);
+    rect(g, '#120c1e', bx - 2, 250, 40, 16); rect(g, '#c2333f', bx - 1, 251, 38, 14); drawText(g, st ? '공사 중' : '출입 금지', bx + 18, 251, { size: 11, align: 'c', color: '#ffffff' });
+  }
+  // the sign (once 고동 has sailed away): "명성을 모으고 부두를 고쳐 세계로 진출하라", and how full the fund is
+  if (d.harbor) {
+    const sx = HARBOR.x - 22 + ox;
+    rect(g, '#05060f', sx - 1, 250, 4, 50); rect(g, '#6a4a2e', sx, 250, 2, 50);
+    rect(g, '#05060f', sx - 23, 222, 48, 32); rect(g, '#d8c8a0', sx - 22, 223, 46, 30); rect(g, '#8a6a4a', sx - 22, 223, 46, 2);
+    drawText(g, '세계로', sx + 1, 226, { size: 11, align: 'c', color: '#3a2418' });
+    rect(g, '#3a2418', sx - 17, 243, 36, 5); rect(g, '#3fd46b', sx - 16, 244, Math.round(34 * harborRatio(d)), 3);
+  }
+  // A NEW WAVE: bigger waves, spray at the pier's end, and the light on the belt
+  if (fx.waves) {
+    const k = Math.min(1, (t - (fx.wavesT || t)) / 2);
+    for (let x = P.x0; x < P.x1; x += 3) { const y = 291 + Math.round(Math.sin(x * .045 + t * 2.4) * 2 * (1 + k)); rect(g, '#bfe6ff', x + ox, y, 2, 1); if ((x + Math.floor(t * 20)) % 23 === 0) rect(g, '#ffffff', x + ox, y - 1, 2, 1); }
+    for (let i = 0; i < 14; i++) { const ph = (t * .9 + i * .23) % 1, px = P.x1 - 18 - i * 3 + ox, py = 296 - Math.sin(ph * Math.PI) * (18 + i * 2) * k; rect(g, sl === 1 ? '#ffe9c8' : '#e6f6ff', px, py, 2, 2); }
+  }
+}
+// drawn over the people: the champion's belt catching the sunset (A NEW WAVE)
+function streetTop(g, c, cam, W) {
+  const d = c.d, fx = (W && W.cineFx) || {};
+  if (!fx.belt || !W || !W.player || !(d.flags.champion || (d.titles || []).length)) return;
+  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0)) - Math.round(cam), by = Math.round(J.y(0)) - 2, k = .6 + Math.sin(t * 5) * .4;
+  rect(g, '#120c1e', bx - 13, by - 4, 26, 8); rect(g, '#c9a22e', bx - 12, by - 3, 24, 6); rect(g, '#120c1e', bx - 6, by - 6, 12, 12); rect(g, '#ffe9a8', bx - 5, by - 5, 10, 10); rect(g, '#c9a22e', bx - 3, by - 3, 6, 6);
+  glow(g, bx, by, 40, '#ffd65a', .5 * k);
+  rect(g, '#fff6d0', bx - Math.round(9 * k), by, Math.round(18 * k) + 1, 1); rect(g, '#fff6d0', bx, by - Math.round(9 * k), 1, Math.round(18 * k) + 1);
+}
+// ships under other flags far out on the horizon, coming in (A NEW WAVE)
+function farShips(g, cam, dt) {
+  for (let i = 0; i < 3; i++) {
+    const x = Math.round(1180 + i * 150 - cam * .4 - dt * (5 + i)), y = 238 - (i === 1 ? 2 : 0), w = 30 + i * 6;
+    rect(g, '#1a1f3a', x, y, w, 5); rect(g, '#1a1f3a', x + 4, y + 5, w - 8, 2); rect(g, '#1a1f3a', x + w / 2 - 1, y - 18, 2, 18);
+    poly(g, '#2a2f4a', [[x + w / 2 + 1, y - 17], [x + w / 2 + 12, y - 4], [x + w / 2 + 1, y - 4]]);
+    rect(g, FLAGS[(i * 2 + 1) % FLAGS.length], x + w / 2 + 1, y - 22, 6, 4);
+  }
+}
+// the ship to the world at the end of the pier; go: seconds since it cast off (-1: moored)
+function ship(g, ox, go, t) {
+  const dx = go > 0 ? Math.round(go * go * 8 + go * 12) : 0, x0 = 2508 + ox + dx, y0 = 298;
+  if (x0 > 700) return;
+  poly(g, '#05060f', [[x0 - 3, y0 - 51], [x0 + 303, y0 - 51], [x0 + 288, y0 + 2], [x0 + 17, y0 + 2]]);
+  poly(g, '#e8e4d8', [[x0, y0 - 48], [x0 + 298, y0 - 48], [x0 + 285, y0], [x0 + 20, y0]]);
+  rect(g, '#c2333f', x0 + 10, y0 - 14, 280, 5); rect(g, '#1d2148', x0 + 22, y0 - 7, 262, 7);
+  for (let i = 0; i < 10; i++) rect(g, (i + Math.floor(t)) % 4 ? '#2a3150' : '#ffd27a', x0 + 36 + i * 24, y0 - 34, 5, 5);
+  drawText(g, '새벽 파도호', x0 + 226, y0 - 44, { size: 11, align: 'c', color: '#1d2148' });
+  rect(g, '#05060f', x0 + 79, y0 - 95, 132, 48); rect(g, '#f2efe4', x0 + 80, y0 - 94, 130, 46);
+  for (let i = 0; i < 6; i++) rect(g, '#49d6ff', x0 + 88 + i * 20, y0 - 84, 12, 8);
+  rect(g, '#05060f', x0 + 109, y0 - 115, 72, 22); rect(g, '#f2efe4', x0 + 110, y0 - 114, 70, 20); for (let i = 0; i < 4; i++) rect(g, '#1d2148', x0 + 116 + i * 16, y0 - 108, 10, 6);
+  rect(g, '#05060f', x0 + 219, y0 - 141, 28, 48); rect(g, '#ffd65a', x0 + 220, y0 - 140, 26, 46); rect(g, '#1d2148', x0 + 220, y0 - 140, 26, 8);
+  rect(g, '#3a3a52', x0 + 50, y0 - 156, 3, 108);
+  for (let k = 0; k < 9; k++) { const fx = x0 + 52 - k * 5, fy = y0 - 154 + k * 11; rect(g, FLAGS[k % FLAGS.length], fx - 3, fy, 4, 4); }
+  for (let k = 0; k < 9; k++) { const fx = x0 + 54 + k * 18, fy = y0 - 152 + k * 6; rect(g, FLAGS[(k + 3) % FLAGS.length], fx, fy, 4, 4); }
+  if (go < 0) { poly(g, '#05060f', [[2688 + ox, 300], [2700 + ox, 300], [2672 + ox, 252], [2660 + ox, 252]]); poly(g, '#a8835a', [[2690 + ox, 299], [2698 + ox, 299], [2671 + ox, 253], [2663 + ox, 253]]); }
+  else for (let i = 0; i < 5; i++) { const s = (go * .8 + i * .2) % 1; rect(g, '#c9ccd8', x0 + 226 - Math.round(s * 30), y0 - 148 - Math.round(s * 40), 4 + Math.round(s * 6), 4); }
 }
 // the basement on a title night: a banner over the cage
 function basementLive(g, c, cam) {
@@ -10167,7 +10388,7 @@ function lobbyLive(g, c, cam) {
   }
 }
 
-return { streetLive, basementLive, lobbyLive };
+return { streetLive, plankAt, streetTop, basementLive, lobbyLive, PIER };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -10175,7 +10396,8 @@ __m["world/locations.js"] = (function () {
 const { RNG } = __m["core/util.js"];
 const { rampHex, shade, mixHex } = __m["render/palette.js"];
 const { drawText } = __m["render/pixelfont.js"];
-const { canvas, rect, bands, dither, line, ellipse, poly, neon, truss, lamp, poster, brick, planks, tiles, windowPane, box, shelf, sofa, door, board, frameArt, trophy, plant, wave } = __m["render/painter.js"];const { lobbyLive, streetLive, basementLive } = __m["world/liveDecor.js"];
+const { canvas, rect, bands, dither, line, ellipse, poly, neon, truss, lamp, poster, brick, planks, tiles, windowPane, box, shelf, sofa, door, board, frameArt, trophy, plant, wave } = __m["render/painter.js"];const { lobbyLive, streetLive, streetTop, basementLive } = __m["world/liveDecor.js"];
+const { HARBOR, harborRepaired, worldReady } = __m["world/harbor.js"];
 const FLOOR = 300;
 // Sky colours by time of day for windows and the street.
 const SKY = [
@@ -10456,8 +10678,13 @@ function paintStreet(g, L) {
   drawText(g, '하역장', 1820, FLOOR - 120, { size: 11, align: 'c', color: '#ffd65a', outline: '#120c1e' });
   bld(2060, 220, 220, '#2a2246', '등대 돔', '#ffd65a', { big: 1 });
   door(g, 2150, 196, 40, 104, '#4a3d70', {});
+  // the old passenger pier past the dome: open water under it (the deck itself follows the career: liveDecor.js)
+  const qx = 2286;
+  bands(g, qx, FLOOR, W - qx, 60, ['#16244e', '#132150', '#101c46', '#0d173c', '#0a1232']);
+  for (let i = 0; i < 46; i++) { const x = qx + ((i * 97) % (W - qx)), y = FLOOR + 6 + ((i * 37) % 52); rect(g, i % 3 ? '#2a4a8a' : '#4a6aaa', x, y, 4 + (i % 4) * 3, 1); }
+  rect(g, '#05060f', qx - 8, FLOOR - 2, 10, 62); rect(g, '#5a5a72', qx - 7, FLOOR - 2, 8, 62); for (let y = FLOOR + 6; y < 360; y += 12) rect(g, '#3a3a52', qx - 7, y, 8, 1);
   // street lamps
-  for (let x = 30; x < W; x += 260) { rect(g, '#1a1d33', x, FLOOR - 120, 3, 120); rect(g, '#1a1d33', x - 8, FLOOR - 122, 14, 3); rect(g, '#ffe0a0', x - 6, FLOOR - 119, 10, 2); }
+  for (let x = 30; x < qx - 20; x += 260) { rect(g, '#1a1d33', x, FLOOR - 120, 3, 120); rect(g, '#1a1d33', x - 8, FLOOR - 122, 14, 3); rect(g, '#ffe0a0', x - 6, FLOOR - 119, 10, 2); }
 }
 function streetFar(L, slot) {
   const [c, g] = canvas(1500, FLOOR), r = new RNG(9);
@@ -10484,9 +10711,10 @@ const LOCATIONS = {
     objects: [{ x: 420, w: 70, act: 'train', game: 'bench', label: '벤치프레스' }, { x: 546, w: 70, act: 'train', game: 'rope', label: '줄넘기' }, { x: 668, w: 50, act: 'train', game: 'mitt', label: '미트 치기' }, { x: 790, w: 60, act: 'train', game: 'bridge', label: '목 브릿지' }, { x: 980, w: 180, act: 'spar', label: '연습 링 (연습 경기)' }, { x: 390, w: 110, act: 'train', game: 'breath', label: '거울 앞 호흡 훈련' }] },
   arena: { name: '경기장 대기실', w: 820, music: 'gym', rim: '#49d6ff', light: 0, doors: [{ x: 57, to: 'lobby', at: 1112, label: '로비' }],
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
-  street: { name: '부둣길', w: 2300, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive,
+  street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }] },
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' },
+      { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
   rivalgym: { name: '철썩 짐', w: 700, music: 'gym', rim: '#3fd46b', light: 0, doors: [{ x: 47, to: 'street', at: 1563, label: '부둣길' }], objects: [{ x: 360, w: 200, act: 'dojo', label: '도장 깨기 링' }] },
@@ -10643,6 +10871,126 @@ function beggarTalk(c, W) {
 
 return { nextLesson, inviteSteps, thanksSteps, beggarTalk, BEGGAR, beggarState, lessonReady };
 })();
+// ---- world/endings.js
+__m["world/endings.js"] = (function () {
+// The endings of a career, and what THE FINAL BELL shows of it. Five endings:
+//   world   세계 무대       the pier rebuilt (HARBOR.need) and fame HARBOR.fame: you sail with 구만석 사장
+//   stay    항구의 챔피언   you hold the belt and stay: when the ship is ready, or from the office as champion
+//   mentor  다음 세대       골목 영감 taught you everything, and you were somebody (a belt, or fame 100): you teach
+//   retire  마지막 인사     you were somebody (a belt, or fame 120) and you hang up the boots
+//   unknown 이름 없는 레슬러 you leave without a name; the game does not call that worthless
+// The office talk (구만석 사장 → 커리어 마무리) opens from season 2, after a belt or after 25 matches. A career that
+// ends on an injury plays THE FINAL BELL too (retire or unknown). Highlights only show what really happened.
+const { CHARACTERS } = __m["data/characters.js"];
+const { josa, fmtMoney } = __m["core/util.js"];
+const { HARBOR, harborRepaired } = __m["world/harbor.js"];
+const { BEGGAR, beggarState } = __m["world/beggar.js"];
+const ENDINGS = {
+  world: { name: '세계 무대', en: 'THE WORLD STAGE', col: '#49d6ff', last: '구만석 사장과 함께 세계로 가는 배에 올랐다.', script: '새 부두. 구만석 사장과 함께 세계로 가는 배에 오른다. 항구가 손을 흔든다.' },
+  stay: { name: '항구의 챔피언', en: 'CHAMPION OF THE HARBOR', col: '#ffd65a', last: '벨트를 허리에 감고, 다시 링으로 걸어갔다.', script: '입장 통로. 벨트를 허리에 감고 다시 링으로 걸어간다. 종이 울린다.' },
+  mentor: { name: '다음 세대', en: 'THE NEXT GENERATION', col: '#6be38a', last: '처음 시작한 훈련장에서 새 신인을 맞이했다.', script: '훈련장. 새 신인이 문을 연다. 이제는 내가 맞이한다.' },
+  retire: { name: '마지막 인사', en: 'THE LAST BOW', col: '#ff8fc4', last: '링을 내려와 조용한 항구의 아침을 걸었다.', script: '아침의 부둣길. 갈매기 소리. 링이 아닌 곳으로 걸어간다.' },
+  unknown: { name: '이름 없는 레슬러', en: 'THE UNKNOWN WRESTLER', col: '#c9d4ff', last: '이름은 크게 남지 않았지만, 끝까지 링에 올랐다.', script: '하역장, 그리고 작은 링. 이름 없는 하루가 또 시작된다.' },
+};
+const ENDING_IDS = Object.keys(ENDINGS);
+const careerMatches = d => (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0);
+const FINISH = { season: 2, matches: 25, mentorFame: 100, retireFame: 120 };
+// 구만석 사장 will talk about finishing from season 2, after a belt, or after enough matches
+const canFinish = d => !d.ending && ((d.season || 1) >= FINISH.season || (d.titles || []).length > 0 || careerMatches(d) >= FINISH.matches);
+const somebody = (d, fame) => (d.titles || []).length > 0 || (d.fame || 0) >= fame;
+const mentorOk = d => beggarState(d).lessons >= BEGGAR.lessons.length && somebody(d, FINISH.mentorFame);
+const stayOk = d => !!(d.flags && d.flags.champion);
+const retireKind = d => (somebody(d, FINISH.retireFame) ? 'retire' : 'unknown');
+// what the office offers, in order
+function finishOptions(d) {
+  const o = [];
+  if (stayOk(d)) o.push('stay');
+  if (mentorOk(d)) o.push('mentor');
+  o.push(retireKind(d));
+  return o;
+}
+const stamp = (s, day) => (day == null ? '' : s ? `시즌 ${s} · ${day}일차` : `${day}일차`);
+const res = e => (e.won ? '승리' : e.draw ? '무승부' : '패배');
+// THE FINAL BELL's reel: the things that really happened, in order
+function highlights(d, id) {
+  const H = [], me = d.name || '신인', st = d.story || {};
+  const add = (k, title, sub, o = {}) => H.push(Object.assign({ k, title, sub, when: stamp(o.s, o.day), tone: 'story' }, o));
+  add('start', '첫 발걸음', `신인 ${josa(me, '이/가')} 야항 체육관의 문을 열었다`, { s: 1, day: 1, other: 'boss', expr: 'neutral' });
+  const fm = st.firstMatch;
+  if (fm) add('first', '첫 경기', `${fm.opp || '상대'} — ${res(fm)}`, { s: fm.season, day: fm.day, other: fm.oppId, opp: fm.opp || '상대', tone: fm.won ? 'win' : fm.draw ? 'story' : 'loss', expr: fm.won ? 'happy' : 'hurt' });
+  const fw = st.firstWin;
+  if (fw && fw !== fm && !(fm && fw.day === fm.day && fw.opp === fm.opp && fw.season === fm.season)) add('win', '첫 승리', `${josa(fw.opp || '상대', '을/를')} 꺾었다. 관중석에서 이름이 처음 들렸다`, { s: fw.season, day: fw.day, other: fw.oppId, tone: 'win', expr: 'happy' });
+  const fl = st.firstLoss;
+  if (fl && fl !== fm && !(fm && fl.day === fm.day && fl.opp === fm.opp && fl.season === fm.season)) add('loss', '첫 패배', `${fl.opp || '상대'}에게 졌다. 다음 날도 체육관에 나왔다`, { s: fl.season, day: fl.day, other: fl.oppId, tone: 'loss', expr: 'hurt' });
+  const r = d.h2h && d.h2h.dohyun;
+  if (r && (r.w || 0) + (r.l || 0) > 0) add('rival', '라이벌', `서도현과 ${r.w + r.l}번 맞붙었다 — ${r.w}승 ${r.l}패`, { other: 'dohyun', tone: 'rival', expr: 'fierce' });
+  const gang = (d.flags && d.flags.gangBeaten) || 0;
+  if (gang) add('raid', '로비 습격', `부두 악동단을 ${gang}번 쫓아냈다`, { other: 'galchi', tone: 'win', expr: 'fierce' });
+  const B = d.br;
+  if (B && B.stage && B.stage !== 'NONE') {
+    let w = 0, l = 0; for (const k in B.rivals || {}) { w += B.rivals[k].w || 0; l += B.rivals[k].l || 0; }
+    add('br', 'BLACK ROPE', B.raids ? `로비를 링으로 바꾼 녀석들 — ${B.raids}번의 습격, ${w}승 ${l}패` : `검은 로프의 다섯 명 — ${w}승 ${l}패`, { other: 'brLeader', tone: 'rival', expr: 'fierce' });
+  }
+  const t0 = (d.titles || [])[0];
+  if (t0) add('champ', '챔피언 등극', `${t0.name}${(d.titles || []).length > 1 ? ` (타이틀 ${d.titles.length}개)` : ''}`, { s: t0.season, day: t0.day, tone: 'gold', expr: 'happy', belt: 1 });
+  if (d.flags && d.flags.mitbWon) add('mitb', '머니 인 더 뱅크', '래더 꼭대기의 가방을 손에 넣었다', { tone: 'win', expr: 'happy' });
+  const o = d.ow;
+  if (o && o.day1 != null) {
+    add('ow', '선항 레슬링', '바다 건너에서 배가 왔다. 등대 돔이 무너졌다', { day: o.day1, other: 'owsailor', expr: 'fierce' });
+    const iw = !!(o.won1 || o.won2);
+    add('ivory', '흰상아', iw ? '선항 레슬링의 칼날을 꺾었다' : '흰상아에게 졌다. 그래도 물러서지 않았다', { day: o.day1, other: 'whiteivory', tone: iw ? 'win' : 'loss', expr: iw ? 'fierce' : 'hurt' });
+  }
+  if (o && (o.state === 'REBUILD' || o.state === 'INTERNATIONAL_ROUTE_OPEN')) add('godong', '선장 고동', o.losses3 ? `${o.losses3}번 쓰러진 끝에 바다의 왕을 돌려보냈다` : '바다의 왕을 돌려보냈다', { day: o.day3, other: 'godong', tone: 'gold', expr: 'fierce' });
+  else if (o && o.losses3) add('godong', '선장 고동', '끝내 그 닻을 뽑지 못했다', { other: 'godong', tone: 'loss', expr: 'hurt' });
+  if (harborRepaired(d)) add('harbor', '항구 재건', `부두 복구 기금 ${fmtMoney(HARBOR.need)} — 그중 ${fmtMoney(d.harbor.mine)}을 보탰다`, { s: d.harbor.repairedSeason, day: d.harbor.repairedDay, tone: 'gold', expr: 'happy' });
+  const E = ENDINGS[id] || ENDINGS.retire;
+  add('end', '마지막 선택', E.last, { s: d.ending ? d.ending.season : d.season, day: d.ending ? d.ending.day : d.day, tone: 'end', expr: id === 'unknown' || id === 'retire' ? 'neutral' : 'happy', other: id === 'world' ? 'boss' : null });
+  return H;
+}
+// the script: the career as if it had been written before the first day
+function scriptLines(d, id) {
+  const me = d.name || '신인', R = d.record || {}, L = [], H = highlights(d, id), E = ENDINGS[id] || ENDINGS.retire;
+  let n = 0;
+  const scene = (place, line) => { n++; L.push({ h: `S#${n}. ${place}` }); L.push({ t: line }); };
+  for (const h of H) {
+    const when = h.when ? ` — ${h.when}` : '';
+    if (h.k === 'start') scene(`구만석 사장의 사무실${when}`, `신인 ${josa(me, '이/가')} 첫 계약서에 이름을 쓴다.`);
+    else if (h.k === 'first') scene(`링${when}`, `${josa(h.opp, '과/와')}의 첫 경기. ${josa(me, '은/는')} ${h.tone === 'win' ? '이긴다' : h.tone === 'loss' ? '진다' : '비긴다'}.`);
+    else if (h.k === 'win') scene(`링${when}`, `${josa(me, '이/가')} 처음으로 이긴다. 관중이 이름을 부른다.`);
+    else if (h.k === 'loss') scene(`링${when}`, `${josa(me, '이/가')} 처음으로 진다. 다음 날 다시 체육관에 나온다.`);
+    else if (h.k === 'rival') scene('부둣가 특설 링', `서도현과 맞붙는다. ${h.sub.split(' — ')[1]}.`);
+    else if (h.k === 'raid') scene('로비', `악동단이 들이닥친다. ${josa(me, '은/는')} 그들을 쫓아낸다.`);
+    else if (h.k === 'br') scene('로비', 'BLACK ROPE가 걸어 들어온다. 로비가 링이 된다.');
+    else if (h.k === 'champ') scene(`등대 돔${when}`, `${josa(me, '이/가')} 챔피언 벨트를 허리에 감는다.`);
+    else if (h.k === 'mitb') scene('래더 꼭대기', '가방에 손이 닿는다.');
+    else if (h.k === 'ow') scene('항구', '바다 건너에서 배가 온다. 등대 돔이 무너진다.');
+    else if (h.k === 'ivory') scene('부둣가 특설 링', `흰상아와 싸운다. ${h.tone === 'win' ? '이긴다' : '진다. 그래도 물러서지 않는다'}.`);
+    else if (h.k === 'godong') scene('부둣가', h.tone === 'loss' ? '선장 고동 앞에 쓰러진다. 닻은 뽑히지 않는다.' : '선장 고동이 뱃머리를 돌린다.');
+    else if (h.k === 'harbor') scene(`부두${when}`, '무너진 부두가 다시 선다.');
+  }
+  scene('그동안', `모두 ${careerMatches(d)}번 링에 오른다. ${R.w || 0}번 이기고, ${R.l || 0}번 진다.${R.ko ? ` ${R.ko}번은 KO로 끝낸다.` : ''}`);
+  if (d.ending && d.ending.cause === 'injury') scene('항구의원', '몸이 먼저 링을 떠난다.');
+  scene('마지막 장면', E.script);
+  return L;
+}
+// the six lines at the end (as written in the design brief); the two questions come after a silence
+const FINAL_LINES = ['당신이 승리한 경기에는 승리하기로 예정된 과거가 있었습니다.', '당신이 패배한 경기에는 패배하기로 예정된 과거가 있었습니다.', '당신의 미래는 처음부터 정해져 있었을지도 모릅니다.', '그러나 당신이 다르게 행동했다면, 그 과거 또한 달랐을 것입니다.'];
+const FINAL_QUESTIONS = ['당신은 미래의 노예입니까?', '아니면 미래를 개척하는 선구자입니까?'];
+// the credits: the people this career met, and the wrestlers it fought
+function credits(d, npcName) {
+  const met = ['boss', 'trainer', 'doctor', 'auntie', 'shop', 'fankid', 'reporter', 'oldman'];
+  if (d.flags && d.flags.hideout) met.push('beggar');
+  const cast = met.map(id => npcName(id)).filter(Boolean);
+  const foes = Object.keys(d.h2h || {}).filter(id => CHARACTERS[id]).sort((a, b) => ((d.h2h[b].w || 0) + (d.h2h[b].l || 0)) - ((d.h2h[a].w || 0) + (d.h2h[a].l || 0))).slice(0, 12).map(id => CHARACTERS[id].name);
+  const out = [{ big: '밤항구 슬램' }, { sub: 'THE FINAL BELL' }, { gap: 1 }, { h: '주연' }, { t: d.name || '신인' }, { gap: 1 }, { h: '항구 사람들' }];
+  for (let i = 0; i < cast.length; i += 3) out.push({ t: cast.slice(i, i + 3).join(' · ') });
+  if (foes.length) { out.push({ gap: 1 }, { h: '링에서 만난 사람들' }); for (let i = 0; i < foes.length; i += 3) out.push({ t: foes.slice(i, i + 3).join(' · ') }); }
+  out.push({ gap: 1 }, { h: '음악 · 그림' }, { t: '모두 코드로 직접 만든 칩튠과 픽셀' }, { gap: 1 }, { h: '그리고' }, { t: '이 항구의 모든 관중' }, { gap: 2 }, { t: '플레이해 주셔서 고맙습니다' });
+  return out;
+}
+
+return { finishOptions, highlights, scriptLines, credits, ENDINGS, ENDING_IDS, careerMatches, FINISH, canFinish, somebody, mentorOk, stayOk, retireKind, FINAL_LINES, FINAL_QUESTIONS };
+})();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
 // Townspeople and what they say. Lines change with progress, results, rank, injuries and past talks.
@@ -10652,6 +11000,8 @@ const { BALANCE: B } = __m["data/balance.js"];
 const { josa, fmtMoney, pick } = __m["core/util.js"];
 const { merchantOn } = __m["world/CareerManager.js"];
 const { beggarTalk } = __m["world/beggar.js"];
+const { HARBOR, harborBroken, harborRepaired, harborRatio, worldReady } = __m["world/harbor.js"];
+const { canFinish } = __m["world/endings.js"];
 const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
   trainer: { name: '백 관장', look: LOOKS.trainer, stance: 'hips', voice: 1.1 },
@@ -10669,6 +11019,7 @@ const NPCS = {
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
   merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
   beggar: { name: '골목 영감', look: LOOKS.beggar, stance: 'elder', voice: .62 },
+  newbie: { name: '새 신인', look: LOOKS.newbie, stance: 'calm', voice: 1.3 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
 
@@ -10704,7 +11055,7 @@ function peopleAt(loc, c) {
       add('fankid', 1330, -1);
       add('busker', 1190, 1);
       add('foreman', 1900, -1);
-      add('oldman', 2040, 1);
+      add('oldman', harborRepaired(d) ? 2590 : 2040, 1);   // once the pier is rebuilt the lighthouse keeper fishes off it
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
       if (!d.flags.hideout && day >= 2) add('beggar', 812, 1, { stance: 'elder' });   // by the alley, until he takes you in
@@ -10766,11 +11117,16 @@ function talk(id, c, W) {
       else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
       if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게. 상대도 몸 풀고 있을 걸세.`));
       else if (Math.abs(c.rankOf('dohyun') - rank) <= 3 && d.day - (d.flags.rivalDay || -9) >= 5) out.push(S('그리고… 서도현이 자네와 붙고 싶다더군. 둘이 순위가 붙어 있으니 관중이 좋아할 거야. 제안 목록에 넣어 뒀네. 표 팔리는 소리가 벌써 들려!'));
+      // the pier and the world stage
+      if (worldReady(d)) out.push(S(d.harbor.called ? '배는 부두 끝에 있네. 준비가 되면 말없이 오게. 나는 벌써 짐을 쌌다네.' : '부두도 섰고, 자네 이름도 바다를 건넜어. 곧 좋은 소식을 들고 가겠네.', { expr: 'happy' }));
+      else if (harborRepaired(d)) out.push(S(`부두는 섰는데, 세계는 아직 자네 이름을 몰라. 명성 ${HARBOR.fame}이면 내가 배를 띄우지. 지금은 ${d.fame}일세.`));
+      else if (harborBroken(d) && d.flags.harborTalk !== d.day) { d.flags.harborTalk = d.day; out.push(S(`부두 복구 기금이 ${Math.floor(harborRatio(d) * 100)}% 찼다더군. 연맹 몫은 내가 꼬박꼬박 넣고 있네. 세계로 가는 길은 거기서 시작이야.`)); }
       out.push(S(pick(['그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
       out.push({ choice: [
         { label: '경기 제안 보기', act: () => W.openOffers() },
         { label: '랭킹에 대해', go: [S(`지금 자네는 ${rank}위. 위 순위를 이기면 그 자리를 빼앗고, 지면 조금 미끄러지지. 다른 놈들도 매일 싸우니 순위는 파도처럼 출렁여.`), S('1위가 되고 명성이 55를 넘으면 타이틀전이야. 14일엔 {y}만선 럼블{/}, 21일엔 {y}태그 대전{/}. 달력에 동그라미 쳐 두게.')] },
         { label: '조언 듣기', go: [S(pick(['훈련만 하다 굶을 순 없지. 계약 경기는 보수가 커. 꼬박꼬박 잡게.', '도전 경기는 위험하지만 순위를 한 번에 뛰어넘을 수 있어. 인생도 레슬링도 한 방이야… 가끔은.', '돈이 모자라면 부두 하역장에 가 보게. 장 반장이 일당을 두둑이 쳐 줄 거야.', '돈 아끼다 몸 버리네. 붕대 값은 아끼지 말게. 내 경험담이야.', '관중은 의외성을 좋아해. 늘 하던 기술만 하지 말고 가끔 깜짝 놀라게 해 주게.']))] },
+        ...(canFinish(d) ? [{ label: '커리어 마무리하기', act: () => W.finishTalk() }] : []),
         { label: '그만 가 보겠습니다', go: [S('그래, 몸조심하게. 아, 나가면서 문은 살살 닫게. 저번에 누가 수플렉스하듯 닫더라고.')] },
       ] });
       return out;
@@ -11783,6 +12139,7 @@ const { rect, bands } = __m["render/painter.js"];
 const { panel, prompt } = __m["render/ui.js"];
 const { drawPortrait } = __m["render/head.js"];
 const { slotInfo, deleteCareer, SLOTS } = __m["world/CareerManager.js"];
+const { ENDINGS } = __m["world/endings.js"];
 class SlotScene {
   constructor(game, mode, o = {}) {
     this.game = game; this.mode = mode; this.t = 0; this.ask = null; this.onPick = o.onPick;
@@ -11838,7 +12195,8 @@ class SlotScene {
       if (I.look) drawPortrait(u, I.look, I.champion ? 'happy' : 'neutral', x + 71, y + 9, 50, { px: 2, dy: 6 });
       drawText(u, I.name + (I.champion ? '  ★ 챔피언' : ''), x + 132, y + 8, { color: I.champion ? '#ffd65a' : '#ffffff', bold: true });
       drawText(u, `시즌 ${I.season} · ${I.day}일차 · 레벨 ${I.level} · 명성 ${I.fame}`, x + 132, y + 28, { size: 11, color: '#c9d4ff' });
-      drawText(u, `${I.w}승 ${I.l}패${I.titles ? ` · 타이틀 ${I.titles}개` : ''}${I.over ? ' · 은퇴/부상' : ''}`, x + 132, y + 44, { size: 11, color: UI.dim });
+      drawText(u, `${I.w}승 ${I.l}패${I.titles ? ` · 타이틀 ${I.titles}개` : ''}${I.over && !I.ending ? ' · 은퇴/부상' : ''}`, x + 132, y + 44, { size: 11, color: UI.dim });
+      if (I.ending && ENDINGS[I.ending]) drawText(u, `엔딩: ${ENDINGS[I.ending].name} (고르면 다시 보기)`, x + 590, y + 44, { size: 11, align: 'r', color: ENDINGS[I.ending].col });
       if (I.savedAt) drawText(u, new Date(I.savedAt).toLocaleDateString('ko-KR') + ' 저장', x + 590, y + 8, { size: 11, align: 'r', color: UI.dim });
     }
     const by = 66 + SLOTS * 76, onB = this.sel === SLOTS;
@@ -11984,6 +12342,9 @@ __m["world/Cutscene.js"] = (function () {
 //   { say: [steps] }             a dialogue (Dialogue steps); waits until it closes
 //   { title: text, sub, dur }    a big title card;  { caption: text, dur } a line at the bottom
 //   { shake: k } { flash: [r, g, b, a] } { sfx: name } { music: name } { wait: t } { bars: 0|1 } { act: fn } { remove: id }
+//   { sky: 0|1|2|null }          the sky of another time of day (1: the sunset) until the scene ends
+//   { fx: { ... } }              scene effects the place draws (the pier: belt, waves, ships, ship, shipGo)
+//   { dark: 0..1 }               fade the picture towards black (the title cards stay on top)   { hide: id } somebody leaves the picture
 const { VIEW_W, VIEW_H, clamp } = __m["core/util.js"];
 const { drawText } = __m["render/pixelfont.js"];
 const { rect } = __m["render/painter.js"];
@@ -11994,7 +12355,7 @@ class Cutscene {
   constructor(W, script, o = {}) {
     this.W = W; this.q = script.slice(); this.run = []; this.t = 0; this.bars = 0; this.barsWant = o.bars === false ? 0 : 1;
     this.card = null; this.cap = null; this.cam = null; this.camFrom = 0; this.camT = 0; this.camDur = 0; this.cast = {}; this.done = false;
-    this.onEnd = o.onEnd || null; this.id = o.id || ''; this.skipT = 0; this.borrowed = [];
+    this.onEnd = o.onEnd || null; this.id = o.id || ''; this.skipT = 0; this.borrowed = []; this.dark = 0; this.darkWant = 0;
   }
   actor(id) { if (id === 'me') return this.W.player; return this.cast[id] || this.W.npcs.find(a => a.id === id) || null; }
   start() { this.next(); }
@@ -12037,6 +12398,10 @@ class Cutscene {
     if (s.sfx) A.sfx(s.sfx);
     if (s.music) A.music(s.music);
     if (s.bars != null) this.barsWant = s.bars ? 1 : 0;
+    if (s.sky !== undefined) W.skyOver = s.sky;
+    if (s.fx) { const F = W.cineFx || (W.cineFx = {}); for (const k in s.fx) { if (s.fx[k] && !F[k]) F[k + 'T'] = W.t; F[k] = s.fx[k]; } }   // each effect remembers when it started (k + 'T')
+    if (s.dark != null) this.darkWant = s.dark;
+    if (s.hide) { const a = this.actor(s.hide); if (a) a.hidden = true; }
     if (s.act) s.act(W);
   }
   // true when the step is over
@@ -12061,6 +12426,7 @@ class Cutscene {
     const W = this.W, inp = W.game.input;
     this.t += dt;
     this.bars += (this.barsWant - this.bars) * Math.min(1, dt * 6);
+    this.dark += (this.darkWant - this.dark) * Math.min(1, dt * 2.4);
     if (this.card) { this.card.t += dt; if (this.card.t > this.card.dur) this.card = null; }
     if (this.cap) { this.cap.t += dt; if (this.cap.t > this.cap.dur) this.cap = null; }
     if (this.cam != null) { this.camT += dt; const k = clamp(this.camT / this.camDur, 0, 1), e = k * k * (3 - 2 * k); W.camX = this.camFrom + (this.cam - this.camFrom) * e; }
@@ -12089,10 +12455,12 @@ class Cutscene {
     for (const a of W.npcs) if (a.cine) a.gone = true;
     for (const id in this.cast) this.cast[id].scripted = false;
     for (const b of this.borrowed) { b.a.x = b.x; b.a.face = b.face; b.a.stance = b.stance; b.a.vx = 0; }
-    W.player.scripted = false;
+    W.player.scripted = false; W.player.hidden = false; W.skyOver = null; W.cineFx = null;
+    for (const b of this.borrowed) b.a.hidden = false;
     if (this.onEnd) this.onEnd(W);
   }
   draw(u) {
+    if (this.dark > .01) { u.globalAlpha = Math.min(1, this.dark); rect(u, '#000000', 0, 0, VIEW_W, VIEW_H); u.globalAlpha = 1; }
     const b = Math.round(this.bars * 34);
     if (b > 0) { rect(u, '#000000', 0, 0, VIEW_W, b); rect(u, '#000000', 0, VIEW_H - b, VIEW_W, b); }
     if (this.card) {
@@ -12285,6 +12653,8 @@ function retreatCine(W) {
       { who: 'fankid', text: '챔피언이 바다 괴물을 물리쳤다아!', expr: 'happy' },
     ] },
     { act: () => { W.c.d.fame += 10; W.toast('항구의 영웅! 명성 +10', '#ffd65a'); W.c.save(); } },
+    { cam: 1990, dur: 1.6 }, { caption: '그날 밤, 무너진 옛 부두 앞에 표지판 하나가 세워졌다.', dur: 3.2 },
+    { act: () => W.toast('부두 표지판이 생겼다 — 등대 돔 오른쪽 끝', '#49d6ff') }, { cam: null },
     { bars: 0 },
   ];
 }
@@ -12296,15 +12666,216 @@ function rebuiltCine(W) {
     { spawn: 'boss', x: 2060, face: -1 }, { spawn: 'oldman', x: 1860, face: 1, with: 1 },
     { say: [
       { who: 'boss', text: '새 지붕, 새 링, 새 조명! 타이틀전은 오늘부터 다시 등대 돔에서 연다!', expr: 'happy' },
-      { who: 'oldman', text: '그리고… 바다 건너 항로가 열렸다네. 선항 레슬링이 다니던 그 뱃길 말일세.' },
-      { who: 'oldman', text: '이제 이 항구의 챔피언이 바다 밖으로 나갈 차례야. {y}세계 무대{/}가 기다리고 있어.' },
+      { who: 'oldman', text: '그런데 큰 배가 댈 옛 여객 부두는 오래전에 무너진 채라네. 선항 놈들도 먼바다에 닻을 내리고 작은 배로 건너왔지.' },
+      { who: 'oldman', text: '부두를 다시 세우면 바다 건너 항로가 열려. 이 항구의 챔피언이 {y}세계 무대{/}로 나갈 길 말일세. 돔 옆 부두 표지판을 읽어 보게.' },
     ] },
-    { act: () => { c.owRebuilt(); c.save(); W.toast('국제 항로 개방 — 세계 무대는 다음 장에서', '#49d6ff'); } },
+    { act: () => { c.owRebuilt(); c.save(); W.toast('세계로 가는 길 — 등대 돔 오른쪽, 부두 표지판', '#49d6ff'); } },
     { cam: null }, { bars: 0 },
   ];
 }
 
 return { ceremonyCine, signalCine, invasionCine, aftermathCine, secondWaveCine, afterSecondCine, captainCine, captainWinsCine, retreatCine, rebuiltCine };
+})();
+// ---- scenes/EndingScene.js
+__m["scenes/EndingScene.js"] = (function () {
+// THE FINAL BELL (cutscene 27 of the design brief). After the last scene of an ending: the career as a sports
+// documentary — a reel of what really happened (endings.js highlights; nothing that did not happen), the final
+// choice, then the script of the career written as if it had been planned before the first day, six lines read
+// slowly (a silence before the two questions; no answer, no buttons), and the credits over the main theme.
+// Enter hurries a part along, Esc (held) skips it. The career keeps its ending; a replay comes back here.
+const { VIEW_W, VIEW_H, clamp, RNG } = __m["core/util.js"];
+const { drawText, wrapText } = __m["render/pixelfont.js"];
+const { rect, bands } = __m["render/painter.js"];
+const { drawPortrait } = __m["render/head.js"];
+const { mixHex: mix } = __m["render/palette.js"];
+const { CHARACTERS } = __m["data/characters.js"];
+const { NPCS } = __m["world/npcs.js"];
+const { ENDINGS, highlights, scriptLines, credits, FINAL_LINES, FINAL_QUESTIONS } = __m["world/endings.js"];
+const TONE = { story: ['#2a2350', '#c9a8ff'], win: ['#3a2a14', '#ffd65a'], loss: ['#17223a', '#9fb4e0'], rival: ['#3a1420', '#ff6b7a'], gold: ['#4a3410', '#ffe27a'], end: ['#123a3a', '#7fe0ff'] };
+const lookOf = id => (id && NPCS[id] ? NPCS[id].look : id && CHARACTERS[id] ? CHARACTERS[id].look : null);
+const nameOf = id => (id && NPCS[id] ? NPCS[id].name : id && CHARACTERS[id] ? CHARACTERS[id].name : '');
+const FB = { open: 4.6, card: 3.6, type: 34, scriptHold: 3.2, line: 3.8, silence: 3, qHold: 5, scroll: 20 };
+const PAPER = { x: 104, y: 20, w: 432, h: 320, top: 80, lh: 15 };
+
+class EndingScene {
+  constructor(game, career, o = {}) {
+    this.game = game; this.c = career;
+    const d = career.d;
+    this.id = o.id || (d.ending && d.ending.id) || 'retire';
+    this.E = ENDINGS[this.id] || ENDINGS.retire;
+    this.replay = !!o.replay;
+    this.reel = highlights(d, this.id);
+    this.lines = [];   // the script, wrapped to the paper
+    for (const L of scriptLines(d, this.id)) {
+      if (L.h) this.lines.push({ h: 1, s: L.h });
+      else for (const s of wrapText(L.t, PAPER.w - 56, 11)) this.lines.push({ s });
+    }
+    this.chars = this.lines.reduce((n, L) => n + [...L.s].length, 0);
+    this.cred = credits(d, id => (NPCS[id] ? NPCS[id].name : null));
+    this.look = career.look();
+    this.phase = 'open'; this.t = 0; this.pt = 0; this.i = 0; this.skipT = 0; this.typed = 0; this.scroll = 0; this.credY = 0; this.done = false;
+    this.grain = new RNG(7);
+    game.audio.music(null); game.audio.sfx('bell3');
+  }
+  go(phase) {
+    this.phase = phase; this.pt = 0;
+    const A = this.game.audio;
+    if (phase === 'reel') { this.i = 0; A.music('wave'); }
+    if (phase === 'lines') A.music(null);
+    if (phase === 'credits') { A.music('ending'); this.credY = 0; }
+  }
+  finish() {
+    if (this.done) return;
+    this.done = true;
+    const d = this.c.d;
+    if (d.ending && !this.replay) { d.ending.seen = 1; this.c.save(); }
+    this.game.audio.music(null);
+    this.game.toTitle();
+  }
+  // seconds the lines part runs: four lines, a silence, two questions
+  get linesDur() { return FINAL_LINES.length * FB.line + 1.6 + FB.silence + FINAL_QUESTIONS.length * FB.line + FB.qHold; }
+  update(dt) {
+    this.t += dt; this.pt += dt;
+    const inp = this.game.input, A = this.game.audio, ok = inp.menuPressed('confirm');
+    // Esc held: skip this part
+    if (inp.down('pause')) { this.skipT += dt; if (this.skipT > .5) { this.skipT = -9; this.skipPart(); return; } } else this.skipT = 0;
+    switch (this.phase) {
+      case 'open':
+        if (this.pt >= FB.open || (ok && this.pt > 1)) this.go('reel');
+        break;
+      case 'reel':
+        if (this.pt >= FB.card || (ok && this.pt > .6)) { this.i++; this.pt = 0; if (ok) A.sfx('ui'); if (this.i >= this.reel.length) this.go('script'); }
+        break;
+      case 'script': {
+        const all = this.typed >= this.chars;
+        if (ok) { if (!all) this.typed = this.chars; else { this.go('lines'); break; } }
+        if (!all) { const n0 = Math.floor(this.typed); this.typed = Math.min(this.chars, this.typed + dt * FB.type); if (Math.floor(this.typed) > n0 && Math.floor(this.typed) % 3 === 0) A.sfx('type'); this.pt = 0; }
+        else if (this.pt >= FB.scriptHold) this.go('lines');
+        break;
+      }
+      case 'lines':
+        if (this.pt >= this.linesDur || (ok && this.pt > this.linesDur - FB.qHold + 1)) this.go('credits');
+        break;
+      case 'credits':
+        this.credY += dt * FB.scroll * (inp.down('down') || inp.down('right') ? 4 : 1);
+        if (this.credY > this.credH() + 40 && ok) this.finish();
+        break;
+    }
+  }
+  skipPart() {
+    if (this.phase === 'open' || this.phase === 'reel') this.go('script');
+    else if (this.phase === 'script') this.go('lines');
+    else if (this.phase === 'lines') this.go('credits');
+    else this.finish();
+  }
+  credH() { return this.cred.reduce((h, L) => h + (L.big ? 40 : L.gap ? 18 * L.gap : L.h ? 22 : 18), 0) + VIEW_H / 2; }
+  // ---- draw ----
+  draw(w, u) {
+    u.clearRect(0, 0, VIEW_W, VIEW_H);
+    if (this.phase === 'script') this.drawPaperBg(w);
+    else bands(w, 0, 0, VIEW_W, VIEW_H, this.phase === 'credits' ? ['#05060f', '#070914', '#0a0c1c'] : ['#05060f', '#090b1a', '#0c0f22', '#0e1126']);
+    if (this.phase === 'open') this.drawOpen(u);
+    else if (this.phase === 'reel') this.drawReel(w, u);
+    else if (this.phase === 'script') this.drawScript(u);
+    else if (this.phase === 'lines') this.drawLines(u);
+    else this.drawCredits(u);
+    if (this.t > 1.2 && this.phase !== 'credits') drawText(u, 'Enter: 넘기기 · Esc 길게: 건너뛰기', VIEW_W - 8, VIEW_H - 16, { size: 11, align: 'r', color: 'rgba(255,255,255,.35)' });
+  }
+  drawOpen(u) {
+    const t = this.pt, a = k => clamp((t - k) / .8, 0, 1) * clamp((FB.open - t) / .6, 0, 1);
+    u.globalAlpha = a(.5); drawText(u, 'THE FINAL BELL', VIEW_W / 2, 128, { scale: 3, align: 'c', color: '#ffd65a', bold: true, outline: '#05060f' });
+    u.globalAlpha = a(1.3); drawText(u, '마지막 벨', VIEW_W / 2, 182, { scale: 2, align: 'c', color: '#eef2ff', bold: true });
+    u.globalAlpha = a(2.2); drawText(u, `— ${this.E.name} —`, VIEW_W / 2, 222, { size: 11, align: 'c', color: this.E.col });
+    u.globalAlpha = 1;
+  }
+  // film grain and a light leak behind the cards
+  grainFx(w) {
+    const r = this.grain;
+    for (let i = 0; i < 3; i++) if (r.next() < .5) rect(w, 'rgba(255,255,255,.05)', (r.next() * VIEW_W) | 0, 0, 1, VIEW_H);
+    for (let i = 0; i < 40; i++) rect(w, r.next() < .5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.2)', (r.next() * VIEW_W) | 0, (r.next() * VIEW_H) | 0, 1, 1);
+  }
+  drawReel(w, u) {
+    this.grainFx(w);
+    const h = this.reel[Math.min(this.i, this.reel.length - 1)];
+    if (!h) return;
+    const T = TONE[h.tone] || TONE.story, k = this.pt, inA = clamp(k / .35, 0, 1), outA = clamp((FB.card - k) / .3, 0, 1), a = Math.min(inA, outA);
+    const slide = Math.round((1 - inA) * 40);
+    u.globalAlpha = a;
+    const px = 150 + slide, py = 44, pw = 340, ph = 136;
+    // the photo
+    rect(u, '#05060f', px - 6, py - 6, pw + 12, ph + 12); rect(u, '#e6e0cc', px - 4, py - 4, pw + 8, ph + 8);
+    bands(u, px, py, pw, ph, [T[0], mix(T[0], '#000000', .2), mix(T[0], '#000000', .35)]);
+    for (let y = py + 2; y < py + ph; y += 4) for (let x = px + ((y >> 2) & 1) * 2; x < px + pw; x += 4) rect(u, 'rgba(255,255,255,.035)', x, y, 1, 1);
+    const other = lookOf(h.other), S = 92;
+    if (other) {
+      drawPortrait(u, this.look, h.expr || 'neutral', px + 40, py + 20, S, { px: 3, dy: 10 });
+      drawPortrait(u, other, h.tone === 'win' ? 'hurt' : h.tone === 'loss' ? 'smug' : 'neutral', px + pw - 40 - S, py + 20, S, { px: 3, dy: 10 });
+      drawText(u, nameOf(h.other), px + pw - 40 - S / 2, py + ph - 16, { size: 11, align: 'c', color: '#eef2ff', outline: '#05060f' });
+      drawText(u, this.c.d.name, px + 40 + S / 2, py + ph - 16, { size: 11, align: 'c', color: '#eef2ff', outline: '#05060f' });
+    } else {
+      drawPortrait(u, this.look, h.expr || 'neutral', px + pw / 2 - S / 2, py + 18, S, { px: 3, dy: 10 });
+      if (h.belt) { rect(u, '#120c1e', px + pw / 2 - 47, py + 108, 94, 16); rect(u, '#c9a22e', px + pw / 2 - 46, py + 109, 92, 14); rect(u, '#ffe9a8', px + pw / 2 - 14, py + 107, 28, 18); rect(u, '#c9a22e', px + pw / 2 - 10, py + 110, 20, 12); }
+    }
+    if (h.when) drawText(u, h.when, px + pw - 8, py + 6, { size: 11, align: 'r', color: '#ff9a3a' });
+    // the caption
+    drawText(u, h.title, VIEW_W / 2 + slide / 2, py + ph + 22, { scale: 2, align: 'c', color: T[1], bold: true, outline: '#05060f' });
+    const sub = wrapText(h.sub, 520, 11);
+    sub.forEach((s, i) => drawText(u, s, VIEW_W / 2 + slide / 2, py + ph + 58 + i * 16, { size: 11, align: 'c', color: '#eef2ff' }));
+    u.globalAlpha = 1;
+    // where in the reel
+    for (let i = 0; i < this.reel.length; i++) rect(u, i === this.i ? '#ffd65a' : i < this.i ? '#6a6f8a' : '#2a2f4a', VIEW_W / 2 - this.reel.length * 6 + i * 12, 20, 8, 3);
+  }
+  drawPaperBg(w) {
+    bands(w, 0, 0, VIEW_W, VIEW_H, ['#0a0c1c', '#0c0f22', '#0e1126']);
+    const P = PAPER;
+    rect(w, '#05060f', P.x - 3, P.y - 3, P.w + 6, P.h + 6); rect(w, '#efe6cf', P.x, P.y, P.w, P.h);
+    for (let y = P.y + P.top - 4; y < P.y + P.h - 6; y += P.lh) rect(w, 'rgba(120,96,60,.12)', P.x + 18, y + 12, P.w - 36, 1);
+    rect(w, 'rgba(180,40,40,.35)', P.x + 30, P.y, 1, P.h);
+  }
+  drawScript(u) {
+    const P = PAPER, d = this.c.d;
+    drawText(u, '각본', VIEW_W / 2, P.y + 10, { scale: 2, align: 'c', color: '#2a2418', bold: true });
+    drawText(u, `"${d.name}"`, VIEW_W / 2, P.y + 42, { size: 11, align: 'c', color: '#4a3a24' });
+    drawText(u, '작성: 시즌 1 · 1일차 이전', P.x + P.w - 14, P.y + 58, { size: 11, align: 'r', color: '#8a6a44' });
+    // typed so far, scrolled so the newest line stays on the page
+    let left = Math.floor(this.typed), last = 0;
+    const out = [];
+    for (let i = 0; i < this.lines.length && left > 0; i++) { const L = this.lines[i], n = [...L.s].length, s = n <= left ? L.s : [...L.s].slice(0, left).join(''); out.push({ L, s }); left -= n; last = i; }
+    const rows = Math.floor((P.h - P.top - 12) / P.lh), first = Math.max(0, last - rows + 1);
+    out.slice(first).forEach((o, k) => drawText(u, o.s, P.x + (o.L.h ? 40 : 56), P.y + P.top + k * P.lh, { size: 11, color: o.L.h ? '#7a1f1f' : '#2a2418', bold: !!o.L.h }));
+    if (this.typed >= this.chars) { const k = clamp(this.pt / .5, 0, 1); u.globalAlpha = k; drawText(u, '— 끝 —', VIEW_W / 2, P.y + P.h - 22, { size: 11, align: 'c', color: '#4a3a24' }); u.globalAlpha = 1; }
+  }
+  drawLines(u) {
+    const t = this.pt, L = FINAL_LINES, Q = FINAL_QUESTIONS, lineEnd = L.length * FB.line + 1.6;
+    if (t < lineEnd) {
+      const out = clamp((lineEnd - t) / 1.2, 0, 1);
+      L.forEach((s, i) => { const a = clamp((t - i * FB.line) / 1.4, 0, 1) * out; if (a <= 0) return; u.globalAlpha = a; drawText(u, s, VIEW_W / 2, 104 + i * 36, { size: 11, align: 'c', color: '#eef2ff' }); });
+    } else if (t >= lineEnd + FB.silence) {
+      const q = t - lineEnd - FB.silence, end = Q.length * FB.line + FB.qHold, out = clamp((end - q) / 1.4, 0, 1);
+      Q.forEach((s, i) => { const a = clamp((q - i * FB.line) / 1.6, 0, 1) * out; if (a <= 0) return; u.globalAlpha = a; drawText(u, s, VIEW_W / 2, 150 + i * 44, { scale: 2, align: 'c', color: i ? '#ffd65a' : '#eef2ff', bold: true }); });
+    }
+    u.globalAlpha = 1;
+  }
+  drawCredits(u) {
+    let y = VIEW_H + 10 - this.credY;
+    for (const L of this.cred) {
+      if (L.big) { if (y > -40 && y < VIEW_H) drawText(u, L.big, VIEW_W / 2, y, { scale: 3, align: 'c', color: '#ffd65a', bold: true, outline: '#05060f' }); y += 40; continue; }
+      if (L.gap) { y += 18 * L.gap; continue; }
+      if (y > -20 && y < VIEW_H) drawText(u, L.h || L.sub || L.t, VIEW_W / 2, y, { size: 11, align: 'c', color: L.h ? '#49d6ff' : L.sub ? '#c9d4ff' : '#eef2ff', bold: !!L.h });
+      y += L.h ? 22 : 18;
+    }
+    if (y < VIEW_H / 2 + 20) {
+      const a = clamp((VIEW_H / 2 + 20 - y) / 60, 0, 1);
+      u.globalAlpha = a;
+      drawText(u, '끝', VIEW_W / 2, VIEW_H / 2 - 20, { scale: 2, align: 'c', color: '#eef2ff', bold: true });
+      drawText(u, `${this.E.en} · ${this.E.name}`, VIEW_W / 2, VIEW_H / 2 + 16, { size: 11, align: 'c', color: this.E.col });
+      drawText(u, 'Enter: 타이틀로', VIEW_W / 2, VIEW_H / 2 + 52, { size: 11, align: 'c', color: 'rgba(255,255,255,.6)' });
+      u.globalAlpha = 1;
+    }
+  }
+}
+
+return { EndingScene, FB };
 })();
 // ---- world/menus.js
 __m["world/menus.js"] = (function () {
@@ -12325,6 +12896,8 @@ const { ARENAS } = __m["combat/arena.js"];
 const { DIFFICULTY } = __m["combat/AIController.js"];
 const { SPECIAL } = __m["combat/SpecialRules.js"];
 const { EVOLVE, masteryInfo, lvText, finKey } = __m["data/mastery.js"];
+const { retireKind } = __m["world/endings.js"];
+const { EndingScene } = __m["scenes/EndingScene.js"];
 // ---- move mastery: a level tag with a small bar, and a one-line summary ----
 function masteryTag(u, xp, xr, y, evolves) {
   const I = masteryInfo(xp), col = I.max ? '#ffd65a' : I.lv ? '#9be3ff' : UI.faint;
@@ -12819,6 +13392,7 @@ class MapMenu extends Menu {
     rect(u, '#3a4688', 196, 166, 8, 44);
     // street
     rect(u, '#2a2a3a', 60, 214, 520, 18); drawText(u, '부둣길', 320, 217, { size: 11, align: 'c', color: UI.dim });
+    { const H = W.c.d.harbor, ok = H && H.stage === 'REPAIRED'; rect(u, ok ? '#1f6a8a' : '#3a3046', 586, 214, 40, 18); drawText(u, '부두', 606, 217, { size: 11, align: 'c', color: ok ? '#bff3ff' : '#8a8aa0' }); }
     node('street', 200, 222, '정문');
     node('clinic', 150, 258, '항구의원'); node('shop', 230, 258, '돛대 상회');
     rect(u, '#5a2a3a', 300, 250, 50, 16); drawText(u, '포차', 325, 252, { size: 11, align: 'c', color: '#ffd0d8' });
@@ -12928,8 +13502,9 @@ class SeasonEndMenu extends Menu {
 // ---- career over ----
 class GameOverScene {
   constructor(game, career) { this.game = game; this.c = career; this.t = 0; this.sel = 0; game.audio.music(null); game.audio.jingle('gameover'); career.d.retired = true; }
-  items() { return [{ label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
-  update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel ^= 1; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
+  items() { return [{ label: '마지막 벨 (엔딩 보기)', act: () => { const d = this.c.d; d.ending = { id: this.endKind(), season: d.season, day: d.day, at: Date.now(), cause: 'injury' }; d.retired = true; this.c.save(); this.game.go(() => new EndingScene(this.game, this.c, { id: d.ending.id })); } }, { label: '마지막 아침부터 다시 하기', act: () => { const k = this.c.constructor.loadCheckpoint(this.c.d.saveSlot || 1); if (k && k.d.injury < 100) { k.d.retired = false; k.save(); this.game.career = k; this.game.startCareer('continue', k); } else this.game.toTitle(); } }, { label: '타이틀로', act: () => this.game.toTitle() }]; }
+  endKind() { return retireKind(this.c.d); }
+  update(dt) { this.t += dt; const inp = this.game.input, it = this.items(); if (inp.pressed('up') || inp.pressed('down')) { this.sel = (this.sel + (inp.pressed('up') ? it.length - 1 : 1)) % it.length; this.game.audio.sfx('ui'); } if (this.t > 1.5 && inp.menuPressed('confirm')) { this.game.audio.sfx('ok'); it[this.sel].act(); } }
   draw(w, u) {
     const d = this.c.d;
     bands(w, 0, 0, 640, 360, ['#05060f', '#0a0b18', '#0e1022', '#120f26']);
@@ -12940,7 +13515,7 @@ class GameOverScene {
     drawText(u, '부상 게이지가 100%에 도달했다. 더는 링에 설 수 없다.', 320, 116, { align: 'c', color: '#eef2ff' });
     drawPortrait(u, this.c.look(), 'sad', 280, 140, 80, { px: 3, dy: 10 });
     drawText(u, `${d.name} · 시즌 ${d.season} ${d.day}일 · ${d.record.w}승 ${d.record.l}패 · 최고 랭킹 ${this.c.rank}위`, 320, 230, { size: 11, align: 'c', color: UI.dim });
-    menuList(u, this.items(), this.sel, 230, 262, { w: 180 });
+    menuList(u, this.items(), this.sel, 230, 252, { w: 180 });
     u.globalAlpha = 1;
   }
 }
@@ -13206,6 +13781,161 @@ const TRAINING_GAMES = GAMES;
 
 return { Training, TRAINING_GAMES };
 })();
+// ---- world/endingStory.js
+__m["world/endingStory.js"] = (function () {
+// The last chapter's cutscenes (Cutscene.js scripts for WorldScene.playCine): the rebuilt pier (A NEW WAVE), 구만석
+// 사장's invitation to the world, and the last scene of each ending. Every ending scene ends on black; WorldScene
+// then hands over to THE FINAL BELL (scenes/EndingScene.js).
+const { josa } = __m["core/util.js"];
+const { HARBOR, harborRebuild } = __m["world/harbor.js"];
+const { ENDINGS } = __m["world/endings.js"];
+const END_X = HARBOR.end;
+// the friends who come to the pier: whoever this career really knows
+function wellWishers(d) {
+  const out = [{ id: 'fankid', stance: 'cheer' }, { id: 'auntie', stance: 'cheer' }, { id: 'trainer', stance: 'arms' }];
+  const r = d.h2h && d.h2h.dohyun;
+  if (r && (r.w || 0) + (r.l || 0) > 0) out.push({ id: 'dohyun', stance: 'arms' });
+  if (d.flags && d.flags.hideout) out.push({ id: 'beggar', stance: 'elder' });
+  if (d.ow && d.ow.state !== 'LOCKED') out.push({ id: 'oldman', stance: 'elder' });
+  return out.slice(0, 5);
+}
+// CUTSCENE 23 — A NEW WAVE: the fund is full, the pier is rebuilt. A sunset, the pier's end, the belt, a new wave,
+// ships under other flags on the horizon; two lines, the title, and the route to the world opens.
+function newWaveCine(W) {
+  const c = W.c, d = c.d;
+  return [
+    { bars: 1 }, { act: () => { harborRebuild(d); c.save(); } },
+    { at: 'street', x: 2380 }, { remove: 'oldman' }, { sky: 1 }, { music: 'wave' }, { cam: 1180, dur: .01 },
+    { caption: '새 널빤지, 새 조명, 바닷바람에 흔들리는 깃발.', dur: 3.2 }, { cam: 1700, dur: 4.2, with: 1 },
+    { caption: '다시 문을 연 가게들 사이로, 사람들이 천천히 걷는다.', dur: 3 }, { cam: 2140, dur: 4, with: 1 },
+    { walk: 'me', to: END_X - 30, speed: 64 },
+    { face: 'me', dir: 1 }, { sfx: 'gull' },
+    { wait: 1.6 },
+    { fx: { belt: 1 } }, { wait: 2.4 },
+    { fx: { belt: 0, waves: 1 } }, { sfx: 'wave' }, { shake: .15, with: 1 }, { wait: 1.8 },
+    { fx: { ships: 1 } }, { sfx: 'wave' }, { wait: 2.6 },
+    { caption: '한때 이 항구는 새로운 적들이 찾아오는 곳이었다.', dur: 3.6 }, { wait: 1.6 },
+    { caption: '이제는 새로운 가능성이 찾아오는 곳이 되었다.', dur: 3.6 }, { wait: 1.6 },
+    { title: 'A NEW WAVE', sub: '새로운 파도', dur: 3.4 },
+    { dark: .85 }, { title: '세계로 가는 항로 개통', sub: `명성 ${HARBOR.fame}이 되면 구만석 사장과 세계 무대로 떠날 수 있다`, dur: 3.6 },
+    { act: () => { W.toast(d.fame >= HARBOR.fame ? '세계로 가는 배가 들어온다 — 부두 끝으로' : `부두 재건 완료! 명성 ${d.fame} / ${HARBOR.fame}`, '#49d6ff'); c.save(); } },
+    { dark: 0 }, { fx: { waves: 0, ships: 0 } }, { sky: null }, { cam: null }, { bars: 0 },
+  ];
+}
+// 구만석 사장 has news: an invitation from across the sea, a ship at the new pier. He is coming too.
+function worldCallCine(W) {
+  const c = W.c, d = c.d, x = W.player.x;
+  return [
+    { bars: 1 }, { sfx: 'horn' },
+    { spawn: 'boss', x: x - 170, face: 1 }, { walk: 'boss', to: x - 46, speed: 120 },
+    { face: 'me', dir: 'boss' },
+    { say: [
+      { who: 'boss', text: `${josa(d.name, '아/야')}! 찾았다! 숨 좀 돌리고…`, expr: 'happy' },
+      { who: 'boss', text: '바다 건너에서 초청장이 왔어. {y}세계 무대{/}일세. 자네 이름이 거기까지 들린다는군!' },
+      { who: 'boss', text: '배는 새 부두 끝에 대 놨네. 준비가 되면 부두 끝으로 오게.' },
+      { who: 'boss', text: '아, 그리고 나도 같이 가네. 이 늙은이도 세계 구경 한번 해 봐야지. 사장 없는 선수가 어디 있나!' },
+      { who: 'me', text: '…사장님도요?' },
+      { who: 'boss', text: '체육관은 백 관장이 지킬 걸세. 서두르지 말고, 인사할 사람한테 인사하고 오게.' },
+    ] },
+    { walk: 'boss', to: x - 260, speed: 120 }, { remove: 'boss' },
+    { act: () => { d.harbor.called = 1; c.save(); W.toast('세계로 가는 배 — 부두 끝에서 출항할 수 있다', '#49d6ff'); } },
+    { bars: 0 },
+  ];
+}
+// the last scene of the world ending: the pier at sunset, the people who came to see you off, the gangway, the ship
+function departureCine(W) {
+  const d = W.c.d, crowd = wellWishers(d), gang = END_X - 26;
+  const s = [{ bars: 1 }, { at: 'street', x: END_X - 150 }, { sky: 1 }, { music: 'ending' }, { fx: { ship: 1, waves: 1 } }, { cam: 2140, dur: .01 }];
+  crowd.forEach((p, i) => s.push({ spawn: p.id, x: END_X - 250 - i * 34, face: 1, stance: p.stance, with: i ? 1 : 0 }));
+  s.push({ spawn: 'boss', x: gang, face: -1, with: 1 });
+  s.push({ caption: '세계로 가는 배가 새 부두에 닻을 내렸다.', dur: 3 });
+  s.push({ walk: 'me', to: gang - 40, speed: 70 }, { face: 'me', dir: 'boss' });
+  s.push({ say: [
+    { who: 'boss', text: '기억하나? 자네가 처음 내 사무실 문을 열던 날. 잉크도 안 마른 계약서를 들고 덜덜 떨었지.', expr: 'happy' },
+    { who: 'me', text: '…떨지 않았습니다.' },
+    { who: 'boss', text: '떨었네. 나도 떨었거든. 이번엔 둘 다 떨어 보세. 바다 건너는 훨씬 넓다네!' },
+  ] });
+  s.push({ face: 'me', dir: -1 });
+  const who = crowd.map(p => p.id);
+  const bye = [];
+  if (who.includes('fankid')) bye.push({ who: 'fankid', text: '챔피언! 세계 챔피언 돼서 꼭 돌아와요! 약속이에요!', expr: 'happy' });
+  if (who.includes('dohyun')) bye.push({ who: 'dohyun', text: '…가라. 네가 없는 동안 이 항구 벨트는 내가 지킨다. 돌아오면 다시 붙자.' });
+  if (who.includes('beggar')) bye.push({ who: 'beggar', text: '…내가 못 본 바다를, 자네가 보는구먼. 허리 펴고 가게.' });
+  bye.push({ who: 'auntie', text: '배 타면 밥 거르지 말고! 파전은 돌아오면 또 부쳐 줄게!', expr: 'happy' });
+  bye.push({ who: 'trainer', text: '땀 닦고 가. …잘했다.' });
+  s.push({ say: bye });
+  s.push({ face: 'me', dir: 1 }, { walk: 'me', to: gang, speed: 60 }, { hide: 'me', with: 1 }, { walk: 'boss', to: gang + 10, speed: 60, with: 1 }, { hide: 'boss', with: 1 });
+  s.push({ sfx: 'horn' }, { wait: .8 }, { fx: { shipGo: 1 } }, { sfx: 'wave', with: 1 }, { sfx: 'gull', with: 1 });
+  s.push({ caption: '뱃고동이 길게 울렸다. 이번에는 떠나는 쪽의 소리였다.', dur: 3.6 }, { wait: 2.2 });
+  s.push({ title: ENDINGS.world.en, sub: ENDINGS.world.name, dur: 3.6 }, { dark: 1 }, { wait: 1.6 });
+  return s;
+}
+// the last scene of staying: from the waiting room down the aisle to the ring, the crowd, the bell, black
+function stayCine(W, fromShip) {
+  const d = W.c.d;
+  return [
+    { bars: 1 }, ...(fromShip ? [{ caption: '세계로 가는 배는 혼자 떠났다. 이 항구의 벨트는 아직 여기에 있다.', dur: 3.4 }] : []),
+    { at: 'arena', x: 200 }, { music: 'match' }, { cam: 0, dur: .01 },
+    { spawn: 'staff', x: 660, face: -1 },
+    { say: [{ who: 'staff', text: `챔피언, 입장 준비됐습니다. 오늘도 매진이에요.` }, { who: 'me', text: '…가자.' }] },
+    { sfx: 'crowdBoom' }, { walk: 'me', to: 760, speed: 70 }, { cam: 180, dur: 3, with: 1 },
+    { caption: `"야항의 챔피언— ${d.name}!" 함성이 벽을 흔든다.`, dur: 3 }, { sfx: 'crowdBoom', with: 1 },
+    { hide: 'me' }, { wait: 1.2 }, { sfx: 'bell3' }, { dark: 1 }, { wait: 1.4 },
+    { title: ENDINGS.stay.en, sub: ENDINGS.stay.name, dur: 3.4 }, { wait: 1 },
+  ];
+}
+// the last scene of teaching: the training gym, where it began. A new rookie walks in; you say what the boss said.
+function mentorCine(W) {
+  const d = W.c.d;
+  return [
+    { bars: 1 }, { at: 'gym', x: 520 }, { music: 'office' }, { sky: 0 },
+    { spawn: 'trainer', x: 640, face: -1 },
+    { say: [{ who: 'trainer', text: '왔나. 오늘 새로 들어온 녀석이 있다. …이제 네 몫이다.' }] },
+    { sfx: 'door' }, { spawn: 'newbie', x: 70, face: 1 }, { walk: 'newbie', to: 440, speed: 90 },
+    { face: 'me', dir: 'newbie' },
+    { say: [
+      { who: 'newbie', text: '저, 저기! 오늘부터 여기서 운동하게 된 신인입니다!' },
+      { who: 'me', text: '…자네가 새로 온 신인인가. 표정을 보니 딱 예전의 나로군.' },
+      { who: 'me', text: '링에서 받은 충격은 몸에 남아. 그래도 일어나는 쪽이 이기는 거다. 땀 닦고, 링으로 올라와.' },
+      { who: 'newbie', text: '네!', expr: 'happy' },
+    ] },
+    { walk: 'newbie', to: 900, speed: 120 }, { walk: 'me', to: 860, speed: 80, with: 1 },
+    { caption: `${josa(d.name, '이/가')} 받은 것을, 이제 다음 사람에게.`, dur: 3.4 }, { wait: 1.4 },
+    { dark: 1 }, { title: ENDINGS.mentor.en, sub: ENDINGS.mentor.name, dur: 3.4 }, { wait: 1 },
+  ];
+}
+// the last scene of retiring: a quiet harbour morning, gulls and the wind instead of a crowd
+function retireCine(W) {
+  return [
+    { bars: 1 }, { at: 'street', x: 1240 }, { sky: 0 }, { music: 'ending' }, { cam: 980, dur: .01 },
+    { sfx: 'gull' }, { caption: '갈매기 소리. 오늘 아침 부둣길에는 함성 대신 바닷바람이 분다.', dur: 3.6 },
+    { walk: 'me', to: 1680, speed: 52 }, { cam: 1420, dur: 7, with: 1 },
+    { sfx: 'gull' }, { spawn: 'auntie', x: 1900, face: -1, stance: 'hips' },
+    { say: [{ who: 'auntie', text: '어머, 일찍 나왔네? 오늘은 링 안 가?' }, { who: 'me', text: '네. 오늘은… 그냥 걸으려고요.' }, { who: 'auntie', text: '그것도 좋지. 이따 국밥 먹으러 와.', expr: 'happy' }] },
+    { walk: 'me', to: 2150, speed: 52 }, { cam: 1700, dur: 6, with: 1 },
+    { caption: '새로운 하루로.', dur: 3 }, { wait: 1.2 },
+    { dark: 1 }, { title: ENDINGS.retire.en, sub: ENDINGS.retire.name, dur: 3.4 }, { wait: 1 },
+  ];
+}
+// the last scene of the unknown wrestler: a morning at the docks, a small ring at night; it is still a life
+function unknownCine(W) {
+  const d = W.c.d;
+  return [
+    { bars: 1 }, { at: 'street', x: 1700 }, { sky: 0 }, { music: 'street' }, { cam: 1500, dur: .01 },
+    { spawn: 'foreman', x: 1880, face: -1, stance: 'arms' },
+    { say: [{ who: 'foreman', text: '오늘도 일찍 나왔구먼. 저녁엔 또 지하 링 가나?' }, { who: 'me', text: '네. 오늘은 관중이 열두 명이래요.' }, { who: 'foreman', text: '열둘이면 많지! 나도 가서 소리 질러 주지.', expr: 'happy' }] },
+    { caption: '포스터에 이름이 크게 실린 적은 없다.', dur: 3.2 },
+    { at: 'basement', x: 400 }, { music: 'boss' }, { cam: 120, dur: .01 },
+    { spawn: 'foreman', x: 250, face: 1, stance: 'cheer' }, { spawn: 'fankid', x: 210, face: 1, stance: 'cheer', with: 1 },
+    { walk: 'me', to: 540, speed: 70 }, { sfx: 'clap', with: 1 },
+    { caption: `그래도 ${josa(d.name, '은/는')} 오늘도 링에 오른다. 박수 열두 번이면 충분했다.`, dur: 3.8 }, { wait: 1.2 },
+    { dark: 1 }, { title: ENDINGS.unknown.en, sub: ENDINGS.unknown.name, dur: 3.4 }, { wait: 1 },
+  ];
+}
+const ENDING_CINES = { world: departureCine, stay: stayCine, mentor: mentorCine, retire: retireCine, unknown: unknownCine };
+
+return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retireCine, unknownCine, ENDING_CINES };
+})();
 // ---- world/WorldScene.js
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
@@ -13234,6 +13964,10 @@ const { SLOT_NAMES, saleOn, merchantOn, BUFF_NAMES, GANG, LEARNABLE, learnedText
 const Menus = __m["world/menus.js"];
 const { Training } = __m["world/Training.js"];
 const { Actor } = __m["world/Actor.js"];
+const { HARBOR, harborRepaired, harborFull, harborLeft, harborRatio, worldReady, donate, signReport } = __m["world/harbor.js"];
+const { ENDINGS, canFinish, finishOptions, stayOk } = __m["world/endings.js"];
+const { newWaveCine, worldCallCine, stayCine, ENDING_CINES } = __m["world/endingStory.js"];
+const { EndingScene } = __m["scenes/EndingScene.js"];
 const P = new Float32Array(16);
 class WorldScene {
   constructor(game, career, o = {}) {
@@ -13317,6 +14051,11 @@ class WorldScene {
         if (due === 'rebuilt') { this.playCine(rebuiltCine(this)); }
         return;
       }
+    }
+    // the pier: the fund is full (A NEW WAVE), then 구만석 사장 brings the invitation to the world stage
+    if ((id === 'street' || id === 'lobby') && !instant && !this.endBusy && !d.ending) {
+      if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
+      if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
     // the next opponent comes over in the waiting room, once per contract
     if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
@@ -13623,6 +14362,7 @@ class WorldScene {
     if (ct && ct.title) { const V = this.c.titleVenue; return { text: `${V.name}에서 타이틀 매치 (~${ct.day}일)`, loc: V.loc, x: V.x }; }
     if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
     if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    if (worldReady(d) && d.harbor.called) return { text: '부두 끝에서 세계로 가는 배에 오르기', loc: 'street', x: HARBOR.end - 10, col: '#49d6ff' };
     return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
   }
   routeTo(loc) {
@@ -13657,7 +14397,10 @@ class WorldScene {
     a.vy += 900 * dt;
     a.x += a.vx * dt; a.y += a.vy * dt;
     if (a.y >= a.y0) { if (!a.ground && a.vy > 200) this.game.audio.sfx('land', { p: .4 }); a.y = a.y0; a.vy = 0; a.ground = true; }
-    a.x = clamp(a.x, 18, L.w - 18);
+    // the broken pier past the dome is closed off until it is rebuilt
+    const hi = a === this.player && L.street && !harborRepaired(this.c.d) ? HARBOR.x : L.w - 18;
+    if (a === this.player && a.x > hi && mx > 0 && this.t - (this.bumpT || -9) > 3) { this.bumpT = this.t; this.toast(this.c.d.harbor ? '무너진 부두다. 표지판을 읽어 보자.' : '낡은 여객 부두 — 붕괴 위험, 출입 금지.', '#c9d4ff'); }
+    a.x = clamp(a.x, 18, hi);
     if (a.ground && Math.abs(a.vx) > 30) { a.stepT = (a.stepT || 0) + dt; if (a.stepT > (Math.abs(a.vx) > 150 ? .2 : .3)) { a.stepT = 0; this.game.audio.sfx('step'); } }
     if (a.dust > 0) a.dust -= dt;
   }
@@ -13681,7 +14424,7 @@ class WorldScene {
     const npc = !!best;
     for (const d of L.doors) { const dd = Math.abs(d.x - p.x); if (dd < DOOR_R && (!npc || dd < bd - 10)) { bd = dd; best = { kind: 'door', door: d, x: d.x, label: d.label, verb: d.lock && !this.unlocked(d.lock) ? '잠김' : '들어가기' }; } }
     const atDoor = best && best.kind === 'door';
-    for (const o of L.objects) { const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : atDoor ? dd < bd - 14 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: o.label, verb: '조사' }; } }
+    for (const o of L.objects) { if (o.when && !o.when(this.c.d)) continue; const dd = Math.abs(o.x - p.x); if (dd < Math.max(18, o.w / 2) && (!best || (npc ? dd < bd - 10 : atDoor ? dd < bd - 14 : dd < bd + 6))) { bd = dd; best = { kind: 'obj', o, x: o.x, label: typeof o.label === 'function' ? o.label(this.c.d) : o.label, verb: '조사' }; } }
     return best;
   }
   use(pr) {
@@ -13726,8 +14469,64 @@ class WorldScene {
       case 'undergroundRing': if (d.contract && d.contract.title && this.c.titleVenue.loc === 'basement') this.startMatch('title', d.contract); else if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
+      case 'dockSign': this.say(this.signLines()); break;
+      case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- 부두 복구와 세계 무대, and the endings ----
+  signLines() {
+    const c = this.c, d = c.d, R = signReport(d), S = text => ({ who: null, name: '부두 표지판', text });
+    if (!R) return [S('"낡은 여객 부두 — 붕괴 위험, 출입 금지." 판자 너머로 무너진 잔교가 바닷물에 잠겨 있다.')];
+    if (harborRepaired(d)) return [S(`{y}${R.order}{/}`), S('"국제 부두". 기둥에 새겨진 기부자 명단 맨 위에 내 이름이 있다.'), S(worldReady(d) ? '부두 끝에서 세계로 가는 배가 기다린다.' : `${R.fame}. 세계는 아직 내 이름을 모른다.`)];
+    const out = [S(`{y}${R.order}{/}`), S(`${R.fund} · ${R.fame}`)];
+    if (!d.harbor.read) { d.harbor.read = 1; out.push(S('작은 글씨: "연맹은 상금의 10%를, 항구 사람들은 매일 아침 명성만큼 보탭니다. 명성 200이 넘으면 스폰서도 나섭니다."')); }
+    out.push(S(R.givers));
+    const left = harborLeft(d), opts = [];
+    for (const g of HARBOR.gifts) if (d.money >= g && left >= g) opts.push({ label: `${fmtMoney(g)} 기부하기`, act: () => this.donateAt(g) });
+    if (d.money > 0 && left > 0) opts.push({ label: `가진 돈 전부 기부하기 (${fmtMoney(Math.min(d.money, left))})`, act: () => this.donateAt(Math.min(d.money, left)) });
+    opts.push({ label: '그만두기', go: [] });
+    out.push({ prompt: '부두 복구 기금', choice: opts });
+    return out;
+  }
+  donateAt(n) {
+    const c = this.c, d = c.d, got = donate(c, n);
+    if (!got) { this.toast('돈이 모자라다.', '#ff8a8a'); return; }
+    this.game.audio.sfx('coin');
+    this.toast(`부두 복구 기금에 ${fmtMoney(got)} 기부 — ${Math.floor(harborRatio(d) * 100)}%`, '#49d6ff');
+    c.save();
+    if (harborFull(d) && !this.endBusy) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); }
+  }
+  pierEnd() {
+    const d = this.c.d;
+    if (!worldReady(d)) { this.say([{ who: 'me', text: `수평선 너머가 세계 무대다. 명성 ${d.fame} / ${HARBOR.fame}. 아직은 바라만 볼 뿐이다.` }]); return; }
+    this.say([{ who: null, name: '세계로 가는 배', text: '갑판에서 구만석 사장이 손을 흔든다. 출항하면 이 커리어는 엔딩을 맞는다.' }, { prompt: '세계 무대', choice: [
+      { label: '세계로 떠난다 (엔딩)', act: () => this.confirmEnding('world') },
+      ...(stayOk(d) ? [{ label: '이 항구에 남는다 (엔딩)', act: () => this.confirmEnding('stay', { fromShip: 1 }) }] : []),
+      { label: '아직은 아니다', go: [{ who: 'me', text: '…조금만 더. 인사할 사람이 남았다.' }] },
+    ] }]);
+  }
+  // 구만석 사장 → 커리어 마무리하기 (npcs.js)
+  finishTalk() {
+    const d = this.c.d, L = { stay: '챔피언으로 남는다', mentor: '후배를 키운다', retire: '링을 떠난다 (은퇴)', unknown: '링을 떠난다 (은퇴)' };
+    this.say([
+      { who: 'boss', text: '…그 얘기를 꺼낼 날이 올 줄 알았지. 앉게. 차라도 한 잔… 아, 차도 없군.' },
+      { who: 'boss', text: d.flags.champion ? '벨트를 허리에 감은 채로 그런 얼굴이라니. 어떻게 하고 싶은가?' : '어떻게 마무리하고 싶은가? 어떤 선택이든 나는 자네 편일세.' },
+      { prompt: '커리어 마무리', choice: [...finishOptions(d).map(id => ({ label: `${L[id]} (엔딩)`, act: () => this.confirmEnding(id, { from: 'office' }) })), { label: '아직은 아닙니다', go: [{ who: 'boss', text: '그래야지! 표 팔 날이 아직 많이 남았어.', expr: 'happy' }] }] },
+    ]);
+  }
+  confirmEnding(id, o = {}) {
+    const E = ENDINGS[id];
+    this.open(new Menus.Confirm(this, `엔딩 "${E.name}"을(를) 시작할까요? 커리어는 여기서 끝나고 슬롯에 엔딩 기록이 남습니다.`, () => this.startEnding(id, o), { danger: 1 }));
+  }
+  // the last scene of the ending here in town, then THE FINAL BELL
+  startEnding(id, o = {}) {
+    const c = this.c, d = c.d;
+    d.ending = { id, season: d.season, day: d.day, at: Date.now(), from: o.from || (o.fromShip ? 'ship' : null) };
+    d.retired = true; d.contract = null; c.save();
+    this.endBusy = true;
+    const script = id === 'stay' ? stayCine(this, !!o.fromShip) : ENDING_CINES[id](this);
+    this.playCine(script, { onEnd: () => { this.blackout = true; this.game.go(() => new EndingScene(this.game, c, { id })); } });
   }
   restMenu() {
     const c = this.c, d = c.d;
@@ -13768,22 +14567,23 @@ class WorldScene {
   }
   // ---- draw ----
   draw(w, u) {
-    const L = this.L, cam = Math.round(this.camX), d = this.c.d;
+    const L = this.L, cam = Math.round(this.camX), d = this.c.d, sl = this.skyOver != null ? this.skyOver : d.slot;   // a cutscene may borrow another sky
     if (L.street) {
-      const key = 'far' + d.slot;
-      if (!this.farCache[key]) this.farCache[key] = streetFar(L, d.slot);
+      const key = 'far' + sl;
+      if (!this.farCache[key]) this.farCache[key] = streetFar(L, sl);
       w.drawImage(this.farCache[key], Math.round(-cam * .4), 0);
     } else rect(w, '#05060f', 0, 0, VIEW_W, VIEW_H);
-    drawWindows(w, L, cam, d.slot);
+    drawWindows(w, L, cam, sl);
     w.drawImage(L.bg, -cam, 0);
-    if (L.live) L.live(w, this.c, cam);   // what changes with the career (posters, trophies, banners)
+    if (L.live) L.live(w, this.c, cam, this);   // what changes with the career (posters, trophies, banners)
     drawWindows.after && drawWindows.after(w);
     // people
     const all = [...this.npcs, this.player].sort((a, b) => a.y - b.y);
-    for (const a of all) this.drawActor(w, a, cam);
+    for (const a of all) if (!a.hidden) this.drawActor(w, a, cam);
+    if (L.liveTop) L.liveTop(w, this.c, cam, this);
     // lights
     this.lights(w, cam);
-    if (d.slot === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
+    if (sl === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     u.clearRect(0, 0, VIEW_W, VIEW_H);
     if (!this.cine) this.hud(u);
     if (!this.dialog && !this.overlays.length && !(this.fadeT > 0) && !this.cine) this.drawGuide(u, cam);
@@ -13792,6 +14592,7 @@ class WorldScene {
     if (this.dialog) this.dialog.draw(u);
     for (const o of this.overlays) o.draw(u, w);
     this.drawToasts(u);
+    if (this.blackout) { rect(u, '#000000', 0, 0, VIEW_W, VIEW_H); return; }   // an ending hands over to THE FINAL BELL
     if (this.fadeT > 0) { const D = this.fadeDur || .45; fade(u, clamp(this.fadeT > .22 ? (D - this.fadeT) / Math.max(.05, D - .22) : this.fadeT / .22, 0, 1)); }
   }
   drawActor(g, a, cam) {
@@ -13811,7 +14612,7 @@ class WorldScene {
     else if (this.loc === 'gym') for (const x of [420, 700, 980]) glow(w, x - cam, 62, 70, '#ffe0b0', .16);
     else if (this.loc === 'office') glow(w, 400 - cam, 70, 90, '#ffcf7a', .2);
     else if (this.loc === 'arena') { glow(w, 724 - cam, 110, 70, '#ff5fa2', .2); glow(w, 300 - cam, 64, 60, '#ffcf7a', .16); }
-    else if (L.street) { if (d.slot === 2) for (let x = 30; x < L.w; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
+    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
   }
   hud(u) {
     const c = this.c, d = c.d, t = this.t;
@@ -14340,6 +15141,7 @@ const { WorldScene } = __m["world/WorldScene.js"];
 const { CreateScene } = __m["world/CreateScene.js"];
 const { TutorialOffer } = __m["scenes/Tutorial.js"];
 const { OnlineScene } = __m["scenes/OnlineScene.js"];
+const { EndingScene } = __m["scenes/EndingScene.js"];
 const canvas = document.getElementById('game');
 const game = new GameManager(canvas);
 game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: anyCareer(), onCareer: kind => startCareer(kind), onSlots: mode => game.go(() => new SlotScene(game, mode, { onPick: (k, n, ok) => startCareer(k, null, n, ok) })) }));
@@ -14352,7 +15154,7 @@ function playTutorial(c, after) {
 }
 game.playTutorial = playTutorial;
 function startCareer(kind, given, slot, confirmed) {
-  if (kind === 'continue') { const c = given || Career.load(slot || latestSlot()); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+  if (kind === 'continue') { const c = given || Career.load(slot || latestSlot()); if (c && c.d.ending) { game.go(() => new EndingScene(game, c, { replay: true })); return; } if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
   const n = slot || 1;
   game.go(() => new CreateScene(game, look => {
     const c = Career.create(n, look); game.career = c;
