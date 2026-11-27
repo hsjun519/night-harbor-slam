@@ -12,6 +12,8 @@ import { BALANCE as B } from '../data/balance.js';
 import { MODES } from '../combat/MatchManager.js';
 import { ARENAS } from '../combat/arena.js';
 import { DIFFICULTY } from '../combat/AIController.js';
+import { SPECIAL } from '../combat/SpecialRules.js';
+const matchName = o => (o.special && SPECIAL[o.special] ? SPECIAL[o.special].name : MODES[o.mode].name) + (o.falls ? ' · 3판 2선승' : o.iron ? ` · 아이언맨 ${Math.round(o.iron / 60)}분` : '');
 import { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES } from './CareerManager.js';
 
 class Menu {
@@ -56,7 +58,7 @@ export class OffersMenu extends Menu {
       if (this.sel === list.length) { this.game.audio.sfx('back'); this.W.closeTop(); return; }
       const o = list[this.sel];
       if (d.contract) { this.game.audio.sfx('deny'); this.W.toast('이미 계약한 경기가 있다. 먼저 치르자.', '#ff8a8a'); return; }
-      this.W.open(new Confirm(this.W, `${o.oppName} — ${MODES[o.mode].name}, ${o.day}일까지. 보수 ${fmtMoney(o.reward)}. 계약할까요?`, () => { this.c.accept(o); this.W.closeTop(); this.W.toast(`계약 완료! ${o.day}일까지 경기장 대기실로.`, '#6be38a'); this.W.say([{ who: 'boss', text: o.kind === 'title' ? '드디어군. 등대 돔에서 기다리지. 그 안개를 걷어 내게.' : o.kind === 'event' ? '좋아, 이벤트 명단에 올려 두지. 대기실에서 입장하게.' : `좋아. ${josa(o.oppName, '과/와')}의 경기, 기대하지.` }]); }));
+      this.W.open(new Confirm(this.W, `${o.oppName} — ${matchName(o)}, ${o.day}일까지. 보수 ${fmtMoney(o.reward)}. 계약할까요?`, () => { this.c.accept(o); this.W.closeTop(); this.W.toast(`계약 완료! ${o.day}일까지 경기장 대기실로.`, '#6be38a'); this.W.say([{ who: 'boss', text: o.kind === 'title' ? '드디어군. 등대 돔에서 기다리지. 그 안개를 걷어 내게.' : o.kind === 'event' ? '좋아, 이벤트 명단에 올려 두지. 대기실에서 입장하게.' : `좋아. ${josa(o.oppName, '과/와')}의 경기, 기대하지.` }]); }));
     }
   }
   draw(u) {
@@ -70,7 +72,7 @@ export class OffersMenu extends Menu {
       if (ch) drawPortrait(u, ch.look, 'smug', 58, y + 4, 44, { px: 1, dy: 4 }); else { drawText(u, o.mode === 'rumble' ? '럼블' : '태그', 80, y + 18, { size: 11, align: 'c', color: '#ffd65a' }); }
       const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀', rival: '라이벌' }[o.kind];
       drawText(u, `[${tag}] ${o.oppName}${o.rank ? ` (${o.rank}위)` : ''}`, 110, y + 4, { color: o.kind === 'title' ? '#ffd65a' : '#ffffff' });
-      drawText(u, `${MODES[o.mode].name} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
+      drawText(u, `${matchName(o)} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
       drawText(u, o.desc, 110, y + 35, { size: 11, color: '#c9d4ff' });
       drawText(u, fmtMoney(o.reward), 580, y + 4, { align: 'r', color: UI.money });
       drawText(u, `명성 +${o.fame}`, 580, y + 21, { size: 11, align: 'r', color: UI.fame });
@@ -90,7 +92,8 @@ export class ArenaMenu extends Menu {
     const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'];
     this.free = r.shuffle(pool).slice(0, 2).map((id, i) => ({ opp: id, oppName: CHARACTERS[id].name, mode: i ? 'pin' : 'single', arena: r.pick(['hall', 'pier']), reward: 0, fame: 0, kind: 'free', difficulty: d.season >= 2 ? 'hard' : r.pick(['easy', 'normal']), desc: '자유 경기: 기록과 부상은 남지만 랭킹은 그대로.' }));
     this.items = [];
-    if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${MODES[d.contract.mode].name} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
+    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: 'dome', reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
+    if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${matchName(d.contract)} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
     for (const f of this.free) this.items.push({ label: `자유 경기: ${f.oppName}`, sub: `${MODES[f.mode].name} · ${ARENAS[f.arena].name} · 이기면 소액 보수`, act: () => { this.W.closeTop(); this.W.startMatch('free', f); } });
     this.items.push({ label: '연습 경기 (기록·부상 없음)', sub: '상대 행동을 바꿔 가며 연습', act: () => { this.W.closeTop(); this.W.startMatch('practice', { opp: this.free[0].opp }); } });
     this.items.push({ label: '닫기', act: () => this.W.closeTop() });

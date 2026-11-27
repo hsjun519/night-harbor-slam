@@ -15,6 +15,9 @@ export const DIFFICULTY = {
 export class AIController {
   constructor(f, level, rng) {
     this.f = f; this.level = level; this.D = DIFFICULTY[level] || DIFFICULTY.normal; this.rng = rng;
+    // the career form of the opponents: sharper after the player's wins, slower after the losses
+    const k = f.aiBoost || 0;
+    if (k) { const D = Object.assign({}, this.D), c = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); D.react = c(D.react * (1 - k * .6), .1, .7); D.err = c(D.err - k * .2, 0, .6); D.pick = c(D.pick + k * .3, .2, 1); D.counter = c(D.counter + k * .15, 0, .5); D.guard = c(D.guard + k * .2, .05, .6); D.dodge = c(D.dodge + k * .15, 0, .5); D.punish = c(D.punish + k * .3, 0, .95); D.aggr = c(D.aggr + k * .25, .4, 1.3); D.rev = c(D.rev + k * .15, 0, .5); this.D = D; }
     this.tr = f.char.ai || {};
     this.goal = null; this.goalT = 0; this.planT = .2 + rng.next() * .3; this.mem = new Map(); this.note = '';
     this.guardT = 0; this.wait = 0; this.comboWant = 0; this.lastSeenAtk = null; this.dodgeT = 0; this.mashT = 0; this.revPlanned = null; this.climbPlan = 0; this.behavior = null;
@@ -52,6 +55,8 @@ export class AIController {
       if (f.t > .2 + this.D.react) { if (this.apronPick === 'spring') { this.tap('atk'); this.apronPick = 'in'; } else I.jump = true; }
       return;
     }
+    if (f.st === 'LADDER' || f.st === 'CAGE_CLIMB') { this.onClimb(); return; }
+    if (f.st === 'CASE_HANG') return;
     if (f.st === 'PERCH') { this.perch(dt); return; }
     if (f.st === 'WHIPPED') { this.whipped(); return; }
     if (f.st === 'GRAB') { this.holdThink(dt); return; }
@@ -176,6 +181,7 @@ export class AIController {
     if (!t) { this.goal = { name: 'idle' }; return; }
     const dist = Math.abs(t.x - f.x), ar = m.arena;
     const tDown = t.st === 'DOWN' && !t.rag, tGrab = t.grabbable && t.side === f.side;
+    const tUp = !!t.climb || t.st === 'CASE_HANG';   // up a ladder or a wall: only the special goals reach them
     const hpK = f.hp / f.maxHp, stK = f.stun / f.maxStun;
     // chairs: swing the one in hand; otherwise fetch a loose one or take it off the foe
     if (f.prop && f.side === t.side) { if (!this.goal || this.goal.name !== 'chairSwing' || this.goal.data !== t) { this.goal = { name: 'chairSwing', data: t, t: 0 }; this.goalT = 0; } this.note = '체어샷'; return; }
@@ -192,17 +198,36 @@ export class AIController {
       if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
       add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
     }
+    // special matches: the case over the ring, the cage wall. B.climbAiInterfere weighs stopping the other one against going up yourself
+    const SP = m.special, KI = B.climbAiInterfere;
+    if (SP && SP.ladder && f.side === 'in') {
+      const L = SP.ladder, cl = m.fighters.find(o => f.isFoe(o) && (o.st === 'LADDER' || o.st === 'CASE_HANG'));
+      if (cl && cl.st === 'CASE_HANG') add('hitHanger', 10, cl);
+      if (L.state === 'folded') add('setLadder', 3 + (tDown || t.st === 'STAGGER' ? 6 : 0) + (Math.abs(L.x - f.x) < 90 ? 2 : 0), null);
+      else if (L.state === 'open') {
+        if (cl && cl.st === 'LADDER') {
+          if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl);
+          if (L.foldCd <= 0) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
+          add('chaseClimb', (cl.climb.p >= .6 ? 10 : 4) * (1.4 - KI), cl);
+        } else if (!cl) add('climbLadder', (dist < 120 && !tDown && t.st !== 'STAGGER' ? .3 : 1.2) + (tDown || t.st === 'STAGGER' || t.st === 'GET_UP' ? 9 : 0) + (dist > 170 ? 2.5 : 0) + (SP.prize.hits >= SP.prize.need * .6 ? 3 : 0), null);
+      }
+    }
+    if (SP && m.rules.cage && f.side === 'in') {
+      const cl = m.fighters.find(o => f.isFoe(o) && o.st === 'CAGE_CLIMB');
+      if (cl) { if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl); add('chaseClimb', (cl.climb.p > .4 ? 12 : 4) * (1.4 - KI), cl); }
+      else { const worn = 1 - t.hp / t.maxHp; add('cageEscape', (tDown ? 2 + worn * 6 : 0) + (t.st === 'STAGGER' ? 1 + worn * 3 : 0) + (f.hp > t.hp * 1.3 && worn > .35 && this.rng.chance(.3) ? 2 : 0), null); }
+    }
     const sf = f.side === 'in' && ar.hasRing ? m.fighters.find(o => f.isFoe(o) && o.st === 'SEATED' && o.seat && Math.abs(o.x - f.x) < 280) : null;
     if (sf) add('seated', 10, sf);
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
-    if (tDown && !tGrab) {
+    if (tDown && !tGrab && !tUp) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
       if (m.rules.pin && t.hp < t.maxHp * .45 && t.side === 'in') add('pin', 2.5 + (1 - t.hp / t.maxHp) * 3, t);
       if (ar.hasRing && f.side === 'in' && (tr.air || 0) > .3 && dist > 90 && m.rules.climb !== false) add('climb', (tr.air || .3) * 2.2, t);
       add('taunt', (tr.taunt || .2) * 1.5, t);
     }
     if (f.fin >= B.finMax) add('finisher', 5 * D.pick, t);
-    if (!tDown) {
+    if (!tDown && !tUp) {
       add('pressure', 3 * (tr.aggr || .5) * D.aggr * (.5 + stK * .7), t);
       if (dist > 110) add('approach', 1.5, t);
       if (stK < .4 || hpK < .25) add('retreat', (1 - stK) * 2.5 * (tr.def || .5) * (D.plan > .4 ? .6 : 1), t);
@@ -218,7 +243,7 @@ export class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', climbLadder: '사다리 오르기', setLadder: '사다리 펼치기', chaseClimb: '쫓아 오르기', pullClimber: '끌어내리기', foldLadder: '사다리 접기', hitHanger: '매달린 상대 치기', cageEscape: '철창 탈출', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -307,6 +332,64 @@ export class AIController {
         f.intent.mx = dir; f.running = true; if (!f.dash && f.ground) { f.dash = true; m.emit('dashStart', { f }); }
         if (dist < 56 && f.dash && Math.abs(f.vx) > 150) { this.tap('grab'); this.goal = null; }
         if (g.t > 2.5) this.planT = 0;
+        break;
+      }
+      case 'setLadder': {
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'folded') { this.planT = 0; break; }
+        if (Math.abs(f.x - L.x) > 44) this.move(L.x - sgn(L.x - f.x) * 32, 8, Math.abs(f.x - L.x) > 120);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = 1.3; }
+        if (g.t > 4) this.planT = 0;
+        break;
+      }
+      case 'climbLadder': case 'chaseClimb': {
+        if (m.rules.cage) {   // up the cage wall where the other one climbs, or the nearest one
+          if (g.name === 'chaseClimb' && t.st !== 'CAGE_CLIMB') { this.planT = 0; break; }
+          const side = g.name === 'chaseClimb' && t.climb ? t.climb.side : ar.nearRope(f.x).dir, cx = side < 0 ? ar.ropeL + 16 : ar.ropeR - 16;
+          if (this.move(cx, 6, true)) { f.intent.mx = side; this.tap('jump'); this.planT = 0; }
+          if (g.t > 4) this.planT = 0;
+          break;
+        }
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'open' || (g.name === 'chaseClimb' && t.st !== 'LADDER')) { this.planT = 0; break; }
+        const taken = s2 => m.fighters.some(o => o !== f && o.st === 'LADDER' && o.climb && o.climb.side === s2);
+        let side = f.x < L.x ? -1 : 1;
+        if (taken(side)) side = -side;
+        if (taken(side)) { this.planT = 0; break; }
+        const tx = L.x + side * (B.ladderSpread + 10);
+        if (Math.abs(f.x - tx) > 6) this.move(tx, 4, Math.abs(f.x - tx) > 120);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('jump'); this.wait = .3; }
+        if (g.t > 4) this.planT = 0;
+        break;
+      }
+      case 'pullClimber': {
+        if (!t.climb || (t.st !== 'LADDER' && t.st !== 'CAGE_CLIMB') || t.climb.p > B.climbPullMax) { this.planT = 0; break; }
+        if (Math.abs(f.x - t.x) > 26) this.move(t.x, 20, Math.abs(f.x - t.x) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { f.face = sgn(t.x - f.x) || f.face; this.tap('grab'); this.wait = .45; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'foldLadder': {
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'open' || L.foldCd > 0) { this.planT = 0; break; }
+        const tx = L.x + (f.x < L.x ? -1 : 1) * (B.ladderSpread + 8);
+        if (Math.abs(f.x - tx) > 8) this.move(tx, 6, Math.abs(f.x - tx) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = .5; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'hitHanger': {
+        if (t.st !== 'CASE_HANG') { this.planT = 0; break; }
+        if (Math.abs(f.x - t.x) > 26) this.move(t.x - sgn(t.x - f.x) * 20, 6, true);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE', 'ATTACK')) { f.face = sgn(t.x - f.x) || f.face; this.tap('atk'); this.wait = .2; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'cageEscape': {
+        if (!m.rules.cage) { this.planT = 0; break; }
+        const dir = ar.nearRope(f.x).dir, cx = dir < 0 ? ar.ropeL + 16 : ar.ropeR - 16;
+        if (this.move(cx, 6, true)) { f.intent.mx = dir; this.tap('jump'); this.planT = 0; }
+        if (g.t > 5) this.planT = 0;
         break;
       }
       case 'seated': {
@@ -454,6 +537,28 @@ export class AIController {
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }
     this.tap('grab');
     this.holdPlan = null;
+  }
+  // on the ladder or the cage wall: the one above by the leg, the one level with you a punch, the one below a kick; otherwise climb
+  onClimb() {
+    const f = this.f, c = f.climb, m = f.match, D = this.D, SP = m.special;
+    if (!c || !SP) return;
+    const foes = SP.climbers(f, c.kind).filter(o => f.isFoe(o));
+    if (this.wait <= 0) {
+      const above = foes.find(o => o.climb.p > c.p + .06 && o.climb.p - c.p <= B.climbReach + .1);
+      const level = foes.find(o => Math.abs(o.climb.p - c.p) <= B.climbReach * .5);
+      const below = foes.find(o => o.climb.p < c.p && c.p - o.climb.p <= B.climbReach);
+      if (above && this.rng.chance(.5 + D.pick * .4)) { this.tap('grab'); this.wait = .45 + D.react; return; }
+      if (level && this.rng.chance(.45 + D.aggr * .3)) { this.tap('atk'); this.wait = .4 + D.react; return; }
+      if (below && this.rng.chance(.3 + D.aggr * .3)) { this.tap('atk'); this.wait = .5 + D.react; return; }
+      const g = c.p < .7 ? m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && Math.abs(o.x - f.x) < 36 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK')) : null;
+      if (g && this.rng.chance(.4)) { this.tap('atk'); this.wait = .6; return; }
+      if (c.kind === 'ladder' && c.p >= 1 && !foes.length && SP.prize.hits < SP.prize.need - 3) {   // somebody lying below: a big dive now and then
+        const n = f.nearestFoe(300, o => !o.climb && o.st === 'DOWN' && Math.abs(o.x - f.x) > 30);
+        if (n && this.rng.chance(.12 * (.5 + (this.tr.air || .3)))) { f.intent.mx = sgn(n.x - f.x); this.tap('atk'); this.wait = 1; return; }
+        this.wait = .5;
+      }
+    }
+    if (c.kind === 'cage' || c.p < 1) f.intent.up = true;   // the case meter at the top is pressed by the rules for the computer
   }
   perch() {
     const f = this.f, m = f.match, ar = m.arena, out = f.climbDir || (f.x < ar.mid ? -1 : 1);

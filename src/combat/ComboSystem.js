@@ -181,7 +181,7 @@ export class ComboSystem {
   holdSpecialId(f) {
     const ar = this.m.arena;
     const toRope = ar.hasRing && f.side === 'in' ? (f.face > 0 ? ar.ropeR - f.x : f.x - ar.ropeL) : 1e9;
-    return toRope <= 150 ? 'ropeKick' : 'shoulderLift';
+    return toRope <= 150 && !this.m.rules.cage ? 'ropeKick' : 'shoulderLift';
   }
   // ---- carrying somebody on the shoulders: K drops them
   carryDrop(f, L) {

@@ -29,6 +29,19 @@ export const BALANCE = {
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
+  // special matches. These balance going for the prize against stopping the other one.
+  // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
+  ladderH: 100, ladderSpread: 22, ladderPrizeY: 150, ladderClimb: 2.0, ladderSet: 1.4, ladderFoldCd: 4,
+  // the case: timing hits needed (the count stays with the case), needle speed and how much each hit adds, zone width, its shrink per hit, its floor, pause after a miss, hanging time
+  ladderHits: 10, caseSpeed: 1.1, caseSpeedUp: .09, caseZone: .3, caseZoneStep: .02, caseZoneMin: .09, caseFumble: .7, caseHang: 2.6,
+  // cage: height, climb time, time to get over the top
+  cageH: 150, cageClimb: 4.0, cageOver: 2.0,
+  // fights up there: reach in height, rocked time after a blow, highest a pull from the floor reaches, down time after a fall, get-up boost while the other one escapes, dive damage per 100 px
+  climbReach: .45, climbRock: .7, climbPullMax: .55, climbFallDown: 3.4, climbRally: 2.6, climbDiveBoost: .9, climbKickStagger: .55, climbPullSlip: .22,
+  // how much the computer prefers stopping a climber (pull, fold) to climbing after them: 0 never, 1 always
+  climbAiInterfere: .6,
+  // career rubber band: a win sharpens the other wrestlers (more after a streak), a loss eases them off
+  ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
   // emergency escape
   burstCost: 35, burstCd: 18, burstRange: 92,
   // finisher

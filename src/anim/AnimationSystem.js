@@ -28,7 +28,7 @@ export class AnimationSystem {
     b.from.copy(f.joints); b.t = 0; b.dur = dur; b.x = f.x; b.y = f.y; b.on = true;
   }
   changed(f, from, to, opt) {
-    const soft = { SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
+    const soft = { LADDER: .12, CAGE_CLIMB: .12, CASE_HANG: .12, SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
     if (!((from === 'IDLE' && to === 'MOVE') || (from === 'MOVE' && to === 'IDLE'))) f.clipT = 0;
     f.clipName = opt && opt.clip ? opt.clip : null;
     if (soft[to] && !(opt && opt.noBlend)) this.freezeBlend(f, soft[to]);
@@ -159,6 +159,15 @@ export class AnimationSystem {
       case 'HANG': C('hang', f.t); opt = { hang: 1 }; break;
       case 'APRON': C('apron', f.t); break;
       case 'SEATED': C('seatTop', f.t); opt = { seat: 1 }; break;
+      case 'LADDER': case 'CAGE_CLIMB': {
+        const c = f.climb, top = c && (c.kind === 'ladder' ? c.p >= 1 : c.over != null);
+        C('cageClimb', (c ? c.p : 0) * (f.st === 'LADDER' ? 3.4 : 4.4));
+        if (top && c.kind === 'ladder') { p[7] = 18; p[8] = 30; p[9] = -10; p[10] = 24; if (c.meter) { p[3] = 168 + Math.sin(f.poseT * 8) * 6; p[4] = 12; p[5] = 160; p[6] = 18; p[2] = -24; } }
+        if (top && c.kind === 'cage') { p[1] = 40; p[7] = 90; p[8] = 40; p[9] = 20; p[10] = 60; }
+        if (f.climbAnim > 0) { if (f.climbAnim > .15) { p[3] = 92; p[4] = 4; } else { p[7] = 84; p[8] = 4; } }   // a punch, then a kick
+        break;
+      }
+      case 'CASE_HANG': C('hang', f.t); opt = { caseHang: 1 }; break;
       case 'TAGWAIT': C(f.wantTag ? 'tagReach' : 'apron', f.poseT); break;
       case 'ENTER_RING': case 'EXIT_RING': C('enterRing', f.t); break;
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
@@ -176,6 +185,10 @@ export class AnimationSystem {
     else solveFK(p, d, jt, {});
     if (f.bounce) { f.bounce.t += dt; const k = f.bounce.t / .22; if (k >= 1) f.bounce = null; else offY = -Math.sin(k * Math.PI) * 7; }
     toWorld(jt, f.face, f.x, f.y + offY, yaw);
+    if (opt && opt.caseHang && this.m.special && this.m.special.prize) { // hands on the case
+      const P = this.m.special.prize, hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2;
+      for (let i = 0; i < JN; i++) { jt.p[i * 2] += P.x - hx; jt.p[i * 2 + 1] += P.y + 6 - hy; }
+    }
     if (opt && opt.hang) { // pin the hands to the top rope
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, ar = this.m.arena, tx = f.x < ar.mid ? ar.ropeL - 2 : ar.ropeR + 2, ty = ar.matY - ar.ropeH + 2;
       for (let i = 0; i < JN; i++) { jt.p[i * 2] += tx - hx; jt.p[i * 2 + 1] += ty - hy; }

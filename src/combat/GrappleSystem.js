@@ -27,6 +27,7 @@ export class GrappleSystem {
     if (inc) return P.catchProp(f, inc);
     const sv = m.combo.seatedFoe(f);
     if (sv) return m.combo.seatedMove(f, sv, false);
+    if (m.special && (m.special.pullDown(f) || m.special.ladderGrab(f))) return true;   // pull a climber down, tip or raise the ladder
     if (f.dash && f.ground && Math.abs(f.vx) >= 150 && m.combo.dashCounter(f)) return true;
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);

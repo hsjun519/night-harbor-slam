@@ -2414,6 +2414,7 @@ const CLIP_SRC = {
   ropeBack: { keys: [[0, 'sp-14 hd10 a-60/20 b-50/24 t24/20 u10/10'], [.12, 'sp-26 hd20 a-76/20 b-70/24 t34/26 u16/14', 'out'], [.24, 'sp14 hd-10 a20/70 b40/70 t30/24 u-30/20', 'in']] },
   pin: { keys: [[0, 'r70 sp16 hd-10 a60/40 b80/30 t30/60 u-10/30'], [.3, 'r76 sp8 hd-18 a50/50 b86/40 t20/40 u-16/24', 'io']] },
   tagReach: { keys: [[0, 'sp10 hd-6 a96/2 b20/60 t18/20 u-24/16'], [.35, 'sp16 hd-8 a104/0 b20/60 t20/24 u-24/16', 'io']], loop: 1 },
+  cageClimb: { keys: [[0, 'sp10 hd-12 a150/40 b120/60 t30/40 u76/96'], [.5, 'sp10 hd-12 a120/60 b150/40 t76/96 u30/40', 'io'], [1, 'sp10 hd-12 a150/40 b120/60 t30/40 u76/96', 'io']], loop: 1 },
   seatTop: { keys: [[0, 'sp16 hd18 a40/60 b30/60 t84/70 u90/80'], [.7, 'sp22 hd24 a46/54 b36/56 t86/74 u92/84', 'io']], loop: 1 },
   apron: { keys: [[0, 'sp6 hd-4 a70/50 b40/70 t8/6 u-8/8'], [.5, 'sp8 hd-6 a66/56 b40/70 t8/8 u-8/10', 'io']], loop: 1 },
   stomp: { keys: [[0, 'sp4 hd10 a20/60 b40/60 t30/60 u-10/10'], [.16, 'sp-8 hd14 a60/40 b80/40 t96/100 u-6/6', 'out'], [.24, 'sp22 hd16 a-10/50 b10/60 t26/6 u-18/24', 'in'], [.5, 'sp10 hd-6 a20/90 b55/84 t18/18 u-20/14', 'io']] },
@@ -2734,6 +2735,19 @@ const BALANCE = {
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
+  // special matches. These balance going for the prize against stopping the other one.
+  // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
+  ladderH: 100, ladderSpread: 22, ladderPrizeY: 150, ladderClimb: 2.0, ladderSet: 1.4, ladderFoldCd: 4,
+  // the case: timing hits needed (the count stays with the case), needle speed and how much each hit adds, zone width, its shrink per hit, its floor, pause after a miss, hanging time
+  ladderHits: 10, caseSpeed: 1.1, caseSpeedUp: .09, caseZone: .3, caseZoneStep: .02, caseZoneMin: .09, caseFumble: .7, caseHang: 2.6,
+  // cage: height, climb time, time to get over the top
+  cageH: 150, cageClimb: 4.0, cageOver: 2.0,
+  // fights up there: reach in height, rocked time after a blow, highest a pull from the floor reaches, down time after a fall, get-up boost while the other one escapes, dive damage per 100 px
+  climbReach: .45, climbRock: .7, climbPullMax: .55, climbFallDown: 3.4, climbRally: 2.6, climbDiveBoost: .9, climbKickStagger: .55, climbPullSlip: .22,
+  // how much the computer prefers stopping a climber (pull, fold) to climbing after them: 0 never, 1 always
+  climbAiInterfere: .6,
+  // career rubber band: a win sharpens the other wrestlers (more after a streak), a loss eases them off
+  ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
   // emergency escape
   burstCost: 35, burstCd: 18, burstRange: 92,
   // finisher
@@ -3386,7 +3400,7 @@ class Ragdoll {
     this.ground = false;
     const pelvisIn = x[0] > ar.ropeL && x[0] < ar.ropeR;
     if (ar.hasRing) {
-      if (this.side === 'in' && !pelvisIn) { if (y[0] < ar.matY - ar.ropeH + 14 || this.over) this.side = 'out'; }
+      if (this.side === 'in' && !pelvisIn) { if (!ar.cageH && (y[0] < ar.matY - ar.ropeH + 14 || this.over)) this.side = 'out'; }   // a cage keeps everybody in
       else if (this.side === 'out' && pelvisIn && y[0] < ar.matY - 2) this.side = 'in';
     } else this.side = 'in';
     for (let i = 0; i < N; i++) {
@@ -3398,7 +3412,7 @@ class Ragdoll {
         // ropes hold bodies that are not flying over them
         if (this.side === 'in' && !this.over) {
           const hgt = ar.matY - y[i];
-          if (hgt < ar.ropeH + 6) {
+          if (hgt < (ar.cageH || ar.ropeH + 6)) {
             const lo = ar.ropeL + r[i] * .3, hi = ar.ropeR - r[i] * .3;
             // project onto the rope line and reflect only the outward motion, so the rope never adds energy
             if (x[i] < lo) { const v = x[i] - px[i], p = lo - x[i]; x[i] = lo; px[i] = v < 0 ? lo + v * .3 : lo - v; if (hgt > 4) { ar.press('L', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
@@ -3498,6 +3512,9 @@ const STATES = {
   CLIMB: { ko: '코너 오르기', input: [], hit: 1, next: ['PERCH', 'FALL'] },
   PERCH: { ko: '코너 위', input: ['attack', 'jump', 'guard', 'move'], hit: 1, next: ['AIR_ATTACK', 'FALL', 'JUMP'] },
   HANG: { ko: '로프 매달림', input: ['jump', 'move', 'guard'], hit: 1, next: ['ENTER_RING', 'FALL'] },
+  LADDER: { ko: '사다리 위', input: ['move', 'jump', 'grab', 'guard', 'attack'], hit: 1, next: ['IDLE', 'FALL'] },
+  CAGE_CLIMB: { ko: '철창 오르기', input: ['move', 'jump', 'grab', 'guard', 'attack'], hit: 1, next: ['PERCH', 'FALL', 'IDLE'] },
+  CASE_HANG: { ko: '가방에 매달림', input: ['grab'], hit: 1, next: ['FALL', 'DOWN'] },
   SEATED: { ko: '코너 위에 걸터앉음', input: ['mash'], hit: 1, next: ['FALL', 'IDLE'] },
   APRON: { ko: '에이프런', input: ['jump', 'move', 'guard', 'attack'], hit: 1, next: ['ENTER_RING', 'FALL', 'JUMP', 'TAGWAIT'] },
   ENTER_RING: { ko: '링 진입', input: [], hit: 1, next: ['IDLE'] },
@@ -4165,7 +4182,7 @@ class ComboSystem {
   holdSpecialId(f) {
     const ar = this.m.arena;
     const toRope = ar.hasRing && f.side === 'in' ? (f.face > 0 ? ar.ropeR - f.x : f.x - ar.ropeL) : 1e9;
-    return toRope <= 150 ? 'ropeKick' : 'shoulderLift';
+    return toRope <= 150 && !this.m.rules.cage ? 'ropeKick' : 'shoulderLift';
   }
   // ---- carrying somebody on the shoulders: K drops them
   carryDrop(f, L) {
@@ -4289,7 +4306,7 @@ class Fighter {
     this.inv = 0; this.grabImm = 0; this.dodgeCd = 0; this.counterCd = 0; this.burstCd = 0; this.regenDelay = 0; this.flash = 0; this.hitShake = 0; this.landT = 0; this.boost = 0; this.staleList = []; this.moveStale = {};
     this.combo = { n: 0, t: 0, dmg: 0 }; this.chainN = 0; this.chainT = 0; this.holdT = 0; this.running = false; this.lastTap = { dir: 0, t: -9 }; this.prevMx = 0; this.guardT = 0; this.whip = null; this.expr = 'neutral'; this.exprT = 0; this.mash = 0; this.escape = 0; this.protect = 0;
     this.outCount = 0; this.eliminated = false; this.tagged = true; this.partner = null; this.legal = true; this.ai = null; this.tails = null; this.sweat = 0; this.touchRope = null; this.gettingUp = null; this.pinTries = 0; this.tagRecover = 0; this.kills = 0; this.perfects = 0;
-    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0;
+    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0; this.boss = !!o.boss; this.climb = null; this.aiBoost = o.aiBoost || 0;
   }
   get st() { return this.fsm.cur; }
   get t() { return this.fsm.t; }
@@ -4309,6 +4326,8 @@ class Fighter {
     if (to !== 'ATTACK' && to !== 'AIR_ATTACK' && to !== 'FINISHER') this.atk = null;
     if (to !== 'HITSTUN' && to !== 'DOWN' && to !== 'KO' && to !== 'OUT' && to !== 'PINNED') this.dropRag();
     if (to === 'IDLE' || to === 'MOVE') this.whip = null;
+    if (to !== 'LADDER' && to !== 'CAGE_CLIMB') this.climb = null;
+    if (to !== 'CASE_HANG') this.hang = null;
     if (to !== 'GUARD') this.guardT = 0;
     if (this.prop && !keepsProp(to)) this.match.props.drop(this, to);
     this.match.emit('state', { f: this, from, to });
@@ -4414,6 +4433,7 @@ function chooseAttack(f, I) {
 }
 function startJump(f, I) {
   const ar = f.arena, m = f.match;
+  if (m.special && (m.special.ladderClimb(f) || m.special.cageClimbStart(f, I))) return;   // up the ladder, up the cage wall
   // contextual W: climb the corner, enter the ring
   if (ar.hasRing && f.side === 'in') {
     const nr = ar.nearRope(f.x);
@@ -4546,7 +4566,7 @@ const CONTROL = {
     }
     if (burstInput(f, I) && tryBurst(f)) { f.clearBuf(); return; }
     friction(f, dt, 1);
-    f.downClock = (f.downClock || 0) + dt * (.75 + .25 * f.stats.down) + mashInput(f) * B.mashDown;
+    f.downClock = (f.downClock || 0) + dt * (.75 + .25 * f.stats.down) * (f.match.special ? f.match.special.rally(f) : 1) + mashInput(f) * B.mashDown;
     if (f.downClock >= f.downTime) standUp(f, 0);
   },
   GET_UP(f, I, dt) {
@@ -4605,7 +4625,7 @@ const CONTROL = {
     if (f.t < .12) return;
     if (f.consume('atk')) {
       if (f.face !== out) { const pk = topPick(f); if (pk.kind === 'stand') topStand(f, I, pk.t); else dive(f, I); return; }
-      if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
+      if (m.rules.ringOut === 'elim' || m.rules.cage) { f.face = -out; m.emit('perchDeny', { f, cage: !!m.rules.cage }); return; }   // over the top = eliminated
       diveOut(f, I, out); return;
     }
     if (f.consume('jump')) { f.face = -out; f.vy = -B.jump * .8; f.vx = -out * 120; f.ground = false; f.set('JUMP'); m.emit('jump', { f }); return; }
@@ -4627,6 +4647,9 @@ const CONTROL = {
     if (f.consume('jump') || sgn(I.mx) === inward && Math.abs(I.mx) > .3 && f.t > .18) { beginEnter(f); return; }
     if (I.down || (sgn(I.mx) === -inward && Math.abs(I.mx) > .3)) { f.ground = false; f.vx = -inward * 90; f.vy = -60; f.set('FALL'); }
   },
+  LADDER(f, I, dt) { const S = f.match.special; if (!S || !S.climbTick(f, I, dt)) { f.climb = null; f.ground = false; f.vy = 20; f.set('FALL', { force: true }); } },
+  CAGE_CLIMB(f, I, dt) { const S = f.match.special; if (!S || !S.climbTick(f, I, dt)) { f.climb = null; f.ground = false; f.vy = 20; f.set('FALL', { force: true }); } },
+  CASE_HANG(f, I, dt) { const S = f.match.special; if (!S || !S.hangTick(f, I, dt)) { f.hang = null; f.ground = false; f.set('FALL', { force: true }); } },
   SEATED(f, I, dt) {
     const s = f.seat;
     if (!s) { f.ground = false; f.set('FALL', { force: true }); return; }
@@ -4774,7 +4797,7 @@ __m["combat/PhysicsSystem.js"] = (function () {
 // Gravity, floors, ropes, walls, body separation and ragdolls. Linked pairs are positioned by the grapple systems.
 const { clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B } = __m["data/balance.js"];
-const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE', 'SEATED']);
+const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE', 'SEATED', 'LADDER', 'CAGE_CLIMB', 'CASE_HANG']);
 class PhysicsSystem {
   constructor(match) { this.m = match; }
   update(dt) {
@@ -5029,7 +5052,9 @@ class CombatSystem {
     const kb = d.kb / v.stats.kbr * (100 / (60 + v.stats.weight * .4)), m = this.m;
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
     const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON' || v.st === 'SEATED';
-    if (v.st === 'SEATED') { const out = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1); v.seat = null; v.seatOver = true; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
+    if (v.st === 'LADDER' || v.st === 'CAGE_CLIMB') { m.special.knockOff(v, a, v.st === 'CAGE_CLIMB' && v.climb ? -v.climb.side : dir); return; }
+    if (v.st === 'CASE_HANG') { m.special.dropHang(v, a); return; }
+    if (v.st === 'SEATED') { const o0 = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1), out = m.rules.cage ? -o0 : o0; v.seat = null; v.seatOver = !m.rules.cage; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
     if (v.rag && v.st === 'HITSTUN') { v.juggle = (v.juggle || 0) + 1; const k = .55 / v.juggle; v.rag.kick(dir * kb * k, -(d.up || 90) * k, dir * 2); return; }
     if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak) {
@@ -5054,7 +5079,7 @@ class CombatSystem {
     const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
     const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
     const elim = this.m.rules.ringOut === 'elim';
-    const over = v.seatOver || spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
+    const over = !this.m.rules.cage && (v.seatOver || spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5)));
     v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
     v.seatOver = false;
     v.wallHit = false;
@@ -5163,6 +5188,7 @@ class GrappleSystem {
     if (inc) return P.catchProp(f, inc);
     const sv = m.combo.seatedFoe(f);
     if (sv) return m.combo.seatedMove(f, sv, false);
+    if (m.special && (m.special.pullDown(f) || m.special.ladderGrab(f))) return true;   // pull a climber down, tip or raise the ladder
     if (f.dash && f.ground && Math.abs(f.vx) >= 150 && m.combo.dashCounter(f)) return true;
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);
@@ -5888,7 +5914,7 @@ class AnimationSystem {
     b.from.copy(f.joints); b.t = 0; b.dur = dur; b.x = f.x; b.y = f.y; b.on = true;
   }
   changed(f, from, to, opt) {
-    const soft = { SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
+    const soft = { LADDER: .12, CAGE_CLIMB: .12, CASE_HANG: .12, SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
     if (!((from === 'IDLE' && to === 'MOVE') || (from === 'MOVE' && to === 'IDLE'))) f.clipT = 0;
     f.clipName = opt && opt.clip ? opt.clip : null;
     if (soft[to] && !(opt && opt.noBlend)) this.freezeBlend(f, soft[to]);
@@ -6019,6 +6045,15 @@ class AnimationSystem {
       case 'HANG': C('hang', f.t); opt = { hang: 1 }; break;
       case 'APRON': C('apron', f.t); break;
       case 'SEATED': C('seatTop', f.t); opt = { seat: 1 }; break;
+      case 'LADDER': case 'CAGE_CLIMB': {
+        const c = f.climb, top = c && (c.kind === 'ladder' ? c.p >= 1 : c.over != null);
+        C('cageClimb', (c ? c.p : 0) * (f.st === 'LADDER' ? 3.4 : 4.4));
+        if (top && c.kind === 'ladder') { p[7] = 18; p[8] = 30; p[9] = -10; p[10] = 24; if (c.meter) { p[3] = 168 + Math.sin(f.poseT * 8) * 6; p[4] = 12; p[5] = 160; p[6] = 18; p[2] = -24; } }
+        if (top && c.kind === 'cage') { p[1] = 40; p[7] = 90; p[8] = 40; p[9] = 20; p[10] = 60; }
+        if (f.climbAnim > 0) { if (f.climbAnim > .15) { p[3] = 92; p[4] = 4; } else { p[7] = 84; p[8] = 4; } }   // a punch, then a kick
+        break;
+      }
+      case 'CASE_HANG': C('hang', f.t); opt = { caseHang: 1 }; break;
       case 'TAGWAIT': C(f.wantTag ? 'tagReach' : 'apron', f.poseT); break;
       case 'ENTER_RING': case 'EXIT_RING': C('enterRing', f.t); break;
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
@@ -6036,6 +6071,10 @@ class AnimationSystem {
     else solveFK(p, d, jt, {});
     if (f.bounce) { f.bounce.t += dt; const k = f.bounce.t / .22; if (k >= 1) f.bounce = null; else offY = -Math.sin(k * Math.PI) * 7; }
     toWorld(jt, f.face, f.x, f.y + offY, yaw);
+    if (opt && opt.caseHang && this.m.special && this.m.special.prize) { // hands on the case
+      const P = this.m.special.prize, hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2;
+      for (let i = 0; i < JN; i++) { jt.p[i * 2] += P.x - hx; jt.p[i * 2 + 1] += P.y + 6 - hy; }
+    }
     if (opt && opt.hang) { // pin the hands to the top rope
       const hx = (jt.x(J.hN) + jt.x(J.hF)) / 2, hy = (jt.y(J.hN) + jt.y(J.hF)) / 2, ar = this.m.arena, tx = f.x < ar.mid ? ar.ropeL - 2 : ar.ropeR + 2, ty = ar.matY - ar.ropeH + 2;
       for (let i = 0; i < JN; i++) { jt.p[i * 2] += tx - hx; jt.p[i * 2 + 1] += ty - hy; }
@@ -6128,6 +6167,9 @@ const DIFFICULTY = {
 class AIController {
   constructor(f, level, rng) {
     this.f = f; this.level = level; this.D = DIFFICULTY[level] || DIFFICULTY.normal; this.rng = rng;
+    // the career form of the opponents: sharper after the player's wins, slower after the losses
+    const k = f.aiBoost || 0;
+    if (k) { const D = Object.assign({}, this.D), c = (v, lo, hi) => Math.max(lo, Math.min(hi, v)); D.react = c(D.react * (1 - k * .6), .1, .7); D.err = c(D.err - k * .2, 0, .6); D.pick = c(D.pick + k * .3, .2, 1); D.counter = c(D.counter + k * .15, 0, .5); D.guard = c(D.guard + k * .2, .05, .6); D.dodge = c(D.dodge + k * .15, 0, .5); D.punish = c(D.punish + k * .3, 0, .95); D.aggr = c(D.aggr + k * .25, .4, 1.3); D.rev = c(D.rev + k * .15, 0, .5); this.D = D; }
     this.tr = f.char.ai || {};
     this.goal = null; this.goalT = 0; this.planT = .2 + rng.next() * .3; this.mem = new Map(); this.note = '';
     this.guardT = 0; this.wait = 0; this.comboWant = 0; this.lastSeenAtk = null; this.dodgeT = 0; this.mashT = 0; this.revPlanned = null; this.climbPlan = 0; this.behavior = null;
@@ -6165,6 +6207,8 @@ class AIController {
       if (f.t > .2 + this.D.react) { if (this.apronPick === 'spring') { this.tap('atk'); this.apronPick = 'in'; } else I.jump = true; }
       return;
     }
+    if (f.st === 'LADDER' || f.st === 'CAGE_CLIMB') { this.onClimb(); return; }
+    if (f.st === 'CASE_HANG') return;
     if (f.st === 'PERCH') { this.perch(dt); return; }
     if (f.st === 'WHIPPED') { this.whipped(); return; }
     if (f.st === 'GRAB') { this.holdThink(dt); return; }
@@ -6289,6 +6333,7 @@ class AIController {
     if (!t) { this.goal = { name: 'idle' }; return; }
     const dist = Math.abs(t.x - f.x), ar = m.arena;
     const tDown = t.st === 'DOWN' && !t.rag, tGrab = t.grabbable && t.side === f.side;
+    const tUp = !!t.climb || t.st === 'CASE_HANG';   // up a ladder or a wall: only the special goals reach them
     const hpK = f.hp / f.maxHp, stK = f.stun / f.maxStun;
     // chairs: swing the one in hand; otherwise fetch a loose one or take it off the foe
     if (f.prop && f.side === t.side) { if (!this.goal || this.goal.name !== 'chairSwing' || this.goal.data !== t) { this.goal = { name: 'chairSwing', data: t, t: 0 }; this.goalT = 0; } this.note = '체어샷'; return; }
@@ -6305,17 +6350,36 @@ class AIController {
       if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
       add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
     }
+    // special matches: the case over the ring, the cage wall. B.climbAiInterfere weighs stopping the other one against going up yourself
+    const SP = m.special, KI = B.climbAiInterfere;
+    if (SP && SP.ladder && f.side === 'in') {
+      const L = SP.ladder, cl = m.fighters.find(o => f.isFoe(o) && (o.st === 'LADDER' || o.st === 'CASE_HANG'));
+      if (cl && cl.st === 'CASE_HANG') add('hitHanger', 10, cl);
+      if (L.state === 'folded') add('setLadder', 3 + (tDown || t.st === 'STAGGER' ? 6 : 0) + (Math.abs(L.x - f.x) < 90 ? 2 : 0), null);
+      else if (L.state === 'open') {
+        if (cl && cl.st === 'LADDER') {
+          if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl);
+          if (L.foldCd <= 0) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
+          add('chaseClimb', (cl.climb.p >= .6 ? 10 : 4) * (1.4 - KI), cl);
+        } else if (!cl) add('climbLadder', (dist < 120 && !tDown && t.st !== 'STAGGER' ? .3 : 1.2) + (tDown || t.st === 'STAGGER' || t.st === 'GET_UP' ? 9 : 0) + (dist > 170 ? 2.5 : 0) + (SP.prize.hits >= SP.prize.need * .6 ? 3 : 0), null);
+      }
+    }
+    if (SP && m.rules.cage && f.side === 'in') {
+      const cl = m.fighters.find(o => f.isFoe(o) && o.st === 'CAGE_CLIMB');
+      if (cl) { if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl); add('chaseClimb', (cl.climb.p > .4 ? 12 : 4) * (1.4 - KI), cl); }
+      else { const worn = 1 - t.hp / t.maxHp; add('cageEscape', (tDown ? 2 + worn * 6 : 0) + (t.st === 'STAGGER' ? 1 + worn * 3 : 0) + (f.hp > t.hp * 1.3 && worn > .35 && this.rng.chance(.3) ? 2 : 0), null); }
+    }
     const sf = f.side === 'in' && ar.hasRing ? m.fighters.find(o => f.isFoe(o) && o.st === 'SEATED' && o.seat && Math.abs(o.x - f.x) < 280) : null;
     if (sf) add('seated', 10, sf);
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
-    if (tDown && !tGrab) {
+    if (tDown && !tGrab && !tUp) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
       if (m.rules.pin && t.hp < t.maxHp * .45 && t.side === 'in') add('pin', 2.5 + (1 - t.hp / t.maxHp) * 3, t);
       if (ar.hasRing && f.side === 'in' && (tr.air || 0) > .3 && dist > 90 && m.rules.climb !== false) add('climb', (tr.air || .3) * 2.2, t);
       add('taunt', (tr.taunt || .2) * 1.5, t);
     }
     if (f.fin >= B.finMax) add('finisher', 5 * D.pick, t);
-    if (!tDown) {
+    if (!tDown && !tUp) {
       add('pressure', 3 * (tr.aggr || .5) * D.aggr * (.5 + stK * .7), t);
       if (dist > 110) add('approach', 1.5, t);
       if (stK < .4 || hpK < .25) add('retreat', (1 - stK) * 2.5 * (tr.def || .5) * (D.plan > .4 ? .6 : 1), t);
@@ -6331,7 +6395,7 @@ class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', climbLadder: '사다리 오르기', setLadder: '사다리 펼치기', chaseClimb: '쫓아 오르기', pullClimber: '끌어내리기', foldLadder: '사다리 접기', hitHanger: '매달린 상대 치기', cageEscape: '철창 탈출', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -6420,6 +6484,64 @@ class AIController {
         f.intent.mx = dir; f.running = true; if (!f.dash && f.ground) { f.dash = true; m.emit('dashStart', { f }); }
         if (dist < 56 && f.dash && Math.abs(f.vx) > 150) { this.tap('grab'); this.goal = null; }
         if (g.t > 2.5) this.planT = 0;
+        break;
+      }
+      case 'setLadder': {
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'folded') { this.planT = 0; break; }
+        if (Math.abs(f.x - L.x) > 44) this.move(L.x - sgn(L.x - f.x) * 32, 8, Math.abs(f.x - L.x) > 120);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = 1.3; }
+        if (g.t > 4) this.planT = 0;
+        break;
+      }
+      case 'climbLadder': case 'chaseClimb': {
+        if (m.rules.cage) {   // up the cage wall where the other one climbs, or the nearest one
+          if (g.name === 'chaseClimb' && t.st !== 'CAGE_CLIMB') { this.planT = 0; break; }
+          const side = g.name === 'chaseClimb' && t.climb ? t.climb.side : ar.nearRope(f.x).dir, cx = side < 0 ? ar.ropeL + 16 : ar.ropeR - 16;
+          if (this.move(cx, 6, true)) { f.intent.mx = side; this.tap('jump'); this.planT = 0; }
+          if (g.t > 4) this.planT = 0;
+          break;
+        }
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'open' || (g.name === 'chaseClimb' && t.st !== 'LADDER')) { this.planT = 0; break; }
+        const taken = s2 => m.fighters.some(o => o !== f && o.st === 'LADDER' && o.climb && o.climb.side === s2);
+        let side = f.x < L.x ? -1 : 1;
+        if (taken(side)) side = -side;
+        if (taken(side)) { this.planT = 0; break; }
+        const tx = L.x + side * (B.ladderSpread + 10);
+        if (Math.abs(f.x - tx) > 6) this.move(tx, 4, Math.abs(f.x - tx) > 120);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('jump'); this.wait = .3; }
+        if (g.t > 4) this.planT = 0;
+        break;
+      }
+      case 'pullClimber': {
+        if (!t.climb || (t.st !== 'LADDER' && t.st !== 'CAGE_CLIMB') || t.climb.p > B.climbPullMax) { this.planT = 0; break; }
+        if (Math.abs(f.x - t.x) > 26) this.move(t.x, 20, Math.abs(f.x - t.x) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { f.face = sgn(t.x - f.x) || f.face; this.tap('grab'); this.wait = .45; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'foldLadder': {
+        const L = m.special && m.special.ladder;
+        if (!L || L.state !== 'open' || L.foldCd > 0) { this.planT = 0; break; }
+        const tx = L.x + (f.x < L.x ? -1 : 1) * (B.ladderSpread + 8);
+        if (Math.abs(f.x - tx) > 8) this.move(tx, 6, Math.abs(f.x - tx) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = .5; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'hitHanger': {
+        if (t.st !== 'CASE_HANG') { this.planT = 0; break; }
+        if (Math.abs(f.x - t.x) > 26) this.move(t.x - sgn(t.x - f.x) * 20, 6, true);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE', 'ATTACK')) { f.face = sgn(t.x - f.x) || f.face; this.tap('atk'); this.wait = .2; }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
+      case 'cageEscape': {
+        if (!m.rules.cage) { this.planT = 0; break; }
+        const dir = ar.nearRope(f.x).dir, cx = dir < 0 ? ar.ropeL + 16 : ar.ropeR - 16;
+        if (this.move(cx, 6, true)) { f.intent.mx = dir; this.tap('jump'); this.planT = 0; }
+        if (g.t > 5) this.planT = 0;
         break;
       }
       case 'seated': {
@@ -6568,6 +6690,28 @@ class AIController {
     this.tap('grab');
     this.holdPlan = null;
   }
+  // on the ladder or the cage wall: the one above by the leg, the one level with you a punch, the one below a kick; otherwise climb
+  onClimb() {
+    const f = this.f, c = f.climb, m = f.match, D = this.D, SP = m.special;
+    if (!c || !SP) return;
+    const foes = SP.climbers(f, c.kind).filter(o => f.isFoe(o));
+    if (this.wait <= 0) {
+      const above = foes.find(o => o.climb.p > c.p + .06 && o.climb.p - c.p <= B.climbReach + .1);
+      const level = foes.find(o => Math.abs(o.climb.p - c.p) <= B.climbReach * .5);
+      const below = foes.find(o => o.climb.p < c.p && c.p - o.climb.p <= B.climbReach);
+      if (above && this.rng.chance(.5 + D.pick * .4)) { this.tap('grab'); this.wait = .45 + D.react; return; }
+      if (level && this.rng.chance(.45 + D.aggr * .3)) { this.tap('atk'); this.wait = .4 + D.react; return; }
+      if (below && this.rng.chance(.3 + D.aggr * .3)) { this.tap('atk'); this.wait = .5 + D.react; return; }
+      const g = c.p < .7 ? m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && Math.abs(o.x - f.x) < 36 && o.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK')) : null;
+      if (g && this.rng.chance(.4)) { this.tap('atk'); this.wait = .6; return; }
+      if (c.kind === 'ladder' && c.p >= 1 && !foes.length && SP.prize.hits < SP.prize.need - 3) {   // somebody lying below: a big dive now and then
+        const n = f.nearestFoe(300, o => !o.climb && o.st === 'DOWN' && Math.abs(o.x - f.x) > 30);
+        if (n && this.rng.chance(.12 * (.5 + (this.tr.air || .3)))) { f.intent.mx = sgn(n.x - f.x); this.tap('atk'); this.wait = 1; return; }
+        this.wait = .5;
+      }
+    }
+    if (c.kind === 'cage' || c.p < 1) f.intent.up = true;   // the case meter at the top is pressed by the rules for the computer
+  }
   perch() {
     const f = this.f, m = f.match, ar = m.arena, out = f.climbDir || (f.x < ar.mid ? -1 : 1);
     // a foe lying or reeling on the floor outside, on this side: turn round and dive over the top
@@ -6613,6 +6757,366 @@ class AIController {
 }
 
 return { AIController, DIFFICULTY };
+})();
+// ---- combat/SpecialRules.js
+__m["combat/SpecialRules.js"] = (function () {
+// Special matches: the ladder match (a folding A-frame ladder and a case hanging over the ring), the steel cage (climb
+// the wall and get over the top), hell in a cell (walls round the whole floor), best of three falls and the iron man,
+// and a boss that grows stronger as the match turns against it. The match manager asks this before it ends the match
+// or calls time. Climbing is one system for the ladder and the cage: punch the one level with you, kick the one below,
+// pull the one above down by the leg; a fall from up there keeps you down a long while.
+const { sgn, clamp } = __m["core/util.js"];
+const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
+const { STATES } = __m["combat/StateMachine.js"];
+const SPECIAL = {
+  ladder: { name: '래더 매치', short: '래더', desc: '링 중앙의 접이식 사다리를 펼쳐 오르고, 꼭대기에서 타이밍을 맞춰 매달린 가방을 떼어 내면 승리.', rules: { ko: false, pin: false, ringOut: 'none', time: 480, ladder: true } },
+  cage: { name: '스틸 케이지', short: '케이지', desc: '철창 안의 승부. KO·핀폴, 또는 철창 벽을 올라 꼭대기를 넘으면 승리.', rules: { ko: true, pin: true, ringOut: 'none', leave: false, ringOutThrow: false, time: 480, cage: true } },
+  cell: { name: '헬 인 어 셀', short: '셀', desc: '링 밖 바닥까지 덮은 거대한 철창. 장외 카운트가 없다. KO나 핀폴만이 끝.', rules: { ko: true, pin: true, ringOut: 'none', time: 480, cell: true } },
+};
+function specialRules(cfg) {
+  const S = SPECIAL[cfg.special], r = {};
+  if (S) Object.assign(r, S.rules);
+  if (cfg.falls || cfg.iron) Object.assign(r, { ko: true, pin: true });
+  if (cfg.iron) r.time = cfg.iron;
+  return r;
+}
+const NAMES = ['첫 번째', '두 번째', '세 번째', '네 번째', '다섯 번째', '여섯 번째', '일곱 번째'];
+const CLIMB = new Set(['LADDER', 'CAGE_CLIMB']);
+
+class SpecialRules {
+  constructor(m, cfg) {
+    this.m = m; this.type = SPECIAL[cfg.special] ? cfg.special : null; this.def = SPECIAL[this.type] || null;
+    this.falls = cfg.falls || 0; this.iron = cfg.iron || 0; this.score = {}; this.fallN = 0; this.sudden = false;
+    this.boss = cfg.bossPhases ? Object.assign({ by: ['fall', 'kickout'], max: 3 }, typeof cfg.bossPhases === 'object' ? cfg.bossPhases : {}) : null;
+    const ar = m.arena;
+    if (this.type === 'ladder') {
+      // folded and lying in the middle of the ring: somebody has to stand it up
+      this.ladder = { x: ar.mid, state: 'folded', k: 0, t: 0, by: null, dir: 1, foldCd: 0 };
+      this.prize = { x: ar.mid, y: ar.matY - B.ladderPrizeY, hits: 0, need: B.ladderHits, sway: 0, taken: null };
+    }
+    if (this.type === 'cage') { ar.cageH = B.cageH; m.on('ropeBody', e => this.wallHit(e.f, 3, 8, 'cageHit')); }
+    if (this.type === 'cell') m.on('wall', e => this.wallHit(e.f, 4, 10, 'cellHit'));
+    if (this.boss) m.on('kickout', e => { if (this.boss.by.includes('kickout') && e.v.boss) this.bossUp(e.v, 'kickout'); });
+  }
+  get multi() { return this.falls > 0 || this.iron > 0; }
+  // ---- per frame
+  update(dt) {
+    const m = this.m;
+    for (const f of m.fighters) if (f.cageCd > 0) f.cageCd -= dt;
+    const L = this.ladder;
+    if (L) {
+      this.prize.sway += dt;
+      if (L.foldCd > 0) L.foldCd -= dt;
+      if (L.state === 'rising') {
+        L.t += dt; L.k = Math.min(1, L.t / B.ladderSet);
+        const by = L.by;
+        if (!by || !by.alive || !by.fsm.is('IDLE', 'MOVE')) { L.state = 'folded'; L.k = 0; L.by = null; m.emit('ladderDrop', {}); }   // knocked away from it: it falls flat again
+        else if (L.k >= 1) { L.state = 'open'; L.by = null; m.emit('ladderUp', { by }); }
+      } else if (L.state === 'closing') {
+        L.t += dt; L.k = Math.max(0, 1 - L.t / .55);
+        if (L.k <= 0) { L.state = 'folded'; L.k = 0; }
+      }
+    }
+    if (this.boss && this.boss.by.includes('hp') && m.phase === 'fight') for (const f of m.fighters) if (f.boss) { const k = f.hp / f.maxHp, want = 1 + (k <= .7 ? 1 : 0) + (k <= .35 ? 1 : 0); while ((f.bossPhase || 1) < Math.min(want, this.boss.max)) this.bossUp(f, 'hp'); }
+  }
+  win(f, how) {
+    const m = this.m, loser = m.fighters.find(o => o.isFoe(f) && !o.eliminated) || null;
+    m.end({ winner: f, loser, how, team: f.team, final: true, score: this.multi ? Object.assign({}, this.score) : null });
+  }
+  // ---- falls: the match manager asks before it ends the match
+  onEnd(r) {
+    const m = this.m;
+    if (!this.multi || r.final || !r.winner || r.draw) return false;
+    if (!['ko', 'pin', 'countout', 'ringout', 'escape'].includes(r.how)) return false;
+    const t = r.winner.team;
+    this.score[t] = (this.score[t] || 0) + 1; this.fallN++;
+    r.score = Object.assign({}, this.score);
+    m.emit('fall', { r, score: r.score, n: this.fallN, name: NAMES[this.fallN - 1] || `${this.fallN}번째`, winner: r.winner, loser: r.loser });
+    if (this.falls && this.score[t] >= this.falls) { r.final = true; return false; }
+    if (this.iron && this.sudden) { r.final = true; return false; }
+    this.nextFall(r);
+    return true;
+  }
+  onTimeUp() {
+    const m = this.m;
+    if (!this.multi) return false;
+    const teams = [...new Set(m.fighters.map(f => f.team))], sc = teams.map(t => this.score[t] || 0);
+    const best = Math.max(...sc), lead = teams.filter((t, i) => sc[i] === best);
+    if (lead.length === 1 && best > 0) {
+      const w = m.fighters.find(f => f.team === lead[0]), l = m.fighters.find(f => f.team !== lead[0]);
+      m.end({ winner: w, loser: l, how: this.iron ? 'iron' : 'falls', team: w.team, final: true, score: Object.assign({}, this.score) });
+      return true;
+    }
+    if (this.iron && !this.sudden) { this.sudden = true; m.rules.time = 0; m.emit('suddenDeath', {}); return true; }
+    return false;
+  }
+  // a short break, both back on their feet in their corners, the loser of the fall with a little breath back
+  nextFall(r) {
+    const m = this.m, ar = m.arena, l = r.loser;
+    if (m.pin) { const p = m.pin; m.pin = null; p.a.pin = p.v.pin = null; m.ref.act = 'watch'; m.ref.target = null; }
+    for (const L of m.links.slice()) { if (L.kind === 'hold') m.grapple.breakLink(L, 'fall'); else m.wrestle.unlink(L); }
+    for (const f of m.fighters) if (f.prop) m.props.drop(f, 'fall', -f.face);
+    for (const f of m.fighters) {
+      if (f.eliminated) continue;
+      f.dropRag(); f.atk = null; f.follow = null; f.seat = null; f.climb = null; f.hang = null; f.koPending = null; f.link = null; f.pin = null;
+      if (f === l) { f.hp = Math.min(f.maxHp, Math.max(f.hp, f.maxHp * .25) + f.maxHp * .15); f.stun = f.maxStun * .75; }
+      else { f.hp = Math.min(f.maxHp, f.hp + f.maxHp * .06); f.stun = Math.max(f.stun, f.maxStun * .6); }
+      f.side = ar.hasRing ? 'in' : f.side; f.y = ar.hasRing ? ar.matY : ar.ground(f.x, f.y, f.side); f.vx = f.vy = 0; f.ground = true; f.outCount = 0;
+      f.x = f.team === 0 ? ar.mid - 100 : ar.mid + 100; f.face = f.team === 0 ? 1 : -1;
+      f.expr = 'neutral'; f.exprT = 0; f.moveChain = 0; f.postMove = false; f.grabImm = 0; f.inv = .5;
+      f.set('IDLE', { force: true });
+    }
+    if (this.boss && this.boss.by.includes('fall') && l && l.boss) this.bossUp(l, 'fall');
+    m.phase = 'ready'; m.introT = -1.2;
+    m.emit('fallReset', { score: Object.assign({}, this.score) });
+  }
+  // ---- the boss
+  bossUp(f, why) {
+    const k = (f.bossPhase || 1) + 1;
+    if (!this.boss || k > this.boss.max) return;
+    f.bossPhase = k;
+    const s = f.stats;
+    s.atk *= 1.12; s.kbr *= 1.08; s.rec *= 1.1; s.grp *= 1.06;
+    f.maxStun *= 1.1; f.stun = Math.max(f.stun, f.maxStun * .55);
+    if (f.ai) { const D = Object.assign({}, f.ai.D); D.react *= .85; D.counter = Math.min(.5, D.counter + .05); D.aggr = Math.min(1.35, D.aggr + .1); D.pick = Math.min(1, D.pick + .05); D.punish = Math.min(.95, D.punish + .08); D.rev = Math.min(.5, D.rev + .04); f.ai.D = D; }
+    this.m.emit('bossPhase', { f, phase: k, why, names: this.boss.names || null });
+  }
+  // ---- walls
+  wallHit(f, hp, stun, ev) {
+    if (!f || f.cageCd > 0 || !f.alive) return;
+    f.cageCd = .7;
+    this.m.combat.damage(f, hp, stun, f.lastHitBy || null, { src: 'wall' });
+    this.m.emit(ev, { f });
+  }
+  // somebody is getting away with it: the one on the floor finds the strength to get up sooner
+  rally(f) {
+    if (!this.type) return 1;
+    for (const o of this.m.fighters) if (f.isFoe(o) && ((o.climb && (o.st === 'CAGE_CLIMB' ? o.climb.p > .3 : o.st === 'LADDER' && o.climb.p >= 1)) || o.st === 'CASE_HANG')) return B.climbRally;
+    return 1;
+  }
+  // ==================================================================== climbing (ladder and cage)
+  climbers(f, kind) { return this.m.fighters.filter(o => o !== f && o.alive && o.climb && o.st === (kind === 'ladder' ? 'LADDER' : 'CAGE_CLIMB') && (kind === 'ladder' || o.climb.side === f.climb.side)); }
+  place(f) {
+    const c = f.climb, ar = this.m.arena;
+    if (c.kind === 'ladder') {
+      const L = this.ladder, top = c.p >= 1;
+      f.x = L.x + c.side * (B.ladderSpread * (1 - c.p) + 13); f.y = ar.matY - c.p * B.ladderH;
+      f.face = top ? (c.aim || -c.side) : -c.side;
+    } else {
+      const rx = c.side < 0 ? ar.ropeL : ar.ropeR, over = c.over != null ? Math.min(1, c.over / B.cageOver) : 0;
+      f.x = rx - c.side * (4 + c.slot * 26) + c.side * over * 26; f.y = ar.matY - c.p * B.cageH - over * 8;
+      f.face = c.look || c.side;
+    }
+    f.vx = f.vy = 0; f.ground = true; f.side = 'in';
+  }
+  // W next to the open ladder: up the free side nearest to you
+  ladderClimb(f) {
+    const L = this.ladder;
+    if (!L || L.state !== 'open' || f.side !== 'in' || this.m.phase !== 'fight' || Math.abs(f.x - L.x) > B.ladderSpread + 22) return false;
+    let side = sgn(f.x - L.x) || -f.face;
+    const taken = s => this.m.fighters.some(o => o !== f && o.st === 'LADDER' && o.climb && o.climb.side === s);
+    if (taken(side)) { if (taken(-side)) return false; side = -side; }
+    f.climb = { kind: 'ladder', p: 0, side, aim: 0, rock: 0, meter: null };
+    f.set('LADDER', { force: true }); this.place(f);
+    this.m.emit('ladderClimb', { f });
+    return true;
+  }
+  // W against the ropes in the cage: up the wall (two can climb one wall)
+  cageClimbStart(f, I) {
+    const m = this.m, ar = m.arena;
+    if (!m.rules.cage || f.side !== 'in' || m.phase !== 'fight') return false;
+    const nr = ar.nearRope(f.x);
+    if (nr.dist > 32 || (Math.abs(I.mx) > .3 ? sgn(I.mx) : f.face) !== nr.dir) return false;
+    const used = m.fighters.filter(o => o !== f && o.st === 'CAGE_CLIMB' && o.climb && o.climb.side === nr.dir).map(o => o.climb.slot);
+    const slot = used.includes(0) ? (used.includes(1) ? -1 : 1) : 0;
+    if (slot < 0) return false;
+    f.climb = { kind: 'cage', p: 0, side: nr.dir, slot, rock: 0, over: null, look: nr.dir };
+    f.set('CAGE_CLIMB', { force: true }); this.place(f);
+    m.emit('cageClimb', { f });
+    return true;
+  }
+  // one frame on the ladder or the cage; false: they come off
+  climbTick(f, I, dt) {
+    const c = f.climb, m = this.m;
+    if (!c) return false;
+    if (c.kind === 'ladder' && (!this.ladder || this.ladder.state !== 'open')) return false;
+    if (c.rock > 0) c.rock -= dt;
+    if (f.climbAnim > 0) f.climbAnim -= dt;
+    const top = c.kind === 'ladder' ? c.p >= 1 : c.over != null;
+    // facing: at the top of the ladder A/D picks the side to come down; on the cage A/D looks in or out
+    if (Math.abs(I.mx) > .3) { if (c.kind === 'ladder' && top) c.aim = sgn(I.mx); else if (c.kind === 'cage' && c.over == null) c.look = sgn(I.mx); }
+    this.place(f);   // face the new way before an attack this frame
+    if (f.consume('atk')) this.climbAttack(f);
+    else if (f.consume('grab')) this.climbGrab(f);
+    if (f.climb !== c || !CLIMB.has(f.st)) return true;   // the attack sent them off (a dive)
+    const rate = c.kind === 'ladder' ? B.ladderClimb : B.cageClimb;
+    if (c.over != null) {
+      c.over += dt;
+      if (c.over >= B.cageOver) { const ar = m.arena, rx = c.side < 0 ? ar.ropeL : ar.ropeR; f.climb = null; f.side = 'out'; f.x = rx + c.side * 34; f.y = ar.floorY; f.ground = true; f.set('IDLE', { force: true }); m.emit('cageEscape', { f }); this.win(f, 'escape'); return true; }
+    } else if (I.down && !I.up) {
+      if (c.kind === 'ladder' && c.p >= 1 && c.aim && c.aim !== c.side && !this.climbers(f, 'ladder').some(o => o.climb.side === c.aim)) { c.side = c.aim; c.meter = null; m.emit('ladderCross', { f }); }   // over the top to the other side
+      c.p -= dt * 1.7;
+      if (c.p <= 0) { f.climb = null; this.place0(f, c); f.set('IDLE', { force: true }); return true; }
+    } else if (I.up && c.rock <= 0 && !(c.kind === 'ladder' && c.p >= 1)) {
+      c.p = Math.min(1, c.p + dt / rate * (.85 + .15 * f.stats.spd));
+      if (c.kind === 'cage' && c.p >= 1) { c.over = 0; m.emit('cageTop', { f }); }
+    } else if (c.kind === 'cage') c.p = Math.max(0, c.p - dt * .03);
+    if (c.kind === 'ladder' && c.p >= 1) this.meterTick(f, dt);
+    this.place(f);
+    return true;
+  }
+  place0(f, c) { const ar = this.m.arena; f.y = ar.matY; f.ground = true; f.side = 'in'; if (c.kind === 'ladder') f.x = this.ladder.x + c.side * (B.ladderSpread + 14); else f.x = (c.side < 0 ? ar.ropeL : ar.ropeR) - c.side * 16; }
+  // J up there: punch the one level with you, kick the one below, kick somebody on the floor underneath, or dive
+  climbAttack(f) {
+    const c = f.climb, m = this.m, others = this.climbers(f, c.kind).filter(o => f.isFoe(o));
+    const level = others.find(o => Math.abs(o.climb.p - c.p) <= B.climbReach * .5);
+    if (level) { this.climbHit(f, level, 'punch'); return; }
+    const below = others.find(o => o.climb.p < c.p && c.p - o.climb.p <= B.climbReach);
+    if (below) { this.climbHit(f, below, 'kick'); return; }
+    if (c.p < .7) {
+      const g = m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && o.side === 'in' && Math.abs(o.x - f.x) < 36 && STATES[o.st].hit && !o.link);
+      if (g) { f.climbAnim = .3; m.combat.damage(g, 4, 10, f, { src: 'climb' }); if (g.alive && g.st !== 'KO') { m.combat.stagger(g, B.climbKickStagger, f); g.vx = (sgn(g.x - f.x) || -f.face) * 140; } m.emit('climbKick', { a: f, v: g }); return; }
+    }
+    if (c.p >= .3 && c.over == null) this.climbDive(f);
+  }
+  // K up there: the one above you by the leg; at the top of the ladder, the case
+  climbGrab(f) {
+    const c = f.climb, m = this.m;
+    const above = this.climbers(f, c.kind).find(o => f.isFoe(o) && o.climb.p > c.p + .06 && o.climb.p - c.p <= B.climbReach + .1);
+    if (above) { f.climbAnim = .35; this.knockOff(above, f, sgn(above.x - f.x) || c.side); c.p = Math.max(0, c.p - B.climbPullSlip); c.rock = .4; if (c.over != null) c.over = null; m.emit('legPull', { a: f, v: above }); return; }
+    if (c.kind === 'ladder' && c.p >= 1) this.casePress(f);
+  }
+  // a blow up there: the first rocks them and they slip down; the second (or a kick low down) knocks them off
+  climbHit(a, v, kind) {
+    const vc = v.climb, m = this.m;
+    a.climbAnim = .3;
+    m.combat.damage(v, kind === 'punch' ? 4 : 5, 12, a, { src: 'climb' });
+    if (v.st === 'KO' || !v.climb) return;
+    if (vc.rock > 0 || vc.p < .2 || (kind === 'kick' && vc.p < .4)) this.knockOff(v, a, sgn(v.x - a.x) || -a.face);
+    else { vc.rock = B.climbRock; vc.p = Math.max(.05, vc.p - (kind === 'kick' ? .28 : .16)); if (vc.over != null) vc.over = null; v.flash = .1; v.hitShake = .2; }
+    m.hitstop(.06);
+    m.emit('climbHit', { a, v, kind });
+  }
+  climbDive(f) {
+    const m = this.m, c = f.climb;
+    const n = f.nearestFoe(320, o => o.side === 'in' && !o.climb && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 24);
+    if (!n) return false;
+    const down = n.st === 'DOWN' || n.st === 'GET_UP' || (n.st === 'HITSTUN' && n.hsKind === 'lie');
+    const d = down ? (ATTACKS[f.char.dive] || ATTACKS.diveElbow) : (ATTACKS[f.char.topStand] || ATTACKS.missileDropkick);
+    const h = c.kind === 'ladder' ? c.p * B.ladderH : c.p * B.cageH, dx = Math.abs(n.x - f.x), T = .62 + h / 400;
+    f.climb = null;
+    f.set('JUMP', { force: true });
+    f.vy = -180; f.vx = f.face * clamp(dx / T, 60, 320); f.ground = false;
+    f.set('AIR_ATTACK', { force: true });
+    f.atk = { def: d, t: 0, hit: new Set(), connected: false, chain: -1, boost: 1 + h / 100 * B.climbDiveBoost, done: false };
+    m.addHype(8);
+    m.emit('dive', { f, high: true });
+    m.emit('climbDive', { f, h });
+    return true;
+  }
+  // off the ladder or the wall: hurt by the height, and down for a long while
+  knockOff(v, a, dir) {
+    const m = this.m, c = v.climb, h = c ? c.p : .5;
+    v.climb = null; v.hang = null;
+    m.combat.damage(v, 3 + h * 7, 8 + h * 18, a, { src: 'fall' });
+    if (v.st === 'KO' || !v.alive) return;
+    v.atk = null;
+    v.set('DOWN', { force: true });
+    v.ragdoll(dir * 110, -70, dir * 2.5);
+    v.downClock = 0; v.downTime = B.climbFallDown * (.5 + .5 * h); v.grabImm = 1.2; v.postMove = true; v.downs++;
+    m.hitstop(.08);
+    m.emit('climbFall', { v, a, h });
+  }
+  // ---- from the floor: K stands the folded ladder up, folds it under the climbers, or (see pullDown) takes a low climber
+  ladderGrab(f) {
+    const L = this.ladder, m = this.m;
+    if (!L || f.side !== 'in') return false;
+    if (L.state === 'folded' && Math.abs(f.x - L.x) < 64) { L.state = 'rising'; L.t = 0; L.by = f; f.landT = B.ladderSet + .05; f.vx = 0; f.face = sgn(L.x - f.x) || f.face; m.emit('ladderRaise', { f }); return true; }
+    if (L.state === 'open' && Math.abs(f.x - L.x) < B.ladderSpread + 26 && L.foldCd <= 0) {
+      L.state = 'closing'; L.t = 0; L.dir = sgn(L.x - f.x) || 1; L.foldCd = B.ladderFoldCd; f.landT = .35;
+      for (const o of m.fighters) if (o.st === 'LADDER' && o.climb) {
+        if (o.climb.p >= 1 && o.climb.meter && o.climb.meter.used) this.toHang(o);   // hands on the case: left hanging from it
+        else this.knockOff(o, f, o.climb.side);
+      }
+      m.emit('ladderFold', { by: f });
+      return true;
+    }
+    return false;
+  }
+  pullDown(f) {
+    const m = this.m;
+    for (const o of m.fighters) {
+      if (!f.isFoe(o) || !CLIMB.has(o.st) || !o.climb || o.climb.p > B.climbPullMax || Math.abs(o.x - f.x) > 46) continue;
+      f.face = sgn(o.x - f.x) || f.face; f.landT = .35;
+      this.knockOff(o, f, o.st === 'CAGE_CLIMB' ? -o.climb.side : sgn(o.x - f.x) || f.face);
+      m.emit('pullDown', { a: f, v: o });
+      return true;
+    }
+    return false;
+  }
+  // ==================================================================== the case: a timing meter whose count stays with the case
+  meterTick(f, dt) {
+    const c = f.climb;
+    if (!c.meter) c.meter = { n: 0, dir: 1, z: this.zone(), fumble: 0, used: false };
+    this.meterRun(f, c.meter, dt);
+  }
+  meterRun(f, M, dt) {
+    const P = this.prize;
+    if (M.fumble > 0) M.fumble -= dt;
+    M.n += M.dir * (B.caseSpeed + P.hits * B.caseSpeedUp) * dt;
+    if (M.n > 1) { M.n = 2 - M.n; M.dir = -1; } else if (M.n < 0) { M.n = -M.n; M.dir = 1; }
+    if (f.ctrl === 'ai' && f.ai && M.fumble <= 0 && !P.taken) {   // the computer presses when it sees the needle in the zone, and sometimes too early
+      const D = f.ai.D, inZ = M.n >= M.z[0] && M.n <= M.z[1];
+      if (inZ && f.ai.rng.chance(dt * (1.2 + D.pick * 3))) this.casePress(f);
+      else if (!inZ && f.ai.rng.chance(dt * D.err * 1.4)) this.casePress(f);
+    }
+  }
+  zone() {
+    const P = this.prize, w = Math.max(B.caseZoneMin, B.caseZone - P.hits * B.caseZoneStep), r = this.m.rng.next();
+    const c = .1 + w / 2 + r * (.8 - w);
+    return [c - w / 2, c + w / 2];
+  }
+  casePress(f) {
+    const c = f.climb || f.hang, P = this.prize, m = this.m;
+    const M = c && c.meter;
+    if (!M || M.fumble > 0 || P.taken) return;
+    M.used = true;
+    if (M.n >= M.z[0] && M.n <= M.z[1]) {
+      P.hits++; M.z = this.zone();
+      m.emit('caseHit', { f, hits: P.hits, need: P.need });
+      if (P.hits >= P.need) { P.taken = f; this.win(f, 'ladder'); }
+    } else { M.fumble = B.caseFumble; m.emit('caseMiss', { f, hits: P.hits }); }
+  }
+  // the ladder folded under you while your hands were on the case: you hang there a while, and can still finish it
+  toHang(f) {
+    const c = f.climb;
+    f.climb = null;
+    f.hang = { t: B.caseHang, meter: c.meter };
+    f.set('CASE_HANG', { force: true });
+    this.hangPlace(f);
+    this.m.emit('caseHang', { f });
+  }
+  hangPlace(f) { const P = this.prize; f.x = P.x; f.y = P.y + 16 + f.dims.height * .95; f.vx = f.vy = 0; f.ground = true; f.side = 'in'; }
+  hangTick(f, I, dt) {
+    const H = f.hang;
+    if (!H) return false;
+    H.t -= dt;
+    if (H.meter) { this.meterRun(f, H.meter, dt); if (f.consume('grab')) this.casePress(f); }
+    if (this.prize.taken) return true;
+    this.hangPlace(f);
+    if (H.t <= 0) this.dropHang(f, null);
+    return true;
+  }
+  dropHang(f, a) {
+    f.hang = null;
+    f.set('DOWN', { force: true });
+    f.ragdoll(0, 40, 0);
+    f.downClock = 0; f.downTime = B.climbFallDown * .5; f.grabImm = .8; f.postMove = true;
+    this.m.emit('climbFall', { v: f, a, h: .5 });
+  }
+}
+
+return { specialRules, SpecialRules, SPECIAL };
 })();
 // ---- combat/MatchEvents.js
 __m["combat/MatchEvents.js"] = (function () {
@@ -6766,6 +7270,7 @@ const { AnimationSystem } = __m["anim/AnimationSystem.js"];
 const { AIController } = __m["combat/AIController.js"];
 const { PropSystem } = __m["combat/Props.js"];
 const { ComboSystem } = __m["combat/ComboSystem.js"];
+const { SpecialRules, specialRules } = __m["combat/SpecialRules.js"];
 const { MatchEvents } = __m["combat/MatchEvents.js"];
 const MODES = {
   single: { name: '싱글 매치', desc: '1대1. 상대의 체력을 0으로 만들면 KO 승리.', rules: { ko: true, pin: false, ringOut: 'count', time: 300 } },
@@ -6782,7 +7287,7 @@ class MatchManager extends Emitter {
     super();
     this.cfg = cfg; this.mode = cfg.mode || 'single';
     const M = MODES[this.mode] || MODES.single;
-    this.rules = Object.assign({}, M.rules, cfg.rules || {});
+    this.rules = Object.assign({}, M.rules, specialRules(cfg), cfg.rules || {});
     const ad = ARENAS[cfg.arena || 'hall'] || ARENAS.hall;
     this.arenaDef = ad; this.arena = new Arena(ad);
     if (!this.arena.hasRing) { this.rules.ringOut = 'none'; this.rules.climb = false; }
@@ -6794,6 +7299,7 @@ class MatchManager extends Emitter {
     this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
     this.props = new PropSystem(this);
     this.combo = new ComboSystem(this);
+    this.special = new SpecialRules(this, cfg);
     this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
@@ -6873,6 +7379,7 @@ class MatchManager extends Emitter {
     this.physics.update(dt);
     this.props.update(dt);
     this.events.update(dt);
+    this.special.update(dt);
     this.combat.update();
     this.stun.update(dt);
     if (this.pin) this.pinTick(dt);
@@ -7078,6 +7585,7 @@ class MatchManager extends Emitter {
     this.end({ winner: w, loser: f, how: 'countout', team: w ? w.team : null });
   }
   timeUp() {
+    if (this.special && this.special.onTimeUp()) return;
     // decision: health percentage
     const teams = new Map();
     for (const f of this.fighters) { const t = teams.get(f.team) || { s: 0, f }; t.s += f.eliminated ? 0 : f.hp / f.maxHp; teams.set(f.team, t); }
@@ -7103,6 +7611,7 @@ class MatchManager extends Emitter {
   }
   end(r) {
     if (this.phase === 'end') return;
+    if (this.special && this.special.onEnd(r)) return;   // best of three falls / iron man: the match goes on
     this.phase = 'end'; this.result = r; this.endT = 0;
     const lb = this.lastBig;
     if (r.winner && (r.how === 'ko' || r.how === 'pin') && lb && lb.by && lb.by.team === r.winner.team && this.time - lb.t < 9) r.finishBy = lb.kind;
@@ -7871,6 +8380,7 @@ const { topPick } = __m["combat/CharacterController.js"];
 const { ATTACKS } = __m["data/balance.js"];
 const { J } = __m["anim/skeleton.js"];
 const { SPECIALS, COUNTERS } = __m["data/combos.js"];
+const { SPECIAL } = __m["combat/SpecialRules.js"];
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 class HUD {
   constructor(input) { this.input = input; this.trail = new Map(); this.banners = []; this.t = 0; this.toastList = []; this.card = null; }
@@ -7924,6 +8434,7 @@ class HUD {
     if (f.fin >= B.finMax) drawText(g, '피니셔!', right ? fx - 6 : fx + fw + 16, y + 47, { size: 11, align: right ? 'r' : 'l', color: Math.floor(this.t * 6) % 2 ? '#3fe0d0' : '#ffffff', outline: '#05060f' });
     const st = this.chip(f, m);
     if (st) drawText(g, st[0], right ? x + 4 : x + w - 4, y + 35, { size: 11, align: right ? 'l' : 'r', color: st[1], outline: '#05060f' });
+    if (f.bossPhase > 1) drawText(g, `${f.bossPhase}페이즈`, right ? x + 4 : x + w - 4, y + 3, { size: 11, align: right ? 'l' : 'r', color: Math.floor(this.t * 3) % 2 ? '#ff5b5b' : '#ffd65a', outline: '#05060f' });
   }
   chip(f, m) {
     if (f.st === 'KO') return ['K.O.', '#ff5b5b'];
@@ -7974,8 +8485,11 @@ class HUD {
     let rule = (MODES[m.mode] || {}).name || '';
     if (m.mode === 'rumble') rule += ` · 남은 입장 ${m.queue.length}`;
     if (m.mode === 'royal' || m.mode === 'rumble') rule += ` · 링 위 ${m.alive().length}`;
-    if (m.cfg.title) rule = m.cfg.title;
+    const SP = m.special;
+    if (SP && SP.type) rule = SPECIAL[SP.type].name;
+    if (m.cfg.title) rule = m.cfg.title + (SP && SP.type ? ' · ' + SPECIAL[SP.type].short : '');
     drawText(g, rule, x, y + 28, { size: 11, align: 'c', color: '#c9d4ff', outline: '#05060f' });
+    if (SP && SP.multi) { const s0 = SP.score[0] || 0, s1 = SP.score[1] || 0; drawText(g, (SP.sudden ? '서든 데스 · ' : SP.iron ? '아이언맨 · 폴 ' : SP.falls === 2 ? '3판 2선승 · ' : `${SP.falls}폴 선승 · `) + `${s0} : ${s1}`, x, y + 41, { size: 11, align: 'c', color: SP.sudden ? '#ff5b5b' : '#ffd65a', outline: '#05060f' }); }
     if (m.mode === 'rumble' && m.queue.length && m.phase === 'fight') { const s = Math.ceil(m.nextEntry); drawText(g, `다음 입장 ${s}초`, x, y + 41, { size: 11, align: 'c', color: s <= 5 ? '#ffd65a' : UI.dim, outline: '#05060f' }); }
   }
   worldMarks(g, m, camX) {
@@ -8047,6 +8561,26 @@ class HUD {
     const sv = !f.link && f.side === 'in' ? m.combo.seatedFoe(f) : null;
     if (sv) P.push([[inp.label('grab')], '턴버클 백드롭'], [[inp.label('fin')], f.fin >= SPECIALS.superGerman ? `슈퍼 저먼 (에너지 ${SPECIALS.superGerman})` : `슈퍼 저먼: 에너지 ${SPECIALS.superGerman} 필요`], [[inp.label('atk')], '밀어 떨어뜨리기']);
     if (f.st === 'SEATED') P.push([[inp.label('atk')], '연타해서 내려오기']);
+    const SP = m.special;
+    if (SP && SP.ladder) {
+      const L = SP.ladder, c = f.climb, P0 = SP.prize;
+      if (f.st === 'LADDER' && c) {
+        if (c.p >= 1) P.push([[inp.label('grab')], `타이밍! 가방 ${P0.hits}/${P0.need}`], [[inp.label('left') + '/' + inp.label('right')], '내려갈 쪽'], [[inp.label('atk')], '공격·다이빙']);
+        else P.push([[inp.label('up')], '오르기'], [[inp.label('atk')], '주먹·발차기'], [[inp.label('grab')], '위 상대 다리 잡기']);
+        if (c.meter) this.caseMeter(g, f, c.meter, P0, camX);
+      } else if (f.st === 'CASE_HANG' && f.hang) { P.push([[inp.label('grab')], `매달린 채 타이밍! ${P0.hits}/${P0.need}`]); if (f.hang.meter) this.caseMeter(g, f, f.hang.meter, P0, camX); }
+      else if (f.side === 'in' && !f.link && Math.abs(f.x - L.x) < 74) {
+        const foeOn = m.fighters.find(o => f.isFoe(o) && o.st === 'LADDER');
+        if (L.state === 'folded') P.push([[inp.label('grab')], '사다리 펼치기']);
+        else if (L.state === 'open') {
+          if (foeOn && foeOn.climb && foeOn.climb.p <= B.climbPullMax && Math.abs(foeOn.x - f.x) < 46) P.push([[inp.label('grab')], '끌어내리기!']);
+          else if (L.foldCd <= 0) P.push([[inp.label('grab')], foeOn ? '사다리 접기!' : '사다리 접기']);
+          P.push([[inp.label('up')], '사다리 오르기']);
+        }
+      }
+    }
+    if (m.rules.cage && f.st === 'CAGE_CLIMB' && f.climb) P.push(f.climb.over != null ? [[inp.label('up')], '넘어가는 중!'] : [[inp.label('up')], '계속 눌러 오르기'], [[inp.label('atk')], '주먹·발차기·다이빙'], [[inp.label('grab')], '위 상대 다리 잡기']);
+    if (m.rules.cage && f.side === 'in' && !f.climb && m.fighters.some(o => f.isFoe(o) && o.st === 'CAGE_CLIMB' && o.climb && o.climb.p <= B.climbPullMax && Math.abs(o.x - f.x) < 46)) P.push([[inp.label('grab')], '끌어내리기!']);
     if (f.st === 'APRON' && f.nearestFoe(300, o => o.side === 'in' && (o.st === 'DOWN' || o.st === 'GET_UP'))) P.push([[inp.label('atk')], '스프링보드 문설트']);
     const g2 = m.grapple.grabTarget(f), PR = m.props;
     const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
@@ -8069,7 +8603,7 @@ class HUD {
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
     if (ar.hasRing && f.side === 'out' && f.y > ar.matY + 4 && f.st !== 'HANG') { const d = Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))); if (d < 46) P.push([[inp.label('up')], '링으로 올라가기']); }
-    if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], '코너 오르기']);
+    if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], m.rules.cage ? '철창 오르기' : '코너 오르기']);
     if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && Math.abs(f.x - (f.team === 0 ? ar.ropeL : ar.ropeR)) < B.tagRange) P.push([[inp.label('down')], '교대']);
     if ((f.st === 'HITSTUN' || f.st === 'DOWN' || f.st === 'STAGGER') && f.burstCd <= 0 && f.fin >= B.burstCost) P.push([[inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출']);
     // laid out by their real widths, centred, so long labels never run into each other
@@ -8114,6 +8648,15 @@ class HUD {
     else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
     this.bottomPrompts(g, P);
     void sgn; void clamp;
+  }
+  // the timing meter for the case: press K while the needle is in the green
+  caseMeter(g, f, M, P0, camX) {
+    const x = Math.round(f.x - camX) - 34, y = Math.round(Math.min(f.joints.y(J.head), f.y - 90)) - 30, w = 68;
+    rect(g, '#05060f', x - 2, y - 2, w + 4, 11); rect(g, '#1b2450', x, y, w, 7);
+    rect(g, M.fumble > 0 ? '#5a1a2a' : '#2f8f4e', x + Math.round(M.z[0] * w), y, Math.max(2, Math.round((M.z[1] - M.z[0]) * w)), 7);
+    const nx = x + Math.round(M.n * w); rect(g, '#05060f', nx - 2, y - 3, 4, 13); rect(g, '#ffffff', nx - 1, y - 2, 2, 11);
+    const n = P0.need, cw = Math.floor((w - 4) / n);
+    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', x + 2 + i * cw, y + 10, cw - 1, 3);
   }
   bottomPrompts(g, P) {
     const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
@@ -8230,6 +8773,130 @@ function drawProps(g, m, camX) {
 }
 
 return { drawChairAt, drawProps };
+})();
+// ---- render/SpecialRenderer.js
+__m["render/SpecialRenderer.js"] = (function () {
+// Special-match structures: the steel cage round the ring, the cell round the whole floor, the ladder and the case
+// hanging over the ring. Mesh walls are baked once per arena; the ladder and the case are drawn every frame.
+const { rect, line, glow } = __m["render/painter.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { J } = __m["anim/skeleton.js"];
+const mk = (w, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h }));
+const cache = new WeakMap();
+// chain link: two diagonal dot lattices
+function mesh(g, x0, y0, x1, y1, col, step, clip) {
+  g.fillStyle = col;
+  for (let y = Math.floor(y0); y < y1; y++) {
+    const r = clip ? clip(y) : [x0, x1];
+    for (let x = Math.floor(r[0]); x < r[1]; x++) { const a = ((x + y) % step + step) % step, b = ((x - y) % step + step) % step; if (a === 0 || b === 0) g.fillRect(x, y, 1, 1); }
+  }
+}
+function bake(ar, kind) {
+  const key = kind, all = cache.get(ar) || {};
+  if (all[key]) return all[key];
+  const W = ar.x1 + 40, back = ar.matY - 22, front = ar.matY + 16, L = ar.ropeL, R = ar.ropeR;
+  const bk = mk(W, 360), fr = mk(W, 360), gb = bk.getContext('2d'), gf = fr.getContext('2d');
+  const steel = '#9aa6c6', dark = '#3a4258', rail = '#c9d4ff';
+  if (kind === 'cage') {
+    const H = B.cageH + 10, topB = back - H * .92, topF = front - H;
+    // back wall and the two side walls behind the wrestlers
+    mesh(gb, L + 12, topB, R - 12, back - 1, 'rgba(154,166,198,.42)', 6);
+    for (const [xb, xf] of [[L + 14, L - 10], [R - 14, R + 10]]) {
+      mesh(gb, Math.min(xb, xf) - 2, topB, Math.max(xb, xf) + 2, front, 'rgba(154,166,198,.34)', 6, y => { const k = Math.max(0, Math.min(1, (y - topB) / (front - topB))); const xm = xb + (xf - xb) * k; return [Math.min(xb, xm) - 1, Math.max(xb, xm) + 1]; });
+      line(gb, rail, xb, topB, xf, topF, 2);
+      rect(gb, '#06070e', xb - 2, topB, 4, back - topB); rect(gb, dark, xb - 1, topB, 2, back - topB);
+    }
+    rect(gb, '#06070e', L + 12, topB - 2, R - L - 24, 4); rect(gb, rail, L + 12, topB - 1, R - L - 24, 2);
+    // the front: thin bars, a top rail and a middle rail, light enough to see the match through
+    for (let x = L - 10; x <= R + 10; x += 12) { gf.fillStyle = 'rgba(154,166,198,.26)'; gf.fillRect(x, topF, 1, front - topF); }
+    for (const y of [topF, Math.round((topF + front) / 2)]) { rect(gf, 'rgba(6,7,14,.8)', L - 12, y - 1, R - L + 24, 4); rect(gf, steel, L - 12, y, R - L + 24, 2); }
+    for (const x of [L - 10, R + 10]) { rect(gf, '#06070e', x - 3, topF, 6, front - topF + 2); rect(gf, steel, x - 2, topF, 4, front - topF + 2); rect(gf, rail, x - 2, topF, 1, front - topF + 2); }
+    line(gf, rail, L - 10, topF, L + 14, topB, 2); line(gf, rail, R + 10, topF, R - 14, topB, 2);
+  } else if (kind === 'cell') {
+    const top = 44, x0 = ar.x0 + 6, x1 = ar.x1 - 6, wallBack = ar.matY - 70;
+    mesh(gb, x0, top, x1, wallBack, 'rgba(160,60,60,.3)', 7);
+    for (const x of [x0, x1]) { mesh(gb, x - 10, top, x + 10, ar.floorY, 'rgba(180,90,90,.42)', 6); rect(gb, '#06070e', x - 3, top, 6, ar.floorY - top); rect(gb, '#7a3a3a', x - 2, top, 4, ar.floorY - top); }
+    rect(gb, '#06070e', x0, top - 3, x1 - x0, 6); rect(gb, '#b85a5a', x0, top - 2, x1 - x0, 3);
+    for (let x = x0; x < x1; x += 70) line(gb, 'rgba(184,90,90,.6)', x, top, x + 35, top + 18, 1);
+    for (let x = x0; x <= x1; x += 14) { gf.fillStyle = 'rgba(184,110,110,.22)'; gf.fillRect(x, top, 1, ar.floorY - top); }
+    for (const y of [top, Math.round((top + ar.floorY) / 2)]) { rect(gf, 'rgba(6,7,14,.8)', x0, y - 1, x1 - x0, 4); rect(gf, '#b85a5a', x0, y, x1 - x0, 2); }
+  }
+  all[key] = { bk, fr };
+  cache.set(ar, all);
+  return all[key];
+}
+// behind the wrestlers
+function drawSpecialBack(g, m, camX) {
+  const S = m.special, ar = m.arena;
+  if (!S || !S.type) return;
+  if (S.type === 'cage' || S.type === 'cell') g.drawImage(bake(ar, S.type).bk, -Math.round(camX), 0);
+  if (S.type === 'cell') { g.globalAlpha = .12; rect(g, '#3a0a14', 0, 0, 640, 360); g.globalAlpha = 1; }
+  if (S.ladder) { drawCase(g, S, m, camX); drawLadder(g, S.ladder, ar, camX); }
+}
+// over the wrestlers
+function drawSpecialFront(g, m, camX) {
+  const S = m.special, ar = m.arena;
+  if (!S || !S.type) return;
+  if (S.type === 'cage' || S.type === 'cell') g.drawImage(bake(ar, S.type).fr, -Math.round(camX), 0);
+  // how far up the climbers are
+  for (const f of m.fighters) {
+    if ((f.st !== 'LADDER' && f.st !== 'CAGE_CLIMB') || !f.climb) continue;
+    const x = Math.round(f.x - camX) + f.climb.side * 16, y = Math.round(f.y - 70), h = 46;
+    rect(g, '#06070e', x - 2, y - 1, 5, h + 2); rect(g, '#1b2450', x - 1, y, 3, h);
+    const k = f.climb.over != null ? 1 : f.climb.p, col = f.climb.over != null ? '#ff8a2b' : f.climb.rock > 0 ? '#ff5b5b' : '#ffd65a';
+    rect(g, col, x - 1, y + h - Math.round(h * Math.min(1, k)), 3, Math.round(h * Math.min(1, k)));
+  }
+}
+// A folding A-frame ladder: lying folded, rising (stood up, then its legs spread), open, or folding and toppling over.
+function drawLadder(g, L, ar, camX) {
+  const x = Math.round(L.x - camX), base = ar.matY, H = B.ladderH + 14, sp0 = B.ladderSpread + 6, k = L.k;
+  const rot = k < .5 ? (1 - k / .5) * 90 * L.dir : 0, spread = k > .5 ? (k - .5) / .5 * sp0 : 0;
+  g.save(); g.translate(x, base); g.rotate(rot * Math.PI / 180);
+  const O = '#06070e', M = '#c9d0dc', ML = '#eef2f8', MD = '#8a94a6', HB = '#3a6ac4';
+  const seg = (x0, y0, x1, y1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  // one half: a near rail, a far rail a little up and back, rungs between them
+  const half = (dir, near) => {
+    const bx = dir * spread, tx = dir * 3, dx = near ? 0 : 4, dy = near ? 0 : -3;
+    seg(bx + dx, dy, tx + dx, -H + dy, near ? 4 : 3, O);
+    seg(bx + dx, dy, tx + dx, -H + dy, near ? 2 : 1.4, near ? M : MD);
+    if (near) seg(bx + dx - dir * .8, dy, tx + dx - dir * .8, -H + dy, .7, ML);
+  };
+  const rungs = dir => {
+    for (let i = 1; i < 9; i++) {
+      const t = i / 9, y = -H * t, rx = dir * spread * (1 - t) + dir * 3 * t;
+      g.fillStyle = O; g.fillRect(rx - 1, y - 2, 6, 4); g.fillStyle = MD; g.fillRect(rx, y - 1, 4, 2); g.fillStyle = ML; g.fillRect(rx, y - 1, 4, 1);
+    }
+  };
+  for (const d of [1, -1]) { half(d, false); rungs(d); half(d, true); }
+  // the cap and its hinge clips, rubber feet
+  g.fillStyle = O; g.fillRect(-7, -H - 5, 14, 7); g.fillStyle = '#5e6884'; g.fillRect(-6, -H - 4, 12, 5); g.fillStyle = '#8a94b4'; g.fillRect(-6, -H - 4, 12, 1);
+  g.fillStyle = HB; g.fillRect(-8, -H + 2, 4, 5); g.fillRect(4, -H + 2, 4, 5);
+  g.fillStyle = O; g.fillRect(-spread - 3, -2, 6, 3); g.fillRect(spread - 3, -2, 6, 3);
+  g.restore();
+}
+function drawCase(g, S, m, camX) {
+  const P = S.prize;
+  if (P.taken) {   // up in the winner's hands
+    const f = P.taken, hx = (f.joints.x(J.hN) + f.joints.x(J.hF)) / 2 - camX, hy = Math.min(f.joints.y(J.hN), f.joints.y(J.hF));
+    caseAt(g, Math.round(hx), Math.round(hy) - 6);
+    return;
+  }
+  const px = Math.round(P.x - camX + Math.sin(P.sway * 1.3) * 2), py = Math.round(P.y);
+  line(g, '#5e6884', px, 0, px, py - 10, 1);
+  glow(g, px, py, 22, '#ffd65a', .25 + Math.sin(P.sway * 4) * .08 + P.hits / P.need * .25);
+  caseAt(g, px, py);
+  // how far it has been worked loose: the count stays with the case
+  const n = P.need, w = n * 4 - 1, x0 = px - (w >> 1);
+  rect(g, '#06070e', x0 - 2, py + 11, w + 4, 6);
+  for (let i = 0; i < n; i++) rect(g, i < P.hits ? '#ffd65a' : '#2a3150', x0 + i * 4, py + 12, 3, 4);
+}
+function caseAt(g, px, py) {
+  rect(g, '#06070e', px - 12, py - 9, 24, 17); rect(g, '#6a4422', px - 11, py - 8, 22, 15); rect(g, '#8a5a2e', px - 11, py - 8, 22, 2); rect(g, '#4a2e16', px - 11, py + 5, 22, 2);
+  rect(g, '#ffd65a', px - 3, py - 3, 6, 4); rect(g, '#06070e', px - 1, py - 2, 2, 2);
+  rect(g, '#06070e', px - 5, py - 12, 10, 4); rect(g, '#2a1a0c', px - 4, py - 11, 8, 2);
+}
+
+return { drawSpecialBack, drawSpecialFront };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -8684,9 +9351,10 @@ class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
+      dda: 0, mitb: null, champ: 'fogking',
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -8700,7 +9368,16 @@ class Career {
     if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
     return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
   }
-  get champion() { return this.d.flags.champion ? 'player' : 'fogking'; }
+  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
+  // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
+  ddaFor(id) {
+    const k = this.d.dda || 0, c = CHARACTERS[id];
+    if (!c || Math.abs(k) < .005) return {};
+    const s = c.stats;
+    return { stats: { hp: s.hp * (1 + k * .8), atk: s.atk * (1 + k * .5), stun: s.stun * (1 + k * .5) }, aiBoost: k };
+  }
+  // Money in the Bank: the case you hold, or the one somebody holds against you
+  get mitbOpen() { const M = this.d.mitb; return !!(M && this.d.day <= M.until); }
   // Player rank: position among the league plus the player (1 = top contender).
   rankList() {
     const L = this.d.league.slice();
@@ -8746,6 +9423,24 @@ class Career {
   sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
   nextDay(forced) {
     const d = this.d, msgs = [];
+    // the case runs out: an unused one is gone; somebody else's they cash in on the champion while you watch
+    if (d.mitb && d.day >= d.mitb.until) {
+      const M = d.mitb; d.mitb = null;
+      if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
+      else if (!d.flags.champion && CHARACTERS[M.holder]) {
+        const rr = new RNG(d.season * 77 + d.day);
+        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
+        else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
+      }
+    }
+    // as champion you are not in the Money in the Bank: somebody wins the case and comes for you
+    if (d.flags.champion && !d.mitb && d.day >= 8 && !d.events['mitb' + d.season]) {
+      const rr = new RNG(d.season * 91 + d.day), top = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 4);
+      const h = rr.pick(top.length ? top : [{ id: 'dohyun' }]).id;
+      d.events['mitb' + d.season] = 'ai';
+      d.mitb = { holder: h, until: d.day + 7 };
+      msgs.push(`${CHARACTERS[h].name}이(가) 머니 인 더 뱅크 가방을 차지했다. 챔피언, 언제 들이닥칠지 모른다!`);
+    }
     // contract deadline passed without a match
     if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
     d.day++;
@@ -8788,17 +9483,27 @@ class Career {
     out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
     let third = pick(r.int(0, 2));
     for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
-    out.push(mk(third, 'stip', r.chance(.5) ? { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' } : { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }));
+    const stips = [[1, { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' }], [1, { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }]];
+    if (d.day >= 3 || d.season > 1) stips.push([1.3, { special: 'ladder', pay: 1.3, desc: '래더 매치. 링 위에 매달린 계약서 가방을 먼저 떼어 내는 쪽이 이긴다.' }]);
+    if (d.day >= 4 || d.season > 1) stips.push([1.1, { falls: 2, pay: 1.4, desc: '3판 2선승제(투 아웃 오브 스리 폴). 두 번 먼저 이겨야 한다.' }]);
+    if (d.day >= 5 || d.season > 1) stips.push([1.2, { special: 'cage', pay: 1.3, desc: '스틸 케이지. KO·핀폴, 또는 철창을 넘어 탈출하면 승리.' }]);
+    if (d.day >= 8 || d.season > 1) stips.push([1.1, { special: 'cell', pay: 1.5, arena: 'hall', desc: '헬 인 어 셀. 링 밖까지 덮인 철창, 장외 카운트가 없다.' }]);
+    const sp = r.weighted(stips, s => s[0])[1], extra = Object.assign({}, sp);
+    out.push(mk(third, 'stip', extra));
+    if (extra.pay) { const o = out[out.length - 1]; o.reward = Math.round(o.reward * extra.pay / 1000) * 1000; o.fame += 3; }
     // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
     const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
     if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
       const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
-      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n }));
+      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
     }
     // events
     if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
     if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion) out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: '챔피언 타이틀 매치. 등대 돔에서 열린다.', title: 1 });
+    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: 'dome', reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
+    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: 'dome', fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: 'dome', reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
@@ -8817,6 +9522,7 @@ class Career {
     }
     if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
     if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
+    if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
     const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
     if (draw) d.record.d++;
@@ -8838,9 +9544,16 @@ class Career {
         if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won) { d.flags.champion = true; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push('새 챔피언이 탄생했다!'); }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
+        else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
+        if (c.cashIn) d.mitb = null;
       }
       if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
+      if (c.mitb) {
+        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
+        else { const w = res.result && res.result.winner, id = w && w.charId && CHARACTERS[w.charId] ? w.charId : null; if (id) { d.mitb = { holder: id, until: d.day + 7 }; out.lines.push(`${CHARACTERS[id].name}이(가) 가방을 땄다. 네가 챔피언이 되면 노리러 온다.`); } }
+      }
       if (c === d.contract) d.contract = null;
     } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
     if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
@@ -9362,6 +10075,8 @@ const { HUD } = __m["render/HUD.js"];
 const { UI } = __m["render/palette.js"];
 const { drawText, textWidth } = __m["render/pixelfont.js"];
 const { drawProps, drawChairAt } = __m["render/PropRenderer.js"];
+const { drawSpecialBack, drawSpecialFront } = __m["render/SpecialRenderer.js"];
+const { SPECIAL } = __m["combat/SpecialRules.js"];
 const { BodyCanvas } = __m["render/raster.js"];
 const { drawBody } = __m["render/body.js"];
 const { Actor } = __m["world/Actor.js"];
@@ -9375,7 +10090,7 @@ const { DIFFICULTY } = __m["combat/AIController.js"];
 const { J, JN, Joints } = __m["anim/skeleton.js"];
 const { drawPortrait } = __m["render/head.js"];const { MOVES } = __m["data/moves.js"];
 const MOVES_NAME = id => (MOVES[id] ? MOVES[id].name : id);
-const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃' };
+const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃', ladder: '가방 획득', escape: '철창 탈출', iron: '아이언맨 폴 판정', falls: '폴 판정' };
 class MatchScene {
   constructor(game, cfg, onEnd) {
     this.game = game; this.cfg = cfg; this.onEnd = onEnd;
@@ -9394,7 +10109,7 @@ class MatchScene {
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
-    this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#ffd65a');
+    { const SP0 = this.m.special; this.ar.setScreen(this.titleText(), (SP0 && SP0.type ? SPECIAL[SP0.type].name : MODES[this.m.mode].name) + (SP0 && SP0.falls ? ' · 3판 2선승' : SP0 && SP0.iron ? ' · 아이언맨' : ''), '#ffd65a'); }
   }
   titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
   get human() { return this.m.human; }
@@ -9446,6 +10161,32 @@ class MatchScene {
     m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
     m.on('perchTurn', e => { A.sfx('step'); });
     m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    // special matches
+    const SP = m.special;
+    m.on('fall', e => { A.sfx('bell3'); const sc = e.score, t0 = sc[0] || 0, t1 = sc[1] || 0; hud.push(`${e.name} 폴: ${e.winner.name}`, { col: '#ffd65a', scale: 2, y: 96, life: 2.2, sub: `${t0} : ${t1}` }); cheer(1.2); this.ar.setScreen(`${t0} : ${t1}`, `${e.name} 폴`, '#ffd65a', true); });
+    m.on('fallReset', () => { S.flash(0, 0, 0, .5); });
+    m.on('suddenDeath', () => { A.sfx('bell3'); hud.push('서든 데스!', { col: '#ff5b5b', scale: 3, y: 100, life: 1.8, sub: '다음 폴을 따는 쪽이 이긴다' }); this.ar.setScreen('서든 데스', '', '#ff5b5b', true); });
+    m.on('bossPhase', e => { A.sfx('charge'); S.flash(1, .3, .3, .25); S.shake(.5); const nm = e.names && e.names[e.phase - 1]; hud.push(`${e.f.name} ${e.phase}페이즈!`, { col: '#ff5b5b', scale: 2, y: 96, life: 1.8, sub: nm || (e.phase >= 3 ? '마지막 힘을 끌어낸다' : '더 강해졌다') }); fx.ring(e.f.x, e.f.y - 40, 90, '#ff5b5b', .6); this.ar.setScreen(`${e.phase} PHASE`, e.f.name, '#ff5b5b', true); cheer(1.2); });
+    m.on('ladderClimb', e => { A.sfx('step'); if (isH(e.f) && !this.ladderTip) { this.ladderTip = 1; hud.toast('W 오르기 · J 주먹/발차기 · K 위 상대 다리 잡기 · 꼭대기: K 타이밍, A/D 내려갈 쪽', '#ffd65a'); } });
+    m.on('ladderRaise', e => { A.sfx('clang', { p: .6 }); fx.word('사다리를 펼친다', e.f.x, e.f.y - 96, '#c9d4ff', 1); });
+    m.on('ladderUp', () => { A.sfx('clang', { p: .7 }); cheer(.5); });
+    m.on('ladderDrop', () => { A.sfx('clang', { p: .5 }); });
+    m.on('ladderFold', e => { A.sfx('clang'); S.shake(.45); fx.word('사다리를 접었다!', e.by.x, e.by.y - 96, '#ffffff', 2); cheer(1.1); });
+    m.on('ladderCross', e => { A.sfx('step'); fx.word('넘어간다', e.f.x, e.f.y - 100, '#c9d4ff', 1); });
+    m.on('caseHit', e => { A.sfx('tick'); fx.word(`${e.hits}/${e.need}`, e.f.x, e.f.y - 120, e.hits >= e.need - 2 ? '#ff8a2b' : '#ffd65a', 2); if (e.hits >= e.need - 3) cheer(.6); });
+    m.on('caseMiss', () => { A.sfx('miss'); });
+    m.on('caseHang', e => { A.sfx('grip'); fx.word('가방에 매달렸다!', e.f.x, e.f.y - 110, '#ffd65a', 2); cheer(1.3); });
+    m.on('climbHit', e => { A.sfx(e.kind === 'kick' ? 'kick2' : 'punch2'); fx.spark(e.v.x, e.v.y - 60, 1, '#fff3b0'); });
+    m.on('legPull', e => { A.sfx('grip'); fx.word('다리를 잡아챘다!', e.a.x, e.a.y - 100, '#6be38a', 2); });
+    m.on('climbKick', () => { A.sfx('kick2'); });
+    m.on('climbDive', e => { A.sfx('whoosh', { pitch: 1.4 }); cheer(1.3); fx.word(e.h > 80 ? '초고공 다이빙!' : '다이빙!', e.f.x, e.f.y - 70, '#ffd65a', 2); });
+    m.on('climbFall', e => { A.sfx('punch3'); cheer(1.1); fx.word(e.h > .6 ? '높은 곳에서 추락!' : '떨어졌다!', e.v.x, e.v.y - 60, '#ffffff', 2); });
+    m.on('pullDown', e => { A.sfx('grip'); fx.word('끌어내렸다!', e.a.x, e.a.y - 90, '#6be38a', 2); });
+    m.on('cageTop', e => { A.sfx('clang', { p: .7 }); fx.word('꼭대기!', e.f.x, e.f.y - 100, '#ff8a2b', 2); cheer(1.4); });
+    m.on('cageClimb', e => { A.sfx('clang', { p: .5 }); if (isH(e.f)) hud.toast('철창을 오른다! W 계속 · J 주먹/발차기 · K 위 상대 다리 잡기 · A/D 안쪽 보고 J 다이빙', '#ffd65a'); cheer(.8); });
+    m.on('cageEscape', e => { A.sfx('crowdBoom'); fx.word('탈출!', e.f.x, e.f.y - 100, '#ffd65a', 3); });
+    m.on('cageHit', e => { A.sfx('clang'); S.shake(.3); fx.spark(e.f.x, e.f.y - 50, 1.2, '#c9d4ff'); });
+    m.on('cellHit', e => { A.sfx('clang'); S.shake(.4); fx.spark(e.f.x, e.f.y - 50, 1.4, '#ff8a8a'); fx.word('철창에 쾅!', e.f.x, e.f.y - 80, '#ffffff', 2); });
     m.on('upgrade', e => { A.sfx('charge'); fx.word(e.o.name, e.a.x, e.a.y - 118, e.o.cost ? '#ff8a2b' : '#ffd65a', 3); cheer(e.o.cost ? 1.2 : .7); if (e.o.cost) this.ar.setScreen(e.o.name.replace('!', ''), e.a.name, '#ff8a2b', true); });
     m.on('followUp', e => { A.sfx('grip'); fx.word('연계! ' + (e.name || ''), e.a.x, e.a.y - 112, '#ffd65a', 2); cheer(.5); });
     m.on('signature', e => { A.sfx('crowdBoom'); hud.push(e.name, { col: '#ffd65a', scale: 2, y: 96, life: 1.3, sub: '시그니처 콤보!' }); cheer(1.4); this.ar.setScreen(e.name, e.a.name, '#ffd65a', true); });
@@ -9558,6 +10299,7 @@ class MatchScene {
     // human input
     const h = this.human;
     if (h && m.phase === 'fight') inp.fillIntent(h.intent);
+    for (const f of m.fighters) if (f.bossPhase > 1 && f.alive && Math.random() < dt * (f.bossPhase === 3 ? 9 : 4)) this.fx.spark(f.x + (Math.random() - .5) * 30, f.y - 20 - Math.random() * 70, .5, f.bossPhase === 3 ? '#ff5b5b' : '#ff8a2b');
     if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
     m.update(dt);
     if (this.tut) this.tut.update(dt);
@@ -9639,10 +10381,12 @@ class MatchScene {
   draw(w, u) {
     const m = this.m, cam = Math.round(this.camX);
     this.ar.drawBack(w, cam);
+    drawSpecialBack(w, m, cam);
     this.drawCameos(w, cam);
     this.fr.drawAll(w, m, cam, { dt: 1 / 60 });
     drawProps(w, m, cam);
     this.ar.drawFront(w, cam);
+    drawSpecialFront(w, m, cam);
     this.fx.draw(w, cam);
     const h = this.human;
     this.ar.drawLights(w, cam, h ? h.x : null);
@@ -9725,6 +10469,7 @@ class MatchScene {
     drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
     drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
     if (r.finishBy) drawText(u, r.finishBy === 'finisher' ? '피니셔로 마무리! (보너스)' : '레슬링 기술로 마무리! (보너스)', 320, 96, { size: 11, align: 'c', color: '#ffd65a' });
+    if (r.score) drawText(u, `폴 스코어 ${r.score[0] || 0} : ${r.score[1] || 0}`, 480, 66, { size: 11, align: 'r', color: '#ffd65a' });
     if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
     if (h) {
       const S = m.summary()[h.idx];
@@ -9837,6 +10582,8 @@ const { BALANCE: B } = __m["data/balance.js"];
 const { MODES } = __m["combat/MatchManager.js"];
 const { ARENAS } = __m["combat/arena.js"];
 const { DIFFICULTY } = __m["combat/AIController.js"];
+const { SPECIAL } = __m["combat/SpecialRules.js"];
+const matchName = o => (o.special && SPECIAL[o.special] ? SPECIAL[o.special].name : MODES[o.mode].name) + (o.falls ? ' · 3판 2선승' : o.iron ? ` · 아이언맨 ${Math.round(o.iron / 60)}분` : '');
 const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES } = __m["world/CareerManager.js"];
 class Menu {
   constructor(W) { this.W = W; this.game = W.game; this.c = W.c; this.sel = 0; this.t = 0; }
@@ -9880,7 +10627,7 @@ class OffersMenu extends Menu {
       if (this.sel === list.length) { this.game.audio.sfx('back'); this.W.closeTop(); return; }
       const o = list[this.sel];
       if (d.contract) { this.game.audio.sfx('deny'); this.W.toast('이미 계약한 경기가 있다. 먼저 치르자.', '#ff8a8a'); return; }
-      this.W.open(new Confirm(this.W, `${o.oppName} — ${MODES[o.mode].name}, ${o.day}일까지. 보수 ${fmtMoney(o.reward)}. 계약할까요?`, () => { this.c.accept(o); this.W.closeTop(); this.W.toast(`계약 완료! ${o.day}일까지 경기장 대기실로.`, '#6be38a'); this.W.say([{ who: 'boss', text: o.kind === 'title' ? '드디어군. 등대 돔에서 기다리지. 그 안개를 걷어 내게.' : o.kind === 'event' ? '좋아, 이벤트 명단에 올려 두지. 대기실에서 입장하게.' : `좋아. ${josa(o.oppName, '과/와')}의 경기, 기대하지.` }]); }));
+      this.W.open(new Confirm(this.W, `${o.oppName} — ${matchName(o)}, ${o.day}일까지. 보수 ${fmtMoney(o.reward)}. 계약할까요?`, () => { this.c.accept(o); this.W.closeTop(); this.W.toast(`계약 완료! ${o.day}일까지 경기장 대기실로.`, '#6be38a'); this.W.say([{ who: 'boss', text: o.kind === 'title' ? '드디어군. 등대 돔에서 기다리지. 그 안개를 걷어 내게.' : o.kind === 'event' ? '좋아, 이벤트 명단에 올려 두지. 대기실에서 입장하게.' : `좋아. ${josa(o.oppName, '과/와')}의 경기, 기대하지.` }]); }));
     }
   }
   draw(u) {
@@ -9894,7 +10641,7 @@ class OffersMenu extends Menu {
       if (ch) drawPortrait(u, ch.look, 'smug', 58, y + 4, 44, { px: 1, dy: 4 }); else { drawText(u, o.mode === 'rumble' ? '럼블' : '태그', 80, y + 18, { size: 11, align: 'c', color: '#ffd65a' }); }
       const tag = { normal: '일반', challenge: '도전', stip: '특수', event: '이벤트', title: '타이틀', rival: '라이벌' }[o.kind];
       drawText(u, `[${tag}] ${o.oppName}${o.rank ? ` (${o.rank}위)` : ''}`, 110, y + 4, { color: o.kind === 'title' ? '#ffd65a' : '#ffffff' });
-      drawText(u, `${MODES[o.mode].name} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
+      drawText(u, `${matchName(o)} · ${ARENAS[o.arena].name} · AI ${DIFFICULTY[o.difficulty].name} · ${o.day}일까지`, 110, y + 21, { size: 11, color: UI.dim });
       drawText(u, o.desc, 110, y + 35, { size: 11, color: '#c9d4ff' });
       drawText(u, fmtMoney(o.reward), 580, y + 4, { align: 'r', color: UI.money });
       drawText(u, `명성 +${o.fame}`, 580, y + 21, { size: 11, align: 'r', color: UI.fame });
@@ -9914,7 +10661,8 @@ class ArenaMenu extends Menu {
     const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'];
     this.free = r.shuffle(pool).slice(0, 2).map((id, i) => ({ opp: id, oppName: CHARACTERS[id].name, mode: i ? 'pin' : 'single', arena: r.pick(['hall', 'pier']), reward: 0, fame: 0, kind: 'free', difficulty: d.season >= 2 ? 'hard' : r.pick(['easy', 'normal']), desc: '자유 경기: 기록과 부상은 남지만 랭킹은 그대로.' }));
     this.items = [];
-    if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${MODES[d.contract.mode].name} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
+    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: 'dome', reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
+    if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${matchName(d.contract)} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
     for (const f of this.free) this.items.push({ label: `자유 경기: ${f.oppName}`, sub: `${MODES[f.mode].name} · ${ARENAS[f.arena].name} · 이기면 소액 보수`, act: () => { this.W.closeTop(); this.W.startMatch('free', f); } });
     this.items.push({ label: '연습 경기 (기록·부상 없음)', sub: '상대 행동을 바꿔 가며 연습', act: () => { this.W.closeTop(); this.W.startMatch('practice', { opp: this.free[0].opp }); } });
     this.items.push({ label: '닫기', act: () => this.W.closeTop() });
@@ -10822,14 +11570,18 @@ class WorldScene {
   matchConfig(kind, o) {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
-    const foe = id => ({ char: id, ctrl: 'ai', difficulty: lv });
+    const foe = id => Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id));
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
     if (kind === 'brawl') return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), { char: 'galchi', ctrl: 'ai', difficulty: d.season >= 2 ? 'hard' : 'normal', team: 1 }, { char: 'myeolchi', ctrl: 'ai', difficulty: 'easy', team: 1 }], career: 1, title: '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }], introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
-    if (kind === 'revenge') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
+    if (o && o.mitb) { const pool = this.c.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 6).map(e => e.id), r = new RNG(d.day * 17 + d.season); return { mode: 'royal', special: 'ladder', arena: 'dome', entrants: [me, ...r.shuffle(pool).slice(0, 3).map(foe)], career: 1, title: '머니 인 더 뱅크', music: 'rumble', introTime: 3.6, dda: d.dda }; }
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
     if (o && o.mode === 'tag') return { mode: 'tag', arena: o.arena || 'pier', entrants: [me, { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('dueok'), foe('baeksang')], career: 1, title: '항구 태그 대전' };
-    return { events: this.matchEvents(kind, o).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    const sp = o && o.special, bossF = o && o.bossPhases ? Object.assign(foe(o.opp), { boss: true }) : null;
+    if (o && o.cashIn === 'player' && bossF) bossF.hpStart = .62;   // cashing in on a champion still worn from a defence
+    if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
+    return { special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
@@ -10857,6 +11609,13 @@ class WorldScene {
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
     c.save();
     this.open(new Menus.ResultMenu(this, sum, res, kind, offer));
+    // Money in the Bank: while you are champion the holder may jump you right after the bell
+    const M = c.d.mitb;
+    if (M && M.holder !== 'player' && c.d.flags.champion && CHARACTERS[M.holder] && res.won && !res.quit && !(offer && offer.cashIn) && ['official', 'title', 'event', 'free'].includes(kind) && (c.d.day >= M.until - 1 || Math.random() < .5)) {
+      const h = res.match && res.match.human, left = h ? h.hp / h.maxHp : .5, ch = CHARACTERS[M.holder];
+      const o2 = { opp: M.holder, oppName: ch.name, mode: 'single', arena: offer && offer.arena || 'hall', reward: 80000, fame: 20, kind: 'title', title: 1, cashIn: M.holder, hpLeft: left, difficulty: c.d.season >= 2 ? 'hard' : 'normal', bossPhases: 0 };
+      this.cashInNext = o2;   // after the result screen closes
+    }
   }
   // Face to face in the ring before the bell: the opponent's line, the player's answer, a small effect.
   preTalk(id, o) {
@@ -10880,6 +11639,11 @@ class WorldScene {
     // fadeT must land on exactly 0: it is a "transition running" flag as well as a timer
     if (this.fadeT > 0) { this.fadeT = Math.max(0, this.fadeT - dt); if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
     const fading = this.fadeT > 0;
+    if (this.cashInNext && !this.overlays.length && !this.dialog && !fading) {   // the holder of the case runs in
+      const o = this.cashInNext; this.cashInNext = null;
+      this.game.audio.sfx('bell3');
+      this.say([{ who: 'staff', text: '자, 잠깐! 저 음악은…! 머니 인 더 뱅크 가방이다!' }, { who: o.opp, text: '수고했어, 챔피언. 숨 고를 시간은 없어. 가방, 지금 쓴다!', expr: 'fierce' }, { act: () => this.startMatch('title', o) }]);
+    }
     for (const a of this.npcs) this.npcThink(a, dt);
     if (this.npcs.some(a => a.gone)) this.npcs = this.npcs.filter(a => !a.gone);
     this.tickApproach(dt);

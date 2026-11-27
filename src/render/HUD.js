@@ -13,6 +13,7 @@ import { topPick } from '../combat/CharacterController.js';
 import { ATTACKS } from '../data/balance.js';
 import { J } from '../anim/skeleton.js';
 import { SPECIALS, COUNTERS } from '../data/combos.js';
+import { SPECIAL } from '../combat/SpecialRules.js';
 
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 export class HUD {
@@ -67,6 +68,7 @@ export class HUD {
     if (f.fin >= B.finMax) drawText(g, '피니셔!', right ? fx - 6 : fx + fw + 16, y + 47, { size: 11, align: right ? 'r' : 'l', color: Math.floor(this.t * 6) % 2 ? '#3fe0d0' : '#ffffff', outline: '#05060f' });
     const st = this.chip(f, m);
     if (st) drawText(g, st[0], right ? x + 4 : x + w - 4, y + 35, { size: 11, align: right ? 'l' : 'r', color: st[1], outline: '#05060f' });
+    if (f.bossPhase > 1) drawText(g, `${f.bossPhase}페이즈`, right ? x + 4 : x + w - 4, y + 3, { size: 11, align: right ? 'l' : 'r', color: Math.floor(this.t * 3) % 2 ? '#ff5b5b' : '#ffd65a', outline: '#05060f' });
   }
   chip(f, m) {
     if (f.st === 'KO') return ['K.O.', '#ff5b5b'];
@@ -117,8 +119,11 @@ export class HUD {
     let rule = (MODES[m.mode] || {}).name || '';
     if (m.mode === 'rumble') rule += ` · 남은 입장 ${m.queue.length}`;
     if (m.mode === 'royal' || m.mode === 'rumble') rule += ` · 링 위 ${m.alive().length}`;
-    if (m.cfg.title) rule = m.cfg.title;
+    const SP = m.special;
+    if (SP && SP.type) rule = SPECIAL[SP.type].name;
+    if (m.cfg.title) rule = m.cfg.title + (SP && SP.type ? ' · ' + SPECIAL[SP.type].short : '');
     drawText(g, rule, x, y + 28, { size: 11, align: 'c', color: '#c9d4ff', outline: '#05060f' });
+    if (SP && SP.multi) { const s0 = SP.score[0] || 0, s1 = SP.score[1] || 0; drawText(g, (SP.sudden ? '서든 데스 · ' : SP.iron ? '아이언맨 · 폴 ' : SP.falls === 2 ? '3판 2선승 · ' : `${SP.falls}폴 선승 · `) + `${s0} : ${s1}`, x, y + 41, { size: 11, align: 'c', color: SP.sudden ? '#ff5b5b' : '#ffd65a', outline: '#05060f' }); }
     if (m.mode === 'rumble' && m.queue.length && m.phase === 'fight') { const s = Math.ceil(m.nextEntry); drawText(g, `다음 입장 ${s}초`, x, y + 41, { size: 11, align: 'c', color: s <= 5 ? '#ffd65a' : UI.dim, outline: '#05060f' }); }
   }
   worldMarks(g, m, camX) {
@@ -190,6 +195,26 @@ export class HUD {
     const sv = !f.link && f.side === 'in' ? m.combo.seatedFoe(f) : null;
     if (sv) P.push([[inp.label('grab')], '턴버클 백드롭'], [[inp.label('fin')], f.fin >= SPECIALS.superGerman ? `슈퍼 저먼 (에너지 ${SPECIALS.superGerman})` : `슈퍼 저먼: 에너지 ${SPECIALS.superGerman} 필요`], [[inp.label('atk')], '밀어 떨어뜨리기']);
     if (f.st === 'SEATED') P.push([[inp.label('atk')], '연타해서 내려오기']);
+    const SP = m.special;
+    if (SP && SP.ladder) {
+      const L = SP.ladder, c = f.climb, P0 = SP.prize;
+      if (f.st === 'LADDER' && c) {
+        if (c.p >= 1) P.push([[inp.label('grab')], `타이밍! 가방 ${P0.hits}/${P0.need}`], [[inp.label('left') + '/' + inp.label('right')], '내려갈 쪽'], [[inp.label('atk')], '공격·다이빙']);
+        else P.push([[inp.label('up')], '오르기'], [[inp.label('atk')], '주먹·발차기'], [[inp.label('grab')], '위 상대 다리 잡기']);
+        if (c.meter) this.caseMeter(g, f, c.meter, P0, camX);
+      } else if (f.st === 'CASE_HANG' && f.hang) { P.push([[inp.label('grab')], `매달린 채 타이밍! ${P0.hits}/${P0.need}`]); if (f.hang.meter) this.caseMeter(g, f, f.hang.meter, P0, camX); }
+      else if (f.side === 'in' && !f.link && Math.abs(f.x - L.x) < 74) {
+        const foeOn = m.fighters.find(o => f.isFoe(o) && o.st === 'LADDER');
+        if (L.state === 'folded') P.push([[inp.label('grab')], '사다리 펼치기']);
+        else if (L.state === 'open') {
+          if (foeOn && foeOn.climb && foeOn.climb.p <= B.climbPullMax && Math.abs(foeOn.x - f.x) < 46) P.push([[inp.label('grab')], '끌어내리기!']);
+          else if (L.foldCd <= 0) P.push([[inp.label('grab')], foeOn ? '사다리 접기!' : '사다리 접기']);
+          P.push([[inp.label('up')], '사다리 오르기']);
+        }
+      }
+    }
+    if (m.rules.cage && f.st === 'CAGE_CLIMB' && f.climb) P.push(f.climb.over != null ? [[inp.label('up')], '넘어가는 중!'] : [[inp.label('up')], '계속 눌러 오르기'], [[inp.label('atk')], '주먹·발차기·다이빙'], [[inp.label('grab')], '위 상대 다리 잡기']);
+    if (m.rules.cage && f.side === 'in' && !f.climb && m.fighters.some(o => f.isFoe(o) && o.st === 'CAGE_CLIMB' && o.climb && o.climb.p <= B.climbPullMax && Math.abs(o.x - f.x) < 46)) P.push([[inp.label('grab')], '끌어내리기!']);
     if (f.st === 'APRON' && f.nearestFoe(300, o => o.side === 'in' && (o.st === 'DOWN' || o.st === 'GET_UP'))) P.push([[inp.label('atk')], '스프링보드 문설트']);
     const g2 = m.grapple.grabTarget(f), PR = m.props;
     const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
@@ -212,7 +237,7 @@ export class HUD {
     if (f.st === 'HANG') P.push([[inp.label('up')], '연타로 올라가기']);
     if (f.st === 'APRON') P.push([[inp.label('up')], '링 안으로'], [[inp.label('down')], '내려가기']);
     if (ar.hasRing && f.side === 'out' && f.y > ar.matY + 4 && f.st !== 'HANG') { const d = Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))); if (d < 46) P.push([[inp.label('up')], '링으로 올라가기']); }
-    if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], '코너 오르기']);
+    if (ar.hasRing && f.side === 'in' && f.fsm.is('IDLE', 'MOVE') && ar.nearRope(f.x).dist < 34) P.push([[inp.label('up')], m.rules.cage ? '철창 오르기' : '코너 오르기']);
     if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && Math.abs(f.x - (f.team === 0 ? ar.ropeL : ar.ropeR)) < B.tagRange) P.push([[inp.label('down')], '교대']);
     if ((f.st === 'HITSTUN' || f.st === 'DOWN' || f.st === 'STAGGER') && f.burstCd <= 0 && f.fin >= B.burstCost) P.push([[inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출']);
     // laid out by their real widths, centred, so long labels never run into each other
@@ -257,6 +282,15 @@ export class HUD {
     else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
     this.bottomPrompts(g, P);
     void sgn; void clamp;
+  }
+  // the timing meter for the case: press K while the needle is in the green
+  caseMeter(g, f, M, P0, camX) {
+    const x = Math.round(f.x - camX) - 34, y = Math.round(Math.min(f.joints.y(J.head), f.y - 90)) - 30, w = 68;
+    rect(g, '#05060f', x - 2, y - 2, w + 4, 11); rect(g, '#1b2450', x, y, w, 7);
+    rect(g, M.fumble > 0 ? '#5a1a2a' : '#2f8f4e', x + Math.round(M.z[0] * w), y, Math.max(2, Math.round((M.z[1] - M.z[0]) * w)), 7);
+    const nx = x + Math.round(M.n * w); rect(g, '#05060f', nx - 2, y - 3, 4, 13); rect(g, '#ffffff', nx - 1, y - 2, 2, 11);
+    const n = P0.need, cw = Math.floor((w - 4) / n);
+    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', x + 2 + i * cw, y + 10, cw - 1, 3);
   }
   bottomPrompts(g, P) {
     const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);

@@ -2,7 +2,7 @@
 import { clamp, sgn } from '../core/util.js';
 import { BALANCE as B } from '../data/balance.js';
 
-const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE', 'SEATED']);
+const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE', 'SEATED', 'LADDER', 'CAGE_CLIMB', 'CASE_HANG']);
 export class PhysicsSystem {
   constructor(match) { this.m = match; }
   update(dt) {

@@ -14,6 +14,7 @@ import { AnimationSystem } from '../anim/AnimationSystem.js';
 import { AIController } from './AIController.js';
 import { PropSystem } from './Props.js';
 import { ComboSystem } from './ComboSystem.js';
+import { SpecialRules, specialRules } from './SpecialRules.js';
 import { MatchEvents } from './MatchEvents.js';
 
 export const MODES = {
@@ -31,7 +32,7 @@ export class MatchManager extends Emitter {
     super();
     this.cfg = cfg; this.mode = cfg.mode || 'single';
     const M = MODES[this.mode] || MODES.single;
-    this.rules = Object.assign({}, M.rules, cfg.rules || {});
+    this.rules = Object.assign({}, M.rules, specialRules(cfg), cfg.rules || {});
     const ad = ARENAS[cfg.arena || 'hall'] || ARENAS.hall;
     this.arenaDef = ad; this.arena = new Arena(ad);
     if (!this.arena.hasRing) { this.rules.ringOut = 'none'; this.rules.climb = false; }
@@ -43,6 +44,7 @@ export class MatchManager extends Emitter {
     this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
     this.props = new PropSystem(this);
     this.combo = new ComboSystem(this);
+    this.special = new SpecialRules(this, cfg);
     this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
@@ -122,6 +124,7 @@ export class MatchManager extends Emitter {
     this.physics.update(dt);
     this.props.update(dt);
     this.events.update(dt);
+    this.special.update(dt);
     this.combat.update();
     this.stun.update(dt);
     if (this.pin) this.pinTick(dt);
@@ -327,6 +330,7 @@ export class MatchManager extends Emitter {
     this.end({ winner: w, loser: f, how: 'countout', team: w ? w.team : null });
   }
   timeUp() {
+    if (this.special && this.special.onTimeUp()) return;
     // decision: health percentage
     const teams = new Map();
     for (const f of this.fighters) { const t = teams.get(f.team) || { s: 0, f }; t.s += f.eliminated ? 0 : f.hp / f.maxHp; teams.set(f.team, t); }
@@ -352,6 +356,7 @@ export class MatchManager extends Emitter {
   }
   end(r) {
     if (this.phase === 'end') return;
+    if (this.special && this.special.onEnd(r)) return;   // best of three falls / iron man: the match goes on
     this.phase = 'end'; this.result = r; this.endT = 0;
     const lb = this.lastBig;
     if (r.winner && (r.how === 'ko' || r.how === 'pin') && lb && lb.by && lb.by.team === r.winner.team && this.time - lb.t < 9) r.finishBy = lb.kind;

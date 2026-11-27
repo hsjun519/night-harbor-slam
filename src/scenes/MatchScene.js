@@ -8,6 +8,8 @@ import { HUD } from '../render/HUD.js';
 import { UI } from '../render/palette.js';
 import { drawText, textWidth } from '../render/pixelfont.js';
 import { drawProps, drawChairAt } from '../render/PropRenderer.js';
+import { drawSpecialBack, drawSpecialFront } from '../render/SpecialRenderer.js';
+import { SPECIAL } from '../combat/SpecialRules.js';
 import { BodyCanvas } from '../render/raster.js';
 import { drawBody } from '../render/body.js';
 import { Actor } from '../world/Actor.js';
@@ -23,7 +25,7 @@ import { drawPortrait } from '../render/head.js';
 
 import { MOVES } from '../data/moves.js';
 const MOVES_NAME = id => (MOVES[id] ? MOVES[id].name : id);
-const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃' };
+const HOW = { ko: 'K.O.', pin: '핀폴', countout: '링아웃 카운트', ringout: '링아웃 탈락', decision: '판정', time: '시간 종료', 'double countout': '양자 링아웃', ladder: '가방 획득', escape: '철창 탈출', iron: '아이언맨 폴 판정', falls: '폴 판정' };
 export class MatchScene {
   constructor(game, cfg, onEnd) {
     this.game = game; this.cfg = cfg; this.onEnd = onEnd;
@@ -42,7 +44,7 @@ export class MatchScene {
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
-    this.ar.setScreen(this.titleText(), MODES[this.m.mode].name, '#ffd65a');
+    { const SP0 = this.m.special; this.ar.setScreen(this.titleText(), (SP0 && SP0.type ? SPECIAL[SP0.type].name : MODES[this.m.mode].name) + (SP0 && SP0.falls ? ' · 3판 2선승' : SP0 && SP0.iron ? ' · 아이언맨' : ''), '#ffd65a'); }
   }
   titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
   get human() { return this.m.human; }
@@ -94,6 +96,32 @@ export class MatchScene {
     m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
     m.on('perchTurn', e => { A.sfx('step'); });
     m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    // special matches
+    const SP = m.special;
+    m.on('fall', e => { A.sfx('bell3'); const sc = e.score, t0 = sc[0] || 0, t1 = sc[1] || 0; hud.push(`${e.name} 폴: ${e.winner.name}`, { col: '#ffd65a', scale: 2, y: 96, life: 2.2, sub: `${t0} : ${t1}` }); cheer(1.2); this.ar.setScreen(`${t0} : ${t1}`, `${e.name} 폴`, '#ffd65a', true); });
+    m.on('fallReset', () => { S.flash(0, 0, 0, .5); });
+    m.on('suddenDeath', () => { A.sfx('bell3'); hud.push('서든 데스!', { col: '#ff5b5b', scale: 3, y: 100, life: 1.8, sub: '다음 폴을 따는 쪽이 이긴다' }); this.ar.setScreen('서든 데스', '', '#ff5b5b', true); });
+    m.on('bossPhase', e => { A.sfx('charge'); S.flash(1, .3, .3, .25); S.shake(.5); const nm = e.names && e.names[e.phase - 1]; hud.push(`${e.f.name} ${e.phase}페이즈!`, { col: '#ff5b5b', scale: 2, y: 96, life: 1.8, sub: nm || (e.phase >= 3 ? '마지막 힘을 끌어낸다' : '더 강해졌다') }); fx.ring(e.f.x, e.f.y - 40, 90, '#ff5b5b', .6); this.ar.setScreen(`${e.phase} PHASE`, e.f.name, '#ff5b5b', true); cheer(1.2); });
+    m.on('ladderClimb', e => { A.sfx('step'); if (isH(e.f) && !this.ladderTip) { this.ladderTip = 1; hud.toast('W 오르기 · J 주먹/발차기 · K 위 상대 다리 잡기 · 꼭대기: K 타이밍, A/D 내려갈 쪽', '#ffd65a'); } });
+    m.on('ladderRaise', e => { A.sfx('clang', { p: .6 }); fx.word('사다리를 펼친다', e.f.x, e.f.y - 96, '#c9d4ff', 1); });
+    m.on('ladderUp', () => { A.sfx('clang', { p: .7 }); cheer(.5); });
+    m.on('ladderDrop', () => { A.sfx('clang', { p: .5 }); });
+    m.on('ladderFold', e => { A.sfx('clang'); S.shake(.45); fx.word('사다리를 접었다!', e.by.x, e.by.y - 96, '#ffffff', 2); cheer(1.1); });
+    m.on('ladderCross', e => { A.sfx('step'); fx.word('넘어간다', e.f.x, e.f.y - 100, '#c9d4ff', 1); });
+    m.on('caseHit', e => { A.sfx('tick'); fx.word(`${e.hits}/${e.need}`, e.f.x, e.f.y - 120, e.hits >= e.need - 2 ? '#ff8a2b' : '#ffd65a', 2); if (e.hits >= e.need - 3) cheer(.6); });
+    m.on('caseMiss', () => { A.sfx('miss'); });
+    m.on('caseHang', e => { A.sfx('grip'); fx.word('가방에 매달렸다!', e.f.x, e.f.y - 110, '#ffd65a', 2); cheer(1.3); });
+    m.on('climbHit', e => { A.sfx(e.kind === 'kick' ? 'kick2' : 'punch2'); fx.spark(e.v.x, e.v.y - 60, 1, '#fff3b0'); });
+    m.on('legPull', e => { A.sfx('grip'); fx.word('다리를 잡아챘다!', e.a.x, e.a.y - 100, '#6be38a', 2); });
+    m.on('climbKick', () => { A.sfx('kick2'); });
+    m.on('climbDive', e => { A.sfx('whoosh', { pitch: 1.4 }); cheer(1.3); fx.word(e.h > 80 ? '초고공 다이빙!' : '다이빙!', e.f.x, e.f.y - 70, '#ffd65a', 2); });
+    m.on('climbFall', e => { A.sfx('punch3'); cheer(1.1); fx.word(e.h > .6 ? '높은 곳에서 추락!' : '떨어졌다!', e.v.x, e.v.y - 60, '#ffffff', 2); });
+    m.on('pullDown', e => { A.sfx('grip'); fx.word('끌어내렸다!', e.a.x, e.a.y - 90, '#6be38a', 2); });
+    m.on('cageTop', e => { A.sfx('clang', { p: .7 }); fx.word('꼭대기!', e.f.x, e.f.y - 100, '#ff8a2b', 2); cheer(1.4); });
+    m.on('cageClimb', e => { A.sfx('clang', { p: .5 }); if (isH(e.f)) hud.toast('철창을 오른다! W 계속 · J 주먹/발차기 · K 위 상대 다리 잡기 · A/D 안쪽 보고 J 다이빙', '#ffd65a'); cheer(.8); });
+    m.on('cageEscape', e => { A.sfx('crowdBoom'); fx.word('탈출!', e.f.x, e.f.y - 100, '#ffd65a', 3); });
+    m.on('cageHit', e => { A.sfx('clang'); S.shake(.3); fx.spark(e.f.x, e.f.y - 50, 1.2, '#c9d4ff'); });
+    m.on('cellHit', e => { A.sfx('clang'); S.shake(.4); fx.spark(e.f.x, e.f.y - 50, 1.4, '#ff8a8a'); fx.word('철창에 쾅!', e.f.x, e.f.y - 80, '#ffffff', 2); });
     m.on('upgrade', e => { A.sfx('charge'); fx.word(e.o.name, e.a.x, e.a.y - 118, e.o.cost ? '#ff8a2b' : '#ffd65a', 3); cheer(e.o.cost ? 1.2 : .7); if (e.o.cost) this.ar.setScreen(e.o.name.replace('!', ''), e.a.name, '#ff8a2b', true); });
     m.on('followUp', e => { A.sfx('grip'); fx.word('연계! ' + (e.name || ''), e.a.x, e.a.y - 112, '#ffd65a', 2); cheer(.5); });
     m.on('signature', e => { A.sfx('crowdBoom'); hud.push(e.name, { col: '#ffd65a', scale: 2, y: 96, life: 1.3, sub: '시그니처 콤보!' }); cheer(1.4); this.ar.setScreen(e.name, e.a.name, '#ffd65a', true); });
@@ -206,6 +234,7 @@ export class MatchScene {
     // human input
     const h = this.human;
     if (h && m.phase === 'fight') inp.fillIntent(h.intent);
+    for (const f of m.fighters) if (f.bossPhase > 1 && f.alive && Math.random() < dt * (f.bossPhase === 3 ? 9 : 4)) this.fx.spark(f.x + (Math.random() - .5) * 30, f.y - 20 - Math.random() * 70, .5, f.bossPhase === 3 ? '#ff5b5b' : '#ff8a2b');
     if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
     m.update(dt);
     if (this.tut) this.tut.update(dt);
@@ -287,10 +316,12 @@ export class MatchScene {
   draw(w, u) {
     const m = this.m, cam = Math.round(this.camX);
     this.ar.drawBack(w, cam);
+    drawSpecialBack(w, m, cam);
     this.drawCameos(w, cam);
     this.fr.drawAll(w, m, cam, { dt: 1 / 60 });
     drawProps(w, m, cam);
     this.ar.drawFront(w, cam);
+    drawSpecialFront(w, m, cam);
     this.fx.draw(w, cam);
     const h = this.human;
     this.ar.drawLights(w, cam, h ? h.x : null);
@@ -373,6 +404,7 @@ export class MatchScene {
     drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
     drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
     if (r.finishBy) drawText(u, r.finishBy === 'finisher' ? '피니셔로 마무리! (보너스)' : '레슬링 기술로 마무리! (보너스)', 320, 96, { size: 11, align: 'c', color: '#ffd65a' });
+    if (r.score) drawText(u, `폴 스코어 ${r.score[0] || 0} : ${r.score[1] || 0}`, 480, 66, { size: 11, align: 'r', color: '#ffd65a' });
     if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
     if (h) {
       const S = m.summary()[h.idx];

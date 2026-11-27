@@ -115,9 +115,10 @@ export class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
+      dda: 0, mitb: null, champ: 'fogking',
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -131,7 +132,16 @@ export class Career {
     if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
     return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
   }
-  get champion() { return this.d.flags.champion ? 'player' : 'fogking'; }
+  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
+  // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
+  ddaFor(id) {
+    const k = this.d.dda || 0, c = CHARACTERS[id];
+    if (!c || Math.abs(k) < .005) return {};
+    const s = c.stats;
+    return { stats: { hp: s.hp * (1 + k * .8), atk: s.atk * (1 + k * .5), stun: s.stun * (1 + k * .5) }, aiBoost: k };
+  }
+  // Money in the Bank: the case you hold, or the one somebody holds against you
+  get mitbOpen() { const M = this.d.mitb; return !!(M && this.d.day <= M.until); }
   // Player rank: position among the league plus the player (1 = top contender).
   rankList() {
     const L = this.d.league.slice();
@@ -177,6 +187,24 @@ export class Career {
   sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
   nextDay(forced) {
     const d = this.d, msgs = [];
+    // the case runs out: an unused one is gone; somebody else's they cash in on the champion while you watch
+    if (d.mitb && d.day >= d.mitb.until) {
+      const M = d.mitb; d.mitb = null;
+      if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
+      else if (!d.flags.champion && CHARACTERS[M.holder]) {
+        const rr = new RNG(d.season * 77 + d.day);
+        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
+        else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
+      }
+    }
+    // as champion you are not in the Money in the Bank: somebody wins the case and comes for you
+    if (d.flags.champion && !d.mitb && d.day >= 8 && !d.events['mitb' + d.season]) {
+      const rr = new RNG(d.season * 91 + d.day), top = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 4);
+      const h = rr.pick(top.length ? top : [{ id: 'dohyun' }]).id;
+      d.events['mitb' + d.season] = 'ai';
+      d.mitb = { holder: h, until: d.day + 7 };
+      msgs.push(`${CHARACTERS[h].name}이(가) 머니 인 더 뱅크 가방을 차지했다. 챔피언, 언제 들이닥칠지 모른다!`);
+    }
     // contract deadline passed without a match
     if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
     d.day++;
@@ -219,17 +247,27 @@ export class Career {
     out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
     let third = pick(r.int(0, 2));
     for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
-    out.push(mk(third, 'stip', r.chance(.5) ? { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' } : { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }));
+    const stips = [[1, { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' }], [1, { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }]];
+    if (d.day >= 3 || d.season > 1) stips.push([1.3, { special: 'ladder', pay: 1.3, desc: '래더 매치. 링 위에 매달린 계약서 가방을 먼저 떼어 내는 쪽이 이긴다.' }]);
+    if (d.day >= 4 || d.season > 1) stips.push([1.1, { falls: 2, pay: 1.4, desc: '3판 2선승제(투 아웃 오브 스리 폴). 두 번 먼저 이겨야 한다.' }]);
+    if (d.day >= 5 || d.season > 1) stips.push([1.2, { special: 'cage', pay: 1.3, desc: '스틸 케이지. KO·핀폴, 또는 철창을 넘어 탈출하면 승리.' }]);
+    if (d.day >= 8 || d.season > 1) stips.push([1.1, { special: 'cell', pay: 1.5, arena: 'hall', desc: '헬 인 어 셀. 링 밖까지 덮인 철창, 장외 카운트가 없다.' }]);
+    const sp = r.weighted(stips, s => s[0])[1], extra = Object.assign({}, sp);
+    out.push(mk(third, 'stip', extra));
+    if (extra.pay) { const o = out[out.length - 1]; o.reward = Math.round(o.reward * extra.pay / 1000) * 1000; o.fame += 3; }
     // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
     const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
     if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
       const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
-      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n }));
+      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
     }
     // events
     if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
     if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion) out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: '챔피언 타이틀 매치. 등대 돔에서 열린다.', title: 1 });
+    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: 'dome', reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
+    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: 'dome', fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: 'dome', reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
@@ -248,6 +286,7 @@ export class Career {
     }
     if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
     if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
+    if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
     const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
     if (draw) d.record.d++;
@@ -269,9 +308,16 @@ export class Career {
         if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won) { d.flags.champion = true; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push('새 챔피언이 탄생했다!'); }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
+        else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
+        if (c.cashIn) d.mitb = null;
       }
       if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
+      if (c.mitb) {
+        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
+        else { const w = res.result && res.result.winner, id = w && w.charId && CHARACTERS[w.charId] ? w.charId : null; if (id) { d.mitb = { holder: id, until: d.day + 7 }; out.lines.push(`${CHARACTERS[id].name}이(가) 가방을 땄다. 네가 챔피언이 되면 노리러 온다.`); } }
+      }
       if (c === d.contract) d.contract = null;
     } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
     if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }

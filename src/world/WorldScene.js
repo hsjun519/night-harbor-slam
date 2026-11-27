@@ -197,14 +197,18 @@ export class WorldScene {
   matchConfig(kind, o) {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
-    const foe = id => ({ char: id, ctrl: 'ai', difficulty: lv });
+    const foe = id => Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id));
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
     if (kind === 'brawl') return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), { char: 'galchi', ctrl: 'ai', difficulty: d.season >= 2 ? 'hard' : 'normal', team: 1 }, { char: 'myeolchi', ctrl: 'ai', difficulty: 'easy', team: 1 }], career: 1, title: '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }], introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
-    if (kind === 'revenge') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
+    if (o && o.mitb) { const pool = this.c.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 6).map(e => e.id), r = new RNG(d.day * 17 + d.season); return { mode: 'royal', special: 'ladder', arena: 'dome', entrants: [me, ...r.shuffle(pool).slice(0, 3).map(foe)], career: 1, title: '머니 인 더 뱅크', music: 'rumble', introTime: 3.6, dda: d.dda }; }
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
     if (o && o.mode === 'tag') return { mode: 'tag', arena: o.arena || 'pier', entrants: [me, { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('dueok'), foe('baeksang')], career: 1, title: '항구 태그 대전' };
-    return { events: this.matchEvents(kind, o).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    const sp = o && o.special, bossF = o && o.bossPhases ? Object.assign(foe(o.opp), { boss: true }) : null;
+    if (o && o.cashIn === 'player' && bossF) bossF.hpStart = .62;   // cashing in on a champion still worn from a defence
+    if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
+    return { special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;
@@ -232,6 +236,13 @@ export class WorldScene {
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
     c.save();
     this.open(new Menus.ResultMenu(this, sum, res, kind, offer));
+    // Money in the Bank: while you are champion the holder may jump you right after the bell
+    const M = c.d.mitb;
+    if (M && M.holder !== 'player' && c.d.flags.champion && CHARACTERS[M.holder] && res.won && !res.quit && !(offer && offer.cashIn) && ['official', 'title', 'event', 'free'].includes(kind) && (c.d.day >= M.until - 1 || Math.random() < .5)) {
+      const h = res.match && res.match.human, left = h ? h.hp / h.maxHp : .5, ch = CHARACTERS[M.holder];
+      const o2 = { opp: M.holder, oppName: ch.name, mode: 'single', arena: offer && offer.arena || 'hall', reward: 80000, fame: 20, kind: 'title', title: 1, cashIn: M.holder, hpLeft: left, difficulty: c.d.season >= 2 ? 'hard' : 'normal', bossPhases: 0 };
+      this.cashInNext = o2;   // after the result screen closes
+    }
   }
   // Face to face in the ring before the bell: the opponent's line, the player's answer, a small effect.
   preTalk(id, o) {
@@ -255,6 +266,11 @@ export class WorldScene {
     // fadeT must land on exactly 0: it is a "transition running" flag as well as a timer
     if (this.fadeT > 0) { this.fadeT = Math.max(0, this.fadeT - dt); if (this.fadeT <= .22 && this.fadeTo) { const f = this.fadeTo; this.fadeTo = null; f(); } }
     const fading = this.fadeT > 0;
+    if (this.cashInNext && !this.overlays.length && !this.dialog && !fading) {   // the holder of the case runs in
+      const o = this.cashInNext; this.cashInNext = null;
+      this.game.audio.sfx('bell3');
+      this.say([{ who: 'staff', text: '자, 잠깐! 저 음악은…! 머니 인 더 뱅크 가방이다!' }, { who: o.opp, text: '수고했어, 챔피언. 숨 고를 시간은 없어. 가방, 지금 쓴다!', expr: 'fierce' }, { act: () => this.startMatch('title', o) }]);
+    }
     for (const a of this.npcs) this.npcThink(a, dt);
     if (this.npcs.some(a => a.gone)) this.npcs = this.npcs.filter(a => !a.gone);
     this.tickApproach(dt);

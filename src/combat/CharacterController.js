@@ -30,7 +30,7 @@ export class Fighter {
     this.inv = 0; this.grabImm = 0; this.dodgeCd = 0; this.counterCd = 0; this.burstCd = 0; this.regenDelay = 0; this.flash = 0; this.hitShake = 0; this.landT = 0; this.boost = 0; this.staleList = []; this.moveStale = {};
     this.combo = { n: 0, t: 0, dmg: 0 }; this.chainN = 0; this.chainT = 0; this.holdT = 0; this.running = false; this.lastTap = { dir: 0, t: -9 }; this.prevMx = 0; this.guardT = 0; this.whip = null; this.expr = 'neutral'; this.exprT = 0; this.mash = 0; this.escape = 0; this.protect = 0;
     this.outCount = 0; this.eliminated = false; this.tagged = true; this.partner = null; this.legal = true; this.ai = null; this.tails = null; this.sweat = 0; this.touchRope = null; this.gettingUp = null; this.pinTries = 0; this.tagRecover = 0; this.kills = 0; this.perfects = 0;
-    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0;
+    this.cpuTime = 0; this.prop = null; this.dash = false; this.sigCd = 0; this.boss = !!o.boss; this.climb = null; this.aiBoost = o.aiBoost || 0;
   }
   get st() { return this.fsm.cur; }
   get t() { return this.fsm.t; }
@@ -50,6 +50,8 @@ export class Fighter {
     if (to !== 'ATTACK' && to !== 'AIR_ATTACK' && to !== 'FINISHER') this.atk = null;
     if (to !== 'HITSTUN' && to !== 'DOWN' && to !== 'KO' && to !== 'OUT' && to !== 'PINNED') this.dropRag();
     if (to === 'IDLE' || to === 'MOVE') this.whip = null;
+    if (to !== 'LADDER' && to !== 'CAGE_CLIMB') this.climb = null;
+    if (to !== 'CASE_HANG') this.hang = null;
     if (to !== 'GUARD') this.guardT = 0;
     if (this.prop && !keepsProp(to)) this.match.props.drop(this, to);
     this.match.emit('state', { f: this, from, to });
@@ -155,6 +157,7 @@ function chooseAttack(f, I) {
 }
 function startJump(f, I) {
   const ar = f.arena, m = f.match;
+  if (m.special && (m.special.ladderClimb(f) || m.special.cageClimbStart(f, I))) return;   // up the ladder, up the cage wall
   // contextual W: climb the corner, enter the ring
   if (ar.hasRing && f.side === 'in') {
     const nr = ar.nearRope(f.x);
@@ -287,7 +290,7 @@ export const CONTROL = {
     }
     if (burstInput(f, I) && tryBurst(f)) { f.clearBuf(); return; }
     friction(f, dt, 1);
-    f.downClock = (f.downClock || 0) + dt * (.75 + .25 * f.stats.down) + mashInput(f) * B.mashDown;
+    f.downClock = (f.downClock || 0) + dt * (.75 + .25 * f.stats.down) * (f.match.special ? f.match.special.rally(f) : 1) + mashInput(f) * B.mashDown;
     if (f.downClock >= f.downTime) standUp(f, 0);
   },
   GET_UP(f, I, dt) {
@@ -346,7 +349,7 @@ export const CONTROL = {
     if (f.t < .12) return;
     if (f.consume('atk')) {
       if (f.face !== out) { const pk = topPick(f); if (pk.kind === 'stand') topStand(f, I, pk.t); else dive(f, I); return; }
-      if (m.rules.ringOut === 'elim') { f.face = -out; m.emit('perchDeny', { f }); return; }   // over the top = eliminated
+      if (m.rules.ringOut === 'elim' || m.rules.cage) { f.face = -out; m.emit('perchDeny', { f, cage: !!m.rules.cage }); return; }   // over the top = eliminated
       diveOut(f, I, out); return;
     }
     if (f.consume('jump')) { f.face = -out; f.vy = -B.jump * .8; f.vx = -out * 120; f.ground = false; f.set('JUMP'); m.emit('jump', { f }); return; }
@@ -368,6 +371,9 @@ export const CONTROL = {
     if (f.consume('jump') || sgn(I.mx) === inward && Math.abs(I.mx) > .3 && f.t > .18) { beginEnter(f); return; }
     if (I.down || (sgn(I.mx) === -inward && Math.abs(I.mx) > .3)) { f.ground = false; f.vx = -inward * 90; f.vy = -60; f.set('FALL'); }
   },
+  LADDER(f, I, dt) { const S = f.match.special; if (!S || !S.climbTick(f, I, dt)) { f.climb = null; f.ground = false; f.vy = 20; f.set('FALL', { force: true }); } },
+  CAGE_CLIMB(f, I, dt) { const S = f.match.special; if (!S || !S.climbTick(f, I, dt)) { f.climb = null; f.ground = false; f.vy = 20; f.set('FALL', { force: true }); } },
+  CASE_HANG(f, I, dt) { const S = f.match.special; if (!S || !S.hangTick(f, I, dt)) { f.hang = null; f.ground = false; f.set('FALL', { force: true }); } },
   SEATED(f, I, dt) {
     const s = f.seat;
     if (!s) { f.ground = false; f.set('FALL', { force: true }); return; }

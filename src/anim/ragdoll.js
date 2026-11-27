@@ -80,7 +80,7 @@ export class Ragdoll {
     this.ground = false;
     const pelvisIn = x[0] > ar.ropeL && x[0] < ar.ropeR;
     if (ar.hasRing) {
-      if (this.side === 'in' && !pelvisIn) { if (y[0] < ar.matY - ar.ropeH + 14 || this.over) this.side = 'out'; }
+      if (this.side === 'in' && !pelvisIn) { if (!ar.cageH && (y[0] < ar.matY - ar.ropeH + 14 || this.over)) this.side = 'out'; }   // a cage keeps everybody in
       else if (this.side === 'out' && pelvisIn && y[0] < ar.matY - 2) this.side = 'in';
     } else this.side = 'in';
     for (let i = 0; i < N; i++) {
@@ -92,7 +92,7 @@ export class Ragdoll {
         // ropes hold bodies that are not flying over them
         if (this.side === 'in' && !this.over) {
           const hgt = ar.matY - y[i];
-          if (hgt < ar.ropeH + 6) {
+          if (hgt < (ar.cageH || ar.ropeH + 6)) {
             const lo = ar.ropeL + r[i] * .3, hi = ar.ropeR - r[i] * .3;
             // project onto the rope line and reflect only the outward motion, so the rope never adds energy
             if (x[i] < lo) { const v = x[i] - px[i], p = lo - x[i]; x[i] = lo; px[i] = v < 0 ? lo + v * .3 : lo - v; if (hgt > 4) { ar.press('L', Math.min(18, p * 2 + Math.abs(v) / h * .02)); this.ropeHit = 1; } }
