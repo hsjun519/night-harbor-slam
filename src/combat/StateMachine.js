@@ -29,6 +29,7 @@ export const STATES = {
   CLIMB: { ko: '코너 오르기', input: [], hit: 1, next: ['PERCH', 'FALL'] },
   PERCH: { ko: '코너 위', input: ['attack', 'jump', 'guard', 'move'], hit: 1, next: ['AIR_ATTACK', 'FALL', 'JUMP'] },
   HANG: { ko: '로프 매달림', input: ['jump', 'move', 'guard'], hit: 1, next: ['ENTER_RING', 'FALL'] },
+  SEATED: { ko: '코너 위에 걸터앉음', input: ['mash'], hit: 1, next: ['FALL', 'IDLE'] },
   APRON: { ko: '에이프런', input: ['jump', 'move', 'guard', 'attack'], hit: 1, next: ['ENTER_RING', 'FALL', 'JUMP', 'TAGWAIT'] },
   ENTER_RING: { ko: '링 진입', input: [], hit: 1, next: ['IDLE'] },
   EXIT_RING: { ko: '링 밖으로', input: [], hit: 1, next: ['IDLE', 'APRON', 'TAGWAIT'] },
@@ -42,7 +43,7 @@ export const STATES = {
   WIN: { ko: '승리', input: [], hit: 0, protect: 1, next: ['IDLE'] },
 };
 // Reactions other systems may force on any unprotected body.
-export const REACTIONS = new Set(['HITSTUN', 'STAGGER', 'DOWN', 'GRABBED', 'KO', 'WHIPPED', 'PINNED', 'HANG', 'OUT', 'WIN', 'GET_UP', 'FALL', 'INTRO']);
+export const REACTIONS = new Set(['HITSTUN', 'STAGGER', 'DOWN', 'GRABBED', 'KO', 'WHIPPED', 'PINNED', 'HANG', 'OUT', 'WIN', 'GET_UP', 'FALL', 'INTRO', 'SEATED']);
 
 export class StateMachine {
   constructor(owner) { this.owner = owner; this.cur = 'IDLE'; this.prev = 'IDLE'; this.t = 0; this.refused = 0; this.log = []; this.onChange = null; }

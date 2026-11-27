@@ -25,6 +25,9 @@ export class GrappleSystem {
     if (f.prop) { const gv = this.grabTarget(f); if (gv) { P.drop(f, 'grab', -f.face); return this.beginHold(f, gv); } if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
     const inc = P.incoming(f);
     if (inc) return P.catchProp(f, inc);
+    const sv = m.combo.seatedFoe(f);
+    if (sv) return m.combo.seatedMove(f, sv, false);
+    if (f.dash && f.ground && Math.abs(f.vx) >= 150 && m.combo.dashCounter(f)) return true;
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);
     if (dv && dv.st === 'GUARD' && dv.guardT <= B.perfectGuard && dv.face === -f.face) { f.dash = false; this.m.combat.stagger(f, .8, dv); f.vx = -f.face * 120; this.m.combat.addFin(dv, B.finPerfect); dv.perfects++; m.hitstop(.11); m.emit('parry', { a: f, v: dv, x: (f.x + dv.x) / 2, y: dv.y - 60 }); return true; }
@@ -71,6 +74,18 @@ export class GrappleSystem {
     m.emit('grab', { a: f, v, link });
     return true;
   }
+  // straight out of 어깨 메기: the foe sits on the shoulders, the attacker can walk
+  beginCarry(a, v) {
+    const m = this.m;
+    if (!a.alive || !v.alive) return false;
+    a.set('GRAB', { force: true }); v.set('GRABBED', { force: true });
+    const link = { kind: 'hold', a, v, pos: 'carry', t: 0, phase: 'hold', pick: 0, hold: B.carryHold, strikes: B.grabStrikeMax, strikeT: 0, switches: 2, switchT: 0, fromDown: false, walk: 0 };
+    a.link = v.link = link;
+    v.escape = Math.max(0, (v.escape || 0) * .5);
+    m.links.push(link);
+    m.emit('carry', { a, v });
+    return true;
+  }
   update(dt) {
     for (const L of this.m.links.slice()) if (L.kind === 'hold') this.updateHold(L, dt);
   }
@@ -83,13 +98,14 @@ export class GrappleSystem {
     if (L.phase === 'hold') L.hold -= dt;
     if (!a.alive || !v.alive || a.st !== 'GRAB' || v.st !== 'GRABBED') { this.breakLink(L, 'state'); return; }
     // keep the pair on this side of the ropes
-    const off = (L.pos === 'front' ? 24 : 17) * a.face;
+    const off = (L.pos === 'front' ? 24 : L.pos === 'carry' ? -2 : 17) * a.face;
     if (ar.hasRing && a.side === 'in') { const lo = ar.ropeL + 14, hi = ar.ropeR - 14; a.x = clamp(a.x, Math.max(lo, lo - off), Math.min(hi, hi - off)); } else a.x = clamp(a.x, ar.x0 + 40, ar.x1 - 40);
     v.x = a.x + off; v.y = a.y; v.side = a.side; v.face = L.pos === 'front' ? -a.face : a.face;
+    if (L.pos === 'carry' && L.hold <= 0 && L.phase === 'hold') { L.hold = 99; this.m.combo.carryDrop(a, L); return; }   // held too long: dropped anyway
     if (v.escape >= B.grabEscape) { this.m.emit('escape', { a, v }); this.breakLink(L, 'escape'); return; }
     if (L.hold <= 0) this.breakLink(L, 'timeout');
   }
-  holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : HOLDS.rear; }
+  holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : L.pos === 'carry' ? HOLDS.carry : HOLDS.rear; }
   // Which move would this direction give, and is it usable right now?
   slotFor(f, I) { if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
   moveInSlot(f, L, slot) { return f.moves[L.pos] && f.moves[L.pos][slot]; }
@@ -107,7 +123,15 @@ export class GrappleSystem {
     const L = f.link, m = this.m;
     if (!L || L.kind !== 'hold' || L.a !== f) { f.set('IDLE'); return; }
     if (L.phase === 'pickup' || L.switchT > 0 || L.strikeT > 0) return;
+    if (L.pos === 'carry') {   // on the shoulders: walk, K drops them (onto the turnbuckle when facing a corner)
+      L.walk = 0;
+      if (f.consume('grab')) { m.combo.carryDrop(f, L); return; }
+      f.consume('atk'); f.consume('dodge'); f.consume('fin');
+      if (Math.abs(I.mx) > .3) { if (sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.anim.freezeBlend(f, .12); m.anim.freezeBlend(L.v, .12); } f.x += sgn(I.mx) * B.grabWalk * B.carryWalk * f.stats.spd * dt; L.walk = sgn(I.mx); }
+      return;
+    }
     if (f.has('fin') && f.fin >= B.finMax) { f.consume('fin'); if (m.finisher.fromHold(f, L)) return; }
+    if (f.has('fin')) { f.consume('fin'); if (m.combo.holdSpecial(f, L)) return; }
     if (f.has('grab')) {
       f.consume('grab');
       const slot = this.slotFor(f, I), id = this.moveInSlot(f, L, slot), mv = MOVES[id], c = this.check(f, L.v, mv);
@@ -129,7 +153,7 @@ export class GrappleSystem {
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
     let n = 0;
     for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp);
+    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? 1.3 : 1);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }
   breakLink(L, why) {
@@ -137,6 +161,7 @@ export class GrappleSystem {
     if (i >= 0) m.links.splice(i, 1);
     if (a.link === L) a.link = null;
     if (v && v.link === L) v.link = null;
+    if (v && L.pos === 'carry') { v.x = a.x - a.face * 30; v.face = a.face; }   // slid off behind
     if (v) { m.anim.freezeBlend(v, .16); v.y = m.arena.ground(v.x, v.y, v.side); v.ground = true; }
     m.anim.freezeBlend(a, .16);
     if (a.alive && a.st === 'GRAB') {

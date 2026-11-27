@@ -3,6 +3,7 @@
 import { clamp, sgn } from '../core/util.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
+import { SPECIALS, COUNTERS } from '../data/combos.js';
 
 export const DIFFICULTY = {
   easy: { name: '쉬움', punish: .06, react: .48, err: .38, guard: .12, dodge: .05, counter: 0, rev: .03, mash: 3.2, hang: .12, plan: .9, aggr: .62, combo: .3, pick: .45, pinKick: .55, spacing: 1.25 },
@@ -41,9 +42,16 @@ export class AIController {
     // situations that are not choices
     if (f.st === 'GRABBED') { this.grabbed(dt); return; }
     if (f.st === 'PINNED' || f.st === 'KO' || f.st === 'OUT' || f.st === 'TAGWAIT') return;
+    if (f.st === 'DOWN' && !f.rag && this.stompCounterCheck()) return;
     if (f.st === 'DOWN' || f.st === 'STAGGER' || f.st === 'HITSTUN') { this.mash(dt, .55); this.burstCheck(); return; }
+    if (f.st === 'SEATED') { this.mash(dt, .7); return; }
     if (f.st === 'HANG') { if (this.rng.chance(dt * (2 + this.D.mash * .3))) I.up = true; this.mash(dt, .8); return; }
-    if (f.st === 'APRON') { if (f.t > .2 + this.D.react) I.jump = true; return; }
+    if (f.st === 'APRON') {   // springboard onto somebody lying in the ring, or climb back in
+      if (f.t < .1) this.apronPick = null;
+      if (this.apronPick == null) this.apronPick = f.nearestFoe(300, o => o.side === 'in' && o.st === 'DOWN') && this.rng.chance(.45 + this.D.pick * .4) ? 'spring' : 'in';
+      if (f.t > .2 + this.D.react) { if (this.apronPick === 'spring') { this.tap('atk'); this.apronPick = 'in'; } else I.jump = true; }
+      return;
+    }
     if (f.st === 'PERCH') { this.perch(dt); return; }
     if (f.st === 'WHIPPED') { this.whipped(); return; }
     if (f.st === 'GRAB') { this.holdThink(dt); return; }
@@ -88,10 +96,19 @@ export class AIController {
       const left = d.startup - s.atk.t - D.react;
       // a chair coming up: sometimes step in and take it
       if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
+      // with energy: the counter for blows a plain counter cannot take (running, from the corner), and the big ones
+      const sk = d.run ? 'run' : (d.air && d.topStand) ? 'dash' : (!d.air && !d.ground && d.lv >= 3) ? 'heavy' : null;
+      if (sk && f.fin >= COUNTERS[sk].cost && f.dodgeCd <= 0 && f.counterCd <= 0 && left > .01 && left < .12 && r < D.counter * 1.4 + .015) { this.faceTo(o); f.intent.mx = 0; this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = COUNTERS[sk].name; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
       if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 1.7) { this.faceTo(o); this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { this.defHeat = (this.defHeat || 0) + .7; f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
       if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
+    }
+    // a dash move coming: L just before it lands turns it into a cutter (energy 25)
+    if (f.fin >= COUNTERS.dash.cost && f.dodgeCd <= 0 && f.counterCd <= 0) for (const o of f.match.fighters) {
+      if (!f.isFoe(o) || !o.dash || o.side !== f.side || Math.abs(o.vx) < 150) continue;
+      const s = this.seen(o), dist = Math.abs(s.x - f.x);
+      if (sgn(f.x - s.x) === o.face && dist > 36 && dist < 84 && this.rng.chance(D.counter * .7)) { this.faceTo(o); f.intent.mx = 0; this.tap('dodge'); this.note = COUNTERS.dash.name; return true; }
     }
     // finisher coming in
     for (const o of f.match.fighters) {
@@ -101,6 +118,21 @@ export class AIController {
         const dist = Math.abs(o.x - f.x);
         if (dist < 160 && this.rng.chance(this.D.dodge * 2.2 * dt * 10)) { if (o.finisher.type === 'strike' && this.rng.chance(.5)) { this.guardT = .5; this.lastThreat = o; } else { f.intent.mx = sgn(f.x - o.x); this.tap('dodge'); } this.note = '피니셔 피하기'; return true; }
       }
+    }
+    return false;
+  }
+  // lying down with a foot coming: L with energy grabs the leg
+  stompCounterCheck() {
+    const f = this.f, D = this.D;
+    if (f.fin < COUNTERS.stomp.cost || f.counterCd > 0) return false;
+    for (const o of f.match.fighters) {
+      if (!f.isFoe(o) || !o.alive) continue;
+      const s = this.seen(o);
+      if (!s.atk || !s.atk.d.ground || s.atk.d.air || Math.abs(s.x - f.x) > 56) continue;
+      const key = 'st' + o.idx + ':' + Math.round(s.t * 4);
+      if (this.lastStomp === key) continue;
+      this.lastStomp = key;
+      if (this.rng.chance(D.counter * .9 + .02)) { f.wantStompCounter = true; this.tap('dodge'); this.note = COUNTERS.stomp.name; return true; }
     }
     return false;
   }
@@ -124,12 +156,13 @@ export class AIController {
       return;
     }
     // reversal: press L inside the window if we noticed it in time
-    if (!L.rev.tried && !L.committed && !L.noReverse) {
-      if (this.revPlanned == null) this.revPlanned = this.rng.chance(this.D.rev * (L.fin ? .5 : 1) * (f.char.style === 'tech' ? 1.3 : 1)) ? B.reversalLead + this.D.react * .4 + this.rng.next() * B.reversalWindow * .8 : -1;
+    if (!L.rev.tried && !L.committed && !L.noReverse && !L.move.roll) {
+      const mv = L.move, lead = mv.revAt ? mv.revAt[0] : B.reversalLead, win = mv.revAt ? mv.revAt[1] - mv.revAt[0] : B.reversalWindow;
+      if (this.revPlanned == null) this.revPlanned = (!mv.revMove || f.fin >= (mv.revCost || 0)) && this.rng.chance(this.D.rev * (L.fin ? .5 : 1) * (f.char.style === 'tech' ? 1.3 : 1) * (mv.revMove ? 1.6 : 1)) ? lead + this.D.react * .4 + this.rng.next() * win * .8 : -1;
       if (this.revPlanned > 0 && L.t >= this.revPlanned) { this.tap('dodge'); this.revPlanned = null; }
     } else this.revPlanned = null;
   }
-  onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62)) ? .6 + this.rng.next() * 1.6 : 99; }
+  onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62) / Math.pow(p.bonus || 1, 1.3)) ? .6 + this.rng.next() * 1.6 : 99; }
   pinMash(p, dt) { if (p.t > (this.kickAt || 99)) return this.rng.chance(dt * this.D.mash * 1.4) ? 1 : 0; return this.rng.chance(dt * this.D.mash * .25) ? 1 : 0; }
   wantsHang() { const f = this.f; return this.rng.chance(this.D.hang * .5 * (.55 + f.hp / f.maxHp * .7)); }
   // ---- goals ----
@@ -159,6 +192,8 @@ export class AIController {
       if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
       add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
     }
+    const sf = f.side === 'in' && ar.hasRing ? m.fighters.find(o => f.isFoe(o) && o.st === 'SEATED' && o.seat && Math.abs(o.x - f.x) < 280) : null;
+    if (sf) add('seated', 10, sf);
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
     if (tDown && !tGrab) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
@@ -183,7 +218,7 @@ export class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -274,6 +309,19 @@ export class AIController {
         if (g.t > 2.5) this.planT = 0;
         break;
       }
+      case 'seated': {
+        if (t.st !== 'SEATED' || !t.seat) { this.planT = 0; break; }
+        const bx = t.seat.x - t.seat.face * 36;   // behind them, inside the ring
+        if (Math.abs(f.x - bx) > 6) this.move(bx, 4, Math.abs(f.x - bx) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) {
+          f.face = t.seat.face;
+          const push = m.rules.ringOut === 'elim' || (m.rules.ringOut === 'count' && this.rng.chance(.15));
+          this.tap(push ? 'atk' : f.fin >= SPECIALS.superGerman && this.rng.chance(.45 + D.pick * .45) ? 'fin' : 'grab');
+          this.wait = .45;
+        }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
       case 'knockOff': {
         if (t.st !== 'HANG' && t.st !== 'APRON') { this.planT = 0; break; }
         const left = t.x < ar.mid, sx = left ? ar.ropeL + 15 : ar.ropeR - 15;
@@ -356,6 +404,14 @@ export class AIController {
   holdThink(dt) {
     const f = this.f, L = f.link, m = f.match, D = this.D;
     if (!L || L.kind !== 'hold' || L.phase !== 'hold' || L.switchT > 0 || L.strikeT > 0) return;
+    if (L.pos === 'carry') {
+      if (!this.carryPlan) { const ar = m.arena, toL = f.x - ar.ropeL, toR = ar.ropeR - f.x; this.carryPlan = { corner: ar.hasRing && f.side === 'in' && Math.min(toL, toR) < 240 && this.rng.chance(.45 + D.pick * .4), dir: toL < toR ? -1 : 1, at: .25 + this.rng.next() * .35 }; }
+      const C = this.carryPlan;
+      if (L.t < C.at) return;
+      if (C.corner && m.combo.carryToCorner(f) > 60 && L.hold > .6) { f.intent.mx = C.dir; return; }
+      this.tap('grab'); this.carryPlan = null; return;
+    }
+    this.carryPlan = null;
     if (!this.holdPlan) {
       const v = L.v, ar = m.arena;
       const choices = [];
@@ -375,6 +431,10 @@ export class AIController {
         if (mv.lift > f.stats.lift) w *= .5;
         choices.push({ pos, s, id, w });
       }
+      if (L.pos === 'front' && f.fin < B.finMax) {   // Space: 로프 회전 킥 near the ropes, 어깨 메기 elsewhere
+        const id = m.combo.holdSpecialId(f), cost = SPECIALS[id];
+        if (f.fin >= cost && m.grapple.check(f, v, MOVES[id]).ok) choices.push({ pos: 'front', s: 'sp', id, special: 1, w: (id === 'ropeKick' ? 2.4 * (.5 + (this.tr.air || .3)) : 1.8 * (.5 + (this.tr.grab || .5))) * (f.fin >= cost * 2 ? 1.3 : .8) });
+      }
       if (!choices.length) { this.holdPlan = { strike: 1, at: .3 }; return; }
       const c = this.rng.weighted(choices, o => Math.pow(o.w, 1 + D.pick));
       this.holdPlan = Object.assign(c, { at: .2 + this.rng.next() * .45 * (1 + D.err * 2), strikes: this.rng.chance(.35) ? this.rng.int(1, 2) : 0 });
@@ -386,6 +446,7 @@ export class AIController {
     if (P.strikes > 0 && L.strikes < P.strikes) { this.tap('atk'); P.at = L.t + .3; return; }
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
+    if (P.special) { this.tap('fin'); this.holdPlan = null; return; }
     // rope moves need the ropes: drag the foe there first
     if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .35) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;

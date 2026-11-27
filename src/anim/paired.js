@@ -36,9 +36,10 @@ export function yawAt(m, t) { const c = compileMove(m); return c.yaw ? trackVal(
 const REF_H = 94;
 /* res: {front} front=true when the victim should be drawn over the attacker. Joints come out in attacker-local
    space: attacker feet at (0,0), facing right, y down. */
-export function evalPaired(m, t, dA, dV, outA, outV, res) {
+export function evalPaired(m, t, dA, dV, outA, outV, res, modA) {
   const c = compileMove(m), kA = dA.height / REF_H;
   trackPose(c.A, t, tmpA);
+  if (modA) modA(tmpA);
   // A lift written for a 94px body scales with the attacker.
   solveFK(tmpA, dA, outA, {});
   let axx = 0, axy = 0;

@@ -13,6 +13,7 @@ import { FinisherSystem } from './FinisherSystem.js';
 import { AnimationSystem } from '../anim/AnimationSystem.js';
 import { AIController } from './AIController.js';
 import { PropSystem } from './Props.js';
+import { ComboSystem } from './ComboSystem.js';
 import { MatchEvents } from './MatchEvents.js';
 
 export const MODES = {
@@ -41,6 +42,7 @@ export class MatchManager extends Emitter {
     this.freeze = 0; this.slowT = 0; this.slowK = 1; this.hype = 25; this.pin = null; this.endT = 0; this.introT = 0;
     this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
     this.props = new PropSystem(this);
+    this.combo = new ComboSystem(this);
     this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
@@ -164,16 +166,18 @@ export class MatchManager extends Emitter {
     return false;
   }
   // ---- pinfall ----
-  startPin(a, v) {
-    if (!a.set('PIN')) return;
+  startPin(a, v, o = {}) {
+    if (!a.set('PIN', { force: !!o.follow && a.fsm.is('IDLE', 'MOVE', 'GUARD', 'GET_UP', 'WRESTLING_MOVE', 'COUNTER', 'HITSTUN') })) return;
+    a.gettingUp = null;
     v.set('PINNED', { force: true });
     a.face = sgn(v.x - a.x) || a.face; a.x = v.x - a.face * 34; a.vx = 0;
     v.pinTries = (v.pinTries || 0) + 1;
-    const need = B.pinBase + B.pinPerHp * (1 - v.hp / v.maxHp) + B.pinPerTry * (v.pinTries - 1);
-    this.pin = { a, v, t: 0, count: 0, next: .55, kick: 0, need, struggle: 0 };
+    const need = (B.pinBase + B.pinPerHp * (1 - v.hp / v.maxHp) + B.pinPerTry * (v.pinTries - 1)) * (o.bonus || 1);
+    this.pin = { a, v, t: 0, count: 0, next: o.quick ? .4 : .55, kick: 0, need, struggle: 0, bonus: o.bonus || 1 };
     a.pin = v.pin = this.pin;
     this.ref.act = 'count'; this.ref.target = v;
     if (v.ai) v.ai.onPinned(this.pin);
+    if (o.bonus > 1) this.emit('pinBonus', { a, v, bonus: o.bonus });
     this.emit('pin', { a, v });
   }
   pinControl(a, I, dt) {

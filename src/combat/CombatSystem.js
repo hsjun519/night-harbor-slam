@@ -12,6 +12,7 @@ export class CombatSystem {
     if (f.st === 'DOWN' || f.st === 'PINNED' || (f.st === 'HITSTUN' && f.hsKind === 'lie')) return { x0: f.x - h * .48, x1: f.x + h * .48, y0: f.y - 24, y1: f.y };
     if (f.st === 'DODGE') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .55, y1: f.y };
     if (f.st === 'PERCH' || f.st === 'CLIMB') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .8, y1: f.y + 6 };
+    if (f.st === 'SEATED') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .5, y1: f.y + 28 };
     if (f.st === 'ATTACK' && f.atk && f.atk.def.id === 'slideKick') return { x0: f.x - 30, x1: f.x + 30, y0: f.y - 36, y1: f.y };
     return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .95, y1: f.y };
   }
@@ -54,6 +55,7 @@ export class CombatSystem {
     if (v.st === 'DODGE' && v.invDodge) {
       const tech = v.char.style === 'tech';
       if (d.chair && a.prop && v.t <= B.counterWindow * 1.4 && (facing || v.dodge.back) && m.phase === 'fight') { m.props.snatch(v, a); return 'counter'; }
+      if ((facing || v.dodge.back) && m.combo.strikeCounter(v, a, d)) return 'counter';   // with energy: the counter for this kind of blow
       if (v.t <= B.counterWindow * (tech ? 1.25 : 1) && v.counterCd <= 0 && !d.air && !d.dive && (!d.run || tech) && (facing || v.dodge.back) && !v.dodge.dir && m.phase === 'fight') { if (m.grapple.startCounter(v, a)) return 'counter'; }
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
@@ -90,6 +92,7 @@ export class CombatSystem {
       else m.anim.kick(v, 'guardHit', .2);
       return 'block';
     }
+    if (v.st === 'DOWN' && m.combo.stompCounter(v, a, d)) return 'counter';   // L as the foot comes down, with energy
     // hit
     const counterHit = (v.st === 'ATTACK' || v.st === 'AIR_ATTACK' || v.st === 'TAUNT' || v.st === 'FINISHER') && !(v.atk && v.atk.t > v.atk.def.startup + v.atk.def.active);
     if (v.combo.t <= 0) v.combo.n = 0;
@@ -157,7 +160,8 @@ export class CombatSystem {
   react(a, v, d, dir, counterHit) {
     const kb = d.kb / v.stats.kbr * (100 / (60 + v.stats.weight * .4)), m = this.m;
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
-    const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON';
+    const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON' || v.st === 'SEATED';
+    if (v.st === 'SEATED') { const out = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1); v.seat = null; v.seatOver = true; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
     if (v.rag && v.st === 'HITSTUN') { v.juggle = (v.juggle || 0) + 1; const k = .55 / v.juggle; v.rag.kick(dir * kb * k, -(d.up || 90) * k, dir * 2); return; }
     if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak) {
@@ -182,8 +186,9 @@ export class CombatSystem {
     const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
     const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
     const elim = this.m.rules.ringOut === 'elim';
-    const over = spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
+    const over = v.seatOver || spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
     v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
+    v.seatOver = false;
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;
     if (a) v.lastHitBy = a;

@@ -1396,10 +1396,10 @@ class ControlsOverlay {
       [['left', 'right'], '이동 · 같은 방향 두 번 빠르게: 달리기'], [['up'], '점프'], [['interact'], 'NPC 대화 · 물건 조사 (Enter도 가능)'], [['door'], '문으로 이동'], [['info'], '선수 · 커리어 정보 (부상 게이지)'], [['map'], '지도'], [['pause'], '일시정지 · 저장'],
     ] : [
       [['left', 'right'], '이동 (두 번 누르거나 계속 누르면 달리기)'], [['up'], '점프 · 로프 앞에서 코너 오르기 · 링 밖에서 링으로'], [['down'], '방어 (막 누른 순간 = 패리) · 핀폴 · 태그'], [['atk'], '공격 (연타 3단) · 공중에서 드롭킥 · 쓰러진 상대 짓밟기'],
-      [['grab'], '쓰러지거나 비틀거리는 상대 잡기 · 서 있는 상대 밀치기(가드 깨기)'], [['grab'], '잡은 뒤: 방향 + K = 기술 선택, J 무릎치기, L 뒤로 돌기'], [['dodge'], '회피 · 공격 직전에 누르면 반격 던지기'], [['dodge'], '기술에 걸린 순간 L! 표시에 맞춰 누르면 역전'], [['down', 'dodge'], '긴급 탈출 (피니셔 게이지 35 소모, 18초 대기)'], [['fin'], '피니셔 (게이지 가득) · 게이지가 덜 찼으면 도발'],
+      [['grab'], '쓰러지거나 비틀거리는 상대 잡기 · 서 있는 상대 밀치기(가드 깨기)'], [['grab'], '잡은 뒤: 방향 + K = 기술 선택, J 무릎치기, L 뒤로 돌기'], [['dodge'], '회피 · 공격 직전에 누르면 반격 던지기'], [['dodge'], '기술에 걸린 순간 L! 표시에 맞춰 누르면 역전'], [['down', 'dodge'], '긴급 탈출 (피니셔 게이지 35 소모, 18초 대기)'], [['fin'], '피니셔 (게이지 가득) · 게이지가 덜 찼으면 도발'], [['fin'], '잡은 뒤 Space: 로프 근처면 로프 회전 킥, 아니면 어깨 메기 (게이지 소모)'], [['atk', 'grab', 'down'], '기술 직후 "연계" 표시 키: 이어지는 기술 · L 타이밍 + 게이지: 기술별 카운터'],
     ];
     L.forEach(([acts, text], k) => {
-      let x = 84; const y = 60 + k * 25;
+      let x = 84; const y = 58 + k * (L.length > 10 ? 22 : 25);
       acts.forEach((a, n) => { if (n) { drawText(u, '+', x + 1, y, { size: 11, color: UI.dim }); x += 9; } x += keycap(u, i.label(a), x, y) + 3; });
       drawText(u, text, 180, y, { size: 11, color: '#eef2ff' });
     });
@@ -2397,6 +2397,7 @@ const CLIP_SRC = {
   ropeBack: { keys: [[0, 'sp-14 hd10 a-60/20 b-50/24 t24/20 u10/10'], [.12, 'sp-26 hd20 a-76/20 b-70/24 t34/26 u16/14', 'out'], [.24, 'sp14 hd-10 a20/70 b40/70 t30/24 u-30/20', 'in']] },
   pin: { keys: [[0, 'r70 sp16 hd-10 a60/40 b80/30 t30/60 u-10/30'], [.3, 'r76 sp8 hd-18 a50/50 b86/40 t20/40 u-16/24', 'io']] },
   tagReach: { keys: [[0, 'sp10 hd-6 a96/2 b20/60 t18/20 u-24/16'], [.35, 'sp16 hd-8 a104/0 b20/60 t20/24 u-24/16', 'io']], loop: 1 },
+  seatTop: { keys: [[0, 'sp16 hd18 a40/60 b30/60 t84/70 u90/80'], [.7, 'sp22 hd24 a46/54 b36/56 t86/74 u92/84', 'io']], loop: 1 },
   apron: { keys: [[0, 'sp6 hd-4 a70/50 b40/70 t8/6 u-8/8'], [.5, 'sp8 hd-6 a66/56 b40/70 t8/8 u-8/10', 'io']], loop: 1 },
   stomp: { keys: [[0, 'sp4 hd10 a20/60 b40/60 t30/60 u-10/10'], [.16, 'sp-8 hd14 a60/40 b80/40 t96/100 u-6/6', 'out'], [.24, 'sp22 hd16 a-10/50 b10/60 t26/6 u-18/24', 'in'], [.5, 'sp10 hd-6 a20/90 b55/84 t18/18 u-20/14', 'io']] },
   elbowdrop: { keys: [[0, 'sp10 hd0 a20/60 b40/60 t20/20 u-20/16'], [.18, 'sp-20 hd-10 a150/90 b40/40 t30/20 u-20/10 lift6', 'out'], [.34, 'r66 sp-20 hd10 a60/120 b150/30 t10/40 u-20/30 lift10', 'io'], [.44, 'r84 sp-10 hd0 a70/120 b160/20 t4/30 u-10/20', 'in'], [.62, 'r84 sp-10 hd-6 a70/120 b160/20 t4/30 u-10/20'], [.9, 'sp10 hd-6 a20/90 b55/84 t18/18 u-20/14', 'io']] },
@@ -2715,7 +2716,7 @@ const BALANCE = {
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
-  grabWalk: 46,
+  grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // emergency escape
   burstCost: 35, burstCd: 18, burstRange: 92,
   // finisher
@@ -3480,6 +3481,7 @@ const STATES = {
   CLIMB: { ko: '코너 오르기', input: [], hit: 1, next: ['PERCH', 'FALL'] },
   PERCH: { ko: '코너 위', input: ['attack', 'jump', 'guard', 'move'], hit: 1, next: ['AIR_ATTACK', 'FALL', 'JUMP'] },
   HANG: { ko: '로프 매달림', input: ['jump', 'move', 'guard'], hit: 1, next: ['ENTER_RING', 'FALL'] },
+  SEATED: { ko: '코너 위에 걸터앉음', input: ['mash'], hit: 1, next: ['FALL', 'IDLE'] },
   APRON: { ko: '에이프런', input: ['jump', 'move', 'guard', 'attack'], hit: 1, next: ['ENTER_RING', 'FALL', 'JUMP', 'TAGWAIT'] },
   ENTER_RING: { ko: '링 진입', input: [], hit: 1, next: ['IDLE'] },
   EXIT_RING: { ko: '링 밖으로', input: [], hit: 1, next: ['IDLE', 'APRON', 'TAGWAIT'] },
@@ -3493,7 +3495,7 @@ const STATES = {
   WIN: { ko: '승리', input: [], hit: 0, protect: 1, next: ['IDLE'] },
 };
 // Reactions other systems may force on any unprotected body.
-const REACTIONS = new Set(['HITSTUN', 'STAGGER', 'DOWN', 'GRABBED', 'KO', 'WHIPPED', 'PINNED', 'HANG', 'OUT', 'WIN', 'GET_UP', 'FALL', 'INTRO']);
+const REACTIONS = new Set(['HITSTUN', 'STAGGER', 'DOWN', 'GRABBED', 'KO', 'WHIPPED', 'PINNED', 'HANG', 'OUT', 'WIN', 'GET_UP', 'FALL', 'INTRO', 'SEATED']);
 
 class StateMachine {
   constructor(owner) { this.owner = owner; this.cur = 'IDLE'; this.prev = 'IDLE'; this.t = 0; this.refused = 0; this.log = []; this.onChange = null; }
@@ -3718,6 +3720,525 @@ class PropSystem {
 
 return { PropSystem, CHAIR, keepsProp };
 })();
+// ---- data/combos.js
+__m["data/combos.js"] = (function () {
+// Follow-ups (연계), in-move upgrades (이어 걸기 / 슈퍼 기술), the Space specials in a hold, the turnbuckle seat,
+// and the counters that cost energy. Timelines follow the conventions at the top of moves.js.
+// All names are original to this game.
+const { MOVES, HOLDS } = __m["data/moves.js"];
+const { ATTACKS } = __m["data/balance.js"];
+const HOLD_A = 'sp22 hd-10 a62/64 b70/58 t26/30 u-22/22';
+const HOLD_V = 'sp48 hd16 a30/30 b44/20 t20/30 u-12/30';
+const REAR_A = 'sp12 hd-4 a72/44 b78/40 t24/26 u-20/22';
+const IDLE = 'sp10 hd-6 a20/90 b55/84 t18/20 u-20/16';
+const FLAT = 'sp-8 hd-12 a130/10 b110/20 t24/20 u34/30';
+const LYING = 'sp-2 hd-8 a150/14 b120/24 t6/12 u12/24';     // on the back after a slam (R rot 92, head toward the attacker)
+const UPSIDE = 'sp4 hd-6 a160/10 b150/14 t12/30 u24/44';
+const PIN_A = 'r72 sp18 hd-34 a56/50 b104/36 t30/60 u-10/40 lift9 ox20';
+const PIN_V = 'sp-4 hd-8 a120/20 b100/20 t40/30 u16/40';
+const CARRY_A = 'sp4 hd-14 a70/92 b76/86 t18/20 u-18/16';
+const CARRY_V = 'sp-6 hd6 a80/60 b100/40 t90/80 u86/76';
+const SEAT_V = 'sp16 hd18 a40/60 b30/60 t84/70 u90/80';
+const DROP_A = 'r62 sp20 hd-20 a70/130 b120/30 t20/30 u0/40 lift6 ox26';
+const LAND_A = 'r80 sp14 hd-24 a60/140 b130/20 t10/20 u10/30 lift4 ox30';
+
+const COMBO_MOVES = {
+  // ---------------------------------------------------------------- ground follow-ups (the foe lies on the back)
+  fElbow: {
+    name: '점프 엘보 드롭', pos: 'ground', hp: 9, stun: 16, gain: 10, lift: 9, self: .3, desc: '바디 슬램으로 눕힌 상대에게 뛰어올라 팔꿈치로 떨어진다.',
+    dur: 1.1, rel: .9, vf: -1, vel: [0, -30, 0], land: 'sup', roll: [.26, .56],
+    A: [[0, 'sp20 hd10 a30/60 b50/60 t18/20 u-20/16'], [.22, 'sp10 hd-4 a150/120 b40/60 t40/60 u-10/50', 'io'], [.42, 'sp-6 hd-8 a164/130 b30/50 t30/40 u10/40 lift16', 'out'], [.58, DROP_A, 'in'], [.66, LAND_A, 'in'], [1.1, 'r78 sp16 hd-20 a64/120 b120/30 t20/40 u0/40 lift4 ox30']],
+    V: [[0, LYING], [.62, LYING], [.68, 'sp12 hd12 a110/40 b90/40 t44/30 u40/40'], [.9, LYING, 'io']],
+    R: [[0, 34, 'g', 92], [1.1, 34, 'g', 92]],
+    ev: [[.2, 'grunt'], [.5, 'whoosh'], [.66, 'impact', { p: 1, d: 1, word: '퍽!' }]],
+  },
+  bigElbow: {
+    name: '뱃고동 엘보', pos: 'ground', hp: 12, stun: 20, gain: 16, lift: 9, self: .3, hype: 10, desc: '관중에게 손짓하고 로프까지 갔다 와서 떨어뜨리는 과시용 엘보.',
+    dur: 2.3, rel: 2.1, vf: -1, vel: [0, -30, 0], land: 'sup', roll: [1.56, 1.8],
+    A: [[0, 'sp14 hd10 a20/90 b55/84 t18/20 u-20/16'], [.3, 'sp6 hd-12 a120/100 b120/100 t18/20 u-20/16', 'io'], [.55, 'sp4 hd-16 a172/10 b40/60 t18/20 u-20/16', 'io'], [.75, 'sp26 hd-10 a-20/80 b60/80 t50/40 u-30/30'], [.95, 'sp26 hd-10 a60/80 b-20/80 t-30/30 u50/40'], [1.15, 'sp26 hd-10 a-20/80 b60/80 t50/40 u-30/30'], [1.35, 'sp20 hd-10 a60/80 b-20/80 t-30/30 u50/40'], [1.55, 'sp10 hd-6 a156/124 b30/60 t20/30 u-10/30', 'io'], [1.8, DROP_A, 'in'], [1.88, LAND_A, 'in'], [2.3, 'r78 sp16 hd-20 a64/120 b120/30 t20/40 u0/40 lift4 ox30']],
+    V: [[0, LYING], [1.84, LYING], [1.9, 'sp14 hd14 a110/40 b90/40 t46/30 u40/40'], [2.1, LYING, 'io']],
+    R: [[0, 34, 'g', 92], [2.3, 34, 'g', 92]],
+    ax: [[0, 0, 0], [.62, 0, 0], [.95, 64, 0, 'lin'], [1.2, 64, 0], [1.5, 0, 0, 'io'], [2.3, 0, 0]],
+    ev: [[.3, 'cheer'], [.55, 'cheer'], [1.6, 'grunt'], [1.88, 'impact', { p: 1.4, d: 1, word: '뿌우웅!' }]],
+  },
+  backStretch: {
+    name: '등 꺾기 조르기', pos: 'ground', hp: 13, stun: 24, gain: 12, lift: 9, self: .4, desc: '엎어 놓고 두 다리를 겨드랑이에 끼워 허리를 꺾는다. 연타로 버틸 수 있다.',
+    dur: 2.8, rel: 2.5, vf: 1, vel: [10, -20, 0], land: 'prone', sub: [.5, 2.4],
+    A: [[0, 'sp30 hd10 a60/60 b66/60 t30/40 u-10/30'], [.4, 'sp-14 hd-10 a40/120 b46/110 t40/60 u-20/40', 'io'], [.9, 'sp-24 hd-14 a36/124 b42/114 t30/40 u-26/30', 'io'], [1.5, 'sp-16 hd-8 a40/120 b46/110 t36/50 u-20/36', 'io'], [2.1, 'sp-26 hd-16 a36/124 b42/114 t30/40 u-26/30', 'io'], [2.5, 'sp-16 hd-10 a40/120 b46/110 t30/40 u-20/30'], [2.8, IDLE, 'io']],
+    V: [[0, 'sp4 hd-6 a150/30 b140/40 t0/10 u4/10'], [.4, 'sp-30 hd-40 a150/30 b140/40 t-60/70 u-64/66'], [1.2, 'sp-40 hd-50 a160/20 b150/30 t-70/70 u-74/66'], [2.0, 'sp-34 hd-44 a156/26 b146/36 t-64/70 u-68/66'], [2.5, 'sp-30 hd-40 a150/30 b140/40 t-60/70 u-64/66'], [2.8, 'sp4 hd-6 a150/30 b140/40 t0/10 u4/10']],
+    R: [[0, 30, 'g', 90], [2.8, 30, 'g', 90]],
+    ik: [[.4, 2.5, 'N', 'aN'], [.4, 2.5, 'F', 'aF']],
+    ev: [[.3, 'grunt'], [.6, 'hit', { d: .2 }], [1.0, 'cry'], [1.1, 'hit', { d: .2 }], [1.6, 'hit', { d: .2 }], [2.1, 'hit', { d: .2 }], [2.4, 'hit', { d: .2 }]],
+  },
+  anchorHammer: {
+    name: '닻 망치', pos: 'ground', hp: 16, stun: 26, gain: 14, lift: 1.1, self: .5, desc: '쓰러진 상대를 일으켜 거꾸로 세운 채 버티다가 앞으로 내리꽂고 그대로 덮친다.',
+    dur: 2.0, rel: 1.74, vf: -1, vel: [10, -40, 0], land: 'sup', toPin: 1,
+    A: [[0, 'sp56 hd-20 a50/16 b56/12 t64/90 u20/80'], [.3, HOLD_A, 'io'], [.55, 'sp36 hd-14 a82/58 b86/54 t54/72 u6/62', 'io'], [.85, 'sp-10 hd-22 a150/34 b152/32 t10/8 u-16/10', 'out'], [1.3, 'sp-12 hd-24 a152/30 b154/30 t14/10 u-14/12'], [1.5, 'r40 sp30 hd-20 a110/40 b110/40 t30/40 u-10/30', 'in'], [1.62, PIN_A, 'in'], [2.0, PIN_A]],
+    V: [[0, 'sp10 hd20 a20/30 b30/30 t10/30 u20/40'], [.3, HOLD_V, 'io'], [.55, 'sp62 hd30 a40/30 b30/20 t14/24 u-10/24'], [.85, UPSIDE], [1.3, 'sp6 hd-4 a164/10 b154/14 t10/26 u20/40'], [1.62, PIN_V], [2.0, PIN_V]],
+    R: [[0, 30, 'g', 70], [.3, 24, 42, -20], [.55, 22, 46, -44], [.85, 10, 112, -176, 'out'], [1.3, 10, 116, -178], [1.62, 34, 'g', -268, 'in'], [2.0, 34, 'g', -268]],
+    ik: [[.1, 1.6, 'N', 'pelvis'], [.1, 1.6, 'F', 'chest']],
+    ev: [[.2, 'grunt'], [.6, 'lift'], [1.0, 'cheer'], [1.4, 'whoosh'], [1.62, 'impact', { p: 1.6, d: 1, word: '쿠웅!' }]],
+  },
+  liftUp: {
+    name: '끌어올리기', pos: 'chain', hp: 0, stun: 0, gain: 0, lift: 9, self: 0, desc: '', dur: .34, rel: 9, vf: -1, next: 1,
+    A: [[0, 'sp56 hd-20 a50/16 b56/12 t64/90 u20/80'], [.18, 'sp44 hd-16 a60/30 b66/26 t50/66 u0/60', 'io'], [.34, HOLD_A, 'io']],
+    V: [[0, 'sp10 hd20 a20/30 b30/30 t10/30 u20/40'], [.18, 'sp50 hd30 a30/20 b40/20 t40/70 u20/80', 'io'], [.34, HOLD_V, 'io']],
+    R: [[0, 30, 'g', 70], [.18, 26, 'g', 20], [.34, 24, 42, -20]],
+    ik: [[0, .34, 'N', 'neck'], [0, .34, 'F', 'chest']],
+    ev: [[.05, 'grunt']],
+  },
+  // ---------------------------------------------------------------- on the shoulders (어깨 메기)
+  shoulderLift: {
+    name: '어깨 메기', pos: 'special', hp: 0, stun: 4, gain: 4, lift: 1.05, self: 0, toHold: 'carry', desc: '상대를 목말 태우듯 어깨에 올린다. 걸어서 코너로 갈 수 있다.',
+    dur: .8, rel: 9, vf: 1,
+    A: [[0, HOLD_A], [.22, 'sp44 hd-20 a40/60 b44/60 t84/112 u64/104', 'io'], [.46, 'sp30 hd-24 a60/80 b66/76 t70/96 u50/90', 'io'], [.8, CARRY_A, 'out']],
+    V: [[0, 'sp20 hd10 a30/40 b40/40 t20/30 u-10/30'], [.22, 'sp30 hd20 a60/40 b70/40 t40/40 u30/40'], [.46, 'sp10 hd10 a80/50 b90/40 t80/70 u76/70'], [.8, CARRY_V, 'io']],
+    R: [[0, 22, 48, 0], [.22, 12, 52, 0], [.46, 2, 60, 0, 'out'], [.8, -2, 76, 0, 'in']],
+    ik: [[.4, .8, 'N', 'kN'], [.4, .8, 'F', 'kF']],
+    ev: [[.1, 'grunt'], [.5, 'lift']],
+  },
+  elecChair: {
+    name: '일렉트릭 체어 드롭', pos: 'special', hp: 14, stun: 20, gain: 14, lift: 9, self: .5, desc: '어깨 위의 상대와 함께 뒤로 넘어가 등을 바닥에 꽂는다.',
+    dur: 1.1, rel: .8, vf: 1, vel: [-20, -60, 0], land: 'sup',
+    A: [[0, CARRY_A], [.25, 'sp-16 hd-6 a80/80 b86/76 t30/30 u-10/30', 'io'], [.5, 'r-50 sp-20 hd10 a90/60 b96/60 t70/60 u50/60', 'in'], [.62, 'r-84 sp-6 hd-10 a110/30 b110/30 t50/70 u40/70 ox-6', 'in'], [1.1, 'r-84 sp-6 hd-12 a100/40 b100/40 t40/60 u30/60 ox-6']],
+    V: [[0, CARRY_V], [.25, 'sp-20 hd-10 a120/40 b140/30 t80/60 u80/60'], [.5, 'sp-30 hd-30 a150/20 b150/20 t60/40 u60/40'], [.62, 'sp-8 hd-12 a130/10 b110/20 t60/40 u50/40'], [1.1, FLAT]],
+    R: [[0, -2, 76, 0], [.25, -6, 80, -20], [.5, -30, 50, -60, 'in'], [.62, -44, 'g', -92, 'in'], [1.1, -46, 'g', -92]],
+    ik: [[0, .55, 'N', 'kN'], [0, .55, 'F', 'kF']],
+    ev: [[.1, 'grunt'], [.62, 'impact', { p: 1.3, d: 1, word: '콰당!' }]],
+  },
+  turnbuckleDrop: {
+    name: '턴버클 던지기', pos: 'special', hp: 10, stun: 22, gain: 12, lift: 9, self: .3, push: 1, toSeat: 1, desc: '어깨 위의 상대를 앞으로 던져 코너 맨 위에 걸터앉힌다.',
+    dur: .9, rel: .86, vf: 1, vel: [0, 0, 0],
+    A: [[0, CARRY_A], [.2, 'sp-8 hd-10 a110/60 b116/56 t30/40 u-20/30', 'io'], [.45, 'sp30 hd-10 a150/20 b156/20 t50/40 u-30/20', 'out'], [.6, 'sp24 hd-8 a90/20 b96/20 t30/30 u-20/20'], [.9, IDLE, 'io']],
+    V: [[0, CARRY_V], [.2, 'sp-10 hd0 a100/40 b120/30 t90/80 u86/76'], [.45, 'sp40 hd30 a150/40 b150/40 t60/60 u60/60'], [.6, 'sp30 hd24 a60/60 b60/60 t84/70 u90/80'], [.9, SEAT_V]],
+    R: [[0, -2, 76, 0], [.2, 0, 80, -6], [.45, 22, 86, 30, 'out'], [.6, 30, 58, 4, 'in'], [.9, 30, 58, 0]],
+    ik: [[0, .4, 'N', 'kN'], [0, .4, 'F', 'kF']],
+    ev: [[.1, 'grunt'], [.5, 'impact', { p: 1.1, d: 1, word: '쾅!', wall: 1 }]],
+  },
+  // ---------------------------------------------------------------- from the top turnbuckle (상대가 코너 위에 앉아 있을 때)
+  superGerman: {
+    name: '슈퍼 저먼', pos: 'super', hp: 24, stun: 40, gain: 0, lift: 9, self: .7, quake: 120, push: 1, desc: '코너 위에 앉은 상대 뒤로 올라가 허리를 감고 높은 곳에서 저먼 수플렉스로 던진다.',
+    dur: 1.9, rel: 1.5, vf: 1, vel: [-80, -100, -1.6], land: 'sup',
+    A: [[0, 'sp20 hd-10 a60/60 b66/56 t30/40 u-20/30'], [.35, 'sp10 hd-10 a150/40 b140/50 t80/100 u20/40 lift20', 'io'], [.6, REAR_A + ' lift30', 'io'], [.85, 'sp20 hd-4 a78/46 b80/42 t58/74 u8/64 lift30', 'io'], [1.05, 'r-14 sp-30 hd-18 a88/24 b90/22 t22/32 u-12/34 lift34', 'out'], [1.35, 'r-60 sp-50 hd-44 a118/10 b120/10 t72/98 u62/98 ox-12', 'in'], [1.9, 'r-80 sp-10 hd-10 a110/20 b110/20 t50/80 u40/80 ox-12']],
+    V: [[0, SEAT_V], [.6, 'sp-4 hd10 a30/60 b40/56 t40/40 u30/40'], [1.05, 'sp-18 hd-20 a90/20 b100/20 t40/30 u30/44'], [1.35, 'sp36 hd50 a150/20 b140/20 t84/24 u96/34'], [1.9, 'sp36 hd50 a140/30 b130/30 t80/30 u92/40']],
+    R: [[0, 30, 58, 0], [.6, 24, 82, 0], [.85, 24, 80, -4], [1.05, 10, 132, -66, 'out'], [1.2, -20, 130, -120], [1.35, -56, 'g', -188, 'in'], [1.9, -70, 'g', -262]],
+    ik: [[.55, 1.4, 'N', 'pelvis'], [.55, 1.4, 'F', 'pelvis']],
+    ev: [[.3, 'grunt'], [.6, 'cry'], [1.0, 'lift'], [1.15, 'whoosh'], [1.35, 'impact', { p: 2.4, d: 1, word: '콰아앙!!' }]],
+  },
+  cornerBackdrop: {
+    name: '턴버클 백드롭', pos: 'special', hp: 14, stun: 24, gain: 12, lift: 9, self: .5, push: 1, desc: '코너 위에 앉은 상대의 허리를 감아 뒤로 잡아당겨 떨어뜨린다.',
+    dur: 1.3, rel: 1.0, vf: 1, vel: [-50, -60, -1], land: 'sup',
+    A: [[0, 'sp20 hd-10 a60/60 b66/56 t30/40 u-20/30'], [.3, REAR_A, 'io'], [.55, 'r-10 sp-26 hd-14 a90/30 b92/28 t30/40 u-10/40', 'out'], [.8, 'r-60 sp-40 hd-30 a118/10 b120/10 t72/98 u62/98 ox-10', 'in'], [1.3, 'r-80 sp-10 hd-10 a110/20 b110/20 t50/80 u40/80 ox-10']],
+    V: [[0, SEAT_V], [.3, 'sp-4 hd10 a30/60 b40/56 t60/50 u60/60'], [.55, 'sp-20 hd-20 a100/20 b110/20 t50/40 u40/44'], [.8, 'sp30 hd40 a150/20 b140/20 t70/30 u80/40'], [1.3, 'sp30 hd40 a140/30 b130/30 t70/30 u80/40']],
+    R: [[0, 30, 58, 0], [.3, 22, 62, -4], [.55, 4, 92, -80, 'out'], [.8, -46, 'g', -186, 'in'], [1.3, -60, 'g', -250]],
+    ik: [[.25, .9, 'N', 'pelvis'], [.25, .9, 'F', 'pelvis']],
+    ev: [[.2, 'grunt'], [.55, 'lift'], [.8, 'impact', { p: 1.4, d: 1, word: '쿵!' }]],
+  },
+  // ---------------------------------------------------------------- rope swing kick (619형): shove onto the middle rope, swing through, land on the apron
+  ropeKick: {
+    name: '로프 회전 킥', pos: 'special', hp: 12, stun: 28, gain: 14, lift: 0, self: .2, push: 1, endApron: 1, revMove: 'ropeLariat', revCost: 25, desc: '상대를 가운데 로프에 걸쳐 놓고 달려와 톱로프를 잡고 몸을 돌려 걷어찬다. 끝나면 에이프런에 선다.',
+    dur: 1.8, rel: 1.36, vf: -1, vel: [-110, -60, .9], land: 'prone',
+    A: [[0, HOLD_A], [.18, 'sp34 hd-14 a70/40 b76/36 t40/50 u-20/30', 'io'], [.36, 'sp40 hd-16 a90/10 b96/10 t50/30 u-40/20', 'out'], [.6, 'sp6 hd-6 a20/90 b55/84 t30/30 u-30/20', 'io'], [.8, 'sp30 hd-10 a-20/80 b60/80 t50/40 u-30/30'], [.95, 'sp30 hd-10 a60/80 b-20/80 t-30/30 u50/40'], [1.08, 'sp16 hd-10 a160/20 b150/30 t50/40 u-10/30 lift8'], [1.2, 'r-40 sp-20 hd-10 a120/0 b116/0 t62/0 u56/0 lift34', 'out'], [1.32, 'r-76 sp-10 hd-6 a94/0 b90/0 t26/0 u20/0 lift46', 'in'], [1.46, 'r-40 sp0 hd-4 a120/0 b116/0 t40/20 u30/20 lift30 ox30'], [1.62, 'sp20 hd-6 a40/60 b40/60 t40/60 u20/50 ox50', 'in'], [1.8, 'sp6 hd-4 a70/50 b40/70 t8/6 u-8/8 ox50', 'io']],
+    V: [[0, HOLD_V], [.18, 'sp0 hd0 a60/30 b70/30 t10/30 u-10/30'], [.36, 'sp-30 hd-40 a170/20 b160/30 t-50/10 u-56/14'], [.8, 'sp-34 hd-36 a166/26 b158/34 t-52/12 u-56/14'], [1.3, 'sp-30 hd-40 a170/20 b160/30 t-50/10 u-56/14'], [1.36, 'sp30 hd30 a60/40 b70/40 t20/30 u0/30']],
+    R: [[0, 24, 42, -20], [.18, 28, 44, -10], [.36, 36, 40, 58, 'out'], [1.3, 36, 40, 58], [1.36, 30, 46, -20, 'in']],
+    revAt: [.95, 1.2],
+    ax: [[0, 0, 0], [.4, 0, 0], [.8, -70, 0, 'out'], [1.08, 6, 0, 'in'], [1.32, 14, 0], [1.46, 0, 0], [1.8, 0, 0]],
+    ev: [[.16, 'grunt'], [.36, 'smack'], [.9, 'cheer'], [1.2, 'whoosh'], [1.32, 'impact', { p: 1.3, d: 1, word: '빡!!' }]],
+  },
+  ropeLariat: {
+    name: '로프 반격 래리어트', pos: 'counter', hp: 12, stun: 22, gain: 10, lift: 9, self: .3, desc: '로프에 걸린 척하다 달려든 상대의 목을 팔로 걷어 넘긴다.',
+    dur: .8, rel: .5, vf: -1, vel: [60, -90, -1.6], land: 'sup',
+    A: [[0, IDLE], [.12, 'sp20 hd-10 a-30/40 b60/40 t40/50 u-20/30', 'io'], [.26, 'sp30 hd-14 a100/0 b40/60 t50/40 u-30/20', 'out'], [.5, 'sp24 hd-10 a96/10 b40/60 t40/40 u-20/30'], [.8, IDLE, 'io']],
+    V: [[0, 'sp20 hd0 a60/40 b60/40 t20/30 u-10/30'], [.26, 'sp-30 hd-40 a150/20 b140/30 t60/30 u40/30'], [.5, FLAT]],
+    R: [[0, 32, 43, 0], [.26, 32, 62, 60, 'out'], [.5, 44, 'g', 92, 'in']],
+    ev: [[.1, 'grunt'], [.26, 'impact', { p: 1.3, d: 1, word: '빡!' }]],
+  },
+  // ---------------------------------------------------------------- powerbomb x3 (슈퍼 파워밤) and a second German (연속 저먼)
+  pbAgain: {
+    name: '슈퍼 파워밤', pos: 'super', hp: 8, stun: 14, gain: 0, lift: 9, self: 0, desc: '', dur: 2.0, rel: 9, vf: -1, next: 1, quake: 60,
+    A: [[0, 'sp50 hd-22 a56/30 b60/28 t50/66 u4/60'], [.5, 'sp-8 hd-6 a150/26 b154/24 t12/10 u-16/10', 'out'], [.95, 'sp-16 hd-14 a164/16 b166/16 t30/50 u0/50', 'io'], [1.25, 'sp-12 hd-10 a168/14 b168/14 t30/50 u10/60 lift40', 'out'], [1.5, 'sp64 hd-18 a56/4 b60/4 t86/60 u78/80', 'in'], [1.7, 'sp56 hd-16 a56/8 b60/8 t54/66 u-14/58'], [2.0, 'sp50 hd-22 a56/30 b60/28 t50/66 u4/60', 'io']],
+    V: [[0, 'sp30 hd20 a60/20 b50/20 t60/50 u60/60'], [.5, 'sp-6 hd-4 a60/50 b70/40 t84/60 u90/64'], [.95, 'sp-16 hd-14 a90/30 b100/30 t84/50 u92/56'], [1.5, 'sp26 hd34 a140/20 b130/20 t96/24 u104/34'], [1.7, 'sp20 hd20 a140/20 b130/20 t90/40 u98/50'], [2.0, 'sp30 hd20 a60/20 b50/20 t60/50 u60/60']],
+    R: [[0, 22, 50, 40], [.5, 14, 108, 2, 'out'], [.95, 8, 112, -8], [1.25, 8, 150, -8, 'out'], [1.5, 38, 'g', 104, 'in'], [1.7, 34, 16, 100], [2.0, 22, 50, 40]],
+    ik: [[0, 2.0, 'N', 'pelvis'], [0, 2.0, 'F', 'pN']],
+    ev: [[.4, 'lift'], [1.2, 'whoosh'], [1.5, 'impact', { p: 1.9, d: 1, word: '둘!' }]],
+  },
+};
+// Copies of existing timelines whose ends meet: the first and last powerbombs, the rolling German.
+COMBO_MOVES.spb1 = { ...MOVES.fNorth1, name: '슈퍼 파워밤', pos: 'super', hp: 8, stun: 14, gain: 0, desc: '', ev: [[.1, 'cry'], [.56, 'lift'], [1, 'impact', { p: 1.6, d: 1, word: '하나!' }]] };
+COMBO_MOVES.spb3 = { ...MOVES.fNorth2, name: '슈퍼 파워밤', pos: 'super', hp: 15, stun: 28, gain: 0, desc: '파워밤을 놓지 않고 세 번. 에너지 50.', ev: [[.4, 'lift'], [1.2, 'whoosh'], [1.5, 'impact', { p: 2.7, d: 1, word: '셋!! 콰아앙!!' }]] };
+COMBO_MOVES.gRoll = { ...MOVES.fAnchor1, name: '연속 저먼', pos: 'chain', hp: 7, stun: 12, gain: 6, desc: '', ev: [[.1, 'grunt'], [.4, 'lift'], [.6, 'impact', { p: 1.2, d: 1, word: '하나!' }]] };
+Object.assign(MOVES, COMBO_MOVES);
+for (const id in COMBO_MOVES) MOVES[id].id = id;
+
+// counters that cost energy: a quick roll-up, two submissions and the cutter
+Object.assign(MOVES, {
+  rollUp: {
+    id: 'rollUp', name: '기습 롤업', pos: 'counter', hp: 4, stun: 10, gain: 6, lift: 9, self: 0, toPin: 1, desc: '큰 주먹을 피해 파고들어 굴려서 그대로 누른다.',
+    dur: .8, rel: 9, vf: -1,
+    A: [[0, 'sp30 hd-10 a60/60 b60/60 t60/90 u40/80'], [.25, 'sp60 hd-20 a100/40 b100/40 t70/100 u50/90', 'io'], [.5, 'r-40 sp40 hd-10 a90/60 b90/60 t80/100 u60/90', 'out'], [.8, PIN_A, 'in']],
+    V: [[0, 'sp30 hd10 a120/10 b40/60 t30/30 u-20/30'], [.25, 'sp60 hd30 a60/40 b60/40 t40/40 u20/40'], [.5, 'sp80 hd40 a80/40 b80/40 t120/60 u120/60'], [.8, PIN_V]],
+    R: [[0, 30, 43, 0], [.25, 26, 50, 20], [.5, 20, 52, 120, 'out'], [.8, 34, 'g', 92, 'in']],
+    ev: [[.1, 'grunt'], [.5, 'whoosh'], [.78, 'impact', { p: .8, d: 1, word: '롤업!' }]],
+  },
+  calfLock: {
+    id: 'calfLock', name: '종아리 꺾기', pos: 'counter', hp: 12, stun: 22, gain: 10, lift: 9, self: .5, sub: [.7, 2.3], desc: '짓밟으러 든 발목을 잡아 넘어뜨리고 종아리를 꺾는다.',
+    dur: 2.6, rel: 2.4, vf: -1, vel: [-10, -20, 0], land: 'prone',
+    A: [[0, 'r-90 hd-6 a56/24 b130/20 t4/10 u12/34'], [.2, 'r-70 sp30 hd10 a90/40 b100/40 t60/60 u40/60', 'io'], [.5, 'r-60 sp40 hd0 a70/80 b80/80 t80/100 u60/90 ox10', 'io'], [.8, 'r-40 sp20 hd-10 a60/100 b70/90 t90/120 u70/110 ox16', 'io'], [1.5, 'r-48 sp14 hd-14 a60/104 b70/94 t90/120 u70/110 ox16', 'io'], [2.4, 'r-40 sp20 hd-10 a60/100 b70/90 t90/120 u70/110 ox16'], [2.6, 'r-60 sp30 hd0 a60/60 b60/60 t70/80 u50/80 ox16', 'io']],
+    V: [[0, 'sp10 hd-10 a30/40 b40/40 t40/80 u-10/20'], [.3, 'sp30 hd-20 a90/40 b100/40 t30/40 u-20/20'], [.6, 'sp-10 hd-20 a160/30 b150/40 t10/40 u-30/100'], [1.5, 'sp-16 hd-26 a164/26 b154/36 t10/40 u-36/110'], [2.4, 'sp-10 hd-20 a160/30 b150/40 t10/40 u-30/100']],
+    R: [[0, 36, 43, 0], [.3, 36, 40, 30, 'out'], [.6, 44, 'g', 88, 'in'], [2.6, 44, 'g', 88]],
+    ev: [[.1, 'grunt'], [.6, 'impact', { p: .8, d: .25, word: '털썩!' }], [1.0, 'cry'], [1.2, 'hit', { d: .25 }], [1.8, 'hit', { d: .25 }], [2.3, 'hit', { d: .25 }]],
+  },
+  netTrip: {
+    id: 'netTrip', name: '그물 조르기', pos: 'counter', hp: 4, stun: 10, gain: 4, lift: 9, self: 0, desc: '달려든 상대의 다리를 걸어 엎어뜨리고 그대로 허리를 꺾는다.', dur: .5, rel: 9, vf: 1, next: 1,
+    A: [[0, 'sp30 hd-10 a60/60 b60/60 t60/90 u40/80'], [.25, 'sp50 hd-20 a90/40 b90/40 t80/110 u60/100', 'io'], [.5, 'sp30 hd10 a60/60 b66/60 t30/40 u-10/30', 'io']],
+    V: [[0, 'sp30 hd10 a-20/60 b60/60 t50/40 u-30/30'], [.25, 'sp40 hd20 a120/40 b110/40 t-10/30 u-30/30'], [.5, 'sp4 hd-6 a150/30 b140/40 t0/10 u4/10']],
+    R: [[0, 30, 43, 0], [.25, 34, 46, 40, 'out'], [.5, 30, 'g', 90, 'in']],
+    ev: [[.1, 'grunt'], [.45, 'impact', { p: .8, d: 1, word: '털썩!' }]],
+  },
+});
+
+// Carried on the shoulders: the victim sits facing the same way, the attacker holds the knees and can walk.
+HOLDS.carry = {
+  id: 'carry', dur: 1.0, loop: 1, vf: 1, rel: 99, ev: [],
+  A: [[0, CARRY_A], [.5, 'sp6 hd-12 a72/90 b78/84 t20/22 u-16/18', 'io'], [1.0, CARRY_A, 'io']],
+  V: [[0, CARRY_V], [.5, 'sp4 hd-4 a130/40 b150/30 t92/84 u88/80', 'io'], [1.0, CARRY_V, 'io']],
+  R: [[0, -2, 76, 0], [1.0, -2, 76, 0]],
+  ik: [[-1, 9, 'N', 'kN'], [-1, 9, 'F', 'kF']],
+};
+
+// Springboard off the top rope from the apron onto a foe lying in the ring.
+ATTACKS.springMoon = { ...ATTACKS.diveMoon, id: 'springMoon', name: '스프링보드 문설트', hp: 11, stun: 34, spring: 1 };
+
+// ---------------------------------------------------------------- tables
+// What can follow a move once it lets go (or, with `direct`, straight out of its last pose).
+//   key: atk | grab | down | fin. id: a move started on the foe where they lie. lift: haul them up first (liftUp + id).
+//   pin: start a cover at once; the number multiplies how hard it is to kick out. spring: springboard from the apron.
+const FOLLOW = {
+  bodySlam: [{ key: 'atk', id: 'fElbow' }],
+  spinebuster: [{ key: 'atk', id: 'bigElbow' }],
+  backbreaker: [{ key: 'grab', id: 'backStretch' }],
+  suplex: [{ key: 'grab', id: 'suplex', lift: 1, name: '끌어올려 한 번 더' }],
+  ddt: [{ key: 'down', pin: 1.3 }],
+  powerbomb: [{ key: 'down', pin: 1.35 }],
+  piledriver: [{ key: 'down', pin: 1.35 }],
+  chokeslam: [{ key: 'down', pin: 1.3 }],
+  german: [{ key: 'down', pin: 1.2 }],
+  cutter: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
+  spear: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
+  anchorHammer: [{ key: 'down', pin: 1.45, direct: 1, name: '그대로 누르기' }],
+  rollUp: [],
+  fElbow: [{ key: 'down', pin: 1.15, direct: 1 }],
+  bigElbow: [{ key: 'down', pin: 1.3, direct: 1 }],
+  elecChair: [{ key: 'down', pin: 1.25 }],
+  superGerman: [{ key: 'down', pin: 1.45 }],
+  cornerBackdrop: [{ key: 'down', pin: 1.2 }],
+  spb3: [{ key: 'down', pin: 1.5 }],
+  ropeKick: [{ key: 'atk', spring: 1, name: '스프링보드 문설트' }],
+  springMoon: [{ key: 'down', pin: 1.35 }],
+};
+// Pressed early in a move, these turn it into a longer one. to: the parts that replace it. cost: energy (finisher gauge).
+const UPGRADE = {
+  german: [{ key: 'grab', to: ['gRoll', 'german'], until: .22, name: '연속 저먼!' }],
+  powerbomb: [{ key: 'fin', to: ['spb1', 'pbAgain', 'spb3'], until: .24, cost: 50, name: '슈퍼 파워밤!' }],
+};
+// L at the right moment with enough energy: these replace the plain counter.
+//   dash: dash moves and dives at a standing body; run: running strikes; heavy: big standing strikes; stomp: stomps on you while down.
+const COUNTERS = {
+  dash: { id: 'cutter', cost: 25, name: '번개 커터 반격' },
+  run: { id: 'netTrip', parts: ['netTrip', 'backStretch'], cost: 25, name: '그물 조르기' },
+  heavy: { id: 'rollUp', cost: 20, name: '기습 롤업' },
+  stomp: { id: 'calfLock', cost: 20, name: '종아리 꺾기' },
+};
+// Space in a front hold when the finisher gauge is not full: the specials.
+const SPECIALS = { ropeKick: 20, shoulderLift: 10, superGerman: 50 };
+// Named chains: the moves in order, ending with the last one.
+const SIGNATURES = [
+  { name: '파도 넘기', seq: ['ropeKick', 'springMoon'] },
+  { name: '닻 내리기', seq: ['spear', 'anchorHammer'] },
+  { name: '번개 닻', seq: ['cutter', 'anchorHammer'] },
+  { name: '항구의 밤', seq: ['bodySlam', 'fElbow'] },
+  { name: '북해 삼연타', seq: ['spb1', 'pbAgain', 'spb3'] },
+  { name: '코너 폭격', seq: ['turnbuckleDrop', 'superGerman'] },
+];
+const COMBO = { window: 1.5, springWindow: 2.2, counterWindow: .16 };
+
+return { COMBO_MOVES, FOLLOW, UPGRADE, COUNTERS, SPECIALS, SIGNATURES, COMBO };
+})();
+// ---- combat/ComboSystem.js
+__m["combat/ComboSystem.js"] = (function () {
+// Follow-ups (연계) after a move lets go, upgrades pressed early in a move (연속 저먼, 슈퍼 파워밤), the Space specials
+// in a front hold (로프 회전 킥, 어깨 메기), the foe sitting on the top turnbuckle, and the counters that cost energy.
+// Humans and the computer go through the same calls; the computer decides through its reaction delay.
+const { sgn, clamp } = __m["core/util.js"];
+const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
+const { MOVES } = __m["data/moves.js"];
+const { FOLLOW, UPGRADE, COUNTERS, SPECIALS, SIGNATURES, COMBO } = __m["data/combos.js"];
+const { J } = __m["anim/skeleton.js"];
+const KEYBUF = { atk: 'atk', grab: 'grab', fin: 'fin', down: 'downEdge' };
+const KEYNAME = { atk: 'atk', grab: 'grab', fin: 'fin', down: 'down' };
+
+class ComboSystem {
+  constructor(m) {
+    this.m = m;
+    m.on('moveStart', e => this.onMoveStart(e));
+    m.on('release', e => this.onRelease(e));
+    m.on('moveEnd', e => this.onMoveEnd(e));
+    m.on('landAttack', e => { if (e.ok && e.def.id === 'springMoon') { const v = e.f.nearestFoe(80, o => o.st === 'DOWN' || (o.st === 'HITSTUN' && o.hsKind === 'lie')); this.chainPush(e.f, 'springMoon'); if (v) this.open(e.f, v, 'springMoon'); } });
+  }
+  // ---- per fighter, after its input is read and before its state runs. True: this frame is used up.
+  pre(f, dt) {
+    const L = f.link;
+    if (L && L.kind === 'move' && L.a === f && L.up) return this.upgradeTick(f, L);
+    if (f.follow) return this.followTick(f, dt);
+    return false;
+  }
+  // ---- 이어 걸기: pressed while a move is still early
+  onMoveStart(e) {
+    const { a, L } = e, U = UPGRADE[e.mv.id];
+    if (U && !e.fin && !L.counter && L.parts.length === 1) {
+      L.up = U;
+      if (a.ai && a.ctrl === 'ai') { const D = a.ai.D, o = U.find(o => !o.cost || a.fin >= o.cost); if (o && a.ai.rng.chance(D.pick * (o.cost ? .55 : .45))) L.upAi = { o, at: .04 + a.ai.rng.next() * Math.max(.02, o.until - .08) }; }
+    }
+    // the chain this move belongs to
+    const ch = a.comboSeq || (a.comboSeq = []);
+    if (!L.follow && !L.upgraded) ch.length = 0;
+    ch.push(e.mv.id);
+    if (L.follow) this.signature(a);
+  }
+  upgradeTick(f, L) {
+    const U = L.up;
+    if (L.part !== 0 || !U) { L.up = null; return false; }
+    for (const o of U) {
+      if (L.t > o.until) continue;
+      const ai = L.upAi && L.upAi.o === o && L.t >= L.upAi.at;
+      const want = ai || (f.ctrl !== 'ai' && f.has(KEYBUF[o.key]));
+      if (!want) continue;
+      if (!ai) f.consume(KEYBUF[o.key]);
+      if (o.cost && f.fin < o.cost) { this.m.emit('deny', { f, why: `에너지 ${o.cost} 필요`, mv: MOVES[o.to[o.to.length - 1]] }); continue; }
+      this.upgrade(f, L, o);
+      return false;
+    }
+    if (U.every(o => L.t > o.until)) L.up = null;
+    return false;
+  }
+  upgrade(a, L, o) {
+    const m = this.m, mv = MOVES[o.to[0]];
+    if (o.cost) a.fin -= o.cost;
+    L.parts = o.to.slice(); L.part = 0; L.move = mv; L.up = null; L.upAi = null; L.upgraded = o.name;
+    L.evI = 0; while (L.evI < mv.ev.length && mv.ev[L.evI][0] <= L.t) L.evI++;
+    m.anim.freezeBlend(a, .06); if (L.v) m.anim.freezeBlend(L.v, .06);
+    if (a.comboSeq) { a.comboSeq.pop(); for (const id of o.to) a.comboSeq.push(id); }
+    m.addHype(o.cost ? 10 : 5);
+    m.emit('upgrade', { a, v: L.v, o, L });
+    this.signature(a);
+  }
+  // ---- 연계: a window after a move lets go
+  onRelease(e) {
+    const { a, v, move } = e;
+    if (!a || !v || !a.alive || !v.alive || v.st !== 'DOWN' || a.ctrl === 'dummy') return;
+    this.open(a, v, move.id);
+  }
+  open(a, v, id) {
+    const m = this.m, list = FOLLOW[id];
+    if (!list || !list.length || m.phase !== 'fight') { a.follow = null; return; }
+    const opts = list.filter(o => !o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal)));
+    if (!opts.length) { a.follow = null; return; }
+    const spring = opts.some(o => o.spring);
+    a.follow = { from: id, v, opts, t: 0, life: spring ? COMBO.springWindow : COMBO.window, want: null, ai: null };
+    m.emit('followOpen', { a, v, opts, from: id });
+  }
+  followTick(f, dt) {
+    const F = f.follow, m = this.m, v = F.v;
+    F.t += dt;
+    const lying = v.alive && (v.st === 'DOWN' || (v.st === 'HITSTUN' && v.hsKind === 'lie'));
+    if (F.t > F.life || !lying || !f.alive || m.phase !== 'fight' || (f.link && f.link.kind === 'hold')) { if (!(f.link && f.link.a === f && f.link.kind === 'move')) this.close(f); return false; }
+    if (!F.want) {
+      if (f.ctrl === 'ai' && f.ai) {
+        if (F.ai == null) F.ai = f.ai.D.react + f.ai.rng.next() * .35;
+        if (F.t >= F.ai) F.want = this.aiPick(f, F) || 'none';
+      } else for (const o of F.opts) {
+        if (o.spring) continue;   // J from the apron does it
+        if (f.has(KEYBUF[o.key])) { f.consume(KEYBUF[o.key]); F.want = o; break; }
+      }
+    }
+    const o = F.want;
+    if (!o || o === 'none') return false;
+    if (o.spring) { if (f.st === 'APRON' && f.ctrl === 'ai') { f.intent.atk = true; f.buf.atk = B.inputBuffer; } return false; }
+    if (o.direct && f.link && f.link.kind === 'move' && f.link.a === f) return false;   // done when the move ends (onMoveEnd)
+    const free = f.fsm.is('IDLE', 'MOVE', 'GUARD') || (o.pin && (f.st === 'GET_UP' || (f.st === 'HITSTUN' && f.hsKind === 'lie')));
+    if (!free || f.link || !f.ground) return false;
+    if (v.rag && !v.rag.ground && v.rag.t < .45) return false;
+    return this.run(f, v, o);
+  }
+  close(f) { if (f.follow) { f.follow = null; } }
+  aiPick(f, F) {
+    const D = f.ai.D, v = F.v, r = f.ai.rng;
+    const pin = F.opts.find(o => o.pin), mv = F.opts.find(o => o.id || o.spring);
+    if (pin && v.hp < v.maxHp * (.35 + D.pick * .15) && r.chance(.55 + D.pick * .35)) return pin;
+    if (mv && r.chance(D.pick * .7)) return mv;
+    if (pin && v.hp < v.maxHp * .55 && r.chance(D.pick * .4)) return pin;
+    return null;
+  }
+  run(a, v, o) {
+    const m = this.m;
+    this.close(a);
+    if (o.pin) {
+      if (Math.abs(v.x - a.x) > 130) return false;
+      v.dropRag(); if (v.st !== 'DOWN') v.set('DOWN', { force: true });
+      m.startPin(a, v, { bonus: o.pin, follow: true });
+      if (a.pin) { m.emit('followUp', { a, v, o, name: '연계 핀' }); this.chainPush(a, 'pin'); return true; }
+      return false;
+    }
+    const mv = MOVES[o.id];
+    if (!mv) return false;
+    const c = m.grapple.check(a, v, mv);
+    if (!c.ok) { m.emit('deny', { f: a, why: c.why, mv }); return false; }
+    // stand at the head end of the body, looking down it
+    v.dropRag();
+    const hx = v.joints.x(J.head), px = v.joints.x(J.pelvis), side = sgn(hx - px) || -a.face, k = a.dims.height / 94 * .75 + .25;
+    a.face = side; a.x = clamp(px - side * 34 * k, m.arena.x0 + 20, m.arena.x1 - 20); v.x = px;
+    if (m.arena.hasRing && a.side === 'in') a.x = clamp(a.x, m.arena.ropeL + 14, m.arena.ropeR - 14);
+    const parts = o.lift ? ['liftUp', o.id] : [o.id];
+    if (!m.wrestle.begin(a, v, parts, { noReverse: !o.lift && !mv.roll, follow: true })) return false;
+    a.link.follow = true;
+    m.emit('followUp', { a, v, o, name: o.name || mv.name });
+    return true;
+  }
+  chainPush(a, id) { const ch = a.comboSeq || (a.comboSeq = []); ch.push(id); this.signature(a); }
+  onMoveEnd(e) {
+    const { a, move } = e, m = this.m;
+    // a cover straight out of the move's last pose (roll-up, anchor hammer)
+    const F = a.follow;
+    if ((move.toPin || (F && F.want && F.want.direct)) && a.alive) {
+      const want = move.id === 'rollUp' || (F && F.want && F.want.direct);
+      const v = F ? F.v : a.nearestFoe(70, o => o.st === 'DOWN');
+      if (want && v && v.alive && m.rules.pin && v.side === 'in' && !m.pin) {
+        this.close(a);
+        v.dropRag(); v.set('DOWN', { force: true });
+        a.set('IDLE', { force: true }); a.gettingUp = null;
+        m.startPin(a, v, { bonus: move.id === 'rollUp' ? 1.35 : (F.want.pin || 1.3), follow: true, quick: move.id === 'rollUp' });
+        if (a.pin) { m.emit('followUp', { a, v, o: { pin: 1 }, name: move.id === 'rollUp' ? '기습 핀' : '그대로 누르기' }); this.chainPush(a, 'pin'); }
+      }
+    }
+    void move;
+  }
+  signature(a) {
+    const ch = a.comboSeq; if (!ch || ch.length < 2) return;
+    for (const s of SIGNATURES) {
+      const n = s.seq.length; if (ch.length < n) continue;
+      let ok = true; for (let i = 0; i < n; i++) if (ch[ch.length - n + i] !== s.seq[i]) { ok = false; break; }
+      if (ok && a.lastSig !== s.name + ch.length) { a.lastSig = s.name + ch.length; this.m.addHype(14); this.m.combat.addFin(a, 8); this.m.emit('signature', { a, name: s.name }); return; }
+    }
+    if (ch.length >= 2) this.m.emit('comboStep', { a, n: ch.length });
+  }
+  // ---- Space in a front hold, energy not full
+  holdSpecial(f, L) {
+    const m = this.m, ar = m.arena, v = L.v;
+    if (L.pos !== 'front') { m.emit('deny', { f, why: '정면 잡기에서만', mv: MOVES.shoulderLift }); return false; }
+    const id = this.holdSpecialId(f);
+    const mv = MOVES[id], cost = SPECIALS[id];
+    if (f.fin < cost) { m.emit('deny', { f, why: `에너지 ${cost} 필요`, mv }); return false; }
+    const c = m.grapple.check(f, v, mv);
+    if (!c.ok) { m.emit('deny', { f, why: c.why, mv }); return false; }
+    f.fin -= cost;
+    m.emit('special', { a: f, v, id, cost });
+    return m.wrestle.startFromHold(L, id);
+    void ar;
+  }
+  holdSpecialId(f) {
+    const ar = this.m.arena;
+    const toRope = ar.hasRing && f.side === 'in' ? (f.face > 0 ? ar.ropeR - f.x : f.x - ar.ropeL) : 1e9;
+    return toRope <= 150 ? 'ropeKick' : 'shoulderLift';
+  }
+  // ---- carrying somebody on the shoulders: K drops them
+  carryDrop(f, L) {
+    const m = this.m, ar = m.arena;
+    const toRope = ar.hasRing && f.side === 'in' ? (f.face > 0 ? ar.ropeR - f.x : f.x - ar.ropeL) : 1e9;
+    const id = toRope <= 74 ? 'turnbuckleDrop' : 'elecChair';
+    return m.wrestle.startFromHold(L, id);
+  }
+  carryToCorner(f) { const ar = this.m.arena; return ar.hasRing && f.side === 'in' ? (f.face > 0 ? ar.ropeR - f.x : f.x - ar.ropeL) : 1e9; }
+  // ---- the foe sitting on the top turnbuckle
+  seatedFoe(f, range = 60) {
+    if (f.side !== 'in') return null;
+    for (const o of this.m.fighters) if (f.isFoe(o) && o.st === 'SEATED' && o.seat && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 8 && Math.abs(o.x - f.x) <= range) return o;
+    return null;
+  }
+  seatedMove(f, v, sup) {
+    const m = this.m, id = sup ? 'superGerman' : 'cornerBackdrop', mv = MOVES[id];
+    if (sup && f.fin < SPECIALS.superGerman) { m.emit('deny', { f, why: `에너지 ${SPECIALS.superGerman} 필요`, mv }); return false; }
+    if (!f.set('WRESTLING_MOVE', { force: f.fsm.is('IDLE', 'MOVE', 'GUARD', 'ATTACK') })) return false;
+    f.face = sgn(v.x - f.x) || f.face;
+    v.seat = null;
+    if (sup) f.fin -= SPECIALS.superGerman;
+    const ok = m.wrestle.begin(f, v, [id], { state: 'WRESTLING_MOVE', noReverse: !sup ? false : false });
+    if (!ok) { f.set('IDLE', { force: true }); return false; }
+    m.emit('special', { a: f, v, id, cost: sup ? SPECIALS.superGerman : 0 });
+    return true;
+  }
+  seat(v, a) {
+    const m = this.m, ar = m.arena, left = v.x < ar.mid, rx = left ? ar.ropeL : ar.ropeR, out = left ? -1 : 1;
+    v.dropRag();
+    v.seat = { x: rx - out * 7, y: ar.matY - ar.ropeH - 5, face: out, t: 2.6 + (v.ai ? 0 : .4) };
+    v.x = v.seat.x; v.y = v.seat.y; v.vx = v.vy = 0; v.side = 'in'; v.ground = true; v.face = out;
+    v.set('SEATED', { force: true });
+    m.emit('seated', { v, a });
+  }
+  // ---- counters that cost energy. Strikes: L inside the counter window.
+  strikeCounter(v, a, d) {
+    if (v.st !== 'DODGE' || !v.invDodge || v.t > COMBO.counterWindow || v.dodge.dir || v.counterCd > 0 || this.m.phase !== 'fight') return false;
+    const kind = d.run ? 'run' : (d.air && d.topStand) ? 'dash' : (!d.air && !d.ground && d.lv >= 3) ? 'heavy' : null;
+    return kind ? this.counter(v, a, kind) : false;
+  }
+  // a dash move coming in at somebody who has just pressed L
+  dashCounter(f) {
+    const cv = f.nearestFoe(62, o => o.side === f.side && sgn(o.x - f.x) === f.face && o.st === 'DODGE' && o.invDodge && o.t <= COMBO.counterWindow + .06 && !o.dodge.dir && Math.abs(o.y - f.y) < 20);
+    return cv ? this.counter(cv, f, 'dash') : false;
+  }
+  stompCounter(v, a, d) {
+    if (v.st !== 'DOWN' || v.rag || !d.ground || d.air || !v.has('dodge') || v.counterCd > 0 || this.m.phase !== 'fight') return false;
+    if (v.ctrl === 'ai' && !v.wantStompCounter) return false;
+    return this.counter(v, a, 'stomp');
+  }
+  counter(v, a, kind) {
+    const m = this.m, C = COUNTERS[kind];
+    if (!C || v.fin < C.cost || !v.alive || !a.alive || a.link) return false;
+    v.consume('dodge'); v.wantStompCounter = false;
+    v.fin -= C.cost; v.counterCd = B.counterCd;
+    v.dropRag();
+    if (v.st === 'DOWN') v.set('IDLE', { force: true });
+    v.face = sgn(a.x - v.x) || v.face;
+    if (!v.set('COUNTER', { force: true })) return false;
+    a.atk = null; a.dash = false;
+    if (!m.wrestle.begin(v, a, C.parts || [C.id], { state: 'COUNTER', noReverse: true, counter: true })) { v.set('IDLE', { force: true }); return false; }
+    v.counters++;
+    m.addHype(10); m.hitstop(.15);
+    m.emit('sCounter', { f: v, a, name: C.name, kind, cost: C.cost });
+    return true;
+  }
+}
+function springboard(f) {
+  const ar = f.arena, m = f.match, left = f.x < ar.mid, inward = left ? 1 : -1;
+  if (!ar.hasRing || m.rules.climb === false) return false;
+  const t = f.nearestFoe(300, o => o.side === 'in' && sgn(o.x - f.x) === inward && (o.st === 'DOWN' || o.st === 'PINNED' || o.st === 'GET_UP' || (o.st === 'HITSTUN' && o.hsKind === 'lie')));
+  if (!t) return false;
+  const d = ATTACKS.springMoon, rx = left ? ar.ropeL : ar.ropeR;
+  f.x = rx + inward * 6; f.y = ar.matY - ar.ropeH - 2; f.face = inward; f.side = 'in';
+  const dx = Math.max(20, Math.abs(t.x - f.x)), T = .6;
+  f.set('JUMP', { force: true });
+  f.vy = -230; f.vx = inward * clamp(dx / T, 80, 330); f.ground = false;
+  ar.press(left ? 'L' : 'R', 12);
+  f.atk = null;
+  f.set('AIR_ATTACK', { force: true });
+  f.atk = { def: d, t: 0, hit: new Set(), connected: false, chain: -1, boost: 1, done: false };
+  m.emit('swing', { f, def: d });
+  m.emit('dive', { f, spring: true });
+  m.emit('springboard', { f, t });
+  return true;
+}
+
+return { ComboSystem, springboard, KEYNAME };
+})();
 // ---- combat/CharacterController.js
 __m["combat/CharacterController.js"] = (function () {
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
@@ -3729,6 +4250,7 @@ const { dimsFor, Joints } = __m["anim/skeleton.js"];
 const { Ragdoll } = __m["anim/ragdoll.js"];
 const { StateMachine, STATES } = __m["combat/StateMachine.js"];
 const { keepsProp } = __m["combat/Props.js"];
+const { springboard } = __m["combat/ComboSystem.js"];
 function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
 
@@ -3826,6 +4348,7 @@ class Fighter {
     this.readIntent(dt);
     this.updateTarget();
     if (this.rag) { this.x = this.rag.cx; this.side = this.rag.side; }
+    if (this.match.combo && this.match.combo.pre(this, dt)) return;
     const fn = CONTROL[this.st];
     if (fn) fn(this, this.intent, dt);
   }
@@ -4083,8 +4606,16 @@ const CONTROL = {
     const ar = f.arena, left = f.x < ar.mid, inward = left ? 1 : -1;
     f.vx = f.vy = 0; f.y = ar.matY; f.ground = true; f.face = inward;
     if (f.t < .1) return;
+    if (f.consume('atk') && springboard(f)) return;   // J: springboard onto somebody lying in the ring
     if (f.consume('jump') || sgn(I.mx) === inward && Math.abs(I.mx) > .3 && f.t > .18) { beginEnter(f); return; }
     if (I.down || (sgn(I.mx) === -inward && Math.abs(I.mx) > .3)) { f.ground = false; f.vx = -inward * 90; f.vy = -60; f.set('FALL'); }
+  },
+  SEATED(f, I, dt) {
+    const s = f.seat;
+    if (!s) { f.ground = false; f.set('FALL', { force: true }); return; }
+    f.vx = f.vy = 0; f.x = s.x; f.y = s.y; f.ground = true; f.face = s.face; f.side = 'in';
+    s.t -= dt + mashInput(f) * .1;   // mashing gets you down sooner
+    if (s.t <= 0) { f.seat = null; f.ground = false; f.vy = -60; f.vx = -s.face * 80; f.y -= 2; f.set('FALL', { force: true }); f.inv = Math.max(f.inv, .3); f.match.emit('seatOff', { f }); }
   },
   ENTER_RING(f, I, dt) {
     const ar = f.arena, e = f.enter, k = clamp(f.t / .55, 0, 1), s = k * k * (3 - 2 * k);
@@ -4123,6 +4654,7 @@ function neutral(f, I, dt) {
   }
   if (f.landT > 0) { friction(f, dt, 1); if (f.landT > .06) return; }
   if (m.phase !== 'fight') { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }
+  if (f.has('fin')) { const sv = m.combo.seatedFoe(f); if (sv) { f.consume('fin'); if (m.combo.seatedMove(f, sv, true)) return; } }
   if (f.has('fin')) { f.consume('fin'); if (f.fin >= B.finMax) { if (m.finisher.start(f)) return; } else if (Math.abs(f.vx) < 60) { if (f.set('TAUNT')) { f.vx = 0; m.emit('taunt', { f }); return; } } }
   if (f.has('dodge') && !I.down) { f.consume('dodge'); if (startDodge(f, I)) return; }
   if (f.has('grab')) { f.consume('grab'); if (m.grapple.tryGrab(f, I)) return; }
@@ -4225,7 +4757,7 @@ __m["combat/PhysicsSystem.js"] = (function () {
 // Gravity, floors, ropes, walls, body separation and ragdolls. Linked pairs are positioned by the grapple systems.
 const { clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B } = __m["data/balance.js"];
-const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE']);
+const NO_PHYS = new Set(['CLIMB', 'PERCH', 'HANG', 'APRON', 'ENTER_RING', 'EXIT_RING', 'TAGWAIT', 'ROPE', 'SEATED']);
 class PhysicsSystem {
   constructor(match) { this.m = match; }
   update(dt) {
@@ -4331,6 +4863,7 @@ class CombatSystem {
     if (f.st === 'DOWN' || f.st === 'PINNED' || (f.st === 'HITSTUN' && f.hsKind === 'lie')) return { x0: f.x - h * .48, x1: f.x + h * .48, y0: f.y - 24, y1: f.y };
     if (f.st === 'DODGE') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .55, y1: f.y };
     if (f.st === 'PERCH' || f.st === 'CLIMB') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .8, y1: f.y + 6 };
+    if (f.st === 'SEATED') return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .5, y1: f.y + 28 };
     if (f.st === 'ATTACK' && f.atk && f.atk.def.id === 'slideKick') return { x0: f.x - 30, x1: f.x + 30, y0: f.y - 36, y1: f.y };
     return { x0: f.x - w, x1: f.x + w, y0: f.y - h * .95, y1: f.y };
   }
@@ -4373,6 +4906,7 @@ class CombatSystem {
     if (v.st === 'DODGE' && v.invDodge) {
       const tech = v.char.style === 'tech';
       if (d.chair && a.prop && v.t <= B.counterWindow * 1.4 && (facing || v.dodge.back) && m.phase === 'fight') { m.props.snatch(v, a); return 'counter'; }
+      if ((facing || v.dodge.back) && m.combo.strikeCounter(v, a, d)) return 'counter';   // with energy: the counter for this kind of blow
       if (v.t <= B.counterWindow * (tech ? 1.25 : 1) && v.counterCd <= 0 && !d.air && !d.dive && (!d.run || tech) && (facing || v.dodge.back) && !v.dodge.dir && m.phase === 'fight') { if (m.grapple.startCounter(v, a)) return 'counter'; }
       if (!v.dodge.dodged) { v.dodge.dodged = true; this.addFin(v, 2.5); m.emit('dodge', { f: v, a }); }
       return 'dodge';
@@ -4409,6 +4943,7 @@ class CombatSystem {
       else m.anim.kick(v, 'guardHit', .2);
       return 'block';
     }
+    if (v.st === 'DOWN' && m.combo.stompCounter(v, a, d)) return 'counter';   // L as the foot comes down, with energy
     // hit
     const counterHit = (v.st === 'ATTACK' || v.st === 'AIR_ATTACK' || v.st === 'TAUNT' || v.st === 'FINISHER') && !(v.atk && v.atk.t > v.atk.def.startup + v.atk.def.active);
     if (v.combo.t <= 0) v.combo.n = 0;
@@ -4476,7 +5011,8 @@ class CombatSystem {
   react(a, v, d, dir, counterHit) {
     const kb = d.kb / v.stats.kbr * (100 / (60 + v.stats.weight * .4)), m = this.m;
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
-    const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON';
+    const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON' || v.st === 'SEATED';
+    if (v.st === 'SEATED') { const out = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1); v.seat = null; v.seatOver = true; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
     if (v.rag && v.st === 'HITSTUN') { v.juggle = (v.juggle || 0) + 1; const k = .55 / v.juggle; v.rag.kick(dir * kb * k, -(d.up || 90) * k, dir * 2); return; }
     if (d.lv >= 4 || !v.ground || onPerch || v.combo.n >= B.comboBreak) {
@@ -4501,8 +5037,9 @@ class CombatSystem {
     const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
     const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
     const elim = this.m.rules.ringOut === 'elim';
-    const over = spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
+    const over = v.seatOver || spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
     v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
+    v.seatOver = false;
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;
     if (a) v.lastHitBy = a;
@@ -4607,6 +5144,9 @@ class GrappleSystem {
     if (f.prop) { const gv = this.grabTarget(f); if (gv) { P.drop(f, 'grab', -f.face); return this.beginHold(f, gv); } if (Math.abs(I.mx) > .3) f.face = sgn(I.mx); else f.faceFoe(220); return P.toss(f); }
     const inc = P.incoming(f);
     if (inc) return P.catchProp(f, inc);
+    const sv = m.combo.seatedFoe(f);
+    if (sv) return m.combo.seatedMove(f, sv, false);
+    if (f.dash && f.ground && Math.abs(f.vx) >= 150 && m.combo.dashCounter(f)) return true;
     // dashing into a standing foe: the dash move (cutter, or a tackle for the heavy ones)
     const dv = this.dashTarget(f);
     if (dv && dv.st === 'GUARD' && dv.guardT <= B.perfectGuard && dv.face === -f.face) { f.dash = false; this.m.combat.stagger(f, .8, dv); f.vx = -f.face * 120; this.m.combat.addFin(dv, B.finPerfect); dv.perfects++; m.hitstop(.11); m.emit('parry', { a: f, v: dv, x: (f.x + dv.x) / 2, y: dv.y - 60 }); return true; }
@@ -4653,6 +5193,18 @@ class GrappleSystem {
     m.emit('grab', { a: f, v, link });
     return true;
   }
+  // straight out of 어깨 메기: the foe sits on the shoulders, the attacker can walk
+  beginCarry(a, v) {
+    const m = this.m;
+    if (!a.alive || !v.alive) return false;
+    a.set('GRAB', { force: true }); v.set('GRABBED', { force: true });
+    const link = { kind: 'hold', a, v, pos: 'carry', t: 0, phase: 'hold', pick: 0, hold: B.carryHold, strikes: B.grabStrikeMax, strikeT: 0, switches: 2, switchT: 0, fromDown: false, walk: 0 };
+    a.link = v.link = link;
+    v.escape = Math.max(0, (v.escape || 0) * .5);
+    m.links.push(link);
+    m.emit('carry', { a, v });
+    return true;
+  }
   update(dt) {
     for (const L of this.m.links.slice()) if (L.kind === 'hold') this.updateHold(L, dt);
   }
@@ -4665,13 +5217,14 @@ class GrappleSystem {
     if (L.phase === 'hold') L.hold -= dt;
     if (!a.alive || !v.alive || a.st !== 'GRAB' || v.st !== 'GRABBED') { this.breakLink(L, 'state'); return; }
     // keep the pair on this side of the ropes
-    const off = (L.pos === 'front' ? 24 : 17) * a.face;
+    const off = (L.pos === 'front' ? 24 : L.pos === 'carry' ? -2 : 17) * a.face;
     if (ar.hasRing && a.side === 'in') { const lo = ar.ropeL + 14, hi = ar.ropeR - 14; a.x = clamp(a.x, Math.max(lo, lo - off), Math.min(hi, hi - off)); } else a.x = clamp(a.x, ar.x0 + 40, ar.x1 - 40);
     v.x = a.x + off; v.y = a.y; v.side = a.side; v.face = L.pos === 'front' ? -a.face : a.face;
+    if (L.pos === 'carry' && L.hold <= 0 && L.phase === 'hold') { L.hold = 99; this.m.combo.carryDrop(a, L); return; }   // held too long: dropped anyway
     if (v.escape >= B.grabEscape) { this.m.emit('escape', { a, v }); this.breakLink(L, 'escape'); return; }
     if (L.hold <= 0) this.breakLink(L, 'timeout');
   }
-  holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : HOLDS.rear; }
+  holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : L.pos === 'carry' ? HOLDS.carry : HOLDS.rear; }
   // Which move would this direction give, and is it usable right now?
   slotFor(f, I) { if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
   moveInSlot(f, L, slot) { return f.moves[L.pos] && f.moves[L.pos][slot]; }
@@ -4689,7 +5242,15 @@ class GrappleSystem {
     const L = f.link, m = this.m;
     if (!L || L.kind !== 'hold' || L.a !== f) { f.set('IDLE'); return; }
     if (L.phase === 'pickup' || L.switchT > 0 || L.strikeT > 0) return;
+    if (L.pos === 'carry') {   // on the shoulders: walk, K drops them (onto the turnbuckle when facing a corner)
+      L.walk = 0;
+      if (f.consume('grab')) { m.combo.carryDrop(f, L); return; }
+      f.consume('atk'); f.consume('dodge'); f.consume('fin');
+      if (Math.abs(I.mx) > .3) { if (sgn(I.mx) !== f.face) { f.face = sgn(I.mx); m.anim.freezeBlend(f, .12); m.anim.freezeBlend(L.v, .12); } f.x += sgn(I.mx) * B.grabWalk * B.carryWalk * f.stats.spd * dt; L.walk = sgn(I.mx); }
+      return;
+    }
     if (f.has('fin') && f.fin >= B.finMax) { f.consume('fin'); if (m.finisher.fromHold(f, L)) return; }
+    if (f.has('fin')) { f.consume('fin'); if (m.combo.holdSpecial(f, L)) return; }
     if (f.has('grab')) {
       f.consume('grab');
       const slot = this.slotFor(f, I), id = this.moveInSlot(f, L, slot), mv = MOVES[id], c = this.check(f, L.v, mv);
@@ -4711,7 +5272,7 @@ class GrappleSystem {
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
     let n = 0;
     for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp);
+    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? 1.3 : 1);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }
   breakLink(L, why) {
@@ -4719,6 +5280,7 @@ class GrappleSystem {
     if (i >= 0) m.links.splice(i, 1);
     if (a.link === L) a.link = null;
     if (v && v.link === L) v.link = null;
+    if (v && L.pos === 'carry') { v.x = a.x - a.face * 30; v.face = a.face; }   // slid off behind
     if (v) { m.anim.freezeBlend(v, .16); v.y = m.arena.ground(v.x, v.y, v.side); v.ground = true; }
     m.anim.freezeBlend(a, .16);
     if (a.alive && a.st === 'GRAB') {
@@ -4792,9 +5354,10 @@ function yawAt(m, t) { const c = compileMove(m); return c.yaw ? trackVal(c.yaw, 
 const REF_H = 94;
 /* res: {front} front=true when the victim should be drawn over the attacker. Joints come out in attacker-local
    space: attacker feet at (0,0), facing right, y down. */
-function evalPaired(m, t, dA, dV, outA, outV, res) {
+function evalPaired(m, t, dA, dV, outA, outV, res, modA) {
   const c = compileMove(m), kA = dA.height / REF_H;
   trackPose(c.A, t, tmpA);
+  if (modA) modA(tmpA);
   // A lift written for a 94px body scales with the attacker.
   solveFK(tmpA, dA, outA, {});
   let axx = 0, axy = 0;
@@ -4901,7 +5464,7 @@ class WrestlingMoveSystem {
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
-      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
+      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
     a.link = v.link = L;
     m.links.push(L);
@@ -4952,7 +5515,7 @@ class WrestlingMoveSystem {
     if (a.link !== L) return; // reversed or cancelled
     while (L.evI < mv.ev.length && mv.ev[L.evI][0] <= L.t) { const e = mv.ev[L.evI++]; this.event(L, e[0], e[1], e[2] || {}); if (a.link !== L) return; }
     if (mv.sweep && mv.yaw && L.t > mv.yaw[0][0] && L.t < mv.rel) this.sweep(L, mv);
-    if (L.v && !L.released && L.t >= mv.rel) this.release(L);
+    if (L.v && !L.released && L.t >= mv.rel && L.part === L.parts.length - 1) this.release(L);
     if (a.link !== L) return;
     if (L.t >= mv.dur) {
       if (L.part < L.parts.length - 1) {
@@ -4963,6 +5526,7 @@ class WrestlingMoveSystem {
         m.anim.freezeBlend(a, .1); if (L.v) m.anim.freezeBlend(L.v, .1);
         return;
       }
+      if (mv.toHold && L.v && !L.released) { this.toHold(L); return; }
       if (L.v && !L.released) this.release(L);
       this.finish(L);
     }
@@ -4977,9 +5541,14 @@ class WrestlingMoveSystem {
     v.y = a.y; v.side = a.side;
   }
   reversal(L, dt) {
-    const v = L.v;
-    if (!v || L.committed || L.released) return;
-    const n = v.reversals || 0, lead = L.fin ? .2 : B.reversalLead, win = B.reversalWindow * Math.max(.5, 1 - n * .14) * (L.fin ? .7 : 1) * (v.char.style === 'tech' ? 1.2 : 1);
+    const v = L.v, mv = L.move;
+    if (!v || L.released) return;
+    if (mv.sub) this.subCheck(L, dt);
+    if (mv.roll) { this.rollCheck(L); return; }
+    if (L.committed) return;
+    const n = v.reversals || 0;
+    let lead = L.fin ? .2 : B.reversalLead, win = B.reversalWindow * Math.max(.5, 1 - n * .14) * (L.fin ? .7 : 1) * (v.char.style === 'tech' ? 1.2 : 1);
+    if (mv.revAt) { lead = mv.revAt[0]; win = (mv.revAt[1] - mv.revAt[0]) * Math.max(.6, 1 - n * .1); }
     L.rev.open = L.t >= lead && L.t <= lead + win;
     if (L.t > lead + win) { L.committed = true; L.rev.open = false; return; }
     if (v.has('dodge') && !L.rev.tried) {
@@ -4990,10 +5559,15 @@ class WrestlingMoveSystem {
     void dt;
   }
   reverse(L) {
-    const m = this.m, { a, v } = L;
+    const m = this.m, { a, v } = L, mv = L.move;
+    let id = v.moves.counter || 'hipToss';
+    if (mv.revMove) {   // this one is only turned around with energy
+      if (v.fin < (mv.revCost || 0)) { m.emit('revFail', { v, why: `에너지 ${mv.revCost} 필요` }); return; }
+      v.fin -= mv.revCost || 0; id = mv.revMove;
+      m.emit('sCounter', { f: v, a, name: MOVES[id].name, kind: 'reverse', cost: mv.revCost || 0 });
+    }
     v.reversals = (v.reversals || 0) + 1;
     this.unlink(L);
-    const id = v.moves.counter || 'hipToss';
     v.face = sgn(a.x - v.x) || -a.face; v.side = a.side; v.y = a.y; v.ground = true;
     v.stun = Math.max(v.stun, v.maxStun * .45);
     v.set('IDLE', { force: true });
@@ -5003,6 +5577,59 @@ class WrestlingMoveSystem {
     m.hitstop(.16);
     m.emit('reversal', { f: v, a, fin: L.fin });
     this.begin(v, a, [id], { noReverse: true, counter: true });
+  }
+  // L in the window: roll out of the way, the attacker hits the mat
+  rollCheck(L) {
+    const v = L.v, mv = L.move, [t0, t1] = mv.roll;
+    L.rev.open = L.t >= t0 && L.t <= t1;
+    if (L.rev.tried || L.t > t1) return;
+    if (v.ai && v.ctrl === 'ai') {
+      if (L.rollAi == null) L.rollAi = v.ai.rng.chance(v.ai.D.rev * 1.5) ? t0 + v.ai.D.react * .25 + v.ai.rng.next() * (t1 - t0) * .5 : -1;
+      if (L.rollAi > 0 && L.t >= L.rollAi) { L.rev.tried = true; this.rollAway(L); }
+      return;
+    }
+    if (v.has('dodge')) { v.consume('dodge'); L.rev.tried = true; if (L.rev.open) this.rollAway(L); else this.m.emit('revFail', { v }); }
+  }
+  rollAway(L) {
+    const m = this.m, { a, v } = L, ar = m.arena;
+    this.unlink(L);
+    const away = sgn(v.x - a.x) || a.face;
+    const lo = ar.hasRing && v.side === 'in' ? ar.ropeL + 16 : ar.x0 + 20, hi = ar.hasRing && v.side === 'in' ? ar.ropeR - 16 : ar.x1 - 20;
+    v.x = clamp(v.x + away * 36, lo, hi); v.y = ar.ground(v.x, a.y, v.side); v.ground = true;
+    v.downClock = 0; v.downTime = .45; v.grabImm = 1; v.inv = .6; v.postMove = true;
+    v.set('DOWN', { force: true }); m.anim.freezeBlend(v, .22);
+    a.lieClip = 'downProne'; a.hs = .75; a.hsKind = 'lie'; a.x += a.face * 12;
+    a.set('HITSTUN', { force: true, clip: 'downProne' }); m.anim.freezeBlend(a, .12);
+    m.combat.damage(a, 2, 8, null, { src: 'self' });
+    m.emit('rollAway', { a, v, move: L.move });
+  }
+  // holds on the mat: mash to break out
+  subCheck(L, dt) {
+    const v = L.v, mv = L.move;
+    if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
+    L.subOn = true;
+    let n = 0;
+    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
+    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8) ? 1 : 0;
+    const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);
+    L.esc = Math.max(0, (L.esc || 0) + n * 8.5 * power - dt * 9);
+    if (L.esc >= 100) this.subEscape(L);
+  }
+  subEscape(L) {
+    const m = this.m, { a, v } = L;
+    this.unlink(L);
+    v.downClock = 0; v.downTime = .35; v.grabImm = 1.2; v.inv = .5; v.postMove = true;
+    v.set('DOWN', { force: true }); m.anim.freezeBlend(v, .2);
+    if (a.alive) { a.gettingUp = { wait: .1, dur: .5 / a.stats.rec, prot: .2, clip: 'getupSup' }; a.set('GET_UP', { force: true }); m.anim.freezeBlend(a, .15); }
+    m.emit('subEscape', { a, v, move: L.move });
+  }
+  // end of a lift: keep holding them (어깨 메기 -> carrying)
+  toHold(L) {
+    const m = this.m, { a, v, move } = L;
+    this.unlink(L);
+    m.anim.freezeBlend(a, .08); m.anim.freezeBlend(v, .08);
+    m.emit('moveEnd', { a, move });
+    if (!m.grapple.beginCarry(a, v)) { a.set('IDLE', { force: true }); v.set('IDLE', { force: true }); }
   }
   unlink(L) {
     const i = this.m.links.indexOf(L);
@@ -5055,6 +5682,7 @@ class WrestlingMoveSystem {
     L.released = true; L.committed = true;
     if (!v) return;
     v.link = null; L.v = null;
+    if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
     v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);
     if (move.whip) {
@@ -5099,6 +5727,7 @@ class WrestlingMoveSystem {
     const selfT = (move.self || .2) / a.stats.rec * .5;
     if (last[0] < -45 || last[0] > 45) { a.gettingUp = { wait: selfT * .5, dur: .5 / a.stats.rec, prot: .25, clip: last[0] < 0 ? 'getupSup' : 'getupProne' }; a.set('GET_UP', { force: true }); }
     else { a.landT = Math.max(.07, selfT * .6); a.set('IDLE', { force: true }); }
+    if (move.endApron && m.arena.hasRing) { const ar = m.arena, left = a.x < ar.mid; a.side = 'out'; a.x = left ? ar.ropeL - 9 : ar.ropeR + 9; a.y = ar.matY; a.ground = true; a.vx = a.vy = 0; a.set('APRON', { force: true }); }
     m.emit('moveEnd', { a, move });
   }
 }
@@ -5220,6 +5849,7 @@ const { HOLDS } = __m["data/moves.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { Joints, JN, POSE_N, J, solveFK, toWorld, pose, poseLerp } = __m["anim/skeleton.js"];
 const { STANCES, stancePose, gaitPose, clip, sampleClip, attackPose, hasClip } = __m["anim/clips.js"];
+const P3 = new Float32Array(16);
 const { evalPaired, pairBuffers } = __m["anim/paired.js"];
 const P1 = new Float32Array(POSE_N), P2 = new Float32Array(POSE_N);
 const tmpJ = new Joints();
@@ -5241,7 +5871,7 @@ class AnimationSystem {
     b.from.copy(f.joints); b.t = 0; b.dur = dur; b.x = f.x; b.y = f.y; b.on = true;
   }
   changed(f, from, to, opt) {
-    const soft = { IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
+    const soft = { SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
     if (!((from === 'IDLE' && to === 'MOVE') || (from === 'MOVE' && to === 'IDLE'))) f.clipT = 0;
     f.clipName = opt && opt.clip ? opt.clip : null;
     if (soft[to] && !(opt && opt.noBlend)) this.freezeBlend(f, soft[to]);
@@ -5272,7 +5902,13 @@ class AnimationSystem {
       t = mv.loop ? L.t % mv.dur : Math.min(L.t, mv.dur);
     } else { mv = L.move; t = L.t; }
     const jV = v ? v.joints : tmpJ;
-    evalPaired(mv, t, a.dims, v ? v.dims : L.dV, a.joints, jV, B2.res);
+    // walking with somebody on the shoulders: the legs step, the arms keep holding
+    let modA = null;
+    if (L.kind === 'hold' && L.pos === 'carry' && L.walk) {
+      a.gait += dt * 4.4 * L.walk * a.face;
+      modA = p => { for (let i = 0; i < 16; i++) P3[i] = p[i]; gaitPose(p, a.gait, 'walk', .85); for (const i of [1, 2, 3, 4, 5, 6]) p[i] = P3[i]; };
+    }
+    evalPaired(mv, t, a.dims, v ? v.dims : L.dV, a.joints, jV, B2.res, modA);
     L.front = B2.res.front;
     if (L.kind === 'hold' && L.strikeT > 0) { // knee strike over the hold pose
       sampleClip(clip('knee'), .26 - L.strikeT, P1); solveFK(P1, a.dims, a.joints, {});
@@ -5365,6 +6001,7 @@ class AnimationSystem {
       case 'PERCH': C('perch', f.t); break;
       case 'HANG': C('hang', f.t); opt = { hang: 1 }; break;
       case 'APRON': C('apron', f.t); break;
+      case 'SEATED': C('seatTop', f.t); opt = { seat: 1 }; break;
       case 'TAGWAIT': C(f.wantTag ? 'tagReach' : 'apron', f.poseT); break;
       case 'ENTER_RING': case 'EXIT_RING': C('enterRing', f.t); break;
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
@@ -5378,7 +6015,8 @@ class AnimationSystem {
     if (air) {
       // airborne: pelvis floats a little below leg length above the feet point
       solveFK(p, d, jt, { snap: false, px: p[12], py: -(d.leg * .92) - p[11] });
-    } else solveFK(p, d, jt, {});
+    } else if (opt && opt.seat) solveFK(p, d, jt, { snap: false, px: 0, py: 0, freeFeet: true });   // pelvis on the turnbuckle
+    else solveFK(p, d, jt, {});
     if (f.bounce) { f.bounce.t += dt; const k = f.bounce.t / .22; if (k >= 1) f.bounce = null; else offY = -Math.sin(k * Math.PI) * 7; }
     toWorld(jt, f.face, f.x, f.y + offY, yaw);
     if (opt && opt.hang) { // pin the hands to the top rope
@@ -5462,6 +6100,7 @@ __m["combat/AIController.js"] = (function () {
 const { clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
+const { SPECIALS, COUNTERS } = __m["data/combos.js"];
 const DIFFICULTY = {
   easy: { name: '쉬움', punish: .06, react: .48, err: .38, guard: .12, dodge: .05, counter: 0, rev: .03, mash: 3.2, hang: .12, plan: .9, aggr: .62, combo: .3, pick: .45, pinKick: .55, spacing: 1.25 },
   normal: { name: '보통', punish: .3, react: .3, err: .18, guard: .32, dodge: .13, counter: .04, rev: .1, mash: 5.6, hang: .32, plan: .5, aggr: .9, combo: .65, pick: .7, pinKick: .75, spacing: 1.05 },
@@ -5499,9 +6138,16 @@ class AIController {
     // situations that are not choices
     if (f.st === 'GRABBED') { this.grabbed(dt); return; }
     if (f.st === 'PINNED' || f.st === 'KO' || f.st === 'OUT' || f.st === 'TAGWAIT') return;
+    if (f.st === 'DOWN' && !f.rag && this.stompCounterCheck()) return;
     if (f.st === 'DOWN' || f.st === 'STAGGER' || f.st === 'HITSTUN') { this.mash(dt, .55); this.burstCheck(); return; }
+    if (f.st === 'SEATED') { this.mash(dt, .7); return; }
     if (f.st === 'HANG') { if (this.rng.chance(dt * (2 + this.D.mash * .3))) I.up = true; this.mash(dt, .8); return; }
-    if (f.st === 'APRON') { if (f.t > .2 + this.D.react) I.jump = true; return; }
+    if (f.st === 'APRON') {   // springboard onto somebody lying in the ring, or climb back in
+      if (f.t < .1) this.apronPick = null;
+      if (this.apronPick == null) this.apronPick = f.nearestFoe(300, o => o.side === 'in' && o.st === 'DOWN') && this.rng.chance(.45 + this.D.pick * .4) ? 'spring' : 'in';
+      if (f.t > .2 + this.D.react) { if (this.apronPick === 'spring') { this.tap('atk'); this.apronPick = 'in'; } else I.jump = true; }
+      return;
+    }
     if (f.st === 'PERCH') { this.perch(dt); return; }
     if (f.st === 'WHIPPED') { this.whipped(); return; }
     if (f.st === 'GRAB') { this.holdThink(dt); return; }
@@ -5546,10 +6192,19 @@ class AIController {
       const left = d.startup - s.atk.t - D.react;
       // a chair coming up: sometimes step in and take it
       if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
+      // with energy: the counter for blows a plain counter cannot take (running, from the corner), and the big ones
+      const sk = d.run ? 'run' : (d.air && d.topStand) ? 'dash' : (!d.air && !d.ground && d.lv >= 3) ? 'heavy' : null;
+      if (sk && f.fin >= COUNTERS[sk].cost && f.dodgeCd <= 0 && f.counterCd <= 0 && left > .01 && left < .12 && r < D.counter * 1.4 + .015) { this.faceTo(o); f.intent.mx = 0; this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = COUNTERS[sk].name; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
       if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 1.7) { this.faceTo(o); this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = '반격 노림'; return true; }
       if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { this.defHeat = (this.defHeat || 0) + .7; f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
       if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
+    }
+    // a dash move coming: L just before it lands turns it into a cutter (energy 25)
+    if (f.fin >= COUNTERS.dash.cost && f.dodgeCd <= 0 && f.counterCd <= 0) for (const o of f.match.fighters) {
+      if (!f.isFoe(o) || !o.dash || o.side !== f.side || Math.abs(o.vx) < 150) continue;
+      const s = this.seen(o), dist = Math.abs(s.x - f.x);
+      if (sgn(f.x - s.x) === o.face && dist > 36 && dist < 84 && this.rng.chance(D.counter * .7)) { this.faceTo(o); f.intent.mx = 0; this.tap('dodge'); this.note = COUNTERS.dash.name; return true; }
     }
     // finisher coming in
     for (const o of f.match.fighters) {
@@ -5559,6 +6214,21 @@ class AIController {
         const dist = Math.abs(o.x - f.x);
         if (dist < 160 && this.rng.chance(this.D.dodge * 2.2 * dt * 10)) { if (o.finisher.type === 'strike' && this.rng.chance(.5)) { this.guardT = .5; this.lastThreat = o; } else { f.intent.mx = sgn(f.x - o.x); this.tap('dodge'); } this.note = '피니셔 피하기'; return true; }
       }
+    }
+    return false;
+  }
+  // lying down with a foot coming: L with energy grabs the leg
+  stompCounterCheck() {
+    const f = this.f, D = this.D;
+    if (f.fin < COUNTERS.stomp.cost || f.counterCd > 0) return false;
+    for (const o of f.match.fighters) {
+      if (!f.isFoe(o) || !o.alive) continue;
+      const s = this.seen(o);
+      if (!s.atk || !s.atk.d.ground || s.atk.d.air || Math.abs(s.x - f.x) > 56) continue;
+      const key = 'st' + o.idx + ':' + Math.round(s.t * 4);
+      if (this.lastStomp === key) continue;
+      this.lastStomp = key;
+      if (this.rng.chance(D.counter * .9 + .02)) { f.wantStompCounter = true; this.tap('dodge'); this.note = COUNTERS.stomp.name; return true; }
     }
     return false;
   }
@@ -5582,12 +6252,13 @@ class AIController {
       return;
     }
     // reversal: press L inside the window if we noticed it in time
-    if (!L.rev.tried && !L.committed && !L.noReverse) {
-      if (this.revPlanned == null) this.revPlanned = this.rng.chance(this.D.rev * (L.fin ? .5 : 1) * (f.char.style === 'tech' ? 1.3 : 1)) ? B.reversalLead + this.D.react * .4 + this.rng.next() * B.reversalWindow * .8 : -1;
+    if (!L.rev.tried && !L.committed && !L.noReverse && !L.move.roll) {
+      const mv = L.move, lead = mv.revAt ? mv.revAt[0] : B.reversalLead, win = mv.revAt ? mv.revAt[1] - mv.revAt[0] : B.reversalWindow;
+      if (this.revPlanned == null) this.revPlanned = (!mv.revMove || f.fin >= (mv.revCost || 0)) && this.rng.chance(this.D.rev * (L.fin ? .5 : 1) * (f.char.style === 'tech' ? 1.3 : 1) * (mv.revMove ? 1.6 : 1)) ? lead + this.D.react * .4 + this.rng.next() * win * .8 : -1;
       if (this.revPlanned > 0 && L.t >= this.revPlanned) { this.tap('dodge'); this.revPlanned = null; }
     } else this.revPlanned = null;
   }
-  onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62)) ? .6 + this.rng.next() * 1.6 : 99; }
+  onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62) / Math.pow(p.bonus || 1, 1.3)) ? .6 + this.rng.next() * 1.6 : 99; }
   pinMash(p, dt) { if (p.t > (this.kickAt || 99)) return this.rng.chance(dt * this.D.mash * 1.4) ? 1 : 0; return this.rng.chance(dt * this.D.mash * .25) ? 1 : 0; }
   wantsHang() { const f = this.f; return this.rng.chance(this.D.hang * .5 * (.55 + f.hp / f.maxHp * .7)); }
   // ---- goals ----
@@ -5617,6 +6288,8 @@ class AIController {
       if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
       add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
     }
+    const sf = f.side === 'in' && ar.hasRing ? m.fighters.find(o => f.isFoe(o) && o.st === 'SEATED' && o.seat && Math.abs(o.x - f.x) < 280) : null;
+    if (sf) add('seated', 10, sf);
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
     if (tDown && !tGrab) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
@@ -5641,7 +6314,7 @@ class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', seated: '코너 공격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -5732,6 +6405,19 @@ class AIController {
         if (g.t > 2.5) this.planT = 0;
         break;
       }
+      case 'seated': {
+        if (t.st !== 'SEATED' || !t.seat) { this.planT = 0; break; }
+        const bx = t.seat.x - t.seat.face * 36;   // behind them, inside the ring
+        if (Math.abs(f.x - bx) > 6) this.move(bx, 4, Math.abs(f.x - bx) > 100);
+        else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) {
+          f.face = t.seat.face;
+          const push = m.rules.ringOut === 'elim' || (m.rules.ringOut === 'count' && this.rng.chance(.15));
+          this.tap(push ? 'atk' : f.fin >= SPECIALS.superGerman && this.rng.chance(.45 + D.pick * .45) ? 'fin' : 'grab');
+          this.wait = .45;
+        }
+        if (g.t > 3) this.planT = 0;
+        break;
+      }
       case 'knockOff': {
         if (t.st !== 'HANG' && t.st !== 'APRON') { this.planT = 0; break; }
         const left = t.x < ar.mid, sx = left ? ar.ropeL + 15 : ar.ropeR - 15;
@@ -5814,6 +6500,14 @@ class AIController {
   holdThink(dt) {
     const f = this.f, L = f.link, m = f.match, D = this.D;
     if (!L || L.kind !== 'hold' || L.phase !== 'hold' || L.switchT > 0 || L.strikeT > 0) return;
+    if (L.pos === 'carry') {
+      if (!this.carryPlan) { const ar = m.arena, toL = f.x - ar.ropeL, toR = ar.ropeR - f.x; this.carryPlan = { corner: ar.hasRing && f.side === 'in' && Math.min(toL, toR) < 240 && this.rng.chance(.45 + D.pick * .4), dir: toL < toR ? -1 : 1, at: .25 + this.rng.next() * .35 }; }
+      const C = this.carryPlan;
+      if (L.t < C.at) return;
+      if (C.corner && m.combo.carryToCorner(f) > 60 && L.hold > .6) { f.intent.mx = C.dir; return; }
+      this.tap('grab'); this.carryPlan = null; return;
+    }
+    this.carryPlan = null;
     if (!this.holdPlan) {
       const v = L.v, ar = m.arena;
       const choices = [];
@@ -5833,6 +6527,10 @@ class AIController {
         if (mv.lift > f.stats.lift) w *= .5;
         choices.push({ pos, s, id, w });
       }
+      if (L.pos === 'front' && f.fin < B.finMax) {   // Space: 로프 회전 킥 near the ropes, 어깨 메기 elsewhere
+        const id = m.combo.holdSpecialId(f), cost = SPECIALS[id];
+        if (f.fin >= cost && m.grapple.check(f, v, MOVES[id]).ok) choices.push({ pos: 'front', s: 'sp', id, special: 1, w: (id === 'ropeKick' ? 2.4 * (.5 + (this.tr.air || .3)) : 1.8 * (.5 + (this.tr.grab || .5))) * (f.fin >= cost * 2 ? 1.3 : .8) });
+      }
       if (!choices.length) { this.holdPlan = { strike: 1, at: .3 }; return; }
       const c = this.rng.weighted(choices, o => Math.pow(o.w, 1 + D.pick));
       this.holdPlan = Object.assign(c, { at: .2 + this.rng.next() * .45 * (1 + D.err * 2), strikes: this.rng.chance(.35) ? this.rng.int(1, 2) : 0 });
@@ -5844,6 +6542,7 @@ class AIController {
     if (P.strikes > 0 && L.strikes < P.strikes) { this.tap('atk'); P.at = L.t + .3; return; }
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
+    if (P.special) { this.tap('fin'); this.holdPlan = null; return; }
     // rope moves need the ropes: drag the foe there first
     if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .35) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
@@ -6049,6 +6748,7 @@ const { FinisherSystem } = __m["combat/FinisherSystem.js"];
 const { AnimationSystem } = __m["anim/AnimationSystem.js"];
 const { AIController } = __m["combat/AIController.js"];
 const { PropSystem } = __m["combat/Props.js"];
+const { ComboSystem } = __m["combat/ComboSystem.js"];
 const { MatchEvents } = __m["combat/MatchEvents.js"];
 const MODES = {
   single: { name: '싱글 매치', desc: '1대1. 상대의 체력을 0으로 만들면 KO 승리.', rules: { ko: true, pin: false, ringOut: 'count', time: 300 } },
@@ -6076,6 +6776,7 @@ class MatchManager extends Emitter {
     this.freeze = 0; this.slowT = 0; this.slowK = 1; this.hype = 25; this.pin = null; this.endT = 0; this.introT = 0;
     this.ref = { x: this.arena.mid, y: this.arena.matY, face: 1, act: 'watch', t: 0, count: 0, target: null, vx: 0, gait: 0, raise: null, distract: null };
     this.props = new PropSystem(this);
+    this.combo = new ComboSystem(this);
     this.events = new MatchEvents(this, cfg.events);
     this.practice = cfg.practice || null;
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
@@ -6199,16 +6900,18 @@ class MatchManager extends Emitter {
     return false;
   }
   // ---- pinfall ----
-  startPin(a, v) {
-    if (!a.set('PIN')) return;
+  startPin(a, v, o = {}) {
+    if (!a.set('PIN', { force: !!o.follow && a.fsm.is('IDLE', 'MOVE', 'GUARD', 'GET_UP', 'WRESTLING_MOVE', 'COUNTER', 'HITSTUN') })) return;
+    a.gettingUp = null;
     v.set('PINNED', { force: true });
     a.face = sgn(v.x - a.x) || a.face; a.x = v.x - a.face * 34; a.vx = 0;
     v.pinTries = (v.pinTries || 0) + 1;
-    const need = B.pinBase + B.pinPerHp * (1 - v.hp / v.maxHp) + B.pinPerTry * (v.pinTries - 1);
-    this.pin = { a, v, t: 0, count: 0, next: .55, kick: 0, need, struggle: 0 };
+    const need = (B.pinBase + B.pinPerHp * (1 - v.hp / v.maxHp) + B.pinPerTry * (v.pinTries - 1)) * (o.bonus || 1);
+    this.pin = { a, v, t: 0, count: 0, next: o.quick ? .4 : .55, kick: 0, need, struggle: 0, bonus: o.bonus || 1 };
     a.pin = v.pin = this.pin;
     this.ref.act = 'count'; this.ref.target = v;
     if (v.ai) v.ai.onPinned(this.pin);
+    if (o.bonus > 1) this.emit('pinBonus', { a, v, bonus: o.bonus });
     this.emit('pin', { a, v });
   }
   pinControl(a, I, dt) {
@@ -7150,6 +7853,7 @@ const { chainAllow } = __m["combat/WrestlingMoveSystem.js"];
 const { topPick } = __m["combat/CharacterController.js"];
 const { ATTACKS } = __m["data/balance.js"];
 const { J } = __m["anim/skeleton.js"];
+const { SPECIALS, COUNTERS } = __m["data/combos.js"];
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 class HUD {
   constructor(input) { this.input = input; this.trail = new Map(); this.banners = []; this.t = 0; this.toastList = []; this.card = null; }
@@ -7286,6 +7990,7 @@ class HUD {
     if (!f || m.phase !== 'fight') return;
     const L = f.link, inp = this.input;
     // grapple choice
+    if (L && L.kind === 'hold' && L.a === f && L.pos === 'carry') { this.carryMenu(g, m, f, L, camX); return; }
     if (L && L.kind === 'hold' && L.a === f) { this.grappleMenu(g, m, f, L, camX); return; }
     if (L && L.v === f) {
       const x = Math.round(f.x - camX), y = f.y - 118;
@@ -7295,8 +8000,17 @@ class HUD {
         ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, y - (i === k ? 2 : 0)));
         gauge(g, x - 30, y + 14, 60, 4, f.escape / B.grabEscape, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
         if (f.burstCd <= 0 && f.fin >= B.burstCost) prompt(g, [inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출', x, y + 22, { align: 'c' });
+      } else if (L.kind === 'move' && L.subOn) {
+        const k = Math.floor(this.t * 10) % 3, yy = Math.round(f.y - 70);
+        drawText(g, '연타해서 버티기!', x, yy - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, yy - (i === k ? 2 : 0)));
+        gauge(g, x - 30, yy + 14, 60, 4, (L.esc || 0) / 100, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
       } else if (L.kind === 'move' && L.rev && L.rev.open && !L.rev.tried) {
-        rect(g, '#05060f', x - 13, y - 3, 26, 22); rect(g, '#ff5fa2', x - 12, y - 2, 24, 20); drawText(g, inp.label('dodge') + '!', x, y + 1, { scale: 1, align: 'c', color: '#ffffff', bold: true });
+        const mv = L.move, roll = !!mv.roll, cost = mv.revMove ? mv.revCost || 0 : 0, can = !cost || f.fin >= cost;
+        const yy = roll ? Math.round(f.y - 60) : y;
+        rect(g, '#05060f', x - 13, yy - 3, 26, 22); rect(g, can ? '#ff5fa2' : '#5f6ca6', x - 12, yy - 2, 24, 20); drawText(g, inp.label('dodge') + '!', x, yy + 1, { scale: 1, align: 'c', color: '#ffffff', bold: true });
+        if (roll) drawText(g, '굴러서 피하기', x, yy + 22, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+        else if (cost) drawText(g, can ? `반격 (에너지 ${cost})` : `반격: 에너지 ${cost} 필요`, x, yy + 22, { size: 11, align: 'c', color: can ? '#ffd65a' : '#ff8a8a', outline: '#05060f' });
       }
       return;
     }
@@ -7305,6 +8019,18 @@ class HUD {
     // contextual prompts
     const P = [];
     const ar = m.arena;
+    if (L && L.kind === 'move' && L.a === f && L.up) for (const o of L.up) if (L.t <= o.until) P.push([[inp.label(o.key === 'down' ? 'down' : o.key)], o.cost ? `${o.name.replace('!', '')} (에너지 ${o.cost})` : o.name]);
+    if (f.follow && !f.follow.want) {
+      const F = f.follow;
+      for (const o of F.opts) P.push([[inp.label(o.key === 'down' ? 'down' : o.key)], '연계: ' + (o.spring ? '스프링보드 문설트' : o.pin ? (o.name || '바로 핀 (보너스)') : (o.name || (MOVES[o.id] && MOVES[o.id].name) || ''))]);
+      const fx = Math.round(f.x - camX), fy = Math.round(f.y - 104);
+      gauge(g, fx - 20, fy, 40, 3, 1 - F.t / F.life, 'fin', { col: '#ffd65a', colD: '#3a2a10' });
+      drawText(g, '연계!', fx, fy - 13, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+    }
+    const sv = !f.link && f.side === 'in' ? m.combo.seatedFoe(f) : null;
+    if (sv) P.push([[inp.label('grab')], '턴버클 백드롭'], [[inp.label('fin')], f.fin >= SPECIALS.superGerman ? `슈퍼 저먼 (에너지 ${SPECIALS.superGerman})` : `슈퍼 저먼: 에너지 ${SPECIALS.superGerman} 필요`], [[inp.label('atk')], '밀어 떨어뜨리기']);
+    if (f.st === 'SEATED') P.push([[inp.label('atk')], '연타해서 내려오기']);
+    if (f.st === 'APRON' && f.nearestFoe(300, o => o.side === 'in' && (o.st === 'DOWN' || o.st === 'GET_UP'))) P.push([[inp.label('atk')], '스프링보드 문설트']);
     const g2 = m.grapple.grabTarget(f), PR = m.props;
     const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
     if (swinger) P.push([[inp.label('grab')], '받아쳐서 뺏기!'], [[inp.label('dodge')], '타이밍 반격']);
@@ -7341,7 +8067,8 @@ class HUD {
     else if (f.fin < B.burstCost) parts.push('긴급탈출: 게이지 부족');
     if (f.boost > 0) parts.push('로프 가속');
     if (f.exhausted) parts.push('지침');
-    drawText(g, parts.join(' · '), 8, 344, { size: 11, color: UI.dim, outline: '#05060f' });
+    if (f.fin >= COUNTERS.heavy.cost && f.counterCd <= 0) parts.push('카운터 준비 (L)');
+    drawText(g, parts.join(' · '), 8, PL.length ? 324 : 344, { size: 11, color: UI.dim, outline: '#05060f' });   // above the prompts when there are some
   }
   grappleMenu(g, m, f, L, camX) {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
@@ -7364,8 +8091,25 @@ class HUD {
       drawText(g, name, cx, cy + 12, { size: 11, align: 'c', color: c.ok ? '#ffffff' : UI.faint });
       if (!c.ok && denied) drawText(g, c.why, cx, cy + 24, { size: 11, align: 'c', color: '#ff8a8a', outline: '#05060f' });
     }
-    drawText(g, `${inp.label('atk')} 무릎치기 ${B.grabStrikeMax - L.strikes}  ${inp.label('dodge')} 위치 바꾸기` + (f.fin >= B.finMax ? `  ${inp.label('fin')} 피니셔` : ''), x, y + 40, { size: 11, align: 'c', color: UI.dim });
+    // the other keys, along the bottom like every other prompt
+    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`], [[inp.label('dodge')], '위치 바꾸기']];
+    if (f.fin >= B.finMax) P.push([[inp.label('fin')], '피니셔']);
+    else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
+    this.bottomPrompts(g, P);
     void sgn; void clamp;
+  }
+  bottomPrompts(g, P) {
+    const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
+    let px = 320 - (ww.reduce((s, w) => s + w, 0) + (P.length - 1) * 8) / 2;
+    P.forEach(([k, t], i) => { prompt(g, k, t, Math.round(px + ww[i] / 2), 338, { align: 'c', bg: 1 }); px += ww[i] + 8; });
+  }
+  // somebody on the shoulders: walk to a corner, K drops them
+  carryMenu(g, m, f, L, camX) {
+    const inp = this.input, v = L.v, toC = m.combo.carryToCorner(f), corner = toC <= 74;
+    const x = Math.round(f.x - camX), y = Math.round(Math.min(v.joints.y(J.head), f.joints.y(J.head)) - 24);   // over the head of the one on top
+    gauge(g, x - 30, y, 60, 3, L.hold / B.carryHold, 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
+    gauge(g, x - 30, y + 5, 60, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
+    this.bottomPrompts(g, [[[inp.label('left') + '/' + inp.label('right')], corner ? '코너 앞!' : '걸어서 코너로'], [[inp.label('grab')], corner ? '턴버클 던지기' : '일렉트릭 체어 드롭']]);
   }
   drawBanners(g) {
     for (const b of this.banners) {
@@ -8685,6 +9429,19 @@ class MatchScene {
     m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
     m.on('perchTurn', e => { A.sfx('step'); });
     m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    m.on('upgrade', e => { A.sfx('charge'); fx.word(e.o.name, e.a.x, e.a.y - 118, e.o.cost ? '#ff8a2b' : '#ffd65a', 3); cheer(e.o.cost ? 1.2 : .7); if (e.o.cost) this.ar.setScreen(e.o.name.replace('!', ''), e.a.name, '#ff8a2b', true); });
+    m.on('followUp', e => { A.sfx('grip'); fx.word('연계! ' + (e.name || ''), e.a.x, e.a.y - 112, '#ffd65a', 2); cheer(.5); });
+    m.on('signature', e => { A.sfx('crowdBoom'); hud.push(e.name, { col: '#ffd65a', scale: 2, y: 96, life: 1.3, sub: '시그니처 콤보!' }); cheer(1.4); this.ar.setScreen(e.name, e.a.name, '#ffd65a', true); });
+    m.on('comboStep', e => { if (e.n >= 3) fx.word(`${e.n}연계!`, e.a.x, e.a.y - 128, '#ff8fc4', 2); });
+    m.on('special', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.a.x, e.a.y - 112, e.cost >= 50 ? '#ff8a2b' : '#49d6ff', e.cost >= 50 ? 3 : 2); cheer(e.cost >= 50 ? 1.3 : .7); if (e.cost >= 50) this.ar.setScreen(MOVES_NAME(e.id), e.a.name, '#ff8a2b', true); });
+    m.on('sCounter', e => { A.sfx('counter'); S.flash(1, 1, 1, .2); hud.push(e.name + '!', { col: '#ff5fa2', scale: 2, y: 100, life: 1.0, sub: `에너지 ${e.cost}` }); cheer(1.3); });
+    m.on('rollAway', e => { A.sfx('whoosh'); fx.word('피했다!', e.v.x, e.v.y - 50, '#6be38a', 2); fx.dust(e.a.x, e.a.y, .8); cheer(.8); });
+    m.on('subEscape', e => { A.sfx('good'); fx.word('빠져나왔다!', e.v.x, e.v.y - 50, '#6be38a', 2); cheer(.6); });
+    m.on('seated', e => { A.sfx('rope'); if (isH(e.a)) hud.toast('코너 위에 앉혔다! K 턴버클 백드롭 · Space 슈퍼 저먼(에너지 50) · J 밀어 떨어뜨리기', '#ffd65a'); });
+    m.on('seatKnock', e => { A.sfx('punch3'); fx.word('밀려 떨어진다!', e.v.x, e.v.y - 40, '#ffffff', 2); cheer(.9); });
+    m.on('carry', e => { A.sfx('lift', { voice: e.a.char.voice }); if (isH(e.a)) hud.toast('어깨에 멨다! 걸어서 코너로 가 K', '#ffd65a'); });
+    m.on('springboard', e => { A.sfx('rope'); cheer(1); });
+    m.on('pinBonus', e => { fx.word('꽉 눌렀다!', e.a.x, e.a.y - 70, '#ffd65a', 2); });
     m.on('dashSig', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.f.x, e.f.y - 110, '#ffd65a', 3); cheer(1); this.ar.setScreen(MOVES_NAME(e.id), e.f.name, '#ffd65a', true); });
     m.on('landAttack', e => { A.sfx('thud', { p: .8 }); fx.dust(e.f.x, e.f.y, e.def.quake ? 1.5 : .6); if (e.def.quake) { S.shake(.4); fx.ring(e.f.x, e.f.y, e.def.quake, '#ffffff'); } if (!e.ok && e.def.dive) fx.word('아야야!', e.f.x, e.f.y - 40, '#9aa6d6', 1); });
     m.on('finisherStart', e => { A.sfx('charge'); fx.ring(e.f.x, e.f.y, 60, e.F.color); hud.push('피니셔!', { col: e.F.color, scale: 2, y: 90, life: .9 }); cheer(.8); S.flash(1, 1, 1, .15); });
@@ -8746,6 +9503,7 @@ class MatchScene {
       case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
       case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
       case 'whoosh': A.sfx('whoosh'); break;
+      case 'cheer': A.cheer(.8); this.ar.boost(.25); break;
       case 'spin': A.sfx('spin'); break;
       case 'lift': A.sfx('lift', { voice: a.char.voice }); break;
       case 'grunt': A.sfx('grunt', { voice: a.char.voice }); break;

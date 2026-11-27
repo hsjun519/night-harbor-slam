@@ -7,6 +7,7 @@ import { dimsFor, Joints } from '../anim/skeleton.js';
 import { Ragdoll } from '../anim/ragdoll.js';
 import { StateMachine, STATES } from './StateMachine.js';
 import { keepsProp } from './Props.js';
+import { springboard } from './ComboSystem.js';
 
 export function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
@@ -105,6 +106,7 @@ export class Fighter {
     this.readIntent(dt);
     this.updateTarget();
     if (this.rag) { this.x = this.rag.cx; this.side = this.rag.side; }
+    if (this.match.combo && this.match.combo.pre(this, dt)) return;
     const fn = CONTROL[this.st];
     if (fn) fn(this, this.intent, dt);
   }
@@ -362,8 +364,16 @@ export const CONTROL = {
     const ar = f.arena, left = f.x < ar.mid, inward = left ? 1 : -1;
     f.vx = f.vy = 0; f.y = ar.matY; f.ground = true; f.face = inward;
     if (f.t < .1) return;
+    if (f.consume('atk') && springboard(f)) return;   // J: springboard onto somebody lying in the ring
     if (f.consume('jump') || sgn(I.mx) === inward && Math.abs(I.mx) > .3 && f.t > .18) { beginEnter(f); return; }
     if (I.down || (sgn(I.mx) === -inward && Math.abs(I.mx) > .3)) { f.ground = false; f.vx = -inward * 90; f.vy = -60; f.set('FALL'); }
+  },
+  SEATED(f, I, dt) {
+    const s = f.seat;
+    if (!s) { f.ground = false; f.set('FALL', { force: true }); return; }
+    f.vx = f.vy = 0; f.x = s.x; f.y = s.y; f.ground = true; f.face = s.face; f.side = 'in';
+    s.t -= dt + mashInput(f) * .1;   // mashing gets you down sooner
+    if (s.t <= 0) { f.seat = null; f.ground = false; f.vy = -60; f.vx = -s.face * 80; f.y -= 2; f.set('FALL', { force: true }); f.inv = Math.max(f.inv, .3); f.match.emit('seatOff', { f }); }
   },
   ENTER_RING(f, I, dt) {
     const ar = f.arena, e = f.enter, k = clamp(f.t / .55, 0, 1), s = k * k * (3 - 2 * k);
@@ -402,6 +412,7 @@ function neutral(f, I, dt) {
   }
   if (f.landT > 0) { friction(f, dt, 1); if (f.landT > .06) return; }
   if (m.phase !== 'fight') { friction(f, dt, 1); if (f.st === 'MOVE') f.set('IDLE'); return; }
+  if (f.has('fin')) { const sv = m.combo.seatedFoe(f); if (sv) { f.consume('fin'); if (m.combo.seatedMove(f, sv, true)) return; } }
   if (f.has('fin')) { f.consume('fin'); if (f.fin >= B.finMax) { if (m.finisher.start(f)) return; } else if (Math.abs(f.vx) < 60) { if (f.set('TAUNT')) { f.vx = 0; m.emit('taunt', { f }); return; } } }
   if (f.has('dodge') && !I.down) { f.consume('dodge'); if (startDodge(f, I)) return; }
   if (f.has('grab')) { f.consume('grab'); if (m.grapple.tryGrab(f, I)) return; }

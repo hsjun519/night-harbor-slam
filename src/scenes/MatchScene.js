@@ -94,6 +94,19 @@ export class MatchScene {
     m.on('perchDeny', e => { A.sfx('deny'); if (isH(e.f)) hud.toast('여기서 밖으로 뛰면 탈락이다! 안쪽을 보고 다이빙', '#ff8a8a'); });
     m.on('perchTurn', e => { A.sfx('step'); });
     m.on('dashStart', e => { A.sfx('whoosh', { pitch: 1.3 }); fx.dust(e.f.x - e.f.face * 10, e.f.y, .5); if (isH(e.f)) fx.word('돌진!', e.f.x, e.f.y - 96, '#ffd65a', 1); });
+    m.on('upgrade', e => { A.sfx('charge'); fx.word(e.o.name, e.a.x, e.a.y - 118, e.o.cost ? '#ff8a2b' : '#ffd65a', 3); cheer(e.o.cost ? 1.2 : .7); if (e.o.cost) this.ar.setScreen(e.o.name.replace('!', ''), e.a.name, '#ff8a2b', true); });
+    m.on('followUp', e => { A.sfx('grip'); fx.word('연계! ' + (e.name || ''), e.a.x, e.a.y - 112, '#ffd65a', 2); cheer(.5); });
+    m.on('signature', e => { A.sfx('crowdBoom'); hud.push(e.name, { col: '#ffd65a', scale: 2, y: 96, life: 1.3, sub: '시그니처 콤보!' }); cheer(1.4); this.ar.setScreen(e.name, e.a.name, '#ffd65a', true); });
+    m.on('comboStep', e => { if (e.n >= 3) fx.word(`${e.n}연계!`, e.a.x, e.a.y - 128, '#ff8fc4', 2); });
+    m.on('special', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.a.x, e.a.y - 112, e.cost >= 50 ? '#ff8a2b' : '#49d6ff', e.cost >= 50 ? 3 : 2); cheer(e.cost >= 50 ? 1.3 : .7); if (e.cost >= 50) this.ar.setScreen(MOVES_NAME(e.id), e.a.name, '#ff8a2b', true); });
+    m.on('sCounter', e => { A.sfx('counter'); S.flash(1, 1, 1, .2); hud.push(e.name + '!', { col: '#ff5fa2', scale: 2, y: 100, life: 1.0, sub: `에너지 ${e.cost}` }); cheer(1.3); });
+    m.on('rollAway', e => { A.sfx('whoosh'); fx.word('피했다!', e.v.x, e.v.y - 50, '#6be38a', 2); fx.dust(e.a.x, e.a.y, .8); cheer(.8); });
+    m.on('subEscape', e => { A.sfx('good'); fx.word('빠져나왔다!', e.v.x, e.v.y - 50, '#6be38a', 2); cheer(.6); });
+    m.on('seated', e => { A.sfx('rope'); if (isH(e.a)) hud.toast('코너 위에 앉혔다! K 턴버클 백드롭 · Space 슈퍼 저먼(에너지 50) · J 밀어 떨어뜨리기', '#ffd65a'); });
+    m.on('seatKnock', e => { A.sfx('punch3'); fx.word('밀려 떨어진다!', e.v.x, e.v.y - 40, '#ffffff', 2); cheer(.9); });
+    m.on('carry', e => { A.sfx('lift', { voice: e.a.char.voice }); if (isH(e.a)) hud.toast('어깨에 멨다! 걸어서 코너로 가 K', '#ffd65a'); });
+    m.on('springboard', e => { A.sfx('rope'); cheer(1); });
+    m.on('pinBonus', e => { fx.word('꽉 눌렀다!', e.a.x, e.a.y - 70, '#ffd65a', 2); });
     m.on('dashSig', e => { A.sfx('charge'); fx.word(MOVES_NAME(e.id) + '!', e.f.x, e.f.y - 110, '#ffd65a', 3); cheer(1); this.ar.setScreen(MOVES_NAME(e.id), e.f.name, '#ffd65a', true); });
     m.on('landAttack', e => { A.sfx('thud', { p: .8 }); fx.dust(e.f.x, e.f.y, e.def.quake ? 1.5 : .6); if (e.def.quake) { S.shake(.4); fx.ring(e.f.x, e.f.y, e.def.quake, '#ffffff'); } if (!e.ok && e.def.dive) fx.word('아야야!', e.f.x, e.f.y - 40, '#9aa6d6', 1); });
     m.on('finisherStart', e => { A.sfx('charge'); fx.ring(e.f.x, e.f.y, 60, e.F.color); hud.push('피니셔!', { col: e.F.color, scale: 2, y: 90, life: .9 }); cheer(.8); S.flash(1, 1, 1, .15); });
@@ -155,6 +168,7 @@ export class MatchScene {
       case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
       case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
       case 'whoosh': A.sfx('whoosh'); break;
+      case 'cheer': A.cheer(.8); this.ar.boost(.25); break;
       case 'spin': A.sfx('spin'); break;
       case 'lift': A.sfx('lift', { voice: a.char.voice }); break;
       case 'grunt': A.sfx('grunt', { voice: a.char.voice }); break;

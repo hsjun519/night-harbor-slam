@@ -29,7 +29,7 @@ export class WrestlingMoveSystem {
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
-      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror,
+      power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
     a.link = v.link = L;
     m.links.push(L);
@@ -80,7 +80,7 @@ export class WrestlingMoveSystem {
     if (a.link !== L) return; // reversed or cancelled
     while (L.evI < mv.ev.length && mv.ev[L.evI][0] <= L.t) { const e = mv.ev[L.evI++]; this.event(L, e[0], e[1], e[2] || {}); if (a.link !== L) return; }
     if (mv.sweep && mv.yaw && L.t > mv.yaw[0][0] && L.t < mv.rel) this.sweep(L, mv);
-    if (L.v && !L.released && L.t >= mv.rel) this.release(L);
+    if (L.v && !L.released && L.t >= mv.rel && L.part === L.parts.length - 1) this.release(L);
     if (a.link !== L) return;
     if (L.t >= mv.dur) {
       if (L.part < L.parts.length - 1) {
@@ -91,6 +91,7 @@ export class WrestlingMoveSystem {
         m.anim.freezeBlend(a, .1); if (L.v) m.anim.freezeBlend(L.v, .1);
         return;
       }
+      if (mv.toHold && L.v && !L.released) { this.toHold(L); return; }
       if (L.v && !L.released) this.release(L);
       this.finish(L);
     }
@@ -105,9 +106,14 @@ export class WrestlingMoveSystem {
     v.y = a.y; v.side = a.side;
   }
   reversal(L, dt) {
-    const v = L.v;
-    if (!v || L.committed || L.released) return;
-    const n = v.reversals || 0, lead = L.fin ? .2 : B.reversalLead, win = B.reversalWindow * Math.max(.5, 1 - n * .14) * (L.fin ? .7 : 1) * (v.char.style === 'tech' ? 1.2 : 1);
+    const v = L.v, mv = L.move;
+    if (!v || L.released) return;
+    if (mv.sub) this.subCheck(L, dt);
+    if (mv.roll) { this.rollCheck(L); return; }
+    if (L.committed) return;
+    const n = v.reversals || 0;
+    let lead = L.fin ? .2 : B.reversalLead, win = B.reversalWindow * Math.max(.5, 1 - n * .14) * (L.fin ? .7 : 1) * (v.char.style === 'tech' ? 1.2 : 1);
+    if (mv.revAt) { lead = mv.revAt[0]; win = (mv.revAt[1] - mv.revAt[0]) * Math.max(.6, 1 - n * .1); }
     L.rev.open = L.t >= lead && L.t <= lead + win;
     if (L.t > lead + win) { L.committed = true; L.rev.open = false; return; }
     if (v.has('dodge') && !L.rev.tried) {
@@ -118,10 +124,15 @@ export class WrestlingMoveSystem {
     void dt;
   }
   reverse(L) {
-    const m = this.m, { a, v } = L;
+    const m = this.m, { a, v } = L, mv = L.move;
+    let id = v.moves.counter || 'hipToss';
+    if (mv.revMove) {   // this one is only turned around with energy
+      if (v.fin < (mv.revCost || 0)) { m.emit('revFail', { v, why: `에너지 ${mv.revCost} 필요` }); return; }
+      v.fin -= mv.revCost || 0; id = mv.revMove;
+      m.emit('sCounter', { f: v, a, name: MOVES[id].name, kind: 'reverse', cost: mv.revCost || 0 });
+    }
     v.reversals = (v.reversals || 0) + 1;
     this.unlink(L);
-    const id = v.moves.counter || 'hipToss';
     v.face = sgn(a.x - v.x) || -a.face; v.side = a.side; v.y = a.y; v.ground = true;
     v.stun = Math.max(v.stun, v.maxStun * .45);
     v.set('IDLE', { force: true });
@@ -131,6 +142,59 @@ export class WrestlingMoveSystem {
     m.hitstop(.16);
     m.emit('reversal', { f: v, a, fin: L.fin });
     this.begin(v, a, [id], { noReverse: true, counter: true });
+  }
+  // L in the window: roll out of the way, the attacker hits the mat
+  rollCheck(L) {
+    const v = L.v, mv = L.move, [t0, t1] = mv.roll;
+    L.rev.open = L.t >= t0 && L.t <= t1;
+    if (L.rev.tried || L.t > t1) return;
+    if (v.ai && v.ctrl === 'ai') {
+      if (L.rollAi == null) L.rollAi = v.ai.rng.chance(v.ai.D.rev * 1.5) ? t0 + v.ai.D.react * .25 + v.ai.rng.next() * (t1 - t0) * .5 : -1;
+      if (L.rollAi > 0 && L.t >= L.rollAi) { L.rev.tried = true; this.rollAway(L); }
+      return;
+    }
+    if (v.has('dodge')) { v.consume('dodge'); L.rev.tried = true; if (L.rev.open) this.rollAway(L); else this.m.emit('revFail', { v }); }
+  }
+  rollAway(L) {
+    const m = this.m, { a, v } = L, ar = m.arena;
+    this.unlink(L);
+    const away = sgn(v.x - a.x) || a.face;
+    const lo = ar.hasRing && v.side === 'in' ? ar.ropeL + 16 : ar.x0 + 20, hi = ar.hasRing && v.side === 'in' ? ar.ropeR - 16 : ar.x1 - 20;
+    v.x = clamp(v.x + away * 36, lo, hi); v.y = ar.ground(v.x, a.y, v.side); v.ground = true;
+    v.downClock = 0; v.downTime = .45; v.grabImm = 1; v.inv = .6; v.postMove = true;
+    v.set('DOWN', { force: true }); m.anim.freezeBlend(v, .22);
+    a.lieClip = 'downProne'; a.hs = .75; a.hsKind = 'lie'; a.x += a.face * 12;
+    a.set('HITSTUN', { force: true, clip: 'downProne' }); m.anim.freezeBlend(a, .12);
+    m.combat.damage(a, 2, 8, null, { src: 'self' });
+    m.emit('rollAway', { a, v, move: L.move });
+  }
+  // holds on the mat: mash to break out
+  subCheck(L, dt) {
+    const v = L.v, mv = L.move;
+    if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
+    L.subOn = true;
+    let n = 0;
+    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
+    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8) ? 1 : 0;
+    const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);
+    L.esc = Math.max(0, (L.esc || 0) + n * 8.5 * power - dt * 9);
+    if (L.esc >= 100) this.subEscape(L);
+  }
+  subEscape(L) {
+    const m = this.m, { a, v } = L;
+    this.unlink(L);
+    v.downClock = 0; v.downTime = .35; v.grabImm = 1.2; v.inv = .5; v.postMove = true;
+    v.set('DOWN', { force: true }); m.anim.freezeBlend(v, .2);
+    if (a.alive) { a.gettingUp = { wait: .1, dur: .5 / a.stats.rec, prot: .2, clip: 'getupSup' }; a.set('GET_UP', { force: true }); m.anim.freezeBlend(a, .15); }
+    m.emit('subEscape', { a, v, move: L.move });
+  }
+  // end of a lift: keep holding them (어깨 메기 -> carrying)
+  toHold(L) {
+    const m = this.m, { a, v, move } = L;
+    this.unlink(L);
+    m.anim.freezeBlend(a, .08); m.anim.freezeBlend(v, .08);
+    m.emit('moveEnd', { a, move });
+    if (!m.grapple.beginCarry(a, v)) { a.set('IDLE', { force: true }); v.set('IDLE', { force: true }); }
   }
   unlink(L) {
     const i = this.m.links.indexOf(L);
@@ -183,6 +247,7 @@ export class WrestlingMoveSystem {
     L.released = true; L.committed = true;
     if (!v) return;
     v.link = null; L.v = null;
+    if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
     v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);
     if (move.whip) {
@@ -227,6 +292,7 @@ export class WrestlingMoveSystem {
     const selfT = (move.self || .2) / a.stats.rec * .5;
     if (last[0] < -45 || last[0] > 45) { a.gettingUp = { wait: selfT * .5, dur: .5 / a.stats.rec, prot: .25, clip: last[0] < 0 ? 'getupSup' : 'getupProne' }; a.set('GET_UP', { force: true }); }
     else { a.landT = Math.max(.07, selfT * .6); a.set('IDLE', { force: true }); }
+    if (move.endApron && m.arena.hasRing) { const ar = m.arena, left = a.x < ar.mid; a.side = 'out'; a.x = left ? ar.ropeL - 9 : ar.ropeR + 9; a.y = ar.matY; a.ground = true; a.vx = a.vy = 0; a.set('APRON', { force: true }); }
     m.emit('moveEnd', { a, move });
   }
 }

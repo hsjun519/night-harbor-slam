@@ -12,6 +12,7 @@ import { chainAllow } from '../combat/WrestlingMoveSystem.js';
 import { topPick } from '../combat/CharacterController.js';
 import { ATTACKS } from '../data/balance.js';
 import { J } from '../anim/skeleton.js';
+import { SPECIALS, COUNTERS } from '../data/combos.js';
 
 const SLOT_NAMES = { n: '', f: '→', b: '←', u: '↑', d: '↓' };
 export class HUD {
@@ -149,6 +150,7 @@ export class HUD {
     if (!f || m.phase !== 'fight') return;
     const L = f.link, inp = this.input;
     // grapple choice
+    if (L && L.kind === 'hold' && L.a === f && L.pos === 'carry') { this.carryMenu(g, m, f, L, camX); return; }
     if (L && L.kind === 'hold' && L.a === f) { this.grappleMenu(g, m, f, L, camX); return; }
     if (L && L.v === f) {
       const x = Math.round(f.x - camX), y = f.y - 118;
@@ -158,8 +160,17 @@ export class HUD {
         ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, y - (i === k ? 2 : 0)));
         gauge(g, x - 30, y + 14, 60, 4, f.escape / B.grabEscape, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
         if (f.burstCd <= 0 && f.fin >= B.burstCost) prompt(g, [inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출', x, y + 22, { align: 'c' });
+      } else if (L.kind === 'move' && L.subOn) {
+        const k = Math.floor(this.t * 10) % 3, yy = Math.round(f.y - 70);
+        drawText(g, '연타해서 버티기!', x, yy - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, yy - (i === k ? 2 : 0)));
+        gauge(g, x - 30, yy + 14, 60, 4, (L.esc || 0) / 100, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
       } else if (L.kind === 'move' && L.rev && L.rev.open && !L.rev.tried) {
-        rect(g, '#05060f', x - 13, y - 3, 26, 22); rect(g, '#ff5fa2', x - 12, y - 2, 24, 20); drawText(g, inp.label('dodge') + '!', x, y + 1, { scale: 1, align: 'c', color: '#ffffff', bold: true });
+        const mv = L.move, roll = !!mv.roll, cost = mv.revMove ? mv.revCost || 0 : 0, can = !cost || f.fin >= cost;
+        const yy = roll ? Math.round(f.y - 60) : y;
+        rect(g, '#05060f', x - 13, yy - 3, 26, 22); rect(g, can ? '#ff5fa2' : '#5f6ca6', x - 12, yy - 2, 24, 20); drawText(g, inp.label('dodge') + '!', x, yy + 1, { scale: 1, align: 'c', color: '#ffffff', bold: true });
+        if (roll) drawText(g, '굴러서 피하기', x, yy + 22, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+        else if (cost) drawText(g, can ? `반격 (에너지 ${cost})` : `반격: 에너지 ${cost} 필요`, x, yy + 22, { size: 11, align: 'c', color: can ? '#ffd65a' : '#ff8a8a', outline: '#05060f' });
       }
       return;
     }
@@ -168,6 +179,18 @@ export class HUD {
     // contextual prompts
     const P = [];
     const ar = m.arena;
+    if (L && L.kind === 'move' && L.a === f && L.up) for (const o of L.up) if (L.t <= o.until) P.push([[inp.label(o.key === 'down' ? 'down' : o.key)], o.cost ? `${o.name.replace('!', '')} (에너지 ${o.cost})` : o.name]);
+    if (f.follow && !f.follow.want) {
+      const F = f.follow;
+      for (const o of F.opts) P.push([[inp.label(o.key === 'down' ? 'down' : o.key)], '연계: ' + (o.spring ? '스프링보드 문설트' : o.pin ? (o.name || '바로 핀 (보너스)') : (o.name || (MOVES[o.id] && MOVES[o.id].name) || ''))]);
+      const fx = Math.round(f.x - camX), fy = Math.round(f.y - 104);
+      gauge(g, fx - 20, fy, 40, 3, 1 - F.t / F.life, 'fin', { col: '#ffd65a', colD: '#3a2a10' });
+      drawText(g, '연계!', fx, fy - 13, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+    }
+    const sv = !f.link && f.side === 'in' ? m.combo.seatedFoe(f) : null;
+    if (sv) P.push([[inp.label('grab')], '턴버클 백드롭'], [[inp.label('fin')], f.fin >= SPECIALS.superGerman ? `슈퍼 저먼 (에너지 ${SPECIALS.superGerman})` : `슈퍼 저먼: 에너지 ${SPECIALS.superGerman} 필요`], [[inp.label('atk')], '밀어 떨어뜨리기']);
+    if (f.st === 'SEATED') P.push([[inp.label('atk')], '연타해서 내려오기']);
+    if (f.st === 'APRON' && f.nearestFoe(300, o => o.side === 'in' && (o.st === 'DOWN' || o.st === 'GET_UP'))) P.push([[inp.label('atk')], '스프링보드 문설트']);
     const g2 = m.grapple.grabTarget(f), PR = m.props;
     const swinger = !f.prop && f.nearestFoe(64, o => o.prop && o.side === f.side && o.st === 'ATTACK' && o.atk && o.atk.def.chair && o.atk.t < o.atk.def.startup + o.atk.def.active);
     if (swinger) P.push([[inp.label('grab')], '받아쳐서 뺏기!'], [[inp.label('dodge')], '타이밍 반격']);
@@ -204,7 +227,8 @@ export class HUD {
     else if (f.fin < B.burstCost) parts.push('긴급탈출: 게이지 부족');
     if (f.boost > 0) parts.push('로프 가속');
     if (f.exhausted) parts.push('지침');
-    drawText(g, parts.join(' · '), 8, 344, { size: 11, color: UI.dim, outline: '#05060f' });
+    if (f.fin >= COUNTERS.heavy.cost && f.counterCd <= 0) parts.push('카운터 준비 (L)');
+    drawText(g, parts.join(' · '), 8, PL.length ? 324 : 344, { size: 11, color: UI.dim, outline: '#05060f' });   // above the prompts when there are some
   }
   grappleMenu(g, m, f, L, camX) {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
@@ -227,8 +251,25 @@ export class HUD {
       drawText(g, name, cx, cy + 12, { size: 11, align: 'c', color: c.ok ? '#ffffff' : UI.faint });
       if (!c.ok && denied) drawText(g, c.why, cx, cy + 24, { size: 11, align: 'c', color: '#ff8a8a', outline: '#05060f' });
     }
-    drawText(g, `${inp.label('atk')} 무릎치기 ${B.grabStrikeMax - L.strikes}  ${inp.label('dodge')} 위치 바꾸기` + (f.fin >= B.finMax ? `  ${inp.label('fin')} 피니셔` : ''), x, y + 40, { size: 11, align: 'c', color: UI.dim });
+    // the other keys, along the bottom like every other prompt
+    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`], [[inp.label('dodge')], '위치 바꾸기']];
+    if (f.fin >= B.finMax) P.push([[inp.label('fin')], '피니셔']);
+    else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
+    this.bottomPrompts(g, P);
     void sgn; void clamp;
+  }
+  bottomPrompts(g, P) {
+    const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
+    let px = 320 - (ww.reduce((s, w) => s + w, 0) + (P.length - 1) * 8) / 2;
+    P.forEach(([k, t], i) => { prompt(g, k, t, Math.round(px + ww[i] / 2), 338, { align: 'c', bg: 1 }); px += ww[i] + 8; });
+  }
+  // somebody on the shoulders: walk to a corner, K drops them
+  carryMenu(g, m, f, L, camX) {
+    const inp = this.input, v = L.v, toC = m.combo.carryToCorner(f), corner = toC <= 74;
+    const x = Math.round(f.x - camX), y = Math.round(Math.min(v.joints.y(J.head), f.joints.y(J.head)) - 24);   // over the head of the one on top
+    gauge(g, x - 30, y, 60, 3, L.hold / B.carryHold, 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
+    gauge(g, x - 30, y + 5, 60, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
+    this.bottomPrompts(g, [[[inp.label('left') + '/' + inp.label('right')], corner ? '코너 앞!' : '걸어서 코너로'], [[inp.label('grab')], corner ? '턴버클 던지기' : '일렉트릭 체어 드롭']]);
   }
   drawBanners(g) {
     for (const b of this.banners) {

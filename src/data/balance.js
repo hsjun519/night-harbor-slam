@@ -28,7 +28,7 @@ export const BALANCE = {
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
-  grabWalk: 46,
+  grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // emergency escape
   burstCost: 35, burstCd: 18, burstRange: 92,
   // finisher

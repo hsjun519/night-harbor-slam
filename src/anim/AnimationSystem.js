@@ -5,6 +5,7 @@ import { HOLDS } from '../data/moves.js';
 import { BALANCE as B } from '../data/balance.js';
 import { Joints, JN, POSE_N, J, solveFK, toWorld, pose, poseLerp } from './skeleton.js';
 import { STANCES, stancePose, gaitPose, clip, sampleClip, attackPose, hasClip } from './clips.js';
+const P3 = new Float32Array(16);
 import { evalPaired, pairBuffers } from './paired.js';
 
 const P1 = new Float32Array(POSE_N), P2 = new Float32Array(POSE_N);
@@ -27,7 +28,7 @@ export class AnimationSystem {
     b.from.copy(f.joints); b.t = 0; b.dur = dur; b.x = f.x; b.y = f.y; b.on = true;
   }
   changed(f, from, to, opt) {
-    const soft = { IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
+    const soft = { SEATED: .14, IDLE: .1, MOVE: .1, GUARD: .07, ATTACK: .035, AIR_ATTACK: .05, HITSTUN: .03, STAGGER: .1, JUMP: .05, FALL: .1, DODGE: .05, GET_UP: .16, TAUNT: .1, ROPE: .07, WHIPPED: .08, CLIMB: .12, PERCH: .12, ENTER_RING: .12, EXIT_RING: .12, FINISHER: .08, WIN: .2, HANG: .14, APRON: .12, TAGWAIT: .2, PIN: .2, PINNED: .2, KO: .05, INTRO: .1 };
     if (!((from === 'IDLE' && to === 'MOVE') || (from === 'MOVE' && to === 'IDLE'))) f.clipT = 0;
     f.clipName = opt && opt.clip ? opt.clip : null;
     if (soft[to] && !(opt && opt.noBlend)) this.freezeBlend(f, soft[to]);
@@ -58,7 +59,13 @@ export class AnimationSystem {
       t = mv.loop ? L.t % mv.dur : Math.min(L.t, mv.dur);
     } else { mv = L.move; t = L.t; }
     const jV = v ? v.joints : tmpJ;
-    evalPaired(mv, t, a.dims, v ? v.dims : L.dV, a.joints, jV, B2.res);
+    // walking with somebody on the shoulders: the legs step, the arms keep holding
+    let modA = null;
+    if (L.kind === 'hold' && L.pos === 'carry' && L.walk) {
+      a.gait += dt * 4.4 * L.walk * a.face;
+      modA = p => { for (let i = 0; i < 16; i++) P3[i] = p[i]; gaitPose(p, a.gait, 'walk', .85); for (const i of [1, 2, 3, 4, 5, 6]) p[i] = P3[i]; };
+    }
+    evalPaired(mv, t, a.dims, v ? v.dims : L.dV, a.joints, jV, B2.res, modA);
     L.front = B2.res.front;
     if (L.kind === 'hold' && L.strikeT > 0) { // knee strike over the hold pose
       sampleClip(clip('knee'), .26 - L.strikeT, P1); solveFK(P1, a.dims, a.joints, {});
@@ -151,6 +158,7 @@ export class AnimationSystem {
       case 'PERCH': C('perch', f.t); break;
       case 'HANG': C('hang', f.t); opt = { hang: 1 }; break;
       case 'APRON': C('apron', f.t); break;
+      case 'SEATED': C('seatTop', f.t); opt = { seat: 1 }; break;
       case 'TAGWAIT': C(f.wantTag ? 'tagReach' : 'apron', f.poseT); break;
       case 'ENTER_RING': case 'EXIT_RING': C('enterRing', f.t); break;
       case 'TAUNT': C(f.char.taunt || 'taunt', f.t); break;
@@ -164,7 +172,8 @@ export class AnimationSystem {
     if (air) {
       // airborne: pelvis floats a little below leg length above the feet point
       solveFK(p, d, jt, { snap: false, px: p[12], py: -(d.leg * .92) - p[11] });
-    } else solveFK(p, d, jt, {});
+    } else if (opt && opt.seat) solveFK(p, d, jt, { snap: false, px: 0, py: 0, freeFeet: true });   // pelvis on the turnbuckle
+    else solveFK(p, d, jt, {});
     if (f.bounce) { f.bounce.t += dt; const k = f.bounce.t / .22; if (k >= 1) f.bounce = null; else offY = -Math.sin(k * Math.PI) * 7; }
     toWorld(jt, f.face, f.x, f.y + offY, yaw);
     if (opt && opt.hang) { // pin the hands to the top rope
