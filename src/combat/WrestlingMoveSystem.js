@@ -210,7 +210,7 @@ export class WrestlingMoveSystem {
     this.m.emit('moveCancel', { a, v, why });
   }
   event(L, t, k, o) {
-    const m = this.m, { a, v, move } = L;
+    const m = this.m, { a, move } = L, v = L.v || L.relV;
     if (o.d && v) {
       const hp = move.hp * L.power * o.d, st = move.stun * o.d;
       m.combat.damage(v, hp, st, a, { move });
@@ -226,7 +226,7 @@ export class WrestlingMoveSystem {
     } else if (k === 'smack') m.hitstop(.07);
   }
   contactPoint(L, o) {
-    const v = L.v || L.a;
+    const v = L.v || L.relV || L.a;
     if (v.joints) { const j = v.joints, i = o.body ? 1 : 0; return [j.x(i), o.body || L.move.vf === undefined ? j.y(i) : L.a.y]; }
     return [v.x, v.y];
   }
@@ -246,7 +246,7 @@ export class WrestlingMoveSystem {
     const m = this.m, { a, v, move } = L;
     L.released = true; L.committed = true;
     if (!v) return;
-    v.link = null; L.v = null;
+    v.link = null; L.v = null; L.relV = v;
     if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
     v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);

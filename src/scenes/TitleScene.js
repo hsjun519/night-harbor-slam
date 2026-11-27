@@ -56,14 +56,14 @@ export class TitleScene {
   constructor(game, o = {}) {
     this.game = game; this.t = 0; this.sel = 0; this.bg = titleBackdrop(); this.man = new Mannequin(); this.rain = []; const r = new RNG(5);
     for (let i = 0; i < 80; i++) this.rain.push({ x: r.next() * VIEW_W, y: r.next() * VIEW_H, s: 180 + r.next() * 120 });
-    this.onCareer = o.onCareer; this.hasSave = o.hasSave; this.onNew = o.onNew;
+    this.onCareer = o.onCareer; this.hasSave = o.hasSave; this.onNew = o.onNew; this.onSlots = o.onSlots;
     game.audio.music('title');
     game.screen.resetFx();
   }
   items() {
     return [
       { label: this.hasSave ? '커리어 이어하기' : '커리어 시작', act: () => this.onCareer && this.onCareer(this.hasSave ? 'continue' : 'new') },
-      ...(this.hasSave ? [{ label: '새 커리어', act: () => this.onCareer && this.onCareer('new') }] : []),
+      ...(this.hasSave ? [{ label: '새 커리어 (슬롯 고르기)', act: () => this.onSlots ? this.onSlots('new') : this.onCareer && this.onCareer('new') }, { label: '세이브 슬롯', act: () => this.onSlots && this.onSlots('load') }] : []),
       { label: '빠른 경기', act: () => this.game.go(() => new QuickScene(this.game, 'quick')) },
       { label: '온라인 대전 (1:1)', act: () => this.game.playOnline && this.game.playOnline() },
       { label: '연습 모드', act: () => this.game.go(() => new QuickScene(this.game, 'practice')) },

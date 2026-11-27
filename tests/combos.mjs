@@ -120,6 +120,12 @@ run('a heavy blow, L with 20 energy: roll-up straight into a cover', { mode: 'pi
   [{ t: .02, fn: (m, h, v, i) => { if (i === 0) __startAttack(m, v, 'uppercut'); } }, { t: .03 }, { t: .05, press: ['dodge'] }, { t: 1.6 }],
   (m, h, v, ev) => ((ev.sCounter || []).some(e => e.name === '기습 롤업') && !!(m.pin || (ev.pin || []).length)) || `counter=${(ev.sCounter || []).map(e => e.name)} pin=${!!m.pin}`);
 
+// ---- moves whose blow comes just after the throw still hurt
+for (const id of ['giantSwing', 'ringOut', 'fHomerun']) {
+  run(`${MOVES[id].name}: the blow after the throw lands`, {}, (m, h, v) => { h.x = 400; v.x = 424; h.face = 1; v.face = -1; v.hp0 = v.hp; m.wrestle.start(h, v, id, { noReverse: true, fin: id === 'fHomerun' ? { name: 'x', color: '#fff' } : null }); },
+    [{ t: 3.6 }],
+    (m, h, v) => ((v.hp0 - v.hp) >= MOVES[id].hp * .6) || `damage=${(v.hp0 - v.hp).toFixed(1)} of ${MOVES[id].hp}`);
+}
 // ---- the computer uses all of it
 {
   const C = {};

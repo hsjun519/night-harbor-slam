@@ -237,22 +237,28 @@ try {
   await step(10); await tap('Enter'); await step(80);
   r = await st();
   check(r.scene === 'WorldScene' && r.money === saved.money && r.day === saved.day && r.slot === saved.slot, 'title: 커리어 이어하기 loads the saved career', JSON.stringify(r) + ' saved ' + JSON.stringify(saved));
-  // ---- new career over a save: asks first, starts on 아니요
+  // ---- new career: the slot screen; an occupied slot asks first (아니요 first), an empty one starts at once and keeps the other career
   await p.goto(`http://127.0.0.1:${port}/index.html`, 800);
-  await step(10); await tap('ArrowDown'); await tap('Enter'); await step(80); await p.wait(80); await step(2);
-  r = await st(); check(r.scene === 'CreateScene' && r.input, 'title: 새 커리어 opens the creator with the name box', JSON.stringify(r));
+  await step(10); await tap('ArrowDown'); await tap('Enter'); await step(20);
+  r = await ev(`const sc=__NHS.game.scene; return JSON.stringify({ scene: sc.constructor.name, sel: sc.sel, info: sc.info && sc.info.map(x => x && x.name) })`).then(JSON.parse);
+  check(r.scene === 'SlotScene' && r.info[0] === saved.name && !r.info[1] && r.sel === 1, 'title: 새 커리어 opens the slots on the first empty one', JSON.stringify(r));
+  await p.shot('e2e_15_slots');
+  await tap('ArrowUp'); await tap('Enter'); r = await ev(`return JSON.stringify(__NHS.game.scene.ask)`).then(JSON.parse);
+  check(r && r.kind === 'new' && r.sel === 1, 'an occupied slot asks first, on 아니요', JSON.stringify(r));
+  await tap('Enter'); r = await ev(`const sc=__NHS.game.scene; return JSON.stringify({ scene: sc.constructor.name, ask: sc.ask })`).then(JSON.parse);
+  const kept = await ev(`return JSON.parse(localStorage.getItem('nhs.save1')).name`);
+  check(r.scene === 'SlotScene' && !r.ask && kept === saved.name, 'default 아니요 keeps the old save', JSON.stringify(r) + ' kept=' + kept);
+  await tap('ArrowDown'); await tap('Enter'); await step(80); await p.wait(80); await step(2);
+  r = await st(); check(r.scene === 'CreateScene' && r.input, 'the empty slot 2 opens the creator with the name box', JSON.stringify(r));
   await p.send('Input.insertText', { text: '등대' }); await tap('Enter'); await p.wait(60); await step(30);
   for (let i = 0; i < 20 && (await st()).row !== 15; i++) await tap('ArrowDown');
-  await tap('Enter'); r = await st(); check(r.ask, 'start over a save asks first', JSON.stringify(r));
-  await p.shot('e2e_15_overwrite');
-  await tap('Enter'); r = await st();
-  const kept = await ev(`return JSON.parse(localStorage.getItem('nhs.save1')).name`);
-  check(!r.ask && r.scene === 'CreateScene' && kept === saved.name, 'default 아니요 keeps the old save', JSON.stringify(r) + ' kept=' + kept);
-  await tap('Enter'); await tap('ArrowLeft'); await tap('Enter'); await step(70);
+  await tap('Enter'); await step(70);
   await tap('ArrowDown'); await tap('Enter'); await step(70);
   r = await st();
-  const now = await ev(`return __NHS.game.scene.c && __NHS.game.scene.c.d.name`);
-  check(r.scene === 'WorldScene' && now === '등대' && r.money === 60000, '예 starts the new career', JSON.stringify(r) + ' name=' + now);
+  const now = await ev(`return __NHS.game.scene.c && JSON.stringify({ name: __NHS.game.scene.c.d.name, slot: __NHS.game.scene.c.d.saveSlot })`).then(x => x && JSON.parse(x));
+  const both = await ev(`return JSON.stringify([JSON.parse(localStorage.getItem('nhs.save1')).name, JSON.parse(localStorage.getItem('nhs.save2')).name])`).then(JSON.parse);
+  check(r.scene === 'WorldScene' && now && now.name === '등대' && now.slot === 2 && r.money === 60000, 'the new career lives in slot 2', JSON.stringify(r) + ' now=' + JSON.stringify(now));
+  check(both[0] === saved.name && both[1] === '등대', 'slot 1 keeps the old career', JSON.stringify(both));
   check(r.slot === 0, 'a new career starts in the morning', 'slot=' + r.slot);
   r = await advanceDialog();
   // ---- game over -> "마지막 아침부터 다시 하기" restores the morning checkpoint
@@ -348,7 +354,8 @@ try {
   await tap('Escape'); await step(3);
   // ---- the basics from the title: a few steps by hand, the rest skipped from the pause menu
   await ev(`__NHS.game.toTitle(); return 1`); await step(50);
-  for (let i = 0; i < 4; i++) await tap('ArrowDown');
+  const tutAt = await ev(`return __NHS.game.scene.items().findIndex(x => x.label.startsWith('기초 훈련'))`);
+  for (let i = 0; i < tutAt; i++) await tap('ArrowDown');
   await tap('Enter'); await step(70);
   const tut = () => ev(`const sc=__NHS.game.scene; return sc.tut ? JSON.stringify({ i: sc.tut.i, n: sc.tut.n }) : JSON.stringify({ scene: sc.constructor.name })`).then(JSON.parse);
   let T = await tut(); check(T.i === 0, 'the basics start from the title', JSON.stringify(T));

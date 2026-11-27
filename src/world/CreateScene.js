@@ -34,8 +34,8 @@ const ROWS = ['name', 'style', 'build', 'skin', 'face', 'hair', 'hairCol', 'bear
 const ROWNAME = { name: '이름', style: '스타일', build: '체격', skin: '피부', face: '얼굴형', hair: '머리 모양', hairCol: '머리 색', beard: '수염', mask: '마스크', top: '상의', bottom: '하의', c1: '주 색', c2: '보조 색', boots: '부츠 색', random: '무작위로 만들기', start: '이 선수로 시작' };
 
 export class CreateScene {
-  constructor(game, done) {
-    this.game = game; this.done = done; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
+  constructor(game, done, slot = 1, confirmed = false) {
+    this.game = game; this.done = done; this.slot = slot; this.confirmed = confirmed; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
     this.v = { style: 'all', build: 'auto', skin: 'tan', face: 'square', hair: 'side', hairCol: '#2b3350', beard: 'none', mask: 'none', top: 'none', bottom: 'tights', c1: '#157f8c', c2: '#ffd65a', boots: '#23263a' };
     game.audio.music('lobby');
     this.input = null; this.cool = 0; this.autoT = .45; this.okT = 0; this.afterName = null; this.ask = null;
@@ -144,7 +144,7 @@ export class CreateScene {
       else if (k === 'random') { this.randomize(); A.sfx('ok'); }
       else if (k === 'start') {
         if (!this.name) { this.row = 0; this.afterName = 'start'; this.openInput(); return; }
-        if (hasCareer(1)) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
+        if (hasCareer(this.slot) && !this.confirmed) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
         this.begin();
       } else if (OPTS[k]) { this.row = Math.min(ROWS.length - 1, this.row + 1); A.sfx('ui'); }   // Enter on a choice: keep it, go to the next item
     }

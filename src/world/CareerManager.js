@@ -92,7 +92,19 @@ export const RARE_ITEMS = [
   { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
 ];
 export const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
-export function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
+export const SLOTS = 3;
+// Builds before the slots had one career: it counts as slot 1.
+export function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
+export function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
+export function slotInfo(n) {
+  const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
+  if (!d || typeof d !== 'object' || !d.name) return null;
+  const rec = d.record || {};
+  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
+}
+// the slot played most recently (for 커리어 이어하기)
+export function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
+export function deleteCareer(n) { Save.del(saveKey(n)); Save.del(saveKey(n) + '.chk'); if (n === 1) for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); } }
 
 export class Career {
   static create(n, setup) {
@@ -107,7 +119,7 @@ export class Career {
     c.save(true);
     return c;
   }
-  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   constructor() {
     this.d = {

@@ -5693,7 +5693,7 @@ class WrestlingMoveSystem {
     this.m.emit('moveCancel', { a, v, why });
   }
   event(L, t, k, o) {
-    const m = this.m, { a, v, move } = L;
+    const m = this.m, { a, move } = L, v = L.v || L.relV;
     if (o.d && v) {
       const hp = move.hp * L.power * o.d, st = move.stun * o.d;
       m.combat.damage(v, hp, st, a, { move });
@@ -5709,7 +5709,7 @@ class WrestlingMoveSystem {
     } else if (k === 'smack') m.hitstop(.07);
   }
   contactPoint(L, o) {
-    const v = L.v || L.a;
+    const v = L.v || L.relV || L.a;
     if (v.joints) { const j = v.joints, i = o.body ? 1 : 0; return [j.x(i), o.body || L.move.vf === undefined ? j.y(i) : L.a.y]; }
     return [v.x, v.y];
   }
@@ -5729,7 +5729,7 @@ class WrestlingMoveSystem {
     const m = this.m, { a, v, move } = L;
     L.released = true; L.committed = true;
     if (!v) return;
-    v.link = null; L.v = null;
+    v.link = null; L.v = null; L.relV = v;
     if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
     v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);
@@ -7720,14 +7720,14 @@ class TitleScene {
   constructor(game, o = {}) {
     this.game = game; this.t = 0; this.sel = 0; this.bg = titleBackdrop(); this.man = new Mannequin(); this.rain = []; const r = new RNG(5);
     for (let i = 0; i < 80; i++) this.rain.push({ x: r.next() * VIEW_W, y: r.next() * VIEW_H, s: 180 + r.next() * 120 });
-    this.onCareer = o.onCareer; this.hasSave = o.hasSave; this.onNew = o.onNew;
+    this.onCareer = o.onCareer; this.hasSave = o.hasSave; this.onNew = o.onNew; this.onSlots = o.onSlots;
     game.audio.music('title');
     game.screen.resetFx();
   }
   items() {
     return [
       { label: this.hasSave ? '커리어 이어하기' : '커리어 시작', act: () => this.onCareer && this.onCareer(this.hasSave ? 'continue' : 'new') },
-      ...(this.hasSave ? [{ label: '새 커리어', act: () => this.onCareer && this.onCareer('new') }] : []),
+      ...(this.hasSave ? [{ label: '새 커리어 (슬롯 고르기)', act: () => this.onSlots ? this.onSlots('new') : this.onCareer && this.onCareer('new') }, { label: '세이브 슬롯', act: () => this.onSlots && this.onSlots('load') }] : []),
       { label: '빠른 경기', act: () => this.game.go(() => new QuickScene(this.game, 'quick')) },
       { label: '온라인 대전 (1:1)', act: () => this.game.playOnline && this.game.playOnline() },
       { label: '연습 모드', act: () => this.game.go(() => new QuickScene(this.game, 'practice')) },
@@ -9399,7 +9399,19 @@ const RARE_ITEMS = [
   { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
 ];
 const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
-function hasCareer(n) { return !!Save.get(saveKey(n)) || !!legacyNewest(); }
+const SLOTS = 3;
+// Builds before the slots had one career: it counts as slot 1.
+function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
+function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
+function slotInfo(n) {
+  const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
+  if (!d || typeof d !== 'object' || !d.name) return null;
+  const rec = d.record || {};
+  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
+}
+// the slot played most recently (for 커리어 이어하기)
+function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
+function deleteCareer(n) { Save.del(saveKey(n)); Save.del(saveKey(n) + '.chk'); if (n === 1) for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); } }
 
 class Career {
   static create(n, setup) {
@@ -9414,7 +9426,7 @@ class Career {
     c.save(true);
     return c;
   }
-  static load(n) { const d = Save.get(saveKey(n)) || migrateLegacy(n); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
   constructor() {
     this.d = {
@@ -9652,7 +9664,7 @@ class Career {
   equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
 }
 
-return { hasCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES };
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, SLOTS };
 })();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
@@ -10670,6 +10682,91 @@ class SettingsOverlay {
 }
 
 return { SettingsOverlay };
+})();
+// ---- scenes/SlotScene.js
+__m["scenes/SlotScene.js"] = (function () {
+// Three career save slots: start a new career in an empty slot (or over an old one, after asking), continue any of
+// them, or delete one. A finished champion's career can stay in its slot while you start over in another.
+const { VIEW_W, VIEW_H, clamp } = __m["core/util.js"];
+const { drawText } = __m["render/pixelfont.js"];
+const { UI, mixHex } = __m["render/palette.js"];
+const { rect, bands } = __m["render/painter.js"];
+const { panel, prompt } = __m["render/ui.js"];
+const { drawPortrait } = __m["render/head.js"];
+const { slotInfo, deleteCareer, SLOTS } = __m["world/CareerManager.js"];
+class SlotScene {
+  constructor(game, mode, o = {}) {
+    this.game = game; this.mode = mode; this.t = 0; this.ask = null; this.onPick = o.onPick;
+    this.refresh();
+    // starting new: the first empty slot; otherwise the most recently played
+    const empty = this.info.findIndex(x => !x), latest = this.info.reduce((b, x, i) => (x && (b < 0 || x.savedAt > this.info[b].savedAt) ? i : b), -1);
+    this.sel = mode === 'new' ? (empty >= 0 ? empty : 0) : Math.max(0, latest);
+  }
+  refresh() { this.info = Array.from({ length: SLOTS }, (_, i) => slotInfo(i + 1)); }
+  update(dt) {
+    this.t += dt;
+    const inp = this.game.input, A = this.game.audio;
+    if (this.ask) {   // 예 / 아니요, 아니요 first
+      if (inp.pressed('left') || inp.pressed('right')) { this.ask.sel = 1 - this.ask.sel; A.sfx('ui'); }
+      if (inp.menuPressed('cancel')) { this.ask = null; A.sfx('back'); return; }
+      if (inp.menuPressed('confirm')) {
+        const a = this.ask; this.ask = null;
+        if (a.sel !== 0) { A.sfx('back'); return; }
+        if (a.kind === 'delete') { deleteCareer(a.n); this.refresh(); A.sfx('deny'); return; }
+        A.sfx('ok'); this.onPick && this.onPick('new', a.n, true);
+      }
+      return;
+    }
+    const n = SLOTS + 1;
+    if (inp.pressed('up')) { this.sel = (this.sel + n - 1) % n; A.sfx('ui'); }
+    if (inp.pressed('down')) { this.sel = (this.sel + 1) % n; A.sfx('ui'); }
+    if (inp.menuPressed('cancel')) { A.sfx('back'); this.game.toTitle(); return; }
+    const i = this.sel, info = this.info[i];
+    if (i < SLOTS && info && (inp.rawPressed('Delete') || inp.rawPressed('KeyX'))) { this.ask = { kind: 'delete', n: i + 1, sel: 1 }; A.sfx('ui'); return; }
+    if (!inp.menuPressed('confirm')) return;
+    if (i === SLOTS) { A.sfx('back'); this.game.toTitle(); return; }
+    if (this.mode === 'new') {
+      if (info) { this.ask = { kind: 'new', n: i + 1, sel: 1 }; A.sfx('ui'); return; }
+      A.sfx('ok'); this.onPick && this.onPick('new', i + 1);
+    } else {
+      if (!info) { A.sfx('ok'); this.onPick && this.onPick('new', i + 1); return; }
+      A.sfx('ok'); this.onPick && this.onPick('continue', i + 1);
+    }
+  }
+  draw(w, u) {
+    bands(w, 0, 0, VIEW_W, VIEW_H, ['#0b0f22', '#0e1430', '#111a3a', '#141f44', '#17244c']);
+    for (let i = 0; i < 16; i++) rect(w, 'rgba(73,214,255,.05)', 0, i * 24 + ((this.t * 12) % 24), VIEW_W, 1);
+    u.clearRect(0, 0, VIEW_W, VIEW_H);
+    drawText(u, this.mode === 'new' ? '새 커리어 — 슬롯 고르기' : '세이브 슬롯', 20, 14, { scale: 2, color: '#ffd65a', bold: true, outline: '#05060f' });
+    drawText(u, this.mode === 'new' ? '빈 슬롯에서 시작하면 다른 커리어는 그대로 남는다. 찬 슬롯은 덮어쓰기 전에 묻는다.' : '이어 할 커리어를 고르자. 빈 슬롯을 고르면 새로 시작한다.', 20, 46, { size: 11, color: UI.dim });
+    for (let i = 0; i < SLOTS; i++) {
+      const x = 20, y = 66 + i * 76, on = i === this.sel, I = this.info[i];
+      panel(u, x, y, 600, 68, { accent: on ? '#ffd65a' : I ? '#49d6ff' : '#3a4258', alpha: on ? .97 : .85 });
+      if (on) rect(u, mixHex(UI.accent, UI.panel, .7), x + 2, y + 2, 596, 64);
+      drawText(u, `슬롯 ${i + 1}`, x + 10, y + 8, { size: 11, color: on ? '#ffd65a' : UI.dim });
+      if (!I) { drawText(u, '비어 있음', x + 80, y + 26, { color: '#9aa6d6' }); continue; }
+      rect(u, '#05060f', x + 70, y + 8, 52, 52); rect(u, '#1b2450', x + 71, y + 9, 50, 50);
+      if (I.look) drawPortrait(u, I.look, I.champion ? 'happy' : 'neutral', x + 71, y + 9, 50, { px: 2, dy: 6 });
+      drawText(u, I.name + (I.champion ? '  ★ 챔피언' : ''), x + 132, y + 8, { color: I.champion ? '#ffd65a' : '#ffffff', bold: true });
+      drawText(u, `시즌 ${I.season} · ${I.day}일차 · 레벨 ${I.level} · 명성 ${I.fame}`, x + 132, y + 28, { size: 11, color: '#c9d4ff' });
+      drawText(u, `${I.w}승 ${I.l}패${I.titles ? ` · 타이틀 ${I.titles}개` : ''}${I.over ? ' · 은퇴/부상' : ''}`, x + 132, y + 44, { size: 11, color: UI.dim });
+      if (I.savedAt) drawText(u, new Date(I.savedAt).toLocaleDateString('ko-KR') + ' 저장', x + 590, y + 8, { size: 11, align: 'r', color: UI.dim });
+    }
+    const by = 66 + SLOTS * 76, onB = this.sel === SLOTS;
+    panel(u, 20, by, 160, 22, { alpha: onB ? .97 : .8, accent: onB ? '#ffd65a' : '#3a4258' });
+    drawText(u, '돌아가기', 100, by + 5, { size: 11, align: 'c', color: onB ? '#ffffff' : UI.dim });
+    if (this.ask) {
+      const a = this.ask;
+      panel(u, 150, 140, 340, 80, { accent: '#ff5b5b', alpha: .98 });
+      drawText(u, a.kind === 'delete' ? `슬롯 ${a.n}의 커리어를 지울까요? (되돌릴 수 없다)` : `슬롯 ${a.n}의 커리어 위에 새로 시작할까요?`, 320, 152, { size: 11, align: 'c', color: '#ffffff' });
+      ['예', '아니요'].forEach((t, k) => { const on = a.sel === k; rect(u, on ? '#26315f' : '#141a36', 230 + k * 100, 184, 80, 20); drawText(u, t, 270 + k * 100, 188, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
+    }
+    prompt(u, ['↑↓'], '슬롯', 20, 338, {}); prompt(u, ['Enter'], '결정', 90, 338, {}); prompt(u, ['X'], '지우기', 170, 338, {}); prompt(u, ['Esc'], '뒤로', 240, 338, {});
+    void clamp;
+  }
+}
+
+return { SlotScene };
 })();
 // ---- world/menus.js
 __m["world/menus.js"] = (function () {
@@ -12083,8 +12180,8 @@ const ROWS = ['name', 'style', 'build', 'skin', 'face', 'hair', 'hairCol', 'bear
 const ROWNAME = { name: '이름', style: '스타일', build: '체격', skin: '피부', face: '얼굴형', hair: '머리 모양', hairCol: '머리 색', beard: '수염', mask: '마스크', top: '상의', bottom: '하의', c1: '주 색', c2: '보조 색', boots: '부츠 색', random: '무작위로 만들기', start: '이 선수로 시작' };
 
 class CreateScene {
-  constructor(game, done) {
-    this.game = game; this.done = done; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
+  constructor(game, done, slot = 1, confirmed = false) {
+    this.game = game; this.done = done; this.slot = slot; this.confirmed = confirmed; this.t = 0; this.row = 0; this.man = new Mannequin(); this.name = '';
     this.v = { style: 'all', build: 'auto', skin: 'tan', face: 'square', hair: 'side', hairCol: '#2b3350', beard: 'none', mask: 'none', top: 'none', bottom: 'tights', c1: '#157f8c', c2: '#ffd65a', boots: '#23263a' };
     game.audio.music('lobby');
     this.input = null; this.cool = 0; this.autoT = .45; this.okT = 0; this.afterName = null; this.ask = null;
@@ -12193,7 +12290,7 @@ class CreateScene {
       else if (k === 'random') { this.randomize(); A.sfx('ok'); }
       else if (k === 'start') {
         if (!this.name) { this.row = 0; this.afterName = 'start'; this.openInput(); return; }
-        if (hasCareer(1)) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
+        if (hasCareer(this.slot) && !this.confirmed) { this.ask = { sel: 1 }; A.sfx('ui'); return; }
         this.begin();
       } else if (OPTS[k]) { this.row = Math.min(ROWS.length - 1, this.row + 1); A.sfx('ui'); }   // Enter on a choice: keep it, go to the next item
     }
@@ -12502,14 +12599,15 @@ const { GameManager } = __m["core/GameManager.js"];
 const { TitleScene } = __m["scenes/TitleScene.js"];
 const { MatchScene } = __m["scenes/MatchScene.js"];
 const { SettingsOverlay } = __m["scenes/SettingsScene.js"];
-const { Career, hasCareer } = __m["world/CareerManager.js"];
+const { Career, anyCareer, latestSlot } = __m["world/CareerManager.js"];
+const { SlotScene } = __m["scenes/SlotScene.js"];
 const { WorldScene } = __m["world/WorldScene.js"];
 const { CreateScene } = __m["world/CreateScene.js"];
 const { TutorialOffer } = __m["scenes/Tutorial.js"];
 const { OnlineScene } = __m["scenes/OnlineScene.js"];
 const canvas = document.getElementById('game');
 const game = new GameManager(canvas);
-game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: hasCareer(1), onCareer: kind => startCareer(kind) }));
+game.toTitle = () => game.go(() => new TitleScene(game, { hasSave: anyCareer(), onCareer: kind => startCareer(kind), onSlots: mode => game.go(() => new SlotScene(game, mode, { onPick: (k, n, ok) => startCareer(k, null, n, ok) })) }));
 game.playMatch = (cfg, after) => game.go(() => new MatchScene(game, cfg, res => after && after(res)));
 game.openSettings = () => game.push(new SettingsOverlay(game));
 game.playOnline = () => game.go(() => new OnlineScene(game));
@@ -12518,13 +12616,14 @@ function playTutorial(c, after) {
   game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? c.entrant('human') : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
 }
 game.playTutorial = playTutorial;
-function startCareer(kind, given) {
-  if (kind === 'continue') { const c = given || Career.load(1); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+function startCareer(kind, given, slot, confirmed) {
+  if (kind === 'continue') { const c = given || Career.load(slot || latestSlot()); if (c) { game.career = c; game.go(() => new WorldScene(game, c)); return; } }
+  const n = slot || 1;
   game.go(() => new CreateScene(game, look => {
-    const c = Career.create(1, look); game.career = c;
+    const c = Career.create(n, look); game.career = c;
     const toTown = o => game.go(() => new WorldScene(game, c, Object.assign({ intro: true }, o)));
     game.go(() => new TutorialOffer(game, () => playTutorial(c, res => { if (res.completed) { c.d.flags.tutored = 1; c.save(); } toTown({ tutored: res.completed }); }), () => toTown({})));
-  }));
+  }, n, !!confirmed));
 }
 game.startCareer = startCareer;
 game.toTitle();
