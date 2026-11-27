@@ -65,6 +65,7 @@ export class TitleScene {
       { label: this.hasSave ? '커리어 이어하기' : '커리어 시작', act: () => this.onCareer && this.onCareer(this.hasSave ? 'continue' : 'new') },
       ...(this.hasSave ? [{ label: '새 커리어', act: () => this.onCareer && this.onCareer('new') }] : []),
       { label: '빠른 경기', act: () => this.game.go(() => new QuickScene(this.game, 'quick')) },
+      { label: '온라인 대전 (1:1)', act: () => this.game.playOnline && this.game.playOnline() },
       { label: '연습 모드', act: () => this.game.go(() => new QuickScene(this.game, 'practice')) },
       { label: '기초 훈련 (튜토리얼)', act: () => this.game.playTutorial && this.game.playTutorial(null, () => this.game.toTitle()) },
       { label: '설정', act: () => this.game.openSettings && this.game.openSettings() },

@@ -43,7 +43,7 @@ export const BALANCE = {
   // career rubber band: a win sharpens the other wrestlers (more after a streak), a loss eases them off
   ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
   // emergency escape
-  burstCost: 35, burstCd: 18, burstRange: 92,
+  burstCost: 46, burstCd: 18, burstRange: 92,   // 2026-11-27: +30% (was 35)
   // finisher
   finMax: 100, finHit: 2.6, finTaken: .34, finCounter: 10, finPerfect: 6, finTaunt: 9, finMissKeep: .45, tauntTime: 1.0, hypeBonus: .28,
   // ring

@@ -10,6 +10,8 @@ import { drawText, textWidth } from '../render/pixelfont.js';
 import { drawProps, drawChairAt } from '../render/PropRenderer.js';
 import { drawSpecialBack, drawSpecialFront } from '../render/SpecialRenderer.js';
 import { SPECIAL } from '../combat/SpecialRules.js';
+import { Lockstep } from '../net/Lockstep.js';
+import { newIntent } from '../combat/CharacterController.js';
 import { BodyCanvas } from '../render/raster.js';
 import { drawBody } from '../render/body.js';
 import { Actor } from '../world/Actor.js';
@@ -44,6 +46,8 @@ export class MatchScene {
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
+    this.online = cfg.online || null;
+    if (this.online) { this.lock = new Lockstep(this.online.net, this.online.localIdx, this.online.delay || 4); this.online.net.on('close', () => { this.netLost = true; }); this.online.net.on('data', d => { if (d && d.t === 'bye') this.netLost = true; }); }
     { const SP0 = this.m.special; this.ar.setScreen(this.titleText(), (SP0 && SP0.type ? SPECIAL[SP0.type].name : MODES[this.m.mode].name) + (SP0 && SP0.falls ? ' · 3판 2선승' : SP0 && SP0.iron ? ' · 아이언맨' : ''), '#ffd65a'); }
   }
   titleText() { const F = this.m.fighters; if (F.length === 2) return F[0].name + ' VS ' + F[1].name; return (MODES[this.m.mode] || {}).name || ''; }
@@ -226,17 +230,18 @@ export class MatchScene {
     this.t += dt; this.lastDt = dt;
     if (inp.rawPressed('F3') || inp.rawPressed('Backquote')) this.debug = !this.debug;
     if (this.resultShown) { if (inp.menuPressed('confirm')) this.finish(); return; }
-    if (this.paused) { this.pauseInput(); return; }
+    if (this.paused) { this.pauseInput(); if (!this.online) return; }   // online the match goes on behind the menu
     if (this.pre && m.phase === 'intro' && m.introT > (m.cfg.introTime || 3.2) - .15) this.startPreTalk();
     if (this.talk && m.phase !== 'intro') { this.talk.close(); }   // never let the talk outlive the intro
     if (this.talk) { this.talk.update(dt); m.update(dt); this.hud.update(dt, m); this.ar.update(dt, m.hype); this.camera(dt); return; }
-    if (inp.pressed('pause') && m.phase !== 'end') { this.paused = true; this.sel = 0; g.audio.sfx('ui'); return; }
+    if (this.online && this.netLost) { if (inp.menuPressed('confirm') || inp.menuPressed('cancel')) this.finish(true); return; }
+    if (inp.pressed('pause') && m.phase !== 'end' && !this.paused) { this.paused = true; this.sel = 0; g.audio.sfx('ui'); if (!this.online) return; }
     // human input
     const h = this.human;
-    if (h && m.phase === 'fight') inp.fillIntent(h.intent);
+    if (h && m.phase === 'fight' && !this.online) inp.fillIntent(h.intent);
     for (const f of m.fighters) if (f.bossPhase > 1 && f.alive && Math.random() < dt * (f.bossPhase === 3 ? 9 : 4)) this.fx.spark(f.x + (Math.random() - .5) * 30, f.y - 20 - Math.random() * 70, .5, f.bossPhase === 3 ? '#ff5b5b' : '#ff8a2b');
-    if (m.phase === 'intro' && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
-    m.update(dt);
+    if (m.phase === 'intro' && !this.online && (inp.menuPressed('confirm') || inp.pressed('atk'))) { m.introT = 99; }
+    if (this.online) this.onlineTick(dt); else m.update(dt);
     if (this.tut) this.tut.update(dt);
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
     for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
@@ -248,6 +253,26 @@ export class MatchScene {
     // lights out
     if (this.darkUntil && m.time > this.darkUntil) { this.darkGoal = 0; this.darkUntil = 0; }
     this.dark = damp(this.dark, this.darkGoal, 9, dt);
+  }
+  // Online: this frame's input goes out for a frame a few ticks ahead; the match steps only when both inputs are in.
+  onlineTick(dt) {
+    const L = this.lock, m = this.m, inp = this.game.input, I = this.netI || (this.netI = newIntent());
+    I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false;
+    if (!this.paused && m.phase === 'fight') inp.fillIntent(I);
+    L.input(I);
+    this.netAcc = Math.min((this.netAcc || 0) + dt, 6 / 60);
+    let n = 0;
+    while (this.netAcc >= 1 / 60 - 1e-6 && n < 4) {
+      L.push();
+      if (!L.ready()) { this.stallT = (this.stallT || 0) + dt; break; }
+      this.stallT = 0;
+      L.apply(m.fighters);
+      m.update(1 / 60);
+      L.sum(m);
+      this.netAcc -= 1 / 60; n++;
+    }
+    this.pingT = (this.pingT || 0) + dt;
+    if (this.pingT > 2) { this.pingT = 0; this.online.net.pingNow(); }
   }
   camera(dt) {
     const m = this.m, S = this.game.screen, ar = m.arena;
@@ -288,6 +313,7 @@ export class MatchScene {
   }
   tutorialDone(completed) { this.tutDone = !!completed; this.finish(true); }
   pauseItems() {
+    if (this.online) return [{ label: '계속', act: () => { this.paused = false; } }, { label: '기권하고 나가기', act: () => { this.paused = false; this.finish(true); } }];
     if (this.tut) return [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '이 단계 건너뛰기', act: () => { this.tut.skip(); this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '기초 훈련 끝내기', act: () => this.tutorialDone(false) }];
     const P = this.m.practice;
     const items = [{ label: '계속하기', act: () => { this.paused = false; this.game.input.clear(); } }, { label: '조작법', act: () => this.game.showControls(this) }, { label: '디버그 표시', value: this.debug ? '켬' : '끔', act: () => { this.debug = !this.debug; }, cycle: () => { this.debug = !this.debug; } }];
@@ -307,6 +333,7 @@ export class MatchScene {
   finish(quit) {
     if (this.done) return;
     this.done = true;
+    if (this.lock) { if (quit && this.online.net.connected && !this.netLost) this.online.net.send({ t: 'bye' }); this.lock.dispose(); }
     this.game.screen.resetFx();
     const r = this.m.result || { forfeit: true, quit };
     const summary = this.m.summary(), h = this.human;
@@ -335,6 +362,13 @@ export class MatchScene {
     if (this.tut && !this.paused) this.tut.draw(u);
     if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
+    if (this.online) {
+      const net = this.online.net;
+      drawText(u, `온라인 · 핑 ${net.ping || '-'}ms`, 632, 330, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' });
+      if (this.stallT > .3 && !this.netLost) drawText(u, this.stallT > 6 ? '상대 응답 없음… (Esc 메뉴에서 나갈 수 있다)' : '상대 입력을 기다리는 중…', 320, 70, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
+      if (this.lock && this.lock.desync) drawText(u, '동기화 오류: 두 화면의 경기가 어긋났다 (결과는 참고용)', 320, 84, { size: 11, align: 'c', color: '#ff8a8a', outline: '#05060f' });
+      if (this.netLost) { fade(u, .6); drawText(u, '상대와 연결이 끊겼다', 320, 160, { scale: 2, align: 'c', color: '#ff8a8a', bold: true, outline: '#05060f' }); drawText(u, 'Enter 로비로', 320, 190, { size: 11, align: 'c', color: UI.dim }); }
+    }
     if (this.paused) this.drawPause(u);
     if (this.resultShown) this.drawResult(u);
   }

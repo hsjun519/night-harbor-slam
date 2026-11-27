@@ -115,7 +115,7 @@ export class MatchManager extends Emitter {
     for (const f of this.fighters) {
       if (f.gone) continue;
       if (f.ai && (this.phase === 'fight' || f.st === 'INTRO')) f.ai.update(dt);
-      else if (f.ctrl !== 'human' || this.phase !== 'fight') this.blankIntent(f);
+      else if ((f.ctrl !== 'human' && f.ctrl !== 'remote') || this.phase !== 'fight') this.blankIntent(f);
       if (this.practice && f.ctrl !== 'human') this.practiceTick(f, dt);
       f.tick(dt);
     }

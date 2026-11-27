@@ -64,6 +64,8 @@ let js = '"use strict";\nconst __m = {};\n';
 for (const id of order) { const m = mods.get(id); js += `// ---- ${id}\n` + transform(id, m.file, m.code); }
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'game.js'), js);
+// PeerJS (MIT licence in vendor/PEERJS-LICENSE.txt) for online 1:1, inlined so the page stays one file.
+const peer = fs.existsSync(path.join(ROOT, 'vendor', 'peerjs.min.js')) ? `<script>/* PeerJS — MIT License, Copyright (c) 2015 Michelle Bu and Eric Zhang, http://peerjs.com */\n${fs.readFileSync(path.join(ROOT, 'vendor', 'peerjs.min.js'), 'utf8').replace(/<\/script/gi, '<\\/script')}\n</script>\n` : '';
 const html = `<!doctype html>
 <html lang="ko">
 <head>
@@ -80,7 +82,7 @@ canvas{display:block;image-rendering:pixelated;outline:none}
 <body>
 <canvas id="game" tabindex="0"></canvas>
 <div id="boot">불러오는 중…</div>
-<script>
+${peer}<script>
 ${js.replace(/<\/script/gi, '<\\/script')}
 document.getElementById('boot').remove();
 </script>
@@ -101,7 +103,7 @@ canvas{display:block;image-rendering:pixelated;outline:none}
 </style>
 <canvas id="game" tabindex="0" aria-label="밤항구 슬램 게임 화면"></canvas>
 <div id="focusHint">화면을 한 번 클릭하면 키보드로 조작할 수 있습니다 · PC 키보드·게임패드용</div>
-<script>
+${peer}<script>
 ${js.replace(/<\/script/gi, '<\/script')}
 (function(){var c=document.getElementById('game'),h=document.getElementById('focusHint');function go(){c.focus();if(h){h.remove();h=null;}}c.addEventListener('pointerdown',go);window.addEventListener('keydown',function(){if(h){h.remove();h=null;}});c.focus();})();
 </script>
