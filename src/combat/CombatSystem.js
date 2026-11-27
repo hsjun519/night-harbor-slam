@@ -79,7 +79,7 @@ export class CombatSystem {
         m.hitstop(.11); m.emit('parry', { a, v, x: hx, y: hy });
         return 'parry';
       }
-      const chip = Math.max(0, d.hp * B.guardHp * a.stats.atk), st = d.stun * B.guardStun * boost * (d.lv >= 3 ? 1.25 : 1);
+      const chip = Math.max(0, d.hp * B.guardHp * a.stats.atk), st = d.stun * B.guardStun * boost * (d.lv >= 3 ? 1.25 : 1) * (a.stats.brk || 1);
       this.damage(v, Math.min(chip, Math.max(0, v.hp - B.chipMin)), 0, a, { chip: true });
       v.stun -= st; v.regenDelay = B.stunRegenDelay;
       a.atk.connected = true; a.atk.blocked = true;
@@ -98,7 +98,7 @@ export class CombatSystem {
     const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1)), stunScale = Math.max(.72, 1 - .035 * (v.combo.n - 1));
     const stale = this.stale(a, d.id);
     const k = stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
-    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k;
+    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k * (a.stats.brk || 1);
     a.atk.connected = true; a.hitsLanded++; v.combo.dmg += hp;
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
@@ -181,7 +181,8 @@ export class CombatSystem {
     // a big blow against somebody leaning on the ropes can send them over the top
     const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
     const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
-    const over = spent || (outward && nr.dist < 34 && Math.abs(vx) > 150 && this.m.rng.chance(.25 + (1 - v.hp / v.maxHp) * .5));
+    const elim = this.m.rules.ringOut === 'elim';
+    const over = spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
     v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;

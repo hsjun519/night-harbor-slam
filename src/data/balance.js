@@ -22,9 +22,9 @@ export const BALANCE = {
   injuryRate: 1.2,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
-  hitstunScale: .94, strikeStun: 1.22,
+  hitstunScale: .94, strikeStun: 1.45,
   // guard, dodge, counter
-  guardHp: .18, guardStun: .36, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
+  guardHp: .18, guardStun: .44, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,

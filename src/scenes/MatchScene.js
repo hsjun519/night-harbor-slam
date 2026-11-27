@@ -358,6 +358,7 @@ export class MatchScene {
     panel(u, 130, 40, 380, 270, { accent: win ? '#ffd65a' : '#ff5b5b' });
     drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
     drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
+    if (r.finishBy) drawText(u, r.finishBy === 'finisher' ? '피니셔로 마무리! (보너스)' : '레슬링 기술로 마무리! (보너스)', 320, 96, { size: 11, align: 'c', color: '#ffd65a' });
     if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
     if (h) {
       const S = m.summary()[h.idx];

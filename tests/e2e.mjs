@@ -221,6 +221,15 @@ try {
   await p.shot('e2e_14_training');
   await step(40); await tap('Enter'); await step(3);
   r = await st(); check(!r.wov.length && (r.slot !== slot0 || r.day > 1), 'training used a time slot', JSON.stringify(r));
+  // ---- breathing: the Enter that starts the game is not read as the first breath
+  await ev(`const W=__NHS.game.scene; W.c.d.money=Math.max(W.c.d.money,60000); W.c.d.fatigue=0; W.startTraining('breath'); return 1`); await step(3);
+  await kd('Enter'); await step(5); await ku('Enter'); await step(20);
+  let br = await ev(`const o=__NHS.game.scene.overlays[0]; return JSON.stringify({ph:o.phase, round:o.s&&o.s.round, done:o.s&&o.s.done})`).then(JSON.parse);
+  check(br.ph === 'play' && br.round === 0 && br.done.length === 0, 'breath training: starting with Enter is not a failed breath', JSON.stringify(br));
+  await kd('KeyJ'); await step(86); await ku('KeyJ'); await step(4);
+  br = await ev(`const o=__NHS.game.scene.overlays[0]; return JSON.stringify({ph:o.phase, round:o.s&&o.s.round, done:o.s&&o.s.done})`).then(JSON.parse);
+  check(br.round === 1 && br.done[0] === true, 'breath training: holding J into the green band counts as a good breath', JSON.stringify(br));
+  await ev(`const W=__NHS.game.scene; W.overlays[0].close(); return 1`); await step(3);
 
   // ---- with a save: the first title item continues it
   const saved = await ev(`const c=__NHS.game.scene.c; c.save(); return JSON.stringify({name:c.d.name, day:c.d.day, slot:c.d.slot, money:c.d.money})`).then(JSON.parse);

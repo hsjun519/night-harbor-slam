@@ -36,7 +36,7 @@ export class AIController {
     this.observe();
     if (f.ctrl === 'dummy' || this.behavior) { this.dummy(dt); return; }
     if (f.st === 'INTRO') return;
-    this.goalT += dt; this.planT -= dt;
+    this.goalT += dt; this.planT -= dt; if (this.defHeat > 0) this.defHeat = Math.max(0, this.defHeat - dt * .3);
     if (this.wait > 0) { this.wait -= dt; }
     // situations that are not choices
     if (f.st === 'GRABBED') { this.grabbed(dt); return; }
@@ -51,6 +51,9 @@ export class AIController {
     if (f.entering) { this.enterRing(); return; }
     // defence reads the delayed picture
     if (this.defend(dt)) return;
+    if (m.rules.ringOut === 'elim' && f.side === 'in' && (!this.goal || this.goal.name !== 'knockOff') && this.planT > .05) {
+      for (const o of m.fighters) { if (!f.isFoe(o) || o.eliminated) continue; const s = this.seen(o); if ((s.st === 'HANG' || s.st === 'APRON') && Math.abs(o.x - f.x) < 260) { this.planT = 0; break; } }
+    }
     if (this.planT <= 0 || !this.goal) this.plan();
     this.execute(dt);
   }
@@ -80,14 +83,14 @@ export class AIController {
       const key = o.idx + ':' + s.atk.id + ':' + Math.round((f.match.time - s.atk.t) * 4);
       if (this.lastSeenAtk === key) continue;
       this.lastSeenAtk = key;
-      const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
+      const r = this.rng.next() * (1 + (this.defHeat || 0) * .75), lowSt = f.stun < f.maxStun * .35;
       // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
       const left = d.startup - s.atk.t - D.react;
       // a chair coming up: sometimes step in and take it
       if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
-      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
-      if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
+      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 1.7) { this.faceTo(o); this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = '반격 노림'; return true; }
+      if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { this.defHeat = (this.defHeat || 0) + .7; f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
       if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
     }
     // finisher coming in
@@ -128,7 +131,7 @@ export class AIController {
   }
   onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62)) ? .6 + this.rng.next() * 1.6 : 99; }
   pinMash(p, dt) { if (p.t > (this.kickAt || 99)) return this.rng.chance(dt * this.D.mash * 1.4) ? 1 : 0; return this.rng.chance(dt * this.D.mash * .25) ? 1 : 0; }
-  wantsHang() { return this.rng.chance(this.D.hang * .25); }
+  wantsHang() { const f = this.f; return this.rng.chance(this.D.hang * .5 * (.55 + f.hp / f.maxHp * .7)); }
   // ---- goals ----
   plan() {
     const f = this.f, m = f.match, D = this.D, tr = this.tr;
@@ -147,7 +150,15 @@ export class AIController {
     if (loose && !t.prop) { const mine = Math.abs(loose.x - f.x) < Math.abs(loose.x - t.x) + 40; add('chair', (mine ? 4.5 : 1.2) * (.6 + (tr.dirty || .3)) * D.pick, loose); }
     if (t.prop && dist < 170 && t.side === f.side) add('steal', 3 * D.pick, t);
     if (!f.prop && !tDown && t.side === f.side && dist > 90 && dist < 260 && f.fin >= B.dashSigCost && f.sigCd <= 0 && t.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'STAGGER')) add('dashSig', 2.2 * D.pick * (.6 + (tr.aggr || .5)), t);
-    if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', 3 + (f.outCount > 5 ? 6 : 0), null);
+    // outside with the foe out there too: fight first, get back in before the count runs out
+    const bothOut = t.side === 'out' && f.side === 'out' && !t.entering && t.st !== 'ENTER_RING';
+    if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', (bothOut && f.outCount < 6 ? .25 : 3) + (f.outCount > 5 ? 6 : 0), null);
+    // the foe went out of the ring: go after them (not where leaving the ring eliminates you)
+    if (ar.hasRing && f.side === 'in' && t.side === 'out' && m.rules.ringOut !== 'elim' && m.rules.leave !== false && !t.entering && t.st !== 'ENTER_RING') add('chaseOut', 5, t);
+    if (m.rules.ringOut === 'elim' && ar.hasRing && f.side === 'in') for (const o of m.fighters) {
+      if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
+      add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
+    }
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
     if (tDown && !tGrab) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
@@ -160,7 +171,8 @@ export class AIController {
       add('pressure', 3 * (tr.aggr || .5) * D.aggr * (.5 + stK * .7), t);
       if (dist > 110) add('approach', 1.5, t);
       if (stK < .4 || hpK < .25) add('retreat', (1 - stK) * 2.5 * (tr.def || .5) * (D.plan > .4 ? .6 : 1), t);
-      if (dist > 70 && dist < 170) add('jumpAttack', (tr.air || .3) * 1.4, t);
+      const byApron = ar.hasRing && f.side === 'out' && Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))) < 64;   // W there climbs back in
+      if (dist > 70 && dist < 170 && !byApron) add('jumpAttack', (tr.air || .3) * 1.4, t);
       if (ar.hasRing && f.side === 'in' && dist > 110 && (tr.rope || .3) > .2) add('ropeRun', (tr.rope || .3) * 1.6, t);
       if (t.st === 'GUARD' && dist < 70) add('shove', 3 * D.pick, t);
     }
@@ -171,7 +183,7 @@ export class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -262,6 +274,22 @@ export class AIController {
         if (g.t > 2.5) this.planT = 0;
         break;
       }
+      case 'knockOff': {
+        if (t.st !== 'HANG' && t.st !== 'APRON') { this.planT = 0; break; }
+        const left = t.x < ar.mid, sx = left ? ar.ropeL + 15 : ar.ropeR - 15;
+        if (Math.abs(f.x - sx) > 8) this.move(sx, 6, Math.abs(f.x - sx) > 110);
+        else { f.face = left ? -1 : 1; if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE', 'ATTACK')) { this.tap('atk'); this.wait = .16 + this.rng.next() * .12 * (1 + D.err * 3); } }
+        if (g.t > 3.2) this.planT = 0;
+        break;
+      }
+      case 'chaseOut': {
+        if (t.side === f.side || f.side !== 'in' || t.st === 'ENTER_RING') { this.planT = 0; break; }
+        const left = t.x < ar.mid, rx = left ? ar.ropeL + 18 : ar.ropeR - 18;
+        if (Math.abs(f.x - rx) > 12) this.move(rx, 8, Math.abs(f.x - rx) > 140);
+        else { f.intent.down = true; f.intent.mx = left ? -1 : 1; }   // S toward the ropes: step through them
+        if (g.t > 5) this.planT = 0;
+        break;
+      }
       case 'chairSwing': {
         if (!f.prop) { this.planT = 0; break; }
         const want = 36;
@@ -336,10 +364,11 @@ export class AIController {
       for (const pos of ['front', 'rear']) for (const s of slots) {
         const id = f.moves[pos] && f.moves[pos][s], mv = MOVES[id];
         if (!mv) continue;
-        const ok = m.grapple.check(f, v, mv).ok;
+        const ringOut = mv.tags && mv.tags.includes('ringout'), elim = m.rules.ringOut === 'elim';
+        const ok = m.grapple.check(f, v, mv).ok || (ringOut && elim && ar.hasRing && f.side === 'in');   // far from the ropes: it drags them there first
         if (!ok) continue;
         let w = 1 + mv.hp * .08;
-        if (mv.tags && mv.tags.includes('ringout')) w = m.rules.ringOut === 'elim' ? 8 : m.rules.ringOut === 'count' ? .4 : .1;
+        if (ringOut) w = elim ? 14 : m.rules.ringOut === 'count' ? .4 : .1;
         if (mv.tags && mv.tags.includes('whip')) w = (this.tr.rope || .3) * 2;
         if (pos === 'rear') w *= .8;
         w *= 1 / (1 + (f.moveStale[id] || 0) * 1.2);
@@ -358,7 +387,7 @@ export class AIController {
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
     // rope moves need the ropes: drag the foe there first
-    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .5) { f.intent.mx = nr.dir; return; } }
+    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .35) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
     if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face;
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }

@@ -2726,9 +2726,9 @@ const BALANCE = {
   injuryRate: 1.2,
   // attack bookkeeping
   inputBuffer: .16, comboWindow: 1.0, comboStep: .09, comboMin: .5, comboBreak: 10, staleMemory: 6, staleStep: .1, staleMin: .6, counterHit: 1.25, repeatRecover: 1.25,
-  hitstunScale: .94, strikeStun: 1.22,
+  hitstunScale: .94, strikeStun: 1.45,
   // guard, dodge, counter
-  guardHp: .18, guardStun: .36, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
+  guardHp: .18, guardStun: .44, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
@@ -4415,7 +4415,7 @@ class CombatSystem {
         m.hitstop(.11); m.emit('parry', { a, v, x: hx, y: hy });
         return 'parry';
       }
-      const chip = Math.max(0, d.hp * B.guardHp * a.stats.atk), st = d.stun * B.guardStun * boost * (d.lv >= 3 ? 1.25 : 1);
+      const chip = Math.max(0, d.hp * B.guardHp * a.stats.atk), st = d.stun * B.guardStun * boost * (d.lv >= 3 ? 1.25 : 1) * (a.stats.brk || 1);
       this.damage(v, Math.min(chip, Math.max(0, v.hp - B.chipMin)), 0, a, { chip: true });
       v.stun -= st; v.regenDelay = B.stunRegenDelay;
       a.atk.connected = true; a.atk.blocked = true;
@@ -4434,7 +4434,7 @@ class CombatSystem {
     const scale = Math.max(B.comboMin, 1 - B.comboStep * (v.combo.n - 1)), stunScale = Math.max(.72, 1 - .035 * (v.combo.n - 1));
     const stale = this.stale(a, d.id);
     const k = stale * boost * (counterHit ? B.counterHit : 1) * (v.st === 'DOWN' ? .85 : 1);
-    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k;
+    const hp = d.hp * a.stats.atk * scale * k, st = d.stun * B.strikeStun * (.5 + .5 * a.stats.atk) * stunScale * k * (a.stats.brk || 1);
     a.atk.connected = true; a.hitsLanded++; v.combo.dmg += hp;
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
@@ -4517,7 +4517,8 @@ class CombatSystem {
     // a big blow against somebody leaning on the ropes can send them over the top
     const ar = this.m.arena, nr = ar.nearRope(v.x), outward = ar.hasRing && v.side === 'in' && Math.sign(vx) === nr.dir;
     const spent = v.hp <= 0 && this.m.rules.ringOut === 'elim' && nr.dist < 46 && outward && Math.abs(vx) > 90;
-    const over = spent || (outward && nr.dist < 34 && Math.abs(vx) > 150 && this.m.rng.chance(.25 + (1 - v.hp / v.maxHp) * .5));
+    const elim = this.m.rules.ringOut === 'elim';
+    const over = spent || (outward && nr.dist < (elim ? 52 : 34) && Math.abs(vx) > (elim ? 120 : 150) && this.m.rng.chance((elim ? .4 : .25) + (1 - v.hp / v.maxHp) * .5));
     v.ragdoll(vx, over ? Math.min(vy, -240) : vy, spin, over);
     v.wallHit = false;
     v.expr = 'hurt'; v.exprT = 1;
@@ -5510,7 +5511,7 @@ class AIController {
     this.observe();
     if (f.ctrl === 'dummy' || this.behavior) { this.dummy(dt); return; }
     if (f.st === 'INTRO') return;
-    this.goalT += dt; this.planT -= dt;
+    this.goalT += dt; this.planT -= dt; if (this.defHeat > 0) this.defHeat = Math.max(0, this.defHeat - dt * .3);
     if (this.wait > 0) { this.wait -= dt; }
     // situations that are not choices
     if (f.st === 'GRABBED') { this.grabbed(dt); return; }
@@ -5525,6 +5526,9 @@ class AIController {
     if (f.entering) { this.enterRing(); return; }
     // defence reads the delayed picture
     if (this.defend(dt)) return;
+    if (m.rules.ringOut === 'elim' && f.side === 'in' && (!this.goal || this.goal.name !== 'knockOff') && this.planT > .05) {
+      for (const o of m.fighters) { if (!f.isFoe(o) || o.eliminated) continue; const s = this.seen(o); if ((s.st === 'HANG' || s.st === 'APRON') && Math.abs(o.x - f.x) < 260) { this.planT = 0; break; } }
+    }
     if (this.planT <= 0 || !this.goal) this.plan();
     this.execute(dt);
   }
@@ -5554,14 +5558,14 @@ class AIController {
       const key = o.idx + ':' + s.atk.id + ':' + Math.round((f.match.time - s.atk.t) * 4);
       if (this.lastSeenAtk === key) continue;
       this.lastSeenAtk = key;
-      const r = this.rng.next(), lowSt = f.stun < f.maxStun * .35;
+      const r = this.rng.next() * (1 + (this.defHeat || 0) * .75), lowSt = f.stun < f.maxStun * .35;
       // time left before the blow lands, as far as this wrestler can know: the picture is D.react old
       const left = d.startup - s.atk.t - D.react;
       // a chair coming up: sometimes step in and take it
       if (d.chair && dist < 66 && f.fsm.is('IDLE', 'MOVE', 'GUARD') && r < D.counter * 2 + .12) { this.faceTo(o); this.tap('grab'); this.note = '의자 받아치기'; return true; }
       const canCounter = left > .03 && left < .15 && !d.air && !d.run && f.dodgeCd <= 0;
-      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 2.5) { this.faceTo(o); this.tap('dodge'); this.note = '반격 노림'; return true; }
-      if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
+      if (canCounter && r < D.counter * (f.char.style === 'tech' ? 1.4 : 1) * 1.7) { this.faceTo(o); this.tap('dodge'); this.defHeat = (this.defHeat || 0) + 1; this.note = '반격 노림'; return true; }
+      if (r < D.counter + D.dodge * (lowSt ? 1.3 : 1) && f.dodgeCd <= 0) { this.defHeat = (this.defHeat || 0) + .7; f.intent.mx = sgn(f.x - o.x) * (this.rng.chance(.5) ? 1 : -1); if (d.run || d.air) f.intent.mx = 0; this.tap('dodge'); this.note = '회피'; return true; }
       if (r < D.counter + D.dodge + D.guard * (lowSt ? .7 : 1) * (.6 + (this.tr.def || .5) * .8)) { this.guardT = d.startup + d.active + .06 + this.rng.next() * .2 * (1 - D.punish * .7); this.lastThreat = o; f.intent.down = true; this.faceTo(o); this.note = '방어'; return true; }
     }
     // finisher coming in
@@ -5602,7 +5606,7 @@ class AIController {
   }
   onPinned(p) { this.kickAt = this.rng.chance(this.D.pinKick * (p.v.hp / p.v.maxHp * .5 + .62)) ? .6 + this.rng.next() * 1.6 : 99; }
   pinMash(p, dt) { if (p.t > (this.kickAt || 99)) return this.rng.chance(dt * this.D.mash * 1.4) ? 1 : 0; return this.rng.chance(dt * this.D.mash * .25) ? 1 : 0; }
-  wantsHang() { return this.rng.chance(this.D.hang * .25); }
+  wantsHang() { const f = this.f; return this.rng.chance(this.D.hang * .5 * (.55 + f.hp / f.maxHp * .7)); }
   // ---- goals ----
   plan() {
     const f = this.f, m = f.match, D = this.D, tr = this.tr;
@@ -5621,7 +5625,15 @@ class AIController {
     if (loose && !t.prop) { const mine = Math.abs(loose.x - f.x) < Math.abs(loose.x - t.x) + 40; add('chair', (mine ? 4.5 : 1.2) * (.6 + (tr.dirty || .3)) * D.pick, loose); }
     if (t.prop && dist < 170 && t.side === f.side) add('steal', 3 * D.pick, t);
     if (!f.prop && !tDown && t.side === f.side && dist > 90 && dist < 260 && f.fin >= B.dashSigCost && f.sigCd <= 0 && t.fsm.is('IDLE', 'MOVE', 'GUARD', 'TAUNT', 'STAGGER')) add('dashSig', 2.2 * D.pick * (.6 + (tr.aggr || .5)), t);
-    if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', 3 + (f.outCount > 5 ? 6 : 0), null);
+    // outside with the foe out there too: fight first, get back in before the count runs out
+    const bothOut = t.side === 'out' && f.side === 'out' && !t.entering && t.st !== 'ENTER_RING';
+    if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', (bothOut && f.outCount < 6 ? .25 : 3) + (f.outCount > 5 ? 6 : 0), null);
+    // the foe went out of the ring: go after them (not where leaving the ring eliminates you)
+    if (ar.hasRing && f.side === 'in' && t.side === 'out' && m.rules.ringOut !== 'elim' && m.rules.leave !== false && !t.entering && t.st !== 'ENTER_RING') add('chaseOut', 5, t);
+    if (m.rules.ringOut === 'elim' && ar.hasRing && f.side === 'in') for (const o of m.fighters) {
+      if (!f.isFoe(o) || o.eliminated || (o.st !== 'HANG' && o.st !== 'APRON')) continue;
+      add('knockOff', 14 - Math.abs(o.x - f.x) * .012, o);
+    }
     if (tGrab) add('grab', 4 * (.6 + (tr.grab || .5)) * D.pick, t);
     if (tDown && !tGrab) {
       add('stomp', 1.2 * (tr.dirty || .2) * 3 + .4, t);
@@ -5634,7 +5646,8 @@ class AIController {
       add('pressure', 3 * (tr.aggr || .5) * D.aggr * (.5 + stK * .7), t);
       if (dist > 110) add('approach', 1.5, t);
       if (stK < .4 || hpK < .25) add('retreat', (1 - stK) * 2.5 * (tr.def || .5) * (D.plan > .4 ? .6 : 1), t);
-      if (dist > 70 && dist < 170) add('jumpAttack', (tr.air || .3) * 1.4, t);
+      const byApron = ar.hasRing && f.side === 'out' && Math.min(Math.abs(f.x - (ar.ropeL - ar.apron)), Math.abs(f.x - (ar.ropeR + ar.apron))) < 64;   // W there climbs back in
+      if (dist > 70 && dist < 170 && !byApron) add('jumpAttack', (tr.air || .3) * 1.4, t);
       if (ar.hasRing && f.side === 'in' && dist > 110 && (tr.rope || .3) > .2) add('ropeRun', (tr.rope || .3) * 1.6, t);
       if (t.st === 'GUARD' && dist < 70) add('shove', 3 * D.pick, t);
     }
@@ -5645,7 +5658,7 @@ class AIController {
     const temp = 1 + D.err * 3;
     const pickd = this.rng.weighted(opts, o => Math.pow(o.w, 1 / temp));
     if (!this.goal || this.goal.name !== pickd.name || this.goal.data !== pickd.data) { this.goal = { name: pickd.name, data: pickd.data, t: 0 }; this.goalT = 0; }
-    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
+    this.note = { pressure: '압박', approach: '접근', retreat: '후퇴', grab: '잡기', stomp: '짓밟기', pin: '핀폴', climb: '코너 다이브', taunt: '도발', finisher: '피니셔', jumpAttack: '공중 공격', ropeRun: '로프 반동', shove: '가드 깨기', return: '링 복귀', tagOut: '교대', save: '핀 끊기', idle: '대기', chaseOut: '링 밖 추격', knockOff: '매달린 상대 떨어뜨리기', dashSig: '돌진 기술', chair: '의자 줍기', steal: '의자 뺏기', chairSwing: '체어샷' }[this.goal.name] || this.goal.name;
   }
   pickTarget() {
     const f = this.f, m = f.match;
@@ -5736,6 +5749,22 @@ class AIController {
         if (g.t > 2.5) this.planT = 0;
         break;
       }
+      case 'knockOff': {
+        if (t.st !== 'HANG' && t.st !== 'APRON') { this.planT = 0; break; }
+        const left = t.x < ar.mid, sx = left ? ar.ropeL + 15 : ar.ropeR - 15;
+        if (Math.abs(f.x - sx) > 8) this.move(sx, 6, Math.abs(f.x - sx) > 110);
+        else { f.face = left ? -1 : 1; if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE', 'ATTACK')) { this.tap('atk'); this.wait = .16 + this.rng.next() * .12 * (1 + D.err * 3); } }
+        if (g.t > 3.2) this.planT = 0;
+        break;
+      }
+      case 'chaseOut': {
+        if (t.side === f.side || f.side !== 'in' || t.st === 'ENTER_RING') { this.planT = 0; break; }
+        const left = t.x < ar.mid, rx = left ? ar.ropeL + 18 : ar.ropeR - 18;
+        if (Math.abs(f.x - rx) > 12) this.move(rx, 8, Math.abs(f.x - rx) > 140);
+        else { f.intent.down = true; f.intent.mx = left ? -1 : 1; }   // S toward the ropes: step through them
+        if (g.t > 5) this.planT = 0;
+        break;
+      }
       case 'chairSwing': {
         if (!f.prop) { this.planT = 0; break; }
         const want = 36;
@@ -5810,10 +5839,11 @@ class AIController {
       for (const pos of ['front', 'rear']) for (const s of slots) {
         const id = f.moves[pos] && f.moves[pos][s], mv = MOVES[id];
         if (!mv) continue;
-        const ok = m.grapple.check(f, v, mv).ok;
+        const ringOut = mv.tags && mv.tags.includes('ringout'), elim = m.rules.ringOut === 'elim';
+        const ok = m.grapple.check(f, v, mv).ok || (ringOut && elim && ar.hasRing && f.side === 'in');   // far from the ropes: it drags them there first
         if (!ok) continue;
         let w = 1 + mv.hp * .08;
-        if (mv.tags && mv.tags.includes('ringout')) w = m.rules.ringOut === 'elim' ? 8 : m.rules.ringOut === 'count' ? .4 : .1;
+        if (ringOut) w = elim ? 14 : m.rules.ringOut === 'count' ? .4 : .1;
         if (mv.tags && mv.tags.includes('whip')) w = (this.tr.rope || .3) * 2;
         if (pos === 'rear') w *= .8;
         w *= 1 / (1 + (f.moveStale[id] || 0) * 1.2);
@@ -5832,7 +5862,7 @@ class AIController {
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
     if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
     // rope moves need the ropes: drag the foe there first
-    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .5) { f.intent.mx = nr.dir; return; } }
+    if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .35) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
     if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face;
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }
@@ -6068,6 +6098,9 @@ class MatchManager extends Emitter {
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
     this.on('fault', () => this.faults++);
     this.on('overRope', e => this.onOverRope(e.f));
+    // what last hurt somebody badly, for the 'finished with a finisher / a move' bonus
+    this.on('finisherHit', e => { this.lastBig = { by: e.f, kind: 'finisher', t: this.time }; });
+    this.on('release', e => { if (e.a && e.move && !(this.lastBig && this.lastBig.kind === 'finisher' && this.time - this.lastBig.t < .6)) this.lastBig = { by: e.a, kind: 'move', t: this.time, name: e.move.name }; });
     this.setup();
   }
   // ---- creation ----
@@ -6294,7 +6327,7 @@ class MatchManager extends Emitter {
         }
       } else if (f.side === 'in') { f.outCount = Math.max(0, f.outCount - dt * 4); f.wasIn = true; }
       // a ragdoll flying over the ropes may grab the top rope
-      if (f.ropeChance > 0) { f.ropeChance -= dt; if (f.rag && f.has('dodge') && f.hp > 0) { f.ropeChance = 0; this.toHang(f); } else if (f.rag && f.ai && f.ai.wantsHang()) { f.ropeChance = 0; this.toHang(f); } }
+      if (f.ropeChance > 0) { f.ropeChance -= dt; if (f.rag && f.has('dodge') && f.hp > 0) { f.ropeChance = 0; this.toHang(f); } else if (f.rag && f.hangRoll) { f.ropeChance = 0; this.toHang(f); } }
     }
     // rumble entries
     if (this.mode === 'rumble' && this.phase === 'fight' && this.queue.length) {
@@ -6323,7 +6356,7 @@ class MatchManager extends Emitter {
     f.set('HANG', { force: true });
     this.emit('hang', { f });
   }
-  onOverRope(f) { if (this.rules.ringOut === 'elim' && f.rag && !f.eliminated) f.ropeChance = .32; }
+  onOverRope(f) { if (this.rules.ringOut === 'elim' && f.rag && !f.eliminated) { f.ropeChance = .32; f.hangRoll = !!(f.ai && f.ctrl !== 'dummy' && f.ai.wantsHang()); } }
   rumbleEntry() {
     const e = this.queue.shift(), ar = this.arena;
     const left = this.rng.chance(.5);
@@ -6368,6 +6401,8 @@ class MatchManager extends Emitter {
   end(r) {
     if (this.phase === 'end') return;
     this.phase = 'end'; this.result = r; this.endT = 0;
+    const lb = this.lastBig;
+    if (r.winner && (r.how === 'ko' || r.how === 'pin') && lb && lb.by && lb.by.team === r.winner.team && this.time - lb.t < 9) r.finishBy = lb.kind;
     if (this.pin) this.breakPin('end');
     this.slowmo(.3, 1.3);
     this.emit('end', r);
@@ -7798,7 +7833,7 @@ const { MOVES } = __m["data/moves.js"];
 const SLOT_NAMES = ['오전', '오후', '저녁'];
 const SEASON_DAYS = 28;
 // Growth per trained level (levels go 0..20).
-const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'] };
+const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'], brk: [.03, '스턴 브레이커'] };
 const STYLE_BASE = {
   all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
   power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
@@ -7890,7 +7925,7 @@ class Career {
     const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
     Object.assign(c.d, {
       saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
-      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0 },
+      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0, brk: 0 },
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
     c.d.league = c.newLeague(1);
@@ -7907,7 +7942,7 @@ class Career {
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -7937,6 +7972,7 @@ class Career {
     const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
     b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
     for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
+    b.brk = 1 + (L.brk || 0) * STAT_GROWTH.brk[0];
     for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
     b.lift *= 1 + L.grp * .015 + L.hp * .008;
     return b;
@@ -8065,6 +8101,10 @@ class Career {
     } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
     if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
     if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }
+    // finishing in style
+    const fb = won && res.result && res.result.finishBy;
+    if (fb === 'finisher') { const bonus = Math.round(Math.max(5000, money * .25) / 1000) * 1000; money += bonus; fame += 3; xp += 25; out.lines.push(`피니셔 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +3`); }
+    else if (fb === 'move') { const bonus = Math.round(Math.max(3000, money * .12) / 1000) * 1000; money += bonus; fame += 1; xp += 12; out.lines.push(`기술 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +1`); }
     d.fame = clamp(d.fame + fame, 0, 999);
     this.earn(Math.max(0, money));
     out.money = money; out.fame = fame; out.xp = xp;
@@ -8926,6 +8966,7 @@ class MatchScene {
     panel(u, 130, 40, 380, 270, { accent: win ? '#ffd65a' : '#ff5b5b' });
     drawText(u, r.draw ? '무승부' : !h ? '경기 종료' : win ? '승리!' : '패배', 320, 52, { scale: 2, align: 'c', color: r.draw ? '#c9d4ff' : win || !h ? '#ffd65a' : '#ff5b5b', bold: true, outline: '#05060f' });
     drawText(u, `${HOW[r.how] || (r.forfeit ? '기권' : r.how || '')} · 경기 시간 ${fmtTime(m.clock)}`, 320, 84, { size: 11, align: 'c', color: UI.dim });
+    if (r.finishBy) drawText(u, r.finishBy === 'finisher' ? '피니셔로 마무리! (보너스)' : '레슬링 기술로 마무리! (보너스)', 320, 96, { size: 11, align: 'c', color: '#ffd65a' });
     if (r.winner) { u.fillStyle = '#05060f'; drawPortrait(u, r.winner.look, 'happy', 150, 104, 44, { px: 2, dy: 6 }); drawText(u, josa(r.winner.name, '이/가') + ' 이겼다', 204, 108, { color: '#ffffff' }); drawText(u, r.winner.char.lines.win, 204, 126, { size: 11, color: r.winner.char.color }); }
     if (h) {
       const S = m.summary()[h.idx];
@@ -9405,7 +9446,7 @@ class InfoMenu extends Menu {
     const T = this.tab;
     if (T === 0) {
       drawText(u, `능력치 포인트: ${d.points}  (Enter로 1 올리기, 레벨업마다 +2 · 훈련으로도 오른다)`, 44, 136, { size: 11, color: d.points ? '#6be38a' : UI.dim });
-      this.rows().forEach((k, i) => { const y = 154 + i * 17, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 16); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
+      this.rows().forEach((k, i) => { const y = 152 + i * 16, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
     } else if (T === 1) {
       const inj = d.injury, lvl = c.injuryLevel, col = lvl === 'danger' ? '#ff5b5b' : lvl === 'warn' ? '#ffb347' : UI.inj;
       const L = [[`전적`, `${d.record.w}승 ${d.record.l}패 ${d.record.d}무 (KO ${d.record.ko} · 핀 ${d.record.pin})`], ['랭킹', d.flags.champion ? '챔피언' : `${c.rank}위 / ${c.rankList().length}명`], ['명성', String(d.fame)], ['소지금', c.money()], ['날짜', c.timeText], ['계약', d.contract ? `${d.contract.oppName} (${d.contract.day}일까지)` : '없음'], ['연승', d.record.streak > 0 ? d.record.streak + '연승' : d.record.streak < 0 ? -d.record.streak + '연패' : '-'], ['타이틀', d.titles.length ? d.titles.map(t => t.name).join(', ') : '없음']];
@@ -9587,7 +9628,7 @@ const { STAT_GROWTH } = __m["world/CareerManager.js"];
 const GAMES = {
   bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}(또는 Space·E·Enter). 8번 들어 올리자. 세 번 놓치면 끝.' },
   rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
-  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
+  mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec', 'brk'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
   bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
@@ -9611,7 +9652,7 @@ class Training {
       case 'rope': this.s = { beats: Array.from({ length: 20 }, (_, i) => 1.4 + i * .5 + (i > 9 ? -(i - 9) * .03 : 0)), idx: 0, good: 0, perfect: 0, hit: [] }; break;
       case 'mitt': this.s = { round: 0, len: 3, seq: [], show: 0, input: [], ok: 0, phase: 'show', st: 0 }; this.newSeq(); break;
       case 'bridge': this.s = { pos: 0, vel: 0, inZone: 0, drift: 0 }; break;
-      case 'breath': this.s = { fill: 0, round: 0, good: 0, band: [.72, .86], holding: false, done: [] }; break;
+      case 'breath': this.s = { fill: 0, round: 0, good: 0, band: [.72, .86], holding: false, done: [], armed: false }; break;
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
     }
     void r;
@@ -9709,6 +9750,7 @@ class Training {
         break;
       }
       case 'breath': {
+        if (!s.armed) { if (!inp.actDown()) s.armed = true; break; }   // ignore the press that started the game
         const hold = inp.actDown();
         if (hold) { s.holding = true; s.fill = Math.min(1.05, s.fill + dt * (.55 + s.round * .08)); }
         else if (s.holding) {

@@ -46,6 +46,9 @@ export class MatchManager extends Emitter {
     this.log = []; this.faults = 0; this.stats = { finishers: 0, reversals: 0, counters: 0, moves: 0 };
     this.on('fault', () => this.faults++);
     this.on('overRope', e => this.onOverRope(e.f));
+    // what last hurt somebody badly, for the 'finished with a finisher / a move' bonus
+    this.on('finisherHit', e => { this.lastBig = { by: e.f, kind: 'finisher', t: this.time }; });
+    this.on('release', e => { if (e.a && e.move && !(this.lastBig && this.lastBig.kind === 'finisher' && this.time - this.lastBig.t < .6)) this.lastBig = { by: e.a, kind: 'move', t: this.time, name: e.move.name }; });
     this.setup();
   }
   // ---- creation ----
@@ -272,7 +275,7 @@ export class MatchManager extends Emitter {
         }
       } else if (f.side === 'in') { f.outCount = Math.max(0, f.outCount - dt * 4); f.wasIn = true; }
       // a ragdoll flying over the ropes may grab the top rope
-      if (f.ropeChance > 0) { f.ropeChance -= dt; if (f.rag && f.has('dodge') && f.hp > 0) { f.ropeChance = 0; this.toHang(f); } else if (f.rag && f.ai && f.ai.wantsHang()) { f.ropeChance = 0; this.toHang(f); } }
+      if (f.ropeChance > 0) { f.ropeChance -= dt; if (f.rag && f.has('dodge') && f.hp > 0) { f.ropeChance = 0; this.toHang(f); } else if (f.rag && f.hangRoll) { f.ropeChance = 0; this.toHang(f); } }
     }
     // rumble entries
     if (this.mode === 'rumble' && this.phase === 'fight' && this.queue.length) {
@@ -301,7 +304,7 @@ export class MatchManager extends Emitter {
     f.set('HANG', { force: true });
     this.emit('hang', { f });
   }
-  onOverRope(f) { if (this.rules.ringOut === 'elim' && f.rag && !f.eliminated) f.ropeChance = .32; }
+  onOverRope(f) { if (this.rules.ringOut === 'elim' && f.rag && !f.eliminated) { f.ropeChance = .32; f.hangRoll = !!(f.ai && f.ctrl !== 'dummy' && f.ai.wantsHang()); } }
   rumbleEntry() {
     const e = this.queue.shift(), ar = this.arena;
     const left = this.rng.chance(.5);
@@ -346,6 +349,8 @@ export class MatchManager extends Emitter {
   end(r) {
     if (this.phase === 'end') return;
     this.phase = 'end'; this.result = r; this.endT = 0;
+    const lb = this.lastBig;
+    if (r.winner && (r.how === 'ko' || r.how === 'pin') && lb && lb.by && lb.by.team === r.winner.team && this.time - lb.t < 9) r.finishBy = lb.kind;
     if (this.pin) this.breakPin('end');
     this.slowmo(.3, 1.3);
     this.emit('end', r);
