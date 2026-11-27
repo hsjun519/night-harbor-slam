@@ -200,6 +200,7 @@ export class MatchScene {
       case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
       case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
       case 'whoosh': A.sfx('whoosh'); break;
+      case 'step': A.sfx('step'); fx.dust(a.joints.x(J.aN), this.m.arena.ground(a.joints.x(J.aN), a.y, a.side), .35); break;
       case 'cheer': A.cheer(.8); this.ar.boost(.25); break;
       case 'spin': A.sfx('spin'); break;
       case 'lift': A.sfx('lift', { voice: a.char.voice }); break;

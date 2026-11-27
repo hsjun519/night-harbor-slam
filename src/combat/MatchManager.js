@@ -395,6 +395,6 @@ export class MatchManager extends Emitter {
     r.gait += Math.abs(r.vx) * dt * .07;
   }
   summary() {
-    return this.fighters.map(f => ({ name: f.name, char: f.charId, team: f.team, hp: f.hp, maxHp: f.maxHp, dmgTaken: f.dmgTaken, dmgDealt: f.dmgDealt, downs: f.downs, ko: f.st === 'KO', out: f.eliminated, finishersTaken: f.finishersTaken, ringOuts: f.ringOuts, kills: f.kills, perfects: f.perfects, counters: f.counters, hits: f.hitsLanded, moves: f.movesDone.size }));
+    return this.fighters.map(f => ({ name: f.name, char: f.charId, team: f.team, hp: f.hp, maxHp: f.maxHp, dmgTaken: f.dmgTaken, dmgDealt: f.dmgDealt, downs: f.downs, ko: f.st === 'KO', out: f.eliminated, finishersTaken: f.finishersTaken, ringOuts: f.ringOuts, kills: f.kills, perfects: f.perfects, counters: f.counters, hits: f.hitsLanded, moves: f.movesDone.size, uses: Object.assign({}, f.moveUses) }));
   }
 }

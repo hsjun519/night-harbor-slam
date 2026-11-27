@@ -3276,6 +3276,44 @@ const MOVES = {
     ik: [[0, 2.36, 'N', 'neck'], [.2, 2.36, 'F', 'pelvis']],
     ev: [[.1, 'cry'], [.7, 'lift'], [1.0, 'charge'], [2.12, 'whoosh'], [2.36, 'impact', { p: 2.5, d: 1, word: '쏴아— 쾅!!' }]],
   },
+  // ------------------------------------------------------------------ evolved: a move used until its mastery is MAX grows into these
+  runningBulldog: {
+    name: '러닝 불도그', pos: 'rear', hp: 16, stun: 24, gain: 14, lift: 0, self: .36, evo: 'bulldog', desc: '머리를 감싼 채 달려가 뛰어올라 얼굴부터 찍는다. 불도그가 진화한 기술.',
+    dur: 1.3, rel: .9, vf: 1, vel: [60, -50, 1], land: 'prone',
+    A: [[0, REAR_A], [.18, 'sp14 hd-6 a110/60 b70/50 t30/40 u-10/40', 'io'], [.3, 'sp24 hd-8 a104/60 b50/70 t50/-20 u20/60 ox18', 'lin'], [.42, 'sp24 hd-8 a104/60 b50/70 t-20/50 u60/20 ox38', 'lin'], [.54, 'sp26 hd-8 a104/60 b50/70 t50/-20 u20/60 ox58', 'lin'], [.68, 'sp30 hd-10 a96/60 b60/60 t70/40 u40/80 lift20 ox72', 'out'], [.86, 'sp30 hd-14 a70/50 b30/60 t88/20 u84/40 ox84', 'in'], [1.3, 'sp20 hd-10 a50/50 b30/60 t84/30 u80/50 ox84']],
+    V: [[0, REAR_V], [.18, 'sp30 hd16 a20/40 b30/40 t14/24 u-10/24'], [.3, 'sp36 hd20 a30/30 b40/30 t30/-10 u10/40'], [.42, 'sp36 hd20 a40/30 b30/30 t-10/30 u40/10'], [.54, 'sp36 hd20 a30/30 b40/30 t30/-10 u10/40'], [.68, 'sp34 hd20 a60/20 b70/20 t-10/30 u10/40'], [.86, 'sp4 hd-10 a160/20 b150/30 t-4/10 u4/14'], [1.3, 'sp4 hd-6 a156/30 b146/40 t0/8 u4/8']],
+    R: [[0, 17, 44, 0], [.18, 24, 44, 20], [.3, 40, 44, 24, 'lin'], [.42, 60, 44, 24, 'lin'], [.54, 80, 44, 26, 'lin'], [.68, 92, 56, 48, 'out'], [.86, 104, 'g', 90, 'in'], [1.3, 104, 'g', 90]],
+    ik: [[.1, .9, 'N', 'head']],
+    ev: [[.14, 'grunt'], [.3, 'step'], [.42, 'step'], [.54, 'step'], [.66, 'whoosh'], [.86, 'impact', { p: 1.3, d: 1, word: '콰직!' }]],
+  },
+  f5: {
+    name: 'F5', pos: 'front', hp: 19, stun: 24, gain: 16, lift: 1.4, self: .5, evo: 'suplex', desc: '어깨에 둘러멘 상대의 다리를 휘둘러 한 바퀴 돌리며 얼굴부터 내리꽂는다. 수플렉스가 진화한 기술.',
+    dur: 1.5, rel: 1.2, vf: -1, vel: [30, -40, .6], land: 'prone',
+    A: [[0, HOLD_A], [.22, 'sp50 hd-22 a54/30 b60/28 t60/82 u16/72', 'io'], [.56, 'sp4 hd10 a140/60 b144/56 t16/16 u-18/16', 'out'], [.8, 'sp-8 hd14 a150/50 b136/62 t22/26 u-14/30', 'io'], [1.0, 'sp34 hd-12 a100/12 b74/24 t46/16 u-24/40', 'in'], [1.16, 'sp52 hd-16 a66/10 b54/16 t64/26 u6/66', 'out'], [1.5, IDLE, 'io']],
+    V: [[0, HOLD_V], [.22, 'sp30 hd0 a40/20 b60/20 t30/30 u20/30'], [.56, 'sp30 hd20 a100/20 b110/20 t40/30 u50/40'], [.8, 'sp24 hd24 a110/20 b116/20 t34/30 u44/40'], [1.0, 'sp6 hd10 a150/20 b140/24 t10/20 u10/20'], [1.16, 'sp4 hd-10 a160/20 b150/30 t-4/10 u4/14'], [1.5, 'sp4 hd-6 a156/30 b146/40 t0/8 u4/8']],
+    R: [[0, 24, 42, -20], [.22, 20, 46, -60], [.56, 0, 88, -90, 'out'], [.8, -2, 92, -94], [1.0, -14, 74, -98, 'in'], [1.16, -38, 'g', -90, 'in'], [1.5, -40, 'g', -90]],
+    yaw: [[.84, 0, 'lin', 'V'], [1.16, 180, 'io']],
+    ik: [[.2, .98, 'N', 'kN'], [.2, 1.0, 'F', 'chest']],
+    ev: [[.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 1.45, d: 1, word: '콰앙!' }]],
+  },
+  powerSlam: {
+    name: '파워 슬램', pos: 'front', hp: 16, stun: 20, gain: 14, lift: 1.1, self: .55, evo: 'bodySlam', desc: '안아 올린 채 앞으로 쓰러지며 온몸으로 짓누른다. S로 그대로 누를 수 있다. 바디 슬램이 진화한 기술.',
+    dur: 1.4, rel: .84, vf: -1, vel: [10, -30, 0], land: 'sup',
+    A: [[0, HOLD_A], [.18, 'sp46 hd-22 a52/36 b60/30 t62/84 u18/74', 'io'], [.44, 'sp-8 hd2 a66/74 b74/66 t18/18 u-18/14', 'out'], [.6, 'r24 sp10 hd-6 a70/70 b76/64 t46/10 u-6/30 ox8', 'in'], [.78, 'r70 sp16 hd-30 a58/52 b100/40 t30/56 u-10/40 lift9 ox20', 'in'], [1.4, 'r72 sp18 hd-32 a56/50 b104/36 t30/60 u-10/40 lift9 ox20']],
+    V: [[0, HOLD_V], [.18, 'sp24 hd0 a40/20 b60/20 t30/30 u20/30'], [.44, FLAT], [.6, 'sp-8 hd-14 a140/16 b120/16 t30/20 u24/30'], [.78, 'sp-4 hd-8 a120/20 b100/20 t40/30 u16/40'], [1.4, 'sp-4 hd-8 a120/20 b100/20 t40/30 u16/40']],
+    R: [[0, 24, 42, -20], [.18, 22, 40, 10], [.44, 18, 62, 88, 'out'], [.6, 26, 50, 90], [.78, 34, 'g', 92, 'in'], [1.4, 34, 'g', 92]],
+    ik: [[.08, .8, 'N', 'pelvis'], [.08, .8, 'F', 'chest']],
+    ev: [[.14, 'grunt'], [.42, 'lift'], [.62, 'whoosh'], [.78, 'impact', { p: 1.3, d: 1, word: '쿠웅!' }]],
+  },
+  dragonSuplex: {
+    name: '드래곤 수플렉스', pos: 'rear', hp: 23, stun: 26, gain: 18, lift: 1.3, self: .55, evo: 'german', desc: '양팔로 목을 걸어 잠그고(풀 넬슨) 다리를 버틴 채 뒤로 넘긴다. 저먼 수플렉스가 진화한 기술.',
+    dur: 1.64, rel: 1.12, vf: 1, vel: [-70, -70, -1.2], land: 'sup',
+    A: [[0, REAR_A], [.22, 'sp14 hd-6 a150/70 b150/70 t40/50 u0/50', 'io'], [.4, 'sp24 hd-4 a140/64 b142/62 t58/74 u8/64', 'io'], [.6, 'r-14 sp-30 hd-18 a150/50 b152/48 t22/32 u-12/34', 'out'], [.84, 'r-60 sp-50 hd-44 a160/30 b162/30 t72/98 u62/98 ox-12', 'in'], [1.2, 'r-62 sp-52 hd-46 a160/30 b162/30 t72/98 u62/98 ox-12'], [1.64, 'r-80 sp-10 hd-10 a110/20 b110/20 t50/80 u40/80 ox-12']],
+    V: [[0, REAR_V], [.22, 'sp10 hd24 a120/30 b116/30 t20/34 u6/40'], [.4, 'sp6 hd26 a124/30 b120/30 t20/40 u6/44'], [.6, 'sp-18 hd10 a130/20 b130/20 t40/30 u30/44'], [.84, 'sp36 hd56 a160/20 b150/20 t84/24 u96/34'], [1.2, 'sp36 hd56 a150/30 b140/30 t80/30 u92/40']],
+    R: [[0, 17, 44, 0], [.22, 17, 44, -2], [.4, 17, 42, -4], [.6, 6, 90, -66, 'out'], [.72, -18, 96, -124], [.84, -50, 'g', -190, 'in'], [1.2, -52, 'g', -192], [1.64, -72, 'g', -262]],
+    ik: [[.1, 1.14, 'N', 'neck'], [.1, 1.14, 'F', 'neck']],
+    ev: [[.18, 'grunt'], [.56, 'lift'], [.68, 'whoosh'], [.84, 'impact', { p: 1.55, d: 1, word: '콰콰당!' }]],
+  },
   // ------------------------------------------------------------------ dash moves: K while dashing into a standing foe
   cutter: {
     name: '번개 커터', pos: 'dash', hp: 14, stun: 30, gain: 14, lift: 0, self: .5, sig: 1, desc: '돌진하다 뛰어올라 머리를 감싸 그대로 찍는다. 서 있는 상대에게 건다.',
@@ -3968,6 +4006,10 @@ const FOLLOW = {
   piledriver: [{ key: 'down', pin: 1.35 }],
   chokeslam: [{ key: 'down', pin: 1.3 }],
   german: [{ key: 'down', pin: 1.2 }],
+  runningBulldog: [{ key: 'down', pin: 1.25 }],
+  f5: [{ key: 'down', pin: 1.4 }],
+  powerSlam: [{ key: 'down', pin: 1.4, direct: 1, name: '그대로 누르기' }],
+  dragonSuplex: [{ key: 'down', pin: 1.5 }],
   cutter: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
   spear: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
   anchorHammer: [{ key: 'down', pin: 1.45, direct: 1, name: '그대로 누르기' }],
@@ -3984,6 +4026,7 @@ const FOLLOW = {
 // Pressed early in a move, these turn it into a longer one. to: the parts that replace it. cost: energy (finisher gauge).
 const UPGRADE = {
   german: [{ key: 'grab', to: ['gRoll', 'german'], until: .22, name: '연속 저먼!' }],
+  dragonSuplex: [{ key: 'grab', to: ['gRoll', 'dragonSuplex'], until: .22, name: '저먼에서 드래곤으로!' }],
   powerbomb: [{ key: 'fin', to: ['spb1', 'pbAgain', 'spb3'], until: .24, cost: 50, name: '슈퍼 파워밤!' }],
 };
 // L at the right moment with enough energy: these replace the plain counter.
@@ -4308,6 +4351,7 @@ class Fighter {
     this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
     this.moves = o.moves || char.moves; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
+    this.moveUses = {}; this.mastery = o.mastery || null;   // career move mastery: landed uses this match, damage bonus per move
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
     this.fsm = new StateMachine(this);
     this.fsm.onChange = (a, b, opt) => this.onState(a, b, opt);
@@ -5384,6 +5428,7 @@ function compileMove(m) {
     R: m.R.map(k => ({ t: k[0], x: k[1], y: k[2], r: k[3], e: EASE[k[4] || 'io'] })),
     yaw: m.yaw ? m.yaw.map(k => ({ t: k[0], v: k[1], e: EASE[k[2] || 'lin'] })) : null,
     yawA: !!(m.yaw && m.yaw[0][3] === 'A'),
+    yawV: !!(m.yaw && m.yaw[0][3] === 'V'),
     ax: m.ax ? m.ax.map(k => ({ t: k[0], x: k[1], y: k[2], e: EASE[k[3] || 'io'] })) : null,
     ik: (m.ik || []).map(k => ({ t0: k[0], t1: k[1], arm: k[2], j: J[k[3]] })),
     ikV: (m.ikV || []).map(k => ({ t0: k[0], t1: k[1], arm: k[2], j: J[k[3].replace('A:', '')] })),
@@ -5449,7 +5494,7 @@ function evalPaired(m, t, dA, dV, outA, outV, res, modA) {
       if (cs < 0) { jt.face = -jt.face; jt.S = -jt.S; jt.H = -jt.H; }
       const mm = Math.max(.2, Math.abs(cs)); jt.S *= mm; jt.H = jt.H * mm; jt.yaw = Math.abs(cs);
     };
-    apply(outA, false);
+    if (!c.yawV) apply(outA, false);
     if (!c.yawA) apply(outV, true);
     res.front = sn > .05;
     res.yaw = a;
@@ -5701,7 +5746,10 @@ class WrestlingMoveSystem {
   event(L, t, k, o) {
     const m = this.m, { a, move } = L, v = L.v || L.relV;
     if (o.d && v) {
-      const hp = move.hp * L.power * o.d, st = move.stun * o.d;
+      // career mastery: a little more damage per level; each landed move (a finisher once) counts as one use
+      const key = L.fin ? 'fin:' + L.fin.id : move.id, tag = L.fin ? 'fin' : L.part;
+      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)), st = move.stun * o.d;
+      if (L.usedTag !== tag) { L.usedTag = tag; a.moveUses[key] = (a.moveUses[key] || 0) + 1; }
       m.combat.damage(v, hp, st, a, { move });
       if (!L.fin) m.combat.addFin(a, move.gain * o.d); else if (v) v.finishersTaken += o.d > .4 ? 1 : 0;
       v.combo.n = Math.max(1, v.combo.n); v.flash = .12; v.hitShake = .2;
@@ -5737,7 +5785,9 @@ class WrestlingMoveSystem {
     if (!v) return;
     v.link = null; L.v = null; L.relV = v;
     if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
-    v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
+    // a victim spun half way round (yaw) faces the other way when let go
+    const yawFlip = move.yaw && Math.cos(yawAt(move, L.t) * Math.PI / 180) < 0 ? -1 : 1;
+    v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1) * yawFlip;
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);
     if (move.whip) {
       const dir = a.face;
@@ -7661,7 +7711,7 @@ class MatchManager extends Emitter {
     r.gait += Math.abs(r.vx) * dt * .07;
   }
   summary() {
-    return this.fighters.map(f => ({ name: f.name, char: f.charId, team: f.team, hp: f.hp, maxHp: f.maxHp, dmgTaken: f.dmgTaken, dmgDealt: f.dmgDealt, downs: f.downs, ko: f.st === 'KO', out: f.eliminated, finishersTaken: f.finishersTaken, ringOuts: f.ringOuts, kills: f.kills, perfects: f.perfects, counters: f.counters, hits: f.hitsLanded, moves: f.movesDone.size }));
+    return this.fighters.map(f => ({ name: f.name, char: f.charId, team: f.team, hp: f.hp, maxHp: f.maxHp, dmgTaken: f.dmgTaken, dmgDealt: f.dmgDealt, downs: f.downs, ko: f.st === 'KO', out: f.eliminated, finishersTaken: f.finishersTaken, ringOuts: f.ringOuts, kills: f.kills, perfects: f.perfects, counters: f.counters, hits: f.hitsLanded, moves: f.movesDone.size, uses: Object.assign({}, f.moveUses) }));
   }
 }
 
@@ -9310,6 +9360,31 @@ class Actor {
 
 return { Actor };
 })();
+// ---- data/mastery.js
+__m["data/mastery.js"] = (function () {
+// Move mastery. Every landed use of a grapple move or the finisher in a career match gives that move experience.
+// Each level adds a little damage; a few moves grow into a bigger version when the bar is full (MAX).
+const MASTERY = {
+  levels: [0, 20, 50, 90, 140, 200],   // experience where Lv1..Lv5 start (Lv5 = MAX)
+  bonus: .03,                           // damage per level: +15% at MAX
+  use: 10,                              // experience per landed use
+  cap: 4,                               // uses counted per move per match
+  practice: .5,                         // sparring counts half
+};
+const MAX_LV = MASTERY.levels.length - 1;
+// at MAX the move evolves: it is learned and takes the old one's place in every slot (the old one stays learned)
+const EVOLVE = { bulldog: 'runningBulldog', suplex: 'f5', bodySlam: 'powerSlam', german: 'dragonSuplex' };
+const EVOLVED_FROM = Object.fromEntries(Object.entries(EVOLVE).map(([a, b]) => [b, a]));
+const finKey = id => 'fin:' + id;
+function masteryLv(xp = 0) { const L = MASTERY.levels; let lv = 0; while (lv < MAX_LV && xp >= L[lv + 1]) lv++; return lv; }
+function masteryInfo(xp = 0) {
+  const L = MASTERY.levels, lv = masteryLv(xp), max = lv >= MAX_LV;
+  return { lv, max, xp, from: L[lv], to: max ? L[lv] : L[lv + 1], k: max ? 1 : (xp - L[lv]) / (L[lv + 1] - L[lv]), bonus: lv * MASTERY.bonus };
+}
+const lvText = lv => (lv >= MAX_LV ? 'MAX' : 'Lv' + lv);
+
+return { masteryLv, masteryInfo, MASTERY, MAX_LV, EVOLVE, EVOLVED_FROM, finKey, lvText };
+})();
 // ---- world/CareerManager.js
 __m["world/CareerManager.js"] = (function () {
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
@@ -9317,7 +9392,8 @@ const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
 const { Save } = __m["core/SaveManager.js"];
 const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
 const { BALANCE: B } = __m["data/balance.js"];
-const { MOVES } = __m["data/moves.js"];
+const { MOVES, FINISHERS } = __m["data/moves.js"];
+const { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } = __m["data/mastery.js"];
 const SLOT_NAMES = ['오전', '오후', '저녁'];
 const SEASON_DAYS = 28;
 // Growth per trained level (levels go 0..20).
@@ -9406,6 +9482,8 @@ const RARE_ITEMS = [
 ];
 const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
 const SLOTS = 3;
+// a mastery key: a move id, or 'fin:' + finisher id
+const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
 // Builds before the slots had one career: it counts as slot 1.
 function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
 function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
@@ -9440,10 +9518,10 @@ class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking',
+      dda: 0, mitb: null, champ: 'fogking', mastery: {},
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -9498,7 +9576,7 @@ class Career {
   entrant(ctrl = 'human') {
     const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -9610,7 +9688,9 @@ class Career {
       d.injury = Math.min(100, d.injury + inj); out.injury = inj;
     }
     if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
-    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
+    // move mastery: landed grapple moves and the finisher (sparring counts half)
+    out.mastery = this.gainMastery(h && h.uses, kind === 'practice' ? MASTERY.practice : 1);
+    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); this.save(); return out; }
     if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
     const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
@@ -9668,9 +9748,30 @@ class Career {
   learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
   learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
   equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  // ---- move mastery ----
+  masteryPower() { const o = {}, M = this.d.mastery || {}; for (const k in M) { const lv = masteryLv(M[k]); if (lv) o[k] = lv * MASTERY.bonus; } return o; }
+  masteryOf(k) { return (this.d.mastery || {})[k] || 0; }
+  gainMastery(uses, rate = 1) {
+    const d = this.d, M = d.mastery || (d.mastery = {}), out = { gains: [], ups: [], evolved: [] };
+    for (const k in uses || {}) {
+      const n = Math.min(MASTERY.cap, uses[k] | 0), name = moveLabel(k);
+      if (!n || !name) continue;
+      const before = M[k] || 0, add = Math.max(1, Math.round(n * MASTERY.use * rate)), lv0 = masteryLv(before);
+      M[k] = before + add;
+      const lv = masteryLv(M[k]);
+      out.gains.push({ k, name, add, lv });
+      if (lv > lv0) out.ups.push({ k, name, lv, text: `${name} ${lvText(lv)} (피해 +${Math.round(lv * MASTERY.bonus * 100)}%)` });
+      const evo = EVOLVE[k];
+      if (lv >= MAX_LV && evo && MOVES[evo] && !d.known.includes(evo)) { d.known.push(evo); this.swapMove(k, evo); out.evolved.push({ from: k, to: evo, fromName: name, toName: MOVES[evo].name }); }
+    }
+    out.gains.sort((a, b) => b.add - a.add);
+    return out;
+  }
+  // an evolved move takes the old one's place in every slot it was in
+  swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
 }
 
-return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, SLOTS };
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, SLOTS, moveLabel };
 })();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
@@ -10354,6 +10455,7 @@ class MatchScene {
       case 'smack': { const x = v ? v.joints.x(J.head) : a.x, y = v ? v.joints.y(J.head) : a.y - 60; fx.spark(x, y, 1, fin ? fin.color : '#fff3b0'); A.sfx(o.spark ? 'punch2' : 'slap'); if (o.spark) fx.weld(x, y); if (o.word) fx.word(o.word, x, y - 16, '#ffffff', 2); S.shake(.18); break; }
       case 'squeeze': if (v) { fx.sweat(v.joints.x(J.head), v.joints.y(J.head), 3); if (o.word) fx.word(o.word, v.x, v.y - 90, '#ff8fc4', 2); A.sfx('hurt', { voice: v.char.voice }); } break;
       case 'whoosh': A.sfx('whoosh'); break;
+      case 'step': A.sfx('step'); fx.dust(a.joints.x(J.aN), this.m.arena.ground(a.joints.x(J.aN), a.y, a.side), .35); break;
       case 'cheer': A.cheer(.8); this.ar.boost(.25); break;
       case 'spin': A.sfx('spin'); break;
       case 'lift': A.sfx('lift', { voice: a.char.voice }); break;
@@ -10791,6 +10893,25 @@ const { MODES } = __m["combat/MatchManager.js"];
 const { ARENAS } = __m["combat/arena.js"];
 const { DIFFICULTY } = __m["combat/AIController.js"];
 const { SPECIAL } = __m["combat/SpecialRules.js"];
+const { EVOLVE, masteryInfo, lvText, finKey } = __m["data/mastery.js"];
+// ---- move mastery: a level tag with a small bar, and a one-line summary ----
+function masteryTag(u, xp, xr, y, evolves) {
+  const I = masteryInfo(xp), col = I.max ? '#ffd65a' : I.lv ? '#9be3ff' : UI.faint;
+  drawText(u, lvText(I.lv), xr, y, { size: 11, align: 'r', color: col });
+  gauge(u, xr - 64, y + 4, 30, 3, I.k, 'fin', { col: I.max ? '#ffd65a' : '#49d6ff' });
+  if (evolves) drawText(u, '↑', xr - 74, y, { size: 11, color: '#ffd65a' });
+}
+function masteryLine(c, id) {
+  const I = masteryInfo(c.masteryOf(id)), evo = EVOLVE[id], m = MOVES[id];
+  let t = `숙련 ${lvText(I.lv)} · 피해 +${Math.round(I.bonus * 100)}%` + (I.max ? '' : ` · 경험치 ${I.xp}/${I.to}`);
+  if (evo && MOVES[evo]) t += c.d.known.includes(evo) ? ` · 진화 완료: ${MOVES[evo].name}` : ` · MAX가 되면 '${MOVES[evo].name}'(으)로 진화`;
+  else if (m && m.evo && MOVES[m.evo]) t += ` · '${MOVES[m.evo].name}'에서 진화한 기술`;
+  return t;
+}
+const evolveTalk = list => list.flatMap(e => [
+  { who: 'me', text: `…몸이 먼저 움직였다. 수없이 되풀이한 ${josa(e.fromName, '이/가')} 어느새 '${e.toName}'(이)라는 다른 기술이 되어 있었다.`, expr: 'happy' },
+  { who: null, name: '기술 진화', text: `'${e.fromName}' → '${e.toName}'. 같은 입력 칸에 바로 장착했다. 원래 기술도 남아 있어 Tab → 기술에서 되돌릴 수 있다.` },
+]);
 const matchName = o => (o.special && SPECIAL[o.special] ? SPECIAL[o.special].name : MODES[o.mode].name) + (o.falls ? ' · 3판 2선승' : o.iron ? ` · 아이언맨 ${Math.round(o.iron / 60)}분` : '');
 const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES } = __m["world/CareerManager.js"];
 class Menu {
@@ -11156,7 +11277,7 @@ class InfoMenu extends Menu {
     drawText(u, d.name, 122, 58, { color: '#ffffff', bold: true });
     drawText(u, `${c.styleDef.label} · 레벨 ${d.level}`, 122, 76, { size: 11, color: '#49d6ff' });
     gauge(u, 122, 92, 110, 4, d.xp / c.xpNeed(), 'fin', {}); drawText(u, `경험치 ${d.xp}/${c.xpNeed()}`, 238, 89, { size: 11, color: UI.dim });
-    drawText(u, `피니셔: ${FINISHERS[d.finisher].name}`, 122, 104, { size: 11, color: '#ffd65a' });
+    drawText(u, `피니셔: ${FINISHERS[d.finisher].name} · 숙련 ${lvText(masteryInfo(c.masteryOf(finKey(d.finisher))).lv)}`, 122, 104, { size: 11, color: '#ffd65a' });
     const T = this.tab;
     if (T === 0) {
       drawText(u, `능력치 포인트: ${d.points}  (Enter로 1 올리기, 레벨업마다 +2 · 훈련으로도 오른다)`, 44, 136, { size: 11, color: d.points ? '#6be38a' : UI.dim });
@@ -11176,11 +11297,37 @@ class InfoMenu extends Menu {
       drawText(u, '최근 경기', 344, 236, { size: 11, color: UI.dim });
       h.forEach((r, i) => drawText(u, `${r.day}일 ${r.won ? '승' : r.draw ? '무' : '패'} vs ${r.opp} (부상 +${r.inj})`, 344, 250 + i * 14, { size: 11, color: r.won ? '#6be38a' : r.draw ? UI.dim : '#ff8a8a' }));
     } else if (T === 2) {
-      drawText(u, '잡은 뒤 입력별 기술. Enter로 바꾸기 (배운 기술 중에서)', 44, 136, { size: 11, color: UI.dim });
-      this.rows().forEach((r, i) => { const x = r.pos === 'front' ? 44 : 330, y = 168 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 26, on = i === this.sel && !this.pick; if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 152, { size: 11, color: '#ffd65a' }); rect(u, on ? '#26315f' : '#141a36', x, y, 268, 22); keycap(u, SLOT_KEYS[r.s], x + 4, y + 5); const m = MOVES[d.moves[r.pos][r.s]]; drawText(u, m ? m.name : '-', x + 60, y + 5, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); });
-      drawText(u, `받아치기: ${MOVES[d.moves.catch].name} · 반격: ${MOVES[d.moves.counter].name}`, 44, 302, { size: 11, color: UI.dim });
-      drawText(u, `코너 위 — 서 있는 상대: ${(ATTACKS[d.moves.topStand] || ATTACKS.missileDropkick).name} · 누운 상대: ${(ATTACKS[d.moves.topDown || this.c.styleDef.dive] || {}).name || '-'} (돛대 상회 '기술의 서'로 바꾼다)`, 44, 288, { size: 11, color: '#ffd65a' });
-      if (this.pick) { const P = this.pick; panel(u, 180, 100, 280, 210, { accent: '#ffd65a' }); drawText(u, `${POS_NAMES[P.pos]} ${SLOT_KEYS[P.s]}`, 320, 108, { size: 11, align: 'c', color: '#ffd65a' }); P.list.slice(0, 11).forEach((id, i) => { const on = i === P.i; rect(u, on ? '#3a3a7a' : '#141a36', 190, 124 + i * 16, 260, 15); drawText(u, MOVES[id].name, 196, 126 + i * 16, { size: 11, color: on ? '#ffffff' : UI.dim }); }); const m = MOVES[P.list[P.i]]; if (m) drawText(u, m.desc, 320, 300, { size: 11, align: 'c', color: '#c9d4ff' }); }
+      drawText(u, '잡은 뒤 입력별 기술. Enter로 바꾸기 · 많이 쓸수록 숙련이 올라 피해가 늘고, ↑ 기술은 MAX에서 진화한다', 44, 136, { size: 11, color: UI.dim });
+      const R = this.rows();
+      R.forEach((r, i) => {
+        const x = r.pos === 'front' ? 44 : 330, y = 164 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 23, on = i === this.sel && !this.pick;
+        if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 150, { size: 11, color: '#ffd65a' });
+        rect(u, on ? '#26315f' : '#141a36', x, y, 268, 21); keycap(u, SLOT_KEYS[r.s], x + 4, y + 4);
+        const id = d.moves[r.pos][r.s], m = MOVES[id];
+        drawText(u, m ? m.name : '-', x + 60, y + 4, { size: 11, color: on ? '#ffffff' : m && m.evo ? '#ffd65a' : '#c9d4ff' });
+        if (m) masteryTag(u, c.masteryOf(id), x + 262, y + 4, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
+      });
+      const sr = R[this.sel], sid = sr && d.moves[sr.pos][sr.s];
+      if (sid && MOVES[sid] && !this.pick) drawText(u, masteryLine(c, sid), 44, 280, { size: 11, color: '#9be3ff' });
+      drawText(u, `코너 위 — 서 있는 상대: ${(ATTACKS[d.moves.topStand] || ATTACKS.missileDropkick).name} · 누운 상대: ${(ATTACKS[d.moves.topDown || this.c.styleDef.dive] || {}).name || '-'} (돛대 상회 '기술의 서'로 바꾼다)`, 44, 294, { size: 11, color: '#ffd65a' });
+      drawText(u, `받아치기: ${MOVES[d.moves.catch].name} · 반격: ${MOVES[d.moves.counter].name}`, 44, 307, { size: 11, color: UI.dim });
+      if (this.pick) {
+        const P = this.pick, top = clamp(P.i - 4, 0, Math.max(0, P.list.length - 8));
+        panel(u, 150, 92, 340, 230, { accent: '#ffd65a' });
+        drawText(u, `${POS_NAMES[P.pos]} ${SLOT_KEYS[P.s]}`, 320, 100, { size: 11, align: 'c', color: '#ffd65a' });
+        if (P.list.length > 8) drawText(u, `${P.i + 1}/${P.list.length}`, 480, 100, { size: 11, align: 'r', color: UI.faint });
+        P.list.slice(top, top + 8).forEach((id, j) => {
+          const i = top + j, on = i === P.i, y = 116 + j * 16;
+          rect(u, on ? '#3a3a7a' : '#141a36', 160, y, 320, 15);
+          drawText(u, MOVES[id].name, 166, y + 2, { size: 11, color: on ? '#ffffff' : MOVES[id].evo ? '#ffd65a' : UI.dim });
+          masteryTag(u, c.masteryOf(id), 474, y + 2, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
+        });
+        const id = P.list[P.i], m = MOVES[id];
+        if (m) {
+          drawText(u, masteryLine(c, id), 320, 248, { size: 11, align: 'c', color: '#9be3ff' });
+          wrapText(m.desc, 320, 11).slice(0, 3).forEach((l, k) => drawText(u, l, 320, 266 + k * 14, { size: 11, align: 'c', color: '#c9d4ff' }));
+        }
+      }
     } else {
       const R = this.rows();
       if (!R.length) drawText(u, '사용할 수 있는 물건이 없다. 돛대 상회에서 살 수 있다.', 320, 180, { size: 11, align: 'c', color: UI.dim });
@@ -11249,8 +11396,11 @@ class ResultMenu extends Menu {
       if (this.W.checkGameOver()) return;
       const d = this.c.d;
       if (this.sum.ups.length) this.W.toast(`레벨 업! Lv ${d.level} — 능력치 포인트 +${this.sum.ups.length * 2} (Tab)`, '#6be38a');
-      if (this.W.lesson && this.c.injuryLevel !== 'danger') { const L = this.W.lesson; this.W.lesson = null; this.W.say(L); }
-      if (this.c.injuryLevel === 'danger') this.W.say([{ who: 'me', text: `몸이 비명을 지른다… 부상 ${Math.round(d.injury)}%. 이대로는 위험하다. 항구의원에 가야 해.`, expr: 'hurt' }]);
+      const ms = this.sum.mastery, evo = ms && ms.evolved.length ? evolveTalk(ms.evolved) : [];
+      if (ms) ms.ups.forEach(x => this.W.toast(`기술 숙련 ${x.text}`, '#9be3ff'));
+      if (this.W.lesson && this.c.injuryLevel !== 'danger') { const L = this.W.lesson; this.W.lesson = null; this.W.say(evo.concat(L)); }
+      else if (evo.length && this.c.injuryLevel !== 'danger') this.W.say(evo);
+      if (this.c.injuryLevel === 'danger') this.W.say(evo.concat([{ who: 'me', text: `몸이 비명을 지른다… 부상 ${Math.round(d.injury)}%. 이대로는 위험하다. 항구의원에 가야 해.`, expr: 'hurt' }]));
       else if (this.c.injuryLevel === 'warn' && this.sum.injury > 0) this.W.toast(`부상 주의: ${Math.round(d.injury)}%`, '#ffb347');
     }
   }
@@ -11273,6 +11423,13 @@ class ResultMenu extends Menu {
       gauge(u, 152, y + 18, 300, 9, inj / 100, 'inj', { col, colD: '#3a1450', trail: d.injury / 100 });
       drawText(u, Math.round(inj) + '%', 460, y + 15, { color: col, bold: true });
       drawText(u, d.injury >= 100 ? '…몸이 더는 버티지 못한다.' : lvl === 'danger' ? '위험! 치료하지 않고 다음 경기에서 100%가 되면 은퇴(게임 오버)' : lvl === 'warn' ? '주의: 항구의원이나 붕대로 치료하자' : '받은 피해만큼 부상이 쌓였다', 320, y + 34, { size: 11, align: 'c', color: col });
+    }
+    const ms = s.mastery;
+    if (ms && ms.gains.length) {
+      let y = 260;
+      drawText(u, '기술 숙련  ' + ms.gains.slice(0, 3).map(x => `${x.name} +${x.add}`).join(' · ') + (ms.gains.length > 3 ? ` 외 ${ms.gains.length - 3}` : ''), 320, y, { size: 11, align: 'c', color: '#9be3ff' }); y += 13;
+      if (ms.ups.length) { drawText(u, '▲ ' + ms.ups.slice(0, 2).map(x => x.text).join(' · '), 320, y, { size: 11, align: 'c', color: '#6be38a' }); y += 13; }
+      if (ms.evolved.length) drawText(u, '★ 기술 진화! ' + ms.evolved.map(e => `${e.fromName} → ${e.toName}`).join(' · '), 320, y, { size: 11, align: 'c', color: '#ffd65a' });
     }
     prompt(u, [this.game.input.label('confirm')], '계속', 320, 300, { align: 'c' });
   }

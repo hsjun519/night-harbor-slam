@@ -212,7 +212,10 @@ export class WrestlingMoveSystem {
   event(L, t, k, o) {
     const m = this.m, { a, move } = L, v = L.v || L.relV;
     if (o.d && v) {
-      const hp = move.hp * L.power * o.d, st = move.stun * o.d;
+      // career mastery: a little more damage per level; each landed move (a finisher once) counts as one use
+      const key = L.fin ? 'fin:' + L.fin.id : move.id, tag = L.fin ? 'fin' : L.part;
+      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)), st = move.stun * o.d;
+      if (L.usedTag !== tag) { L.usedTag = tag; a.moveUses[key] = (a.moveUses[key] || 0) + 1; }
       m.combat.damage(v, hp, st, a, { move });
       if (!L.fin) m.combat.addFin(a, move.gain * o.d); else if (v) v.finishersTaken += o.d > .4 ? 1 : 0;
       v.combo.n = Math.max(1, v.combo.n); v.flash = .12; v.hitShake = .2;
@@ -248,7 +251,9 @@ export class WrestlingMoveSystem {
     if (!v) return;
     v.link = null; L.v = null; L.relV = v;
     if (move.toSeat && v.hp > 0) { m.combo.seat(v, a); m.emit('release', { a, v, move }); return; }
-    v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1);
+    // a victim spun half way round (yaw) faces the other way when let go
+    const yawFlip = move.yaw && Math.cos(yawAt(move, L.t) * Math.PI / 180) < 0 ? -1 : 1;
+    v.side = a.side; v.ground = false; v.face = a.face * move.vf * (L.faceFlip || 1) * yawFlip;
     const vel = move.vel || [0, -60, 0], k = 1 / Math.sqrt(v.stats.kbr);
     if (move.whip) {
       const dir = a.face;

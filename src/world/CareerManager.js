@@ -3,7 +3,8 @@ import { RNG, clamp, deepClone, fmtMoney } from '../core/util.js';
 import { Save } from '../core/SaveManager.js';
 import { CHARACTERS, ROSTER_IDS } from '../data/characters.js';
 import { BALANCE as B } from '../data/balance.js';
-import { MOVES } from '../data/moves.js';
+import { MOVES, FINISHERS } from '../data/moves.js';
+import { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } from '../data/mastery.js';
 
 export const SLOT_NAMES = ['오전', '오후', '저녁'];
 export const SEASON_DAYS = 28;
@@ -93,6 +94,8 @@ export const RARE_ITEMS = [
 ];
 export const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
 export const SLOTS = 3;
+// a mastery key: a move id, or 'fin:' + finisher id
+export const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
 // Builds before the slots had one career: it counts as slot 1.
 export function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
 export function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
@@ -127,10 +130,10 @@ export class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking',
+      dda: 0, mitb: null, champ: 'fogking', mastery: {},
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -185,7 +188,7 @@ export class Career {
   entrant(ctrl = 'human') {
     const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0) };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -297,7 +300,9 @@ export class Career {
       d.injury = Math.min(100, d.injury + inj); out.injury = inj;
     }
     if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
-    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); return out; }
+    // move mastery: landed grapple moves and the finisher (sparring counts half)
+    out.mastery = this.gainMastery(h && h.uses, kind === 'practice' ? MASTERY.practice : 1);
+    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); this.save(); return out; }
     if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
     const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
@@ -355,4 +360,25 @@ export class Career {
   learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
   learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
   equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  // ---- move mastery ----
+  masteryPower() { const o = {}, M = this.d.mastery || {}; for (const k in M) { const lv = masteryLv(M[k]); if (lv) o[k] = lv * MASTERY.bonus; } return o; }
+  masteryOf(k) { return (this.d.mastery || {})[k] || 0; }
+  gainMastery(uses, rate = 1) {
+    const d = this.d, M = d.mastery || (d.mastery = {}), out = { gains: [], ups: [], evolved: [] };
+    for (const k in uses || {}) {
+      const n = Math.min(MASTERY.cap, uses[k] | 0), name = moveLabel(k);
+      if (!n || !name) continue;
+      const before = M[k] || 0, add = Math.max(1, Math.round(n * MASTERY.use * rate)), lv0 = masteryLv(before);
+      M[k] = before + add;
+      const lv = masteryLv(M[k]);
+      out.gains.push({ k, name, add, lv });
+      if (lv > lv0) out.ups.push({ k, name, lv, text: `${name} ${lvText(lv)} (피해 +${Math.round(lv * MASTERY.bonus * 100)}%)` });
+      const evo = EVOLVE[k];
+      if (lv >= MAX_LV && evo && MOVES[evo] && !d.known.includes(evo)) { d.known.push(evo); this.swapMove(k, evo); out.evolved.push({ from: k, to: evo, fromName: name, toName: MOVES[evo].name }); }
+    }
+    out.gains.sort((a, b) => b.add - a.add);
+    return out;
+  }
+  // an evolved move takes the old one's place in every slot it was in
+  swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
 }

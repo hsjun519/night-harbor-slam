@@ -12,6 +12,7 @@ export function compileMove(m) {
     R: m.R.map(k => ({ t: k[0], x: k[1], y: k[2], r: k[3], e: EASE[k[4] || 'io'] })),
     yaw: m.yaw ? m.yaw.map(k => ({ t: k[0], v: k[1], e: EASE[k[2] || 'lin'] })) : null,
     yawA: !!(m.yaw && m.yaw[0][3] === 'A'),
+    yawV: !!(m.yaw && m.yaw[0][3] === 'V'),
     ax: m.ax ? m.ax.map(k => ({ t: k[0], x: k[1], y: k[2], e: EASE[k[3] || 'io'] })) : null,
     ik: (m.ik || []).map(k => ({ t0: k[0], t1: k[1], arm: k[2], j: J[k[3]] })),
     ikV: (m.ikV || []).map(k => ({ t0: k[0], t1: k[1], arm: k[2], j: J[k[3].replace('A:', '')] })),
@@ -77,7 +78,7 @@ export function evalPaired(m, t, dA, dV, outA, outV, res, modA) {
       if (cs < 0) { jt.face = -jt.face; jt.S = -jt.S; jt.H = -jt.H; }
       const mm = Math.max(.2, Math.abs(cs)); jt.S *= mm; jt.H = jt.H * mm; jt.yaw = Math.abs(cs);
     };
-    apply(outA, false);
+    if (!c.yawV) apply(outA, false);
     if (!c.yawA) apply(outV, true);
     res.front = sn > .05;
     res.yaw = a;

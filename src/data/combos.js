@@ -200,6 +200,10 @@ export const FOLLOW = {
   piledriver: [{ key: 'down', pin: 1.35 }],
   chokeslam: [{ key: 'down', pin: 1.3 }],
   german: [{ key: 'down', pin: 1.2 }],
+  runningBulldog: [{ key: 'down', pin: 1.25 }],
+  f5: [{ key: 'down', pin: 1.4 }],
+  powerSlam: [{ key: 'down', pin: 1.4, direct: 1, name: '그대로 누르기' }],
+  dragonSuplex: [{ key: 'down', pin: 1.5 }],
   cutter: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
   spear: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
   anchorHammer: [{ key: 'down', pin: 1.45, direct: 1, name: '그대로 누르기' }],
@@ -216,6 +220,7 @@ export const FOLLOW = {
 // Pressed early in a move, these turn it into a longer one. to: the parts that replace it. cost: energy (finisher gauge).
 export const UPGRADE = {
   german: [{ key: 'grab', to: ['gRoll', 'german'], until: .22, name: '연속 저먼!' }],
+  dragonSuplex: [{ key: 'grab', to: ['gRoll', 'dragonSuplex'], until: .22, name: '저먼에서 드래곤으로!' }],
   powerbomb: [{ key: 'fin', to: ['spb1', 'pbAgain', 'spb3'], until: .24, cost: 50, name: '슈퍼 파워밤!' }],
 };
 // L at the right moment with enough energy: these replace the plain counter.
