@@ -455,6 +455,9 @@ export const MOVES = {
     ev: [[0, 'grunt'], [.14, 'impact', { p: .5, d: .3, word: '퍽!' }], [.6, 'impact', { p: 1.25, d: .7, word: '쾅!' }]],
   },
 };
+// 선항 레슬링's finishers: 흰상아 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
+MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '상아 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는 흰상아의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
+MOVES.fGodong = Object.assign({}, MOVES.powerbomb, { name: '선장의 닻', pos: 'fin', hp: 40, stun: 60, gain: 0, quake: 80, desc: '배 위에서 단련한 팔로 하늘까지 들어 올려 내리꽂는다.', ev: [[.1, 'cry'], [.2, 'grunt'], [.6, 'lift'], [.94, 'whoosh'], [1.12, 'impact', { p: 2.6, d: 1, word: '뱃고동!!' }]] });
 for (const id in MOVES) MOVES[id].id = id;
 
 // Looping tie-ups used while nobody has chosen a move yet, and the pinfall cover.
@@ -481,6 +484,8 @@ export const FINISHERS = {
   ink: { name: '먹물 문어발', type: 'stance', parts: ['fInk'], reach: 40, rear: 1, color: '#b066d8', line: '다리는 여덟, 팔도 여덟.' },
   shark: { name: '상어 이빨', type: 'dive', parts: ['fShark'], reach: 190, color: '#6f93bd', line: '피 냄새가 나는군.' },
   north: { name: '북해 폭풍밤', type: 'grab', parts: ['fNorth1', 'fNorth2'], reach: 48, armor: 1, color: '#c9a25a', line: '북쪽 바다를 보여주지!' },
+  ivory: { name: '상아 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  godong: { name: '선장의 닻', type: 'grab', parts: ['fGodong'], reach: 50, armor: 1, color: '#c9a22e', line: '닻을 내려라!' },
   blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },
   whitewave: { name: '백파 수플렉스', type: 'grab', parts: ['fWhitewave'], reach: 46, color: '#e6e9f2', line: '파도는 늙지 않는다.' },
 };

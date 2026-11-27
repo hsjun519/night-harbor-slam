@@ -474,6 +474,7 @@ class AudioManager {
       case 'coin': this.tone('square', 988, 988, .06, .09); this.tone('square', 1319, 1319, .22, .09, .06); break;
       case 'buy': this.tone('square', 784, 784, .06, .09); this.tone('square', 1047, 1047, .06, .09, .06); this.tone('square', 1319, 1319, .16, .09, .12); break;
       case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone('sine', f, f, .18, .14, i * .07)); break;
+      case 'horn': this.tone('sawtooth', 84, 78, 2.2, .16 * p); this.tone('sine', 42, 40, 2.4, .3 * p); this.tone('triangle', 126, 118, 1.8, .06 * p); break;
       case 'warn': for (let i = 0; i < 2; i++) { this.tone('square', 740, 740, .12, .1, i * .26); this.tone('square', 554, 554, .12, .1, i * .26 + .13); } break;
       case 'door': this.burst(.14, .3, 'lowpass', 500, .8); this.tone('sine', 110, 70, .12, .3); this.tone('triangle', 300, 520, .2, .05, .06); break;
       case 'stat': this.tone('square', 523, 523, .05, .08); this.tone('square', 784, 784, .1, .08, .05); break;
@@ -2499,6 +2500,9 @@ const LOOKS = {
   sponsor: { build: 'slim', scale: 1.03, skin: 'pale', head: { face: 'long', hair: 'slick', hairCol: '#4a3a2a', glass: 'shades' }, top: { kind: 'suit', c1: '#5a2c6a', c2: '#ffe6b0', c3: '#23d5c8' }, bottom: { kind: 'pants', c1: '#5a2c6a' }, boots: { c1: '#1c1424', c2: '#5a2c6a', h: 0 }, sleeve: { c: '#5a2c6a', len: 1.85 } },
   fankid: { build: 'elder', scale: .74, skin: 'light', head: { face: 'round', hair: 'bob', hairCol: '#2a2030', blush: 1, lashes: 0 }, top: { kind: 'hoodie', c1: '#ffd65a', c2: '#e0405a', c3: '#e0405a' }, bottom: { kind: 'shorts', c1: '#2d63b8' }, boots: { c1: '#e0405a', c2: '#ffffff', h: 0 }, sleeve: { c: '#ffd65a', len: 1.8 } },
   beggar: { build: 'elder', scale: .94, skin: 'tan', head: { face: 'long', hair: 'curly', beard: 'long', hairCol: '#b8b8b0', wrinkle: 1 }, top: { kind: 'coat', c1: '#6a5a44', c2: '#3a3026' }, bottom: { kind: 'pants', c1: '#4a4236' }, boots: { c1: '#3a2a22', c2: '#5a4a3a', h: 0 }, sleeve: { c: '#6a5a44', len: 1.8 }, coat: { c1: '#6a5a44', len: .6, open: 1 } },
+  whiteivory: { build: 'athletic', scale: 1.06, skin: 'light', head: { face: 'slim', hair: 'slick', hairCol: '#f2f2f2', browTilt: .3 }, top: { kind: 'vest', c1: '#f2efe4', c2: '#3a6a8a' }, bottom: { kind: 'tights', c1: '#f2efe4', c2: '#3a6a8a', pat: 'side' }, boots: { c1: '#e6e9f2', c2: '#3a6a8a', h: .8 }, wrist: { c: '#f2efe4', len: .4 } },
+  godong: { build: 'heavy', scale: 1.12, skin: 'tan', head: { face: 'square', hair: 'bald', beard: 'long', hairCol: '#2a2a2a', browTilt: .8 }, top: { kind: 'coat', c1: '#1c2a3a', c2: '#c9a22e' }, bottom: { kind: 'pants', c1: '#1c2a3a', c2: '#c9a22e', pat: 'side' }, boots: { c1: '#14121c', c2: '#c9a22e', h: .7 }, sleeve: { c: '#1c2a3a', len: 1.8 }, coat: { c1: '#1c2a3a', len: .7, open: 1 } },
+  owsailor: { build: 'athletic', scale: 1, skin: 'tan', head: { face: 'jaw', hair: 'buzz', hairCol: '#1c1420', hat: 'beanie', hatCol: '#2a4a6a', beard: 'stubble' }, top: { kind: 'tank', c1: '#f2efe4', c2: '#2a4a6a' }, bottom: { kind: 'pants', c1: '#2a4a6a', c2: '#f2efe4', pat: 'side' }, boots: { c1: '#14121c', c2: '#2a4a6a', h: .4 }, wrist: { c: '#2a4a6a', len: .2 } },
   oldman: { build: 'elder', scale: .96, skin: 'tan', head: { face: 'long', hair: 'bald', beard: 'long', hairCol: '#e6e9f2', hat: 'beanie', hatCol: '#3a5a8c', wrinkle: 1 }, top: { kind: 'coat', c1: '#d8a62e', c2: '#3b4668' }, bottom: { kind: 'pants', c1: '#3b4668' }, boots: { c1: '#2c3f5c', c2: '#d8a62e', h: 0 }, sleeve: { c: '#d8a62e', len: 1.8 }, coat: { c1: '#d8a62e', len: .5, open: 1 } },
   nurse: { build: 'fem', scale: .95, skin: 'light', head: { face: 'round', hair: 'bun', hairCol: '#5a3a2a', lashes: 1, hat: 'nurse', blush: 1 }, top: { kind: 'shirt', c1: '#9fe0d0' }, bottom: { kind: 'pants', c1: '#9fe0d0' }, boots: { c1: '#f2f4fa', c2: '#9fe0d0', h: 0 }, sleeve: { c: '#9fe0d0', len: .7 } },
   busker: { build: 'slim', scale: .99, skin: 'brown', head: { face: 'slim', hair: 'mullet', hairCol: '#1c1424', beard: 'goatee', hat: 'beanie', hatCol: '#d2456a' }, top: { kind: 'jacket', c1: '#3b5a3f', c2: '#d8cfb8', c3: '#c98432' }, bottom: { kind: 'pants', c1: '#2d3348' }, boots: { c1: '#7a4a28', c2: '#c98432', h: 0 }, sleeve: { c: '#3b5a3f', len: 1.8 } },
@@ -2668,6 +2672,30 @@ const CHARACTERS = {
     moves: { front: front('bodySlam', 'irishWhip', 'backbreaker', 'powerbomb', 'gutBuster'), rear: front('backdropDriver', 'ringOut', 'german', 'atomic', 'bulldog'), catch: 'spinebuster', counter: 'hipToss' },
     finisher: 'container', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .7, air: .1, grab: .6, def: .4, rope: .2, taunt: .4, dirty: .8 }, voice: .8,
     lines: { intro: '형님, 이놈이에요? …생각보다 크네.', win: '형님, 끝났습니다.', lose: '…형님, 저 먼저 쉬겠습니다.' },
+  },
+  whiteivory: {
+    name: '흰상아', nick: '선항 레슬링의 칼날', style: 'tech', look: LOOKS.whiteivory, stance: 'tech', color: '#e6e9f2', thug: 1, ow: 1,
+    stats: { hp: 118, stun: 112, atk: 1.1, grp: 1.14, spd: 1.06, jump: 1.06, rec: 1.1, down: 1.1, fin: 1.08, weight: 92, lift: 1.7, kbr: 1.1 },
+    chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveMoon', ground: 'stomp',
+    moves: { front: front('suplex', 'irishWhip', 'bellyToBelly', 'f5', 'ddt'), rear: front('dragonSuplex', 'ringOut', 'german', 'backdropDriver', 'runningBulldog'), catch: 'spinebuster', counter: 'armDrag' },
+    finisher: 'ivory', taunt: 'tauntBow', win: 'win', ai: { aggr: .75, air: .35, grab: .6, def: .6, rope: .4, taunt: .2, dirty: .3 }, voice: 1.15,
+    lines: { intro: '이 항구의 챔피언이 너인가. …작군.', win: '바다는 하얗게 부서진다.', lose: '…기억해 두지. 이 항구의 이름.' },
+  },
+  godong: {
+    name: '고동', nick: '선항 레슬링 선장', style: 'heavy', look: LOOKS.godong, stance: 'heavy', color: '#c9a22e', thug: 1, ow: 1,
+    stats: { hp: 150, stun: 132, atk: 1.18, grp: 1.2, spd: .86, jump: .8, rec: 1, down: 1.1, fin: 1.05, weight: 160, lift: 2.6, kbr: 1.7 },
+    chain: ['sumoPush', 'palm', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', ground: 'stomp',
+    moves: { front: front('chokeslam', 'irishWhip', 'powerSlam', 'powerbomb', 'airplane'), rear: front('backdropDriver', 'ringOut', 'giantSwing', 'atomic', 'german'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'godong', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .7, air: .05, grab: .7, def: .55, rope: .1, taunt: .25, dirty: .4 }, voice: .45,
+    lines: { intro: '이 항구, 오늘부터 우리 배의 닻이 내린다.', win: '파도는 언제나 이긴다.', lose: '…뱃머리를 돌려라.' },
+  },
+  owsailor: {
+    name: '선항 선원', nick: '선항 레슬링 갑판원', style: 'brawl', look: LOOKS.owsailor, stance: 'street', color: '#9bc3e3', thug: 1, ow: 1,
+    stats: { hp: 84, stun: 88, atk: .96, grp: .94, spd: 1, jump: .96, rec: .96, down: .96, fin: .9, weight: 88, lift: 1.3, kbr: .95 },
+    chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('bodySlam', 'irishWhip', 'suplex', 'ddt', 'gutBuster'), rear: front('german', 'ringOut', 'atomic', 'bulldog', 'backdropDriver'), catch: 'backBody', counter: 'hipToss' },
+    finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .45, def: .3, rope: .2, taunt: .4, dirty: .8 }, voice: .9,
+    lines: { intro: '선장님 명령이다!', win: '항구 하나 접수!', lose: '으, 물러나라!' },
   },
   myeolchi: {
     name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1, topStand: 'topCrossbody',
@@ -3328,6 +3356,9 @@ const MOVES = {
     ev: [[0, 'grunt'], [.14, 'impact', { p: .5, d: .3, word: '퍽!' }], [.6, 'impact', { p: 1.25, d: .7, word: '쾅!' }]],
   },
 };
+// 선항 레슬링's finishers: 흰상아 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
+MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '상아 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는 흰상아의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
+MOVES.fGodong = Object.assign({}, MOVES.powerbomb, { name: '선장의 닻', pos: 'fin', hp: 40, stun: 60, gain: 0, quake: 80, desc: '배 위에서 단련한 팔로 하늘까지 들어 올려 내리꽂는다.', ev: [[.1, 'cry'], [.2, 'grunt'], [.6, 'lift'], [.94, 'whoosh'], [1.12, 'impact', { p: 2.6, d: 1, word: '뱃고동!!' }]] });
 for (const id in MOVES) MOVES[id].id = id;
 
 // Looping tie-ups used while nobody has chosen a move yet, and the pinfall cover.
@@ -3354,6 +3385,8 @@ const FINISHERS = {
   ink: { name: '먹물 문어발', type: 'stance', parts: ['fInk'], reach: 40, rear: 1, color: '#b066d8', line: '다리는 여덟, 팔도 여덟.' },
   shark: { name: '상어 이빨', type: 'dive', parts: ['fShark'], reach: 190, color: '#6f93bd', line: '피 냄새가 나는군.' },
   north: { name: '북해 폭풍밤', type: 'grab', parts: ['fNorth1', 'fNorth2'], reach: 48, armor: 1, color: '#c9a25a', line: '북쪽 바다를 보여주지!' },
+  ivory: { name: '상아 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  godong: { name: '선장의 닻', type: 'grab', parts: ['fGodong'], reach: 50, armor: 1, color: '#c9a22e', line: '닻을 내려라!' },
   blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },
   whitewave: { name: '백파 수플렉스', type: 'grab', parts: ['fWhitewave'], reach: 46, color: '#e6e9f2', line: '파도는 늙지 않는다.' },
 };
@@ -9075,6 +9108,495 @@ class Lockstep {
 
 return { pack, unpack, Lockstep };
 })();
+// ---- data/mastery.js
+__m["data/mastery.js"] = (function () {
+// Move mastery. Every landed use of a grapple move or the finisher in a career match gives that move experience.
+// Each level adds a little damage; a few moves grow into a bigger version when the bar is full (MAX).
+const MASTERY = {
+  levels: [0, 20, 50, 90, 140, 200],   // experience where Lv1..Lv5 start (Lv5 = MAX)
+  bonus: .03,                           // damage per level: +15% at MAX
+  use: 10,                              // experience per landed use
+  cap: 4,                               // uses counted per move per match
+  practice: .5,                         // sparring counts half
+};
+const MAX_LV = MASTERY.levels.length - 1;
+// at MAX the move evolves: it is learned and takes the old one's place in every slot (the old one stays learned)
+const EVOLVE = { bulldog: 'runningBulldog', suplex: 'f5', bodySlam: 'powerSlam', german: 'dragonSuplex' };
+const EVOLVED_FROM = Object.fromEntries(Object.entries(EVOLVE).map(([a, b]) => [b, a]));
+const finKey = id => 'fin:' + id;
+function masteryLv(xp = 0) { const L = MASTERY.levels; let lv = 0; while (lv < MAX_LV && xp >= L[lv + 1]) lv++; return lv; }
+function masteryInfo(xp = 0) {
+  const L = MASTERY.levels, lv = masteryLv(xp), max = lv >= MAX_LV;
+  return { lv, max, xp, from: L[lv], to: max ? L[lv] : L[lv + 1], k: max ? 1 : (xp - L[lv]) / (L[lv + 1] - L[lv]), bonus: lv * MASTERY.bonus };
+}
+const lvText = lv => (lv >= MAX_LV ? 'MAX' : 'Lv' + lv);
+
+return { masteryLv, masteryInfo, MASTERY, MAX_LV, EVOLVE, EVOLVED_FROM, finKey, lvText };
+})();
+// ---- world/CareerManager.js
+__m["world/CareerManager.js"] = (function () {
+// Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
+const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
+const { Save } = __m["core/SaveManager.js"];
+const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
+const { BALANCE: B } = __m["data/balance.js"];
+const { MOVES, FINISHERS } = __m["data/moves.js"];
+const { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } = __m["data/mastery.js"];
+const SLOT_NAMES = ['오전', '오후', '저녁'];
+const SEASON_DAYS = 28;
+// Growth per trained level (levels go 0..20).
+const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'], brk: [.03, '스턴 브레이커'] };
+const STYLE_BASE = {
+  all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
+  power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
+  air: { label: '하이플라이어', stats: { hp: 88, stun: 94, atk: .95, grp: .94, spd: 1.14, jump: 1.24, rec: 1.08, down: 1.08, fin: 1.1, weight: 74, lift: 1, kbr: .85 }, chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', stance: 'air', finisher: 'typhoon', moves: { front: { n: 'headDrop', f: 'irishWhip', b: 'suplex', u: 'bellyToBelly', d: 'ddt' }, rear: { n: 'bulldog', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'german' }, catch: 'backBody', counter: 'armDrag' }, build: 'lean' },
+  tech: { label: '테크니션', stats: { hp: 96, stun: 100, atk: .96, grp: 1.14, spd: 1.02, jump: 1, rec: 1.14, down: 1.04, fin: 1.04, weight: 92, lift: 1.5, kbr: 1 }, chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveElbow', stance: 'tech', finisher: 'anchor', moves: { front: { n: 'suplex', f: 'irishWhip', b: 'bellyToBelly', u: 'backbreaker', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'anchorHold', u: 'backdropDriver', d: 'atomic' }, catch: 'spinebuster', counter: 'armDrag' }, build: 'athletic' },
+  brawl: { label: '브롤러', stats: { hp: 104, stun: 108, atk: 1.14, grp: .95, spd: .99, jump: .96, rec: 1, down: 1, fin: 1, weight: 102, lift: 1.4, kbr: 1.06 }, chain: ['jab', 'cross', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', stance: 'box', finisher: 'weld', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'slapFest', d: 'ddt' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'german', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'athletic' },
+  heavy: { label: '슈퍼 헤비급', stats: { hp: 130, stun: 118, atk: 1.04, grp: 1.02, spd: .82, jump: .76, rec: .9, down: .92, fin: .95, weight: 156, lift: 1.8, kbr: 1.6 }, chain: ['sumoPush', 'sumoPush', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', stance: 'heavy', finisher: 'tsunami', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'airplane', d: 'gutBuster' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'heavy' },
+};
+// Moves a trainer or rival can teach. cost in won, fame needed.
+const LEARNABLE = [
+  { id: 'backbreaker', cost: 30000, fame: 5, by: 'trainer' }, { id: 'bellyToBelly', cost: 30000, fame: 5, by: 'trainer' }, { id: 'atomic', cost: 25000, fame: 0, by: 'trainer' },
+  { id: 'piledriver', cost: 60000, fame: 25, by: 'trainer' }, { id: 'chokeslam', cost: 70000, fame: 30, by: 'trainer' }, { id: 'giantSwing', cost: 55000, fame: 20, by: 'trainer' },
+  { id: 'airplane', cost: 65000, fame: 35, by: 'rival' }, { id: 'gutBuster', cost: 50000, fame: 30, by: 'rival' }, { id: 'headDrop', cost: 45000, fame: 20, by: 'rival' }, { id: 'anchorHold', cost: 50000, fame: 25, by: 'rival' }, { id: 'slapFest', cost: 40000, fame: 15, by: 'rival' }, { id: 'cornerSmash', cost: 35000, fame: 10, by: 'trainer' }, { id: 'spinebuster', cost: 45000, fame: 20, by: 'rival' },
+];
+const SHOP_ITEMS = [
+  { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
+  { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
+  // books: learn a grapple move, or change the move used from the top of the corner
+  { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
+  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
+  { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
+  { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
+  { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
+  { id: 'bookMoonsault', name: '기술의 서: 문설트', price: 32000, desc: '코너 위에서 누운 상대에게: 뒤로 돌아 덮친다.', kind: 'book', top: 'down', move: 'diveMoon' },
+  { id: 'bookSplash', name: '기술의 서: 바디 스플래시', price: 26000, desc: '코너 위에서 누운 상대에게: 배로 내리찍는다.', kind: 'book', top: 'down', move: 'diveSplash' },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
+  { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
+  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
+  { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
+  { id: 'mouthguard', name: '마우스피스', price: 30000, desc: '최대 기절 저항 +6.', kind: 'gear', slot: 'mouth', mod: { stun: 6 } },
+  { id: 'proBoots', name: '프로 부츠', price: 55000, desc: '이동 속도 +3%, 점프력 +3%.', kind: 'gear', slot: 'boots', mod: { spd: .03, jump: .03 } },
+  { id: 'luckyCharm', name: '등대 부적', price: 48000, desc: '피니셔 충전 +5%.', kind: 'gear', slot: 'charm', mod: { fin: .05 } },
+  { id: 'outfitGold', name: '금빛 타이츠', price: 40000, desc: '의상: 금색과 검정.', kind: 'outfit', look: { bottom: { kind: 'tights', c1: '#1c1424', c2: '#ffd65a', pat: 'flame' }, boots: { c1: '#ffd65a', c2: '#1c1424', h: .78 } } },
+  { id: 'outfitSea', name: '파도 트렁크', price: 30000, desc: '의상: 청록 파도무늬.', kind: 'outfit', look: { bottom: { kind: 'trunks', c1: '#1f8fa6', c2: '#e6f6ff', pat: 'bands' }, boots: { c1: '#e6f6ff', c2: '#1f8fa6', h: .7 } } },
+  { id: 'outfitNeon', name: '네온 싱글렛', price: 50000, desc: '의상: 분홍 네온 싱글렛.', kind: 'outfit', look: { top: { kind: 'singlet', c1: '#ff4fa3', c2: '#23d5c8' }, bottom: { kind: 'shorts', c1: '#ff4fa3', c2: '#23d5c8', pat: 'side' } } },
+  { id: 'maskWave', name: '파도 마스크', price: 60000, desc: '의상: 파도 무늬 복면.', kind: 'outfit', mask: { full: 1, kind: 'wave', c1: '#1f6f7a', c2: '#e6f6ff', c3: '#ffd65a' } },
+  { id: 'headband', name: '머리띠', price: 15000, desc: '의상: 붉은 머리띠.', kind: 'outfit', hat: 'band', hatCol: '#d23b5a' },
+  { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
+];
+
+// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
+// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
+// and move it over.
+const saveKey = n => 'save' + n;
+const LEGACY = ['career0', 'career1', 'career2'];
+const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+function legacyNewest(suffix = '') {
+  let best = null;
+  for (const k of LEGACY) {
+    const d = Save.get(k + suffix);
+    if (!d || typeof d !== 'object' || !d.name) continue;
+    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
+    if (!best || lex(score, best.score) > 0) best = { d, score };
+  }
+  return best && best.d;
+}
+function migrateLegacy(n) {
+  const d = legacyNewest();
+  if (!d) return null;
+  const chk = legacyNewest('.chk');
+  d.saveSlot = n;
+  Save.set(saveKey(n), d);
+  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
+  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
+  return d;
+}
+// Sale days: consumables at the clinic and the shop cost 30% less. Merchant days: a peddler sets up on the street.
+const saleOn = d => d.day > 2 && (d.day + d.season * 2) % 6 === 4;
+const merchantOn = d => d.day > 1 && (d.day + d.season) % 5 === 2;
+const salePrice = (d, price) => (saleOn(d) ? Math.round(price * .7 / 100) * 100 : price);
+// The peddler's goods. buff: lasts for the next match (or next training); now: takes effect at once; give: an item.
+const RARE_ITEMS = [
+  { id: 'knuckle', name: '황금 너클', price: 25000, desc: '다음 경기 공격력 +20%.', buff: { atk: 1.2 } },
+  { id: 'guardSet', name: '강철 보호대', price: 22000, desc: '다음 경기에서 쌓이는 부상 -40%.', buff: { guard: .6 } },
+  { id: 'eelTonic', name: '등대 장어즙', price: 18000, desc: '피로 -60, 부상 -6. 바로 마신다.', now: { fat: 60, inj: 6 } },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
+  { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
+  { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
+  { id: 'bookChoke', name: '기술의 서: 초크슬램', price: 40000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'chokeslam' },
+  { id: 'bookPile', name: '기술의 서: 파일드라이버', price: 44000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'piledriver' },
+  { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
+];
+const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
+// 부둣가 악동단 in the lobby: weak at first; as you grow (level, and each time you beat them) they come back with
+// chairs in hand and then a third man who runs in later (late: seconds, or as soon as one of them is down).
+// k scales their health (and a little of their power); wait: seconds the others hang back while one is on you.
+const GANG = [
+  { k: .72, ai: 'easy', who: ['galchi', 'myeolchi'], armed: [], wait: 5 },
+  { k: .8, ai: 'easy', who: ['galchi', 'myeolchi'], armed: ['galchi'], wait: 4.6 },
+  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi'], wait: 5, late: { kkongchi: 60 } },
+  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi', 'kkongchi'], wait: 5, late: { kkongchi: 55 } },
+];
+// 선항 레슬링: a promotion from across the sea. d.ow.state:
+//   LOCKED (no belt yet) → SIGNS (the first belt; the invasion exactly OW.delay days later, a foghorn the day after)
+//   → INVADED (흰상아 at the pier; the dome is wrecked, title matches move to the basement)
+//   → SECOND_WAVE (OW.gap days on: they come back, 서도현 teams up with you) → REGROUP
+//   → CAPTAIN (OW.gap days on: 선장 고동, a boss in three phases; lose and he waits for you the next day)
+//   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)
+const OW = { delay: 3, gap: 4, rebuild: 5, damaged: ['INVADED', 'SECOND_WAVE', 'REGROUP', 'CAPTAIN', 'REBUILD'] };
+const SLOTS = 3;
+// 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
+const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
+// a mastery key: a move id, or 'fin:' + finisher id
+// the Tab → 기술 list a move shows up in
+const SLOT_OF = { front: '정면 잡기', rear: '뒤 잡기', any: '정면·뒤 잡기', catch: '받아치기', counter: '반격' };
+const moveSlotName = id => (MOVES[id] && SLOT_OF[MOVES[id].pos]) || '기술';
+const learnedText = id => `${MOVES[id].name} 습득! Tab → 기술 → ${moveSlotName(id)}에서 장착`;
+const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
+// Builds before the slots had one career: it counts as slot 1.
+function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
+function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
+function slotInfo(n) {
+  const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
+  if (!d || typeof d !== 'object' || !d.name) return null;
+  const rec = d.record || {};
+  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
+}
+// the slot played most recently (for 커리어 이어하기)
+function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
+function deleteCareer(n) { Save.del(saveKey(n)); Save.del(saveKey(n) + '.chk'); if (n === 1) for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); } }
+
+class Career {
+  static create(n, setup) {
+    const c = new Career();
+    const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
+    Object.assign(c.d, {
+      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
+      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0, brk: 0 },
+      moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
+    });
+    c.d.league = c.newLeague(1);
+    c.save(true);
+    return c;
+  }
+  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  constructor() {
+    this.d = {
+      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
+      record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
+      items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
+      seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
+      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
+    };
+  }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } }
+  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
+  save(checkpoint) {
+    const n = this.d.saveSlot || 1;
+    this.d.savedAt = Date.now();
+    Save.set(saveKey(n), this.d);
+    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
+  }
+  // ---- league ----
+  newLeague(season) {
+    const base = ['baekpa', 'bjorn', 'taesan', 'neon', 'baeksang', 'mandeok', 'haneul', 'dongsu', 'dohyun', 'dueok', 'palcho', 'bokja'];
+    if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
+    return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
+  }
+  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
+  // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
+  ddaFor(id) {
+    const k = this.d.dda || 0, c = CHARACTERS[id];
+    if (!c || Math.abs(k) < .005) return {};
+    const s = c.stats;
+    return { stats: { hp: s.hp * (1 + k * .8), atk: s.atk * (1 + k * .5), stun: s.stun * (1 + k * .5) }, aiBoost: k };
+  }
+  // Money in the Bank: the case you hold, or the one somebody holds against you
+  get mitbOpen() { const M = this.d.mitb; return !!(M && this.d.day <= M.until); }
+  // Player rank: position among the league plus the player (1 = top contender).
+  rankList() {
+    const L = this.d.league.slice();
+    const me = { id: 'player', pts: this.d.flags.rankPts || 0, w: this.d.record.w, l: this.d.record.l };
+    L.push(me);
+    L.sort((a, b) => b.pts - a.pts || (a.id === 'player' ? 1 : -1));
+    return L;
+  }
+  get rank() { return this.rankList().findIndex(e => e.id === 'player') + 1; }
+  rankOf(id) { return this.rankList().findIndex(e => e.id === id) + 1; }
+  // ---- stats ----
+  get stats() {
+    const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
+    b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
+    for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
+    b.brk = 1 + (L.brk || 0) * STAT_GROWTH.brk[0];
+    for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
+    b.lift *= 1 + L.grp * .015 + L.hp * .008;
+    return b;
+  }
+  get styleDef() { return STYLE_BASE[this.d.style] || STYLE_BASE.all; }
+  look() {
+    const L = deepClone(this.d.look);
+    const o = this.d.outfit;
+    if (o) for (const id of o) { const it = SHOP_ITEMS.find(i => i.id === id); if (!it) continue; if (it.look) Object.assign(L, deepClone(it.look)); if (it.mask) L.head.mask = deepClone(it.mask); if (it.hat) { L.head.hat = it.hat; L.head.hatCol = it.hatCol; } if (it.cape) L.cape = deepClone(it.cape); }
+    return L;
+  }
+  // Fighter options for a match.
+  entrant(ctrl = 'human') {
+    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
+    if (bf.atk) st.atk *= bf.atk;
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
+  }
+  // ---- time ----
+  get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
+  spendSlot(n = 1) {
+    const d = this.d;
+    d.slot += n;
+    const msgs = [];
+    while (d.slot > 2) { d.slot -= 3; msgs.push(...this.nextDay(true)); }
+    return msgs;
+  }
+  sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
+  nextDay(forced) {
+    const d = this.d, msgs = [];
+    // the case runs out: an unused one is gone; somebody else's they cash in on the champion while you watch
+    if (d.mitb && d.day >= d.mitb.until) {
+      const M = d.mitb; d.mitb = null;
+      if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
+      else if (!d.flags.champion && CHARACTERS[M.holder]) {
+        const rr = new RNG(d.season * 77 + d.day);
+        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
+        else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
+      }
+    }
+    // as champion you are not in the Money in the Bank: somebody wins the case and comes for you
+    if (d.flags.champion && !d.mitb && d.day >= 8 && !d.events['mitb' + d.season]) {
+      const rr = new RNG(d.season * 91 + d.day), top = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 4);
+      const h = rr.pick(top.length ? top : [{ id: 'dohyun' }]).id;
+      d.events['mitb' + d.season] = 'ai';
+      d.mitb = { holder: h, until: d.day + 7 };
+      msgs.push(`${CHARACTERS[h].name}이(가) 머니 인 더 뱅크 가방을 차지했다. 챔피언, 언제 들이닥칠지 모른다!`);
+    }
+    // contract deadline passed without a match
+    if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
+    // the champion's royalties: shirts, posters, a milk advert
+    if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
+    d.day++;
+    if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
+    if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
+    // league simulation: others win and lose too
+    const r = new RNG(d.season * 100 + d.day);
+    for (const e of d.league) { if (r.chance(.35)) { const up = r.chance(.5 + (CHARACTERS[e.id].stats.hp - 100) / 400); e.pts += up ? 4 : -2; up ? e.w++ : e.l++; } }
+    return msgs;
+  }
+  // ---- injuries ----
+  get injuryLevel() { const i = this.d.injury; return i >= B.injuryDanger ? 'danger' : i >= B.injuryWarn ? 'warn' : 'ok'; }
+  healInjury(pts) { const before = this.d.injury; this.d.injury = Math.max(0, this.d.injury - pts); return before - this.d.injury; }
+  // ---- economy ----
+  canPay(n) { return this.d.money >= n; }
+  pay(n) { if (this.d.money < n) return false; this.d.money -= n; return true; }
+  earn(n) { this.d.money += n; this.d.earnedTotal += n; this.d.seasonLog.earned += n; }
+  xpNeed() { return 80 + this.d.level * 40; }
+  addXp(n) {
+    const d = this.d, ups = [];
+    d.xp += n;
+    while (d.xp >= this.xpNeed()) { d.xp -= this.xpNeed(); d.level++; d.points += 2; ups.push(d.level); }
+    return ups;
+  }
+  // ---- offers ----
+  makeOffers() {
+    const d = this.d, r = new RNG(d.season * 1000 + d.day * 7 + d.record.w * 3);
+    const ranks = this.rankList(), me = this.rank, out = [];
+    const others = ranks.filter(e => e.id !== 'player');
+    const pick = off => { const i = me - 1 + off, j = i > me - 1 ? i - 1 : i; return others[clamp(j, 0, others.length - 1)]; };
+    const lvl = rk => (d.season >= 2 ? ['normal', 'hard', 'hard', 'expert'] : ['easy', 'normal', 'normal', 'hard'])[clamp(Math.floor((14 - rk) / 4), 0, 3)];
+    const mk = (opp, kind, extra = {}) => {
+      const rk = this.rankOf(opp.id), c = CHARACTERS[opp.id];
+      const reward = Math.round((22000 + (15 - rk) * 5200) * (kind === 'challenge' ? 1.4 : 1) * (1 + (d.season - 1) * .3) / 1000) * 1000;
+      return Object.assign({ opp: opp.id, oppName: c.name, mode: 'single', arena: 'hall', reward, fame: kind === 'challenge' ? 9 : 6, kind, day: d.day + 1 + r.int(0, 2), difficulty: lvl(rk), rank: rk, desc: '' }, extra);
+    };
+    out.push(mk(pick(-1), 'normal', { desc: '바로 위 순위. 이기면 순위를 빼앗는다.' }));
+    let ch = pick(r.chance(.5) ? -3 : -2);
+    if (out.some(o => o.opp === ch.id)) ch = pick(-4);
+    out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
+    let third = pick(r.int(0, 2));
+    for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
+    const stips = [[1, { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' }], [1, { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }]];
+    if (d.day >= 3 || d.season > 1) stips.push([1.3, { special: 'ladder', pay: 1.3, desc: '래더 매치. 링 위에 매달린 계약서 가방을 먼저 떼어 내는 쪽이 이긴다.' }]);
+    if (d.day >= 4 || d.season > 1) stips.push([1.1, { falls: 2, pay: 1.4, desc: '3판 2선승제(투 아웃 오브 스리 폴). 두 번 먼저 이겨야 한다.' }]);
+    if (d.day >= 5 || d.season > 1) stips.push([1.2, { special: 'cage', pay: 1.3, desc: '스틸 케이지. KO·핀폴, 또는 철창을 넘어 탈출하면 승리.' }]);
+    if (d.day >= 8 || d.season > 1) stips.push([1.1, { special: 'cell', pay: 1.5, arena: 'hall', desc: '헬 인 어 셀. 링 밖까지 덮인 철창, 장외 카운트가 없다.' }]);
+    const sp = r.weighted(stips, s => s[0])[1], extra = Object.assign({}, sp);
+    out.push(mk(third, 'stip', extra));
+    if (extra.pay) { const o = out[out.length - 1]; o.reward = Math.round(o.reward * extra.pay / 1000) * 1000; o.fame += 3; }
+    // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
+    const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
+    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
+      const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
+      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
+    }
+    // events
+    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
+    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
+    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: this.titleVenue.arena, reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
+    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: this.titleVenue.arena, fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: this.titleVenue.arena, reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
+    d.offers = out.slice(0, 4); d.offersDay = d.day;
+    return d.offers;
+  }
+  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
+  // ---- after a match ----
+  applyResult(kind, res, info = {}) {
+    const d = this.d, h = res.human, won = res.won, draw = res.draw;
+    const out = { lines: [], money: 0, fame: 0, xp: 0, injury: 0, ups: [], rankBefore: this.rank, rankAfter: 0 };
+    // injuries: proportional to damage actually taken, never from practice
+    if (kind !== 'practice' && h) {
+      const maxHp = this.stats.hp;
+      let inj = (h.dmgTaken / maxHp) * B.injuryPerBar + (h.ko ? B.injuryKO : 0) + h.finishersTaken * B.injuryFinisher + (h.ringOuts ? B.injuryRingOut : 0);
+      inj *= (1 + d.fatigue / 250) * (B.injuryRate || 1) * (d.buffs && d.buffs.guard ? d.buffs.guard : 1);
+      inj = Math.round(inj * 10) / 10;
+      d.injury = Math.min(100, d.injury + inj); out.injury = inj;
+    }
+    if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
+    // move mastery: landed grapple moves and the finisher (sparring counts half)
+    out.mastery = this.gainMastery(h && h.uses, kind === 'practice' ? MASTERY.practice : 1);
+    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); this.save(); return out; }
+    if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
+    d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
+    const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
+    if (draw) d.record.d++;
+    else if (won) { d.record.w++; d.record.streak = Math.max(1, d.record.streak + 1); d.seasonLog.w++; if (res.result.how === 'ko') d.record.ko++; if (res.result.how === 'pin') d.record.pin++; }
+    else { d.record.l++; d.record.streak = Math.min(-1, d.record.streak - 1); d.seasonLog.l++; }
+    let money = 0, fame = 0, xp = won ? 60 : draw ? 35 : 25;
+    if (c) {
+      money = won ? c.reward : Math.round(c.reward * (draw ? .5 : .25) / 1000) * 1000;
+      fame = won ? c.fame : draw ? 2 : 1;
+      if (res.result.forfeit) { money = 0; fame = -3; }
+      if (!won && (kind === 'brawl' || kind === 'revenge')) { money = 0; fame = kind === 'revenge' ? -1 : 0; }
+      xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
+      if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
+      // ranking points
+      if (kind === 'official' || kind === 'title') {
+        d.record.official++;
+        const opp = d.league.find(e => e.id === c.opp);
+        const myPts = d.flags.rankPts || 0;
+        if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
+        else if (won) d.flags.rankPts = myPts + 3;
+        else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
+        else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
+        if (c.cashIn) d.mitb = null;
+      }
+      if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
+      if (c.mitb) {
+        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; d.flags.mitbWon = (d.flags.mitbWon || 0) + 1; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
+        else { const w = res.result && res.result.winner, id = w && w.charId && CHARACTERS[w.charId] ? w.charId : null; if (id) { d.mitb = { holder: id, until: d.day + 7 }; out.lines.push(`${CHARACTERS[id].name}이(가) 가방을 땄다. 네가 챔피언이 되면 노리러 온다.`); } }
+      }
+      if (c === d.contract) d.contract = null;
+    } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
+    if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
+    if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }
+    // finishing in style
+    const fb = won && res.result && res.result.finishBy;
+    if (fb === 'finisher') { const bonus = Math.round(Math.max(5000, money * .25) / 1000) * 1000; money += bonus; fame += 3; xp += 25; out.lines.push(`피니셔 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +3`); }
+    else if (fb === 'move') { const bonus = Math.round(Math.max(3000, money * .12) / 1000) * 1000; money += bonus; fame += 1; xp += 12; out.lines.push(`기술 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +1`); }
+    d.fame = clamp(d.fame + fame, 0, 999);
+    this.earn(Math.max(0, money));
+    out.money = money; out.fame = fame; out.xp = xp;
+    out.ups = this.addXp(xp);
+    out.rankAfter = this.rank;
+    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
+    d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
+    d.seasonLog.matches.push(d.lastResult);
+    this.save();
+    return out;
+  }
+  // Rival relationship with 서도현.
+  rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
+  money() { return fmtMoney(this.d.money); }
+  learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
+  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
+  weeklyOffer() {
+    const d = this.d, key = 'wf' + d.season + '_' + d.day;
+    if (!weeklyOn(d) || d.events[key]) return null;
+    const champ = this.champion, all = this.rankList();
+    const top = all.filter(e => e.id !== 'player' && e.id !== champ && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 5);
+    if (!top.length) return null;
+    const e = top[(d.day * 3 + d.season) % top.length], ch = CHARACTERS[e.id];
+    return { kind: 'weekly', opp: e.id, oppName: ch.name, rank: all.indexOf(e) + 1, mode: 'single', arena: 'hall', reward: 25000 + d.season * 10000, fame: 4, difficulty: d.season >= 2 ? 'expert' : 'hard', day: d.day, event: key, desc: '주간 파이널: 이기면 상대가 기술을 직접 가르쳐 준다' };
+  }
+  // what a beaten finalist teaches: one of their grapple moves you lack, else their finisher
+  weeklyLesson(opp) {
+    const ch = CHARACTERS[opp], d = this.d;
+    if (!ch) return null;
+    const pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((id, i, a) => MOVES[id] && !d.known.includes(id) && a.indexOf(id) === i);
+    if (pool.length) return { move: pool[(d.day + d.season) % pool.length] };
+    if (ch.finisher && FINISHERS[ch.finisher] && !this.finKnown().includes(ch.finisher)) return { fin: ch.finisher };
+    return null;
+  }
+  // where the belt is fought: the lighthouse dome, or the basement once 선항 레슬링 wrecked the dome
+  get titleVenue() { return this.d.ow && OW.damaged.includes(this.d.ow.state) ? { arena: 'basement', loc: 'basement', name: '지하 격투장', x: 540 } : { arena: 'dome', loc: 'dome', name: '등대 돔', x: 480 }; }
+  // which beat of the story is due when you walk into a place (not on the way back from a match)
+  owDue(loc) {
+    const d = this.d, o = d.ow;
+    if (!o || (loc !== 'lobby' && loc !== 'street')) return null;
+    if (o.state === 'SIGNS' && d.day >= o.at) return 'invasion1';
+    if (o.state === 'SIGNS' && !o.heard && d.day > o.champDay && loc === 'street') return 'signal';
+    if (o.state === 'INVADED' && d.day >= o.day1 + OW.gap) return 'invasion2';
+    if (o.state === 'REGROUP' && d.day >= o.day2 + OW.gap) return 'invasion3';
+    if (o.state === 'CAPTAIN' && d.day >= o.retry) return 'invasion3';
+    if (o.state === 'REBUILD' && d.day >= o.rebuildAt) return 'rebuilt';
+    return null;
+  }
+  owAfterMatch(kind, won) {
+    const d = this.d, o = d.ow;
+    if (!o) return;
+    if (kind === 'invasion') { o.state = 'INVADED'; o.day1 = d.day; o.won1 = !!won; }
+    else if (kind === 'invasion2') { o.state = 'REGROUP'; o.day2 = d.day; o.won2 = !!won; }
+    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
+  }
+  owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
+  owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }
+  gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
+  // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
+  gangMatch() {
+    const d = this.d, G = GANG[this.gangTier()], up = { easy: 'normal', normal: 'hard', hard: 'hard' };
+    const gang = G.who.map(id => { const S = CHARACTERS[id].stats, k = G.k * (id === 'myeolchi' ? .92 : 1), p = .55 + .45 * k; return { char: id, ctrl: 'ai', difficulty: d.season >= 2 ? up[G.ai] : G.ai, team: 1, waitTurn: G.wait, armed: G.armed.includes(id) ? 1 : 0, late: G.late && G.late[id] || 0, stats: { hp: S.hp * k, stun: S.stun * Math.min(1, k + .06), atk: S.atk * p, grp: S.grp * p } }; });
+    return { G, gang, events: [] };
+  }
+  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  equipSpecial(kind, id) { if (MOVES[id] && this.d.known.includes(id) && MOVES[id].pos === kind) this.d.moves[kind] = id; }
+  // finishers you can switch between (Tab → 기술 → F)
+  finKnown() { const d = this.d; if (!d.finKnown) d.finKnown = [d.finisher]; if (!d.finKnown.includes(d.finisher)) d.finKnown.unshift(d.finisher); return d.finKnown; }
+  learnFinisher(id) { const L = this.finKnown(); if (FINISHERS[id] && !L.includes(id)) L.push(id); }
+  // ---- move mastery ----
+  masteryPower() { const o = {}, M = this.d.mastery || {}; for (const k in M) { const lv = masteryLv(M[k]); if (lv) o[k] = lv * MASTERY.bonus; } return o; }
+  masteryOf(k) { return (this.d.mastery || {})[k] || 0; }
+  gainMastery(uses, rate = 1) {
+    const d = this.d, M = d.mastery || (d.mastery = {}), out = { gains: [], ups: [], evolved: [] };
+    for (const k in uses || {}) {
+      const n = Math.min(MASTERY.cap, uses[k] | 0), name = moveLabel(k);
+      if (!n || !name) continue;
+      const before = M[k] || 0, add = Math.max(1, Math.round(n * MASTERY.use * rate)), lv0 = masteryLv(before);
+      M[k] = before + add;
+      const lv = masteryLv(M[k]);
+      out.gains.push({ k, name, add, lv });
+      if (lv > lv0) out.ups.push({ k, name, lv, text: `${name} ${lvText(lv)} (피해 +${Math.round(lv * MASTERY.bonus * 100)}%)` });
+      const evo = EVOLVE[k];
+      if (lv >= MAX_LV && evo && MOVES[evo] && !d.known.includes(evo)) { d.known.push(evo); this.swapMove(k, evo); out.evolved.push({ from: k, to: evo, fromName: name, toName: MOVES[evo].name }); }
+    }
+    out.gains.sort((a, b) => b.add - a.add);
+    return out;
+  }
+  // an evolved move takes the old one's place in every slot it was in
+  swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
+}
+
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, moveSlotName, learnedText, moveLabel };
+})();
 // ---- world/liveDecor.js
 __m["world/liveDecor.js"] = (function () {
 // The parts of a place that follow the career, drawn over the baked backdrop every frame (world space, camera
@@ -9085,6 +9607,24 @@ const { rect, bands, trophy } = __m["render/painter.js"];
 const { drawText } = __m["render/pixelfont.js"];
 const { drawPortrait } = __m["render/head.js"];
 const { shade } = __m["render/palette.js"];
+const { OW } = __m["world/CareerManager.js"];
+// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken
+function streetLive(g, c, cam) {
+  const d = c.d, ox = -Math.round(cam);
+  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
+  const x = 2140 + ox;
+  if (x < -200 || x > 900) return;
+  for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
+  rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
+  for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+}
+// the basement on a title night: a banner over the cage
+function basementLive(g, c, cam) {
+  const d = c.d, ox = -Math.round(cam);
+  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
+  const x = 440 + ox;
+  rect(g, '#120c1e', x - 1, 98, 202, 18); rect(g, '#5a1a1a', x, 99, 200, 16); drawText(g, '지하 챔피언십', x + 100, 101, { size: 11, align: 'c', color: '#ffd65a' });
+}
 function face(g, look, x, y, size, col, expr = 'neutral') {
   rect(g, '#120c1e', x - 1, y - 1, size + 2, size + 2);
   bands(g, x, y, size, size, [shade(col, -.35), shade(col, -.5), shade(col, -.6)]);
@@ -9139,7 +9679,7 @@ function lobbyLive(g, c, cam) {
   }
 }
 
-return { lobbyLive };
+return { streetLive, basementLive, lobbyLive };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -9147,7 +9687,7 @@ __m["world/locations.js"] = (function () {
 const { RNG } = __m["core/util.js"];
 const { rampHex, shade, mixHex } = __m["render/palette.js"];
 const { drawText } = __m["render/pixelfont.js"];
-const { canvas, rect, bands, dither, line, ellipse, poly, neon, truss, lamp, poster, brick, planks, tiles, windowPane, box, shelf, sofa, door, board, frameArt, trophy, plant, wave } = __m["render/painter.js"];const { lobbyLive } = __m["world/liveDecor.js"];
+const { canvas, rect, bands, dither, line, ellipse, poly, neon, truss, lamp, poster, brick, planks, tiles, windowPane, box, shelf, sofa, door, board, frameArt, trophy, plant, wave } = __m["render/painter.js"];const { lobbyLive, streetLive, basementLive } = __m["world/liveDecor.js"];
 const FLOOR = 300;
 // Sky colours by time of day for windows and the street.
 const SKY = [
@@ -9450,13 +9990,13 @@ const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
     doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
     objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 175, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 458, w: 150, act: 'poster', label: '선수 포스터' }], live: lobbyLive },
-  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
+  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, live: basementLive, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
   gym: { name: '훈련장', w: 1100, music: 'gym', rim: '#ffcf8a', light: .04, doors: [{ x: 63, to: 'lobby', at: 582, label: '로비' }],
     objects: [{ x: 420, w: 70, act: 'train', game: 'bench', label: '벤치프레스' }, { x: 546, w: 70, act: 'train', game: 'rope', label: '줄넘기' }, { x: 668, w: 50, act: 'train', game: 'mitt', label: '미트 치기' }, { x: 790, w: 60, act: 'train', game: 'bridge', label: '목 브릿지' }, { x: 980, w: 180, act: 'spar', label: '연습 링 (연습 경기)' }, { x: 390, w: 110, act: 'train', game: 'breath', label: '거울 앞 호흡 훈련' }] },
   arena: { name: '경기장 대기실', w: 820, music: 'gym', rim: '#49d6ff', light: 0, doors: [{ x: 57, to: 'lobby', at: 1112, label: '로비' }],
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
-  street: { name: '부둣길', w: 2300, music: 'street', rim: '#ff5fa2', light: -.02, street: 1,
+  street: { name: '부둣길', w: 2300, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
     objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
@@ -9508,463 +10048,6 @@ class Actor {
 }
 
 return { Actor };
-})();
-// ---- data/mastery.js
-__m["data/mastery.js"] = (function () {
-// Move mastery. Every landed use of a grapple move or the finisher in a career match gives that move experience.
-// Each level adds a little damage; a few moves grow into a bigger version when the bar is full (MAX).
-const MASTERY = {
-  levels: [0, 20, 50, 90, 140, 200],   // experience where Lv1..Lv5 start (Lv5 = MAX)
-  bonus: .03,                           // damage per level: +15% at MAX
-  use: 10,                              // experience per landed use
-  cap: 4,                               // uses counted per move per match
-  practice: .5,                         // sparring counts half
-};
-const MAX_LV = MASTERY.levels.length - 1;
-// at MAX the move evolves: it is learned and takes the old one's place in every slot (the old one stays learned)
-const EVOLVE = { bulldog: 'runningBulldog', suplex: 'f5', bodySlam: 'powerSlam', german: 'dragonSuplex' };
-const EVOLVED_FROM = Object.fromEntries(Object.entries(EVOLVE).map(([a, b]) => [b, a]));
-const finKey = id => 'fin:' + id;
-function masteryLv(xp = 0) { const L = MASTERY.levels; let lv = 0; while (lv < MAX_LV && xp >= L[lv + 1]) lv++; return lv; }
-function masteryInfo(xp = 0) {
-  const L = MASTERY.levels, lv = masteryLv(xp), max = lv >= MAX_LV;
-  return { lv, max, xp, from: L[lv], to: max ? L[lv] : L[lv + 1], k: max ? 1 : (xp - L[lv]) / (L[lv + 1] - L[lv]), bonus: lv * MASTERY.bonus };
-}
-const lvText = lv => (lv >= MAX_LV ? 'MAX' : 'Lv' + lv);
-
-return { masteryLv, masteryInfo, MASTERY, MAX_LV, EVOLVE, EVOLVED_FROM, finKey, lvText };
-})();
-// ---- world/CareerManager.js
-__m["world/CareerManager.js"] = (function () {
-// Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
-const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
-const { Save } = __m["core/SaveManager.js"];
-const { CHARACTERS, ROSTER_IDS } = __m["data/characters.js"];
-const { BALANCE: B } = __m["data/balance.js"];
-const { MOVES, FINISHERS } = __m["data/moves.js"];
-const { MASTERY, EVOLVE, MAX_LV, masteryLv, lvText } = __m["data/mastery.js"];
-const SLOT_NAMES = ['오전', '오후', '저녁'];
-const SEASON_DAYS = 28;
-// Growth per trained level (levels go 0..20).
-const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'], brk: [.03, '스턴 브레이커'] };
-const STYLE_BASE = {
-  all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
-  power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
-  air: { label: '하이플라이어', stats: { hp: 88, stun: 94, atk: .95, grp: .94, spd: 1.14, jump: 1.24, rec: 1.08, down: 1.08, fin: 1.1, weight: 74, lift: 1, kbr: .85 }, chain: ['lowkick', 'midkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', stance: 'air', finisher: 'typhoon', moves: { front: { n: 'headDrop', f: 'irishWhip', b: 'suplex', u: 'bellyToBelly', d: 'ddt' }, rear: { n: 'bulldog', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'german' }, catch: 'backBody', counter: 'armDrag' }, build: 'lean' },
-  tech: { label: '테크니션', stats: { hp: 96, stun: 100, atk: .96, grp: 1.14, spd: 1.02, jump: 1, rec: 1.14, down: 1.04, fin: 1.04, weight: 92, lift: 1.5, kbr: 1 }, chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveElbow', stance: 'tech', finisher: 'anchor', moves: { front: { n: 'suplex', f: 'irishWhip', b: 'bellyToBelly', u: 'backbreaker', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'anchorHold', u: 'backdropDriver', d: 'atomic' }, catch: 'spinebuster', counter: 'armDrag' }, build: 'athletic' },
-  brawl: { label: '브롤러', stats: { hp: 104, stun: 108, atk: 1.14, grp: .95, spd: .99, jump: .96, rec: 1, down: 1, fin: 1, weight: 102, lift: 1.4, kbr: 1.06 }, chain: ['jab', 'cross', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', stance: 'box', finisher: 'weld', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'slapFest', d: 'ddt' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'german', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'athletic' },
-  heavy: { label: '슈퍼 헤비급', stats: { hp: 130, stun: 118, atk: 1.04, grp: 1.02, spd: .82, jump: .76, rec: .9, down: .92, fin: .95, weight: 156, lift: 1.8, kbr: 1.6 }, chain: ['sumoPush', 'sumoPush', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', stance: 'heavy', finisher: 'tsunami', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'cornerSmash', u: 'airplane', d: 'gutBuster' }, rear: { n: 'backdropDriver', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'bulldog' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'heavy' },
-};
-// Moves a trainer or rival can teach. cost in won, fame needed.
-const LEARNABLE = [
-  { id: 'backbreaker', cost: 30000, fame: 5, by: 'trainer' }, { id: 'bellyToBelly', cost: 30000, fame: 5, by: 'trainer' }, { id: 'atomic', cost: 25000, fame: 0, by: 'trainer' },
-  { id: 'piledriver', cost: 60000, fame: 25, by: 'trainer' }, { id: 'chokeslam', cost: 70000, fame: 30, by: 'trainer' }, { id: 'giantSwing', cost: 55000, fame: 20, by: 'trainer' },
-  { id: 'airplane', cost: 65000, fame: 35, by: 'rival' }, { id: 'gutBuster', cost: 50000, fame: 30, by: 'rival' }, { id: 'headDrop', cost: 45000, fame: 20, by: 'rival' }, { id: 'anchorHold', cost: 50000, fame: 25, by: 'rival' }, { id: 'slapFest', cost: 40000, fame: 15, by: 'rival' }, { id: 'cornerSmash', cost: 35000, fame: 10, by: 'trainer' }, { id: 'spinebuster', cost: 45000, fame: 20, by: 'rival' },
-];
-const SHOP_ITEMS = [
-  { id: 'bandage', name: '붕대', price: 9600, desc: '부상 게이지 -9. 언제든 사용할 수 있다.', kind: 'item', inj: 9 },
-  { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
-  // books: learn a grapple move, or change the move used from the top of the corner
-  { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
-  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
-  { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
-  { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
-  { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
-  { id: 'bookMoonsault', name: '기술의 서: 문설트', price: 32000, desc: '코너 위에서 누운 상대에게: 뒤로 돌아 덮친다.', kind: 'book', top: 'down', move: 'diveMoon' },
-  { id: 'bookSplash', name: '기술의 서: 바디 스플래시', price: 26000, desc: '코너 위에서 누운 상대에게: 배로 내리찍는다.', kind: 'book', top: 'down', move: 'diveSplash' },
-  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
-  { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
-  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
-  { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
-  { id: 'mouthguard', name: '마우스피스', price: 30000, desc: '최대 기절 저항 +6.', kind: 'gear', slot: 'mouth', mod: { stun: 6 } },
-  { id: 'proBoots', name: '프로 부츠', price: 55000, desc: '이동 속도 +3%, 점프력 +3%.', kind: 'gear', slot: 'boots', mod: { spd: .03, jump: .03 } },
-  { id: 'luckyCharm', name: '등대 부적', price: 48000, desc: '피니셔 충전 +5%.', kind: 'gear', slot: 'charm', mod: { fin: .05 } },
-  { id: 'outfitGold', name: '금빛 타이츠', price: 40000, desc: '의상: 금색과 검정.', kind: 'outfit', look: { bottom: { kind: 'tights', c1: '#1c1424', c2: '#ffd65a', pat: 'flame' }, boots: { c1: '#ffd65a', c2: '#1c1424', h: .78 } } },
-  { id: 'outfitSea', name: '파도 트렁크', price: 30000, desc: '의상: 청록 파도무늬.', kind: 'outfit', look: { bottom: { kind: 'trunks', c1: '#1f8fa6', c2: '#e6f6ff', pat: 'bands' }, boots: { c1: '#e6f6ff', c2: '#1f8fa6', h: .7 } } },
-  { id: 'outfitNeon', name: '네온 싱글렛', price: 50000, desc: '의상: 분홍 네온 싱글렛.', kind: 'outfit', look: { top: { kind: 'singlet', c1: '#ff4fa3', c2: '#23d5c8' }, bottom: { kind: 'shorts', c1: '#ff4fa3', c2: '#23d5c8', pat: 'side' } } },
-  { id: 'maskWave', name: '파도 마스크', price: 60000, desc: '의상: 파도 무늬 복면.', kind: 'outfit', mask: { full: 1, kind: 'wave', c1: '#1f6f7a', c2: '#e6f6ff', c3: '#ffd65a' } },
-  { id: 'headband', name: '머리띠', price: 15000, desc: '의상: 붉은 머리띠.', kind: 'outfit', hat: 'band', hatCol: '#d23b5a' },
-  { id: 'jacket', name: '입장용 망토', price: 45000, desc: '의상: 입장할 때 휘날리는 망토.', kind: 'outfit', cape: { c1: '#3a59b8', len: 1 } },
-];
-
-// One save per career slot, under 'save<n>' (+ '.chk' for the morning checkpoint). Builds before 2026-11-26 keyed
-// saves by the time of day by mistake ('career0/1/2' = morning/afternoon/evening): read the newest of those once
-// and move it over.
-const saveKey = n => 'save' + n;
-const LEGACY = ['career0', 'career1', 'career2'];
-const lex = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
-function legacyNewest(suffix = '') {
-  let best = null;
-  for (const k of LEGACY) {
-    const d = Save.get(k + suffix);
-    if (!d || typeof d !== 'object' || !d.name) continue;
-    const score = [d.created || 0, (d.injury || 0) < 100 && !d.retired ? 1 : 0, d.season || 1, d.day || 1, d.slot || 0];
-    if (!best || lex(score, best.score) > 0) best = { d, score };
-  }
-  return best && best.d;
-}
-function migrateLegacy(n) {
-  const d = legacyNewest();
-  if (!d) return null;
-  const chk = legacyNewest('.chk');
-  d.saveSlot = n;
-  Save.set(saveKey(n), d);
-  Save.set(saveKey(n) + '.chk', chk && chk.created === d.created ? Object.assign(chk, { saveSlot: n }) : d);
-  for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); }
-  return d;
-}
-// Sale days: consumables at the clinic and the shop cost 30% less. Merchant days: a peddler sets up on the street.
-const saleOn = d => d.day > 2 && (d.day + d.season * 2) % 6 === 4;
-const merchantOn = d => d.day > 1 && (d.day + d.season) % 5 === 2;
-const salePrice = (d, price) => (saleOn(d) ? Math.round(price * .7 / 100) * 100 : price);
-// The peddler's goods. buff: lasts for the next match (or next training); now: takes effect at once; give: an item.
-const RARE_ITEMS = [
-  { id: 'knuckle', name: '황금 너클', price: 25000, desc: '다음 경기 공격력 +20%.', buff: { atk: 1.2 } },
-  { id: 'guardSet', name: '강철 보호대', price: 22000, desc: '다음 경기에서 쌓이는 부상 -40%.', buff: { guard: .6 } },
-  { id: 'eelTonic', name: '등대 장어즙', price: 18000, desc: '피로 -60, 부상 -6. 바로 마신다.', now: { fat: 60, inj: 6 } },
-  { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 -40. 소지품에 넣어 둔다.', give: 'champBandage' },
-  { id: 'waveCharm', name: '파도 부적', price: 20000, desc: '다음 경기를 피니셔 게이지 50으로 시작.', buff: { finStart: 50 } },
-  { id: 'luckyChair', name: '행운의 접이식 의자', price: 15000, desc: '다음 경기 시작 때 내 옆에 의자가 놓여 있다.', buff: { chair: 1 } },
-  { id: 'bookChoke', name: '기술의 서: 초크슬램', price: 40000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'chokeslam' },
-  { id: 'bookPile', name: '기술의 서: 파일드라이버', price: 44000, desc: '정면 잡기 기술. 떠돌이 상인만 파는 책.', learnMove: 'piledriver' },
-  { id: 'saleBandage', name: '붕대 (상인 특가 30%)', price: 6700, desc: '항구의원 붕대를 30% 싸게. 부상 -9.', give: 'bandage', many: 1 },
-];
-const BUFF_NAMES = { atk: '황금 너클', guard: '강철 보호대', finStart: '시작 게이지', chair: '행운의 의자', train: '훈련 효과 +15%' };
-// 부둣가 악동단 in the lobby: weak at first; as you grow (level, and each time you beat them) they come back with
-// chairs in hand and then a third man who runs in later (late: seconds, or as soon as one of them is down).
-// k scales their health (and a little of their power); wait: seconds the others hang back while one is on you.
-const GANG = [
-  { k: .72, ai: 'easy', who: ['galchi', 'myeolchi'], armed: [], wait: 5 },
-  { k: .8, ai: 'easy', who: ['galchi', 'myeolchi'], armed: ['galchi'], wait: 4.6 },
-  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi'], wait: 5, late: { kkongchi: 60 } },
-  { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi', 'kkongchi'], wait: 5, late: { kkongchi: 55 } },
-];
-const SLOTS = 3;
-// 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
-const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
-// a mastery key: a move id, or 'fin:' + finisher id
-// the Tab → 기술 list a move shows up in
-const SLOT_OF = { front: '정면 잡기', rear: '뒤 잡기', any: '정면·뒤 잡기', catch: '받아치기', counter: '반격' };
-const moveSlotName = id => (MOVES[id] && SLOT_OF[MOVES[id].pos]) || '기술';
-const learnedText = id => `${MOVES[id].name} 습득! Tab → 기술 → ${moveSlotName(id)}에서 장착`;
-const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
-// Builds before the slots had one career: it counts as slot 1.
-function hasCareer(n) { return !!Save.get(saveKey(n)) || (n === 1 && !!legacyNewest()); }
-function anyCareer() { for (let n = 1; n <= SLOTS; n++) if (hasCareer(n)) return true; return false; }
-function slotInfo(n) {
-  const d = Save.get(saveKey(n)) || (n === 1 ? legacyNewest() : null);
-  if (!d || typeof d !== 'object' || !d.name) return null;
-  const rec = d.record || {};
-  return { name: d.name, look: d.look, season: d.season || 1, day: d.day || 1, level: d.level || 1, fame: d.fame || 0, w: rec.w || 0, l: rec.l || 0, champion: !!(d.flags && d.flags.champion), titles: (d.titles || []).length, over: !!d.retired || (d.injury || 0) >= 100, savedAt: d.savedAt || d.created || 0 };
-}
-// the slot played most recently (for 커리어 이어하기)
-function latestSlot() { let best = 0, at = -1; for (let n = 1; n <= SLOTS; n++) { const I = slotInfo(n); if (I && I.savedAt > at) { at = I.savedAt; best = n; } } return best || 1; }
-function deleteCareer(n) { Save.del(saveKey(n)); Save.del(saveKey(n) + '.chk'); if (n === 1) for (const k of LEGACY) { Save.del(k); Save.del(k + '.chk'); } }
-
-class Career {
-  static create(n, setup) {
-    const c = new Career();
-    const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
-    Object.assign(c.d, {
-      saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
-      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0, brk: 0 },
-      moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
-    });
-    c.d.league = c.newLeague(1);
-    c.save(true);
-    return c;
-  }
-  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  constructor() {
-    this.d = {
-      v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
-      record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
-      items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
-      seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking', mastery: {},
-    };
-  }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; }
-  // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
-  save(checkpoint) {
-    const n = this.d.saveSlot || 1;
-    this.d.savedAt = Date.now();
-    Save.set(saveKey(n), this.d);
-    if (checkpoint) Save.set(saveKey(n) + '.chk', this.d);
-  }
-  // ---- league ----
-  newLeague(season) {
-    const base = ['baekpa', 'bjorn', 'taesan', 'neon', 'baeksang', 'mandeok', 'haneul', 'dongsu', 'dohyun', 'dueok', 'palcho', 'bokja'];
-    if (season >= 2) base.splice(3, 0, 'ironma', 'gosu');
-    return base.map((id, i) => ({ id, pts: (base.length - i) * 10, w: 0, l: 0 }));
-  }
-  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
-  // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
-  ddaFor(id) {
-    const k = this.d.dda || 0, c = CHARACTERS[id];
-    if (!c || Math.abs(k) < .005) return {};
-    const s = c.stats;
-    return { stats: { hp: s.hp * (1 + k * .8), atk: s.atk * (1 + k * .5), stun: s.stun * (1 + k * .5) }, aiBoost: k };
-  }
-  // Money in the Bank: the case you hold, or the one somebody holds against you
-  get mitbOpen() { const M = this.d.mitb; return !!(M && this.d.day <= M.until); }
-  // Player rank: position among the league plus the player (1 = top contender).
-  rankList() {
-    const L = this.d.league.slice();
-    const me = { id: 'player', pts: this.d.flags.rankPts || 0, w: this.d.record.w, l: this.d.record.l };
-    L.push(me);
-    L.sort((a, b) => b.pts - a.pts || (a.id === 'player' ? 1 : -1));
-    return L;
-  }
-  get rank() { return this.rankList().findIndex(e => e.id === 'player') + 1; }
-  rankOf(id) { return this.rankList().findIndex(e => e.id === id) + 1; }
-  // ---- stats ----
-  get stats() {
-    const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
-    b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
-    for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
-    b.brk = 1 + (L.brk || 0) * STAT_GROWTH.brk[0];
-    for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
-    b.lift *= 1 + L.grp * .015 + L.hp * .008;
-    return b;
-  }
-  get styleDef() { return STYLE_BASE[this.d.style] || STYLE_BASE.all; }
-  look() {
-    const L = deepClone(this.d.look);
-    const o = this.d.outfit;
-    if (o) for (const id of o) { const it = SHOP_ITEMS.find(i => i.id === id); if (!it) continue; if (it.look) Object.assign(L, deepClone(it.look)); if (it.mask) L.head.mask = deepClone(it.mask); if (it.hat) { L.head.hat = it.hat; L.head.hatCol = it.hatCol; } if (it.cape) L.cape = deepClone(it.cape); }
-    return L;
-  }
-  // Fighter options for a match.
-  entrant(ctrl = 'human') {
-    const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
-    if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
-  }
-  // ---- time ----
-  get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
-  spendSlot(n = 1) {
-    const d = this.d;
-    d.slot += n;
-    const msgs = [];
-    while (d.slot > 2) { d.slot -= 3; msgs.push(...this.nextDay(true)); }
-    return msgs;
-  }
-  sleep() { const d = this.d; d.slot = 0; const m = this.nextDay(false); d.fatigue = Math.max(0, d.fatigue - 70); this.save(true); return m; }
-  nextDay(forced) {
-    const d = this.d, msgs = [];
-    // the case runs out: an unused one is gone; somebody else's they cash in on the champion while you watch
-    if (d.mitb && d.day >= d.mitb.until) {
-      const M = d.mitb; d.mitb = null;
-      if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
-      else if (!d.flags.champion && CHARACTERS[M.holder]) {
-        const rr = new RNG(d.season * 77 + d.day);
-        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
-        else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
-      }
-    }
-    // as champion you are not in the Money in the Bank: somebody wins the case and comes for you
-    if (d.flags.champion && !d.mitb && d.day >= 8 && !d.events['mitb' + d.season]) {
-      const rr = new RNG(d.season * 91 + d.day), top = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 4);
-      const h = rr.pick(top.length ? top : [{ id: 'dohyun' }]).id;
-      d.events['mitb' + d.season] = 'ai';
-      d.mitb = { holder: h, until: d.day + 7 };
-      msgs.push(`${CHARACTERS[h].name}이(가) 머니 인 더 뱅크 가방을 차지했다. 챔피언, 언제 들이닥칠지 모른다!`);
-    }
-    // contract deadline passed without a match
-    if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
-    d.day++;
-    if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
-    if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
-    // league simulation: others win and lose too
-    const r = new RNG(d.season * 100 + d.day);
-    for (const e of d.league) { if (r.chance(.35)) { const up = r.chance(.5 + (CHARACTERS[e.id].stats.hp - 100) / 400); e.pts += up ? 4 : -2; up ? e.w++ : e.l++; } }
-    return msgs;
-  }
-  // ---- injuries ----
-  get injuryLevel() { const i = this.d.injury; return i >= B.injuryDanger ? 'danger' : i >= B.injuryWarn ? 'warn' : 'ok'; }
-  healInjury(pts) { const before = this.d.injury; this.d.injury = Math.max(0, this.d.injury - pts); return before - this.d.injury; }
-  // ---- economy ----
-  canPay(n) { return this.d.money >= n; }
-  pay(n) { if (this.d.money < n) return false; this.d.money -= n; return true; }
-  earn(n) { this.d.money += n; this.d.earnedTotal += n; this.d.seasonLog.earned += n; }
-  xpNeed() { return 80 + this.d.level * 40; }
-  addXp(n) {
-    const d = this.d, ups = [];
-    d.xp += n;
-    while (d.xp >= this.xpNeed()) { d.xp -= this.xpNeed(); d.level++; d.points += 2; ups.push(d.level); }
-    return ups;
-  }
-  // ---- offers ----
-  makeOffers() {
-    const d = this.d, r = new RNG(d.season * 1000 + d.day * 7 + d.record.w * 3);
-    const ranks = this.rankList(), me = this.rank, out = [];
-    const others = ranks.filter(e => e.id !== 'player');
-    const pick = off => { const i = me - 1 + off, j = i > me - 1 ? i - 1 : i; return others[clamp(j, 0, others.length - 1)]; };
-    const lvl = rk => (d.season >= 2 ? ['normal', 'hard', 'hard', 'expert'] : ['easy', 'normal', 'normal', 'hard'])[clamp(Math.floor((14 - rk) / 4), 0, 3)];
-    const mk = (opp, kind, extra = {}) => {
-      const rk = this.rankOf(opp.id), c = CHARACTERS[opp.id];
-      const reward = Math.round((22000 + (15 - rk) * 5200) * (kind === 'challenge' ? 1.4 : 1) * (1 + (d.season - 1) * .3) / 1000) * 1000;
-      return Object.assign({ opp: opp.id, oppName: c.name, mode: 'single', arena: 'hall', reward, fame: kind === 'challenge' ? 9 : 6, kind, day: d.day + 1 + r.int(0, 2), difficulty: lvl(rk), rank: rk, desc: '' }, extra);
-    };
-    out.push(mk(pick(-1), 'normal', { desc: '바로 위 순위. 이기면 순위를 빼앗는다.' }));
-    let ch = pick(r.chance(.5) ? -3 : -2);
-    if (out.some(o => o.opp === ch.id)) ch = pick(-4);
-    out.push(mk(ch, 'challenge', { desc: '한참 위 순위. 위험하지만 보수와 명성이 크다.' }));
-    let third = pick(r.int(0, 2));
-    for (let k = 1; k < 6 && out.some(o => o.opp === third.id); k++) third = pick(k % 2 ? k : -k - 1);
-    const stips = [[1, { mode: 'pin', desc: '핀폴 매치. 체력 0으로는 끝나지 않는다. 눌러야 이긴다.' }], [1, { arena: 'pier', desc: '부두 특설 링. 관중 앞 야외 경기.' }]];
-    if (d.day >= 3 || d.season > 1) stips.push([1.3, { special: 'ladder', pay: 1.3, desc: '래더 매치. 링 위에 매달린 계약서 가방을 먼저 떼어 내는 쪽이 이긴다.' }]);
-    if (d.day >= 4 || d.season > 1) stips.push([1.1, { falls: 2, pay: 1.4, desc: '3판 2선승제(투 아웃 오브 스리 폴). 두 번 먼저 이겨야 한다.' }]);
-    if (d.day >= 5 || d.season > 1) stips.push([1.2, { special: 'cage', pay: 1.3, desc: '스틸 케이지. KO·핀폴, 또는 철창을 넘어 탈출하면 승리.' }]);
-    if (d.day >= 8 || d.season > 1) stips.push([1.1, { special: 'cell', pay: 1.5, arena: 'hall', desc: '헬 인 어 셀. 링 밖까지 덮인 철창, 장외 카운트가 없다.' }]);
-    const sp = r.weighted(stips, s => s[0])[1], extra = Object.assign({}, sp);
-    out.push(mk(third, 'stip', extra));
-    if (extra.pay) { const o = out[out.length - 1]; o.reward = Math.round(o.reward * extra.pay / 1000) * 1000; o.fame += 3; }
-    // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
-    const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
-    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
-      const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
-      out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
-    }
-    // events
-    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
-    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: 'dome', reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
-    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: 'dome', fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: 'dome', reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
-    d.offers = out.slice(0, 4); d.offersDay = d.day;
-    return d.offers;
-  }
-  accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
-  // ---- after a match ----
-  applyResult(kind, res, info = {}) {
-    const d = this.d, h = res.human, won = res.won, draw = res.draw;
-    const out = { lines: [], money: 0, fame: 0, xp: 0, injury: 0, ups: [], rankBefore: this.rank, rankAfter: 0 };
-    // injuries: proportional to damage actually taken, never from practice
-    if (kind !== 'practice' && h) {
-      const maxHp = this.stats.hp;
-      let inj = (h.dmgTaken / maxHp) * B.injuryPerBar + (h.ko ? B.injuryKO : 0) + h.finishersTaken * B.injuryFinisher + (h.ringOuts ? B.injuryRingOut : 0);
-      inj *= (1 + d.fatigue / 250) * (B.injuryRate || 1) * (d.buffs && d.buffs.guard ? d.buffs.guard : 1);
-      inj = Math.round(inj * 10) / 10;
-      d.injury = Math.min(100, d.injury + inj); out.injury = inj;
-    }
-    if (kind !== 'practice') { d.flags.pajeon = 0; d.buffs = d.buffs && d.buffs.train ? { train: d.buffs.train } : {}; }   // one-match buffs are used up
-    // move mastery: landed grapple moves and the finisher (sparring counts half)
-    out.mastery = this.gainMastery(h && h.uses, kind === 'practice' ? MASTERY.practice : 1);
-    if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); this.save(); return out; }
-    if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
-    d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
-    const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
-    if (draw) d.record.d++;
-    else if (won) { d.record.w++; d.record.streak = Math.max(1, d.record.streak + 1); d.seasonLog.w++; if (res.result.how === 'ko') d.record.ko++; if (res.result.how === 'pin') d.record.pin++; }
-    else { d.record.l++; d.record.streak = Math.min(-1, d.record.streak - 1); d.seasonLog.l++; }
-    let money = 0, fame = 0, xp = won ? 60 : draw ? 35 : 25;
-    if (c) {
-      money = won ? c.reward : Math.round(c.reward * (draw ? .5 : .25) / 1000) * 1000;
-      fame = won ? c.fame : draw ? 2 : 1;
-      if (res.result.forfeit) { money = 0; fame = -3; }
-      if (!won && (kind === 'brawl' || kind === 'revenge')) { money = 0; fame = kind === 'revenge' ? -1 : 0; }
-      xp += won ? 20 + (c.kind === 'challenge' ? 30 : 0) : 0;
-      if (c.opp && CHARACTERS[c.opp]) { const r = d.h2h[c.opp] || { w: 0, l: 0 }; won ? r.w++ : draw ? 0 : r.l++; d.h2h[c.opp] = r; }
-      // ranking points
-      if (kind === 'official' || kind === 'title') {
-        d.record.official++;
-        const opp = d.league.find(e => e.id === c.opp);
-        const myPts = d.flags.rankPts || 0;
-        if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
-        else if (won) d.flags.rankPts = myPts + 3;
-        else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
-        else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
-        else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
-        if (c.cashIn) d.mitb = null;
-      }
-      if (c.event) { d.events[c.event] = won ? 'win' : 'done'; }
-      if (c.mitb) {
-        if (won) { d.mitb = { holder: 'player', until: d.day + 7 }; d.flags.mitbWon = (d.flags.mitbWon || 0) + 1; out.lines.push('머니 인 더 뱅크 가방을 땄다! 7일 안에 경기장 대기실에서 언제든 챔피언에게 도전할 수 있다.'); }
-        else { const w = res.result && res.result.winner, id = w && w.charId && CHARACTERS[w.charId] ? w.charId : null; if (id) { d.mitb = { holder: id, until: d.day + 7 }; out.lines.push(`${CHARACTERS[id].name}이(가) 가방을 땄다. 네가 챔피언이 되면 노리러 온다.`); } }
-      }
-      if (c === d.contract) d.contract = null;
-    } else { money = won ? 15000 + d.season * 5000 : 3000; fame = won ? 2 : 0; xp = won ? 35 : 18; }
-    if (h) { xp += Math.min(30, (h.moves || 0) * 4) + (h.counters || 0) * 3; }
-    if (fame > 0 && d.record.streak >= 3) { fame += 2; out.lines.push(`${d.record.streak}연승! 명성 보너스 +2`); }
-    // finishing in style
-    const fb = won && res.result && res.result.finishBy;
-    if (fb === 'finisher') { const bonus = Math.round(Math.max(5000, money * .25) / 1000) * 1000; money += bonus; fame += 3; xp += 25; out.lines.push(`피니셔 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +3`); }
-    else if (fb === 'move') { const bonus = Math.round(Math.max(3000, money * .12) / 1000) * 1000; money += bonus; fame += 1; xp += 12; out.lines.push(`기술 마무리! 보너스 +${fmtMoney(bonus)} · 명성 +1`); }
-    d.fame = clamp(d.fame + fame, 0, 999);
-    this.earn(Math.max(0, money));
-    out.money = money; out.fame = fame; out.xp = xp;
-    out.ups = this.addXp(xp);
-    out.rankAfter = this.rank;
-    d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null };
-    d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
-    d.seasonLog.matches.push(d.lastResult);
-    this.save();
-    return out;
-  }
-  // Rival relationship with 서도현.
-  rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
-  money() { return fmtMoney(this.d.money); }
-  learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
-  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
-  weeklyOffer() {
-    const d = this.d, key = 'wf' + d.season + '_' + d.day;
-    if (!weeklyOn(d) || d.events[key]) return null;
-    const champ = this.champion, all = this.rankList();
-    const top = all.filter(e => e.id !== 'player' && e.id !== champ && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 5);
-    if (!top.length) return null;
-    const e = top[(d.day * 3 + d.season) % top.length], ch = CHARACTERS[e.id];
-    return { kind: 'weekly', opp: e.id, oppName: ch.name, rank: all.indexOf(e) + 1, mode: 'single', arena: 'hall', reward: 25000 + d.season * 10000, fame: 4, difficulty: d.season >= 2 ? 'expert' : 'hard', day: d.day, event: key, desc: '주간 파이널: 이기면 상대가 기술을 직접 가르쳐 준다' };
-  }
-  // what a beaten finalist teaches: one of their grapple moves you lack, else their finisher
-  weeklyLesson(opp) {
-    const ch = CHARACTERS[opp], d = this.d;
-    if (!ch) return null;
-    const pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((id, i, a) => MOVES[id] && !d.known.includes(id) && a.indexOf(id) === i);
-    if (pool.length) return { move: pool[(d.day + d.season) % pool.length] };
-    if (ch.finisher && FINISHERS[ch.finisher] && !this.finKnown().includes(ch.finisher)) return { fin: ch.finisher };
-    return null;
-  }
-  gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
-  // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
-  gangMatch() {
-    const d = this.d, G = GANG[this.gangTier()], up = { easy: 'normal', normal: 'hard', hard: 'hard' };
-    const gang = G.who.map(id => { const S = CHARACTERS[id].stats, k = G.k * (id === 'myeolchi' ? .92 : 1), p = .55 + .45 * k; return { char: id, ctrl: 'ai', difficulty: d.season >= 2 ? up[G.ai] : G.ai, team: 1, waitTurn: G.wait, armed: G.armed.includes(id) ? 1 : 0, late: G.late && G.late[id] || 0, stats: { hp: S.hp * k, stun: S.stun * Math.min(1, k + .06), atk: S.atk * p, grp: S.grp * p } }; });
-    return { G, gang, events: [] };
-  }
-  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
-  equipSpecial(kind, id) { if (MOVES[id] && this.d.known.includes(id) && MOVES[id].pos === kind) this.d.moves[kind] = id; }
-  // finishers you can switch between (Tab → 기술 → F)
-  finKnown() { const d = this.d; if (!d.finKnown) d.finKnown = [d.finisher]; if (!d.finKnown.includes(d.finisher)) d.finKnown.unshift(d.finisher); return d.finKnown; }
-  learnFinisher(id) { const L = this.finKnown(); if (FINISHERS[id] && !L.includes(id)) L.push(id); }
-  // ---- move mastery ----
-  masteryPower() { const o = {}, M = this.d.mastery || {}; for (const k in M) { const lv = masteryLv(M[k]); if (lv) o[k] = lv * MASTERY.bonus; } return o; }
-  masteryOf(k) { return (this.d.mastery || {})[k] || 0; }
-  gainMastery(uses, rate = 1) {
-    const d = this.d, M = d.mastery || (d.mastery = {}), out = { gains: [], ups: [], evolved: [] };
-    for (const k in uses || {}) {
-      const n = Math.min(MASTERY.cap, uses[k] | 0), name = moveLabel(k);
-      if (!n || !name) continue;
-      const before = M[k] || 0, add = Math.max(1, Math.round(n * MASTERY.use * rate)), lv0 = masteryLv(before);
-      M[k] = before + add;
-      const lv = masteryLv(M[k]);
-      out.gains.push({ k, name, add, lv });
-      if (lv > lv0) out.ups.push({ k, name, lv, text: `${name} ${lvText(lv)} (피해 +${Math.round(lv * MASTERY.bonus * 100)}%)` });
-      const evo = EVOLVE[k];
-      if (lv >= MAX_LV && evo && MOVES[evo] && !d.known.includes(evo)) { d.known.push(evo); this.swapMove(k, evo); out.evolved.push({ from: k, to: evo, fromName: name, toName: MOVES[evo].name }); }
-    }
-    out.gains.sort((a, b) => b.add - a.add);
-    return out;
-  }
-  // an evolved move takes the old one's place in every slot it was in
-  swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
-}
-
-return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, SLOTS, weeklyOn, SLOT_OF, moveSlotName, learnedText, moveLabel };
 })();
 // ---- world/beggar.js
 __m["world/beggar.js"] = (function () {
@@ -11205,6 +11288,342 @@ class SlotScene {
 
 return { SlotScene };
 })();
+// ---- world/Cutscene.js
+__m["world/Cutscene.js"] = (function () {
+// Timeline cutscenes played inside the town scene: people walk on, talk and react, the camera pans, letterbox bars
+// and title cards frame it, the screen shakes or flashes. A script is a list of steps run one after another; a step
+// with `with: 1` starts together with the one before it. Esc skips to the end: every remaining step that changes
+// the story (`act`, `spawn` with keep, `at`) still runs, the rest is dropped. Cutscenes queue (WorldScene.cine).
+//
+//   { at: 'street', x }          move to a place (instantly, under the bars)
+//   { cam: x, dur }              pan the camera to x (world pixels, left edge of the view) over dur seconds; { cam: null } follows the player again
+//   { spawn: id, x, face, stance, look, keep }   put somebody there (npc id or a CHARACTERS id); keep: stays after the scene
+//   { walk: id, to, speed }      walk somebody (or 'me') to x and wait until they arrive
+//   { face: id, dir }            turn somebody (dir -1/1 or another id to look at)
+//   { say: [steps] }             a dialogue (Dialogue steps); waits until it closes
+//   { title: text, sub, dur }    a big title card;  { caption: text, dur } a line at the bottom
+//   { shake: k } { flash: [r, g, b, a] } { sfx: name } { music: name } { wait: t } { bars: 0|1 } { act: fn } { remove: id }
+const { VIEW_W, VIEW_H, clamp } = __m["core/util.js"];
+const { drawText } = __m["render/pixelfont.js"];
+const { rect } = __m["render/painter.js"];
+const { Actor } = __m["world/Actor.js"];
+const { NPCS } = __m["world/npcs.js"];
+const { CHARACTERS } = __m["data/characters.js"];
+class Cutscene {
+  constructor(W, script, o = {}) {
+    this.W = W; this.q = script.slice(); this.run = []; this.t = 0; this.bars = 0; this.barsWant = o.bars === false ? 0 : 1;
+    this.card = null; this.cap = null; this.cam = null; this.camFrom = 0; this.camT = 0; this.camDur = 0; this.cast = {}; this.done = false;
+    this.onEnd = o.onEnd || null; this.id = o.id || ''; this.skipT = 0; this.borrowed = [];
+  }
+  actor(id) { if (id === 'me') return this.W.player; return this.cast[id] || this.W.npcs.find(a => a.id === id) || null; }
+  start() { this.next(); }
+  next() {
+    this.run = [];
+    while (this.q.length) {
+      const s = this.q.shift();
+      this.begin(s);
+      this.run.push(s);
+      if (!(this.q[0] && this.q[0].with)) break;
+    }
+    if (!this.run.length) this.finish();
+  }
+  begin(s) {
+    const W = this.W, A = W.game.audio;
+    s.t = 0;
+    if (s.at) { W.enter(s.at, s.x != null ? s.x : W.player.x, true); this.cast = {}; }
+    if (s.cam !== undefined) { if (s.cam === null) this.cam = null; else { this.camFrom = W.camX; this.cam = s.cam; this.camT = 0; this.camDur = s.dur || .01; } }
+    // somebody already standing in this place is borrowed (moved for the scene, put back after) instead of doubled
+    if (s.spawn && W.npcs.some(n => n.id === s.spawn && !n.cine && !n.gone)) {
+      const a = W.npcs.find(n => n.id === s.spawn && !n.cine && !n.gone);
+      this.borrowed.push({ a, x: a.x, face: a.face, stance: a.stance });
+      a.x = s.x; a.face = s.face || a.face; if (s.stance) a.stance = s.stance; a.scripted = true; a.vx = 0;
+      this.cast[s.spawn] = a;
+    } else if (s.spawn) {
+      const N = NPCS[s.spawn], C = CHARACTERS[s.spawn], look = s.look || (N && N.look) || (C && C.look);
+      const a = new Actor(look, { x: s.x, face: s.face || 1, stance: s.stance || (N && N.stance) || 'calm', id: s.spawn });
+      a.idx = W.npcs.length + 1; a.cine = !s.keep; a.scripted = true;
+      W.npcs.push(a); this.cast[s.spawn] = a;
+    }
+    if (s.remove) { const a = this.actor(s.remove); if (a && a !== W.player) a.gone = true; }
+    if (s.face) { const a = this.actor(s.face), o = typeof s.dir === 'string' ? this.actor(s.dir) : null; if (a) a.face = o ? Math.sign(o.x - a.x) || a.face : s.dir; }
+    if (s.walk) { const a = this.actor(s.walk); if (a) { a.scripted = true; s.a = a; } }
+    if (s.say) { W.say(s.say.slice()); s.waiting = true; }
+    if (s.title) { this.card = { text: s.title, sub: s.sub || '', t: 0, dur: s.dur || 2.6 }; }
+    if (s.caption) { this.cap = { text: s.caption, t: 0, dur: s.dur || 2.4 }; }
+    if (s.shake) W.game.screen.shake(s.shake);
+    if (s.flash) W.game.screen.flash(...s.flash);
+    if (s.sfx) A.sfx(s.sfx);
+    if (s.music) A.music(s.music);
+    if (s.bars != null) this.barsWant = s.bars ? 1 : 0;
+    if (s.act) s.act(W);
+  }
+  // true when the step is over
+  tick(s, dt) {
+    const W = this.W;
+    s.t += dt;
+    if (s.walk) {
+      const a = s.a; if (!a) return true;
+      const d = s.to - a.x, sp = s.speed || 90;
+      if (Math.abs(d) <= 3) { a.x = s.to; a.vx = 0; if (a !== W.player) a.scripted = !!a.cine; return true; }
+      a.vx = Math.sign(d) * sp; a.face = Math.sign(d); a.x += a.vx * dt; if (Math.abs(s.to - a.x) < 3 || Math.sign(s.to - a.x) !== Math.sign(d)) { a.x = s.to; a.vx = 0; return true; }
+      return false;
+    }
+    if (s.say) return !W.dialog;
+    if (s.cam !== undefined && s.cam !== null) return s.t >= (s.dur || 0);
+    if (s.title) return s.t >= (s.dur || 2.6);
+    if (s.caption) return s.t >= (s.dur || 2.4) * .6;
+    if (s.wait) return s.t >= s.wait;
+    return true;
+  }
+  update(dt) {
+    const W = this.W, inp = W.game.input;
+    this.t += dt;
+    this.bars += (this.barsWant - this.bars) * Math.min(1, dt * 6);
+    if (this.card) { this.card.t += dt; if (this.card.t > this.card.dur) this.card = null; }
+    if (this.cap) { this.cap.t += dt; if (this.cap.t > this.cap.dur) this.cap = null; }
+    if (this.cam != null) { this.camT += dt; const k = clamp(this.camT / this.camDur, 0, 1), e = k * k * (3 - 2 * k); W.camX = this.camFrom + (this.cam - this.camFrom) * e; }
+    // Esc (held a moment) skips: story changes still happen
+    if (inp.down && inp.down('pause')) { this.skipT += dt; if (this.skipT > .45) { this.skip(); return; } } else this.skipT = 0;
+    if (W.dialog) { W.dialog.update(dt); }
+    let all = true;
+    for (const s of this.run) if (!s.over) { if (this.tick(s, dt)) s.over = true; else all = false; }
+    if (all) this.next();
+  }
+  skip() {
+    const W = this.W;
+    W.dialog = null;
+    for (const s of this.run.concat(this.q)) {
+      if (s.over) continue;
+      if (s.say) for (const st of s.say) if (st && st.act) st.act();   // dialogue side effects
+      if (s.walk && s.a) { s.a.x = s.to; s.a.vx = 0; }
+      if (this.q.includes(s) && (s.act || s.at || (s.spawn && s.keep) || s.remove || s.music)) this.begin(s);
+    }
+    this.q = []; this.run = []; this.finish();
+  }
+  finish() {
+    if (this.done) return;
+    this.done = true;
+    const W = this.W;
+    for (const a of W.npcs) if (a.cine) a.gone = true;
+    for (const id in this.cast) this.cast[id].scripted = false;
+    for (const b of this.borrowed) { b.a.x = b.x; b.a.face = b.face; b.a.stance = b.stance; b.a.vx = 0; }
+    W.player.scripted = false;
+    if (this.onEnd) this.onEnd(W);
+  }
+  draw(u) {
+    const b = Math.round(this.bars * 34);
+    if (b > 0) { rect(u, '#000000', 0, 0, VIEW_W, b); rect(u, '#000000', 0, VIEW_H - b, VIEW_W, b); }
+    if (this.card) {
+      const k = this.card.t, a = Math.min(1, k * 2, (this.card.dur - k) * 2);
+      u.globalAlpha = Math.max(0, a);
+      rect(u, 'rgba(5,6,15,.78)', 0, 132, VIEW_W, 70);
+      drawText(u, this.card.text, VIEW_W / 2, 142, { scale: 2, align: 'c', color: '#ffd65a', bold: true, outline: '#05060f' });
+      if (this.card.sub) drawText(u, this.card.sub, VIEW_W / 2, 180, { size: 11, align: 'c', color: '#c9d4ff' });
+      u.globalAlpha = 1;
+    }
+    if (this.cap && !this.W.dialog) {
+      const k = this.cap.t, a = Math.min(1, k * 3, (this.cap.dur - k) * 3);
+      u.globalAlpha = Math.max(0, a);
+      drawText(u, this.cap.text, VIEW_W / 2, VIEW_H - 28, { size: 11, align: 'c', color: '#ffffff', outline: '#05060f' });
+      u.globalAlpha = 1;
+    }
+    if (this.t > .6 && !this.W.dialog) drawText(u, 'Esc 길게: 건너뛰기', VIEW_W - 8, b + 4, { size: 11, align: 'r', color: 'rgba(255,255,255,.45)' });
+  }
+}
+
+return { Cutscene };
+})();
+// ---- world/owStory.js
+__m["world/owStory.js"] = (function () {
+// 선항 레슬링, chapter one: the champion's ceremony, a foghorn the day after, the invasion exactly three days after the
+// first belt (흰상아 and her deckhands walk into the lobby), the match at the pier and the wrecked dome. Each
+// function returns a Cutscene script (see Cutscene.js) for WorldScene.playCine.
+const { josa } = __m["core/util.js"];
+function ceremonyCine(W) {
+  const d = W.c.d, x = W.player.x;
+  return [
+    { bars: 1 }, { music: 'title' },
+    { title: '챔피언 탄생', sub: `야항 헤비급 챔피언 — ${d.name}`, dur: 2.8 },
+    { spawn: 'boss', x: x + 150, face: -1 }, { spawn: 'reporter', x: x - 140, face: 1, with: 1 }, { spawn: 'fankid', x: x - 180, face: 1, stance: 'cheer', with: 1 },
+    { walk: 'boss', to: x + 46, speed: 80 },
+    { face: 'me', dir: 'boss' },
+    { say: [
+      { who: 'boss', text: `${josa(d.name, '이/가')} 해냈다! 내가 처음 봤을 때부터 알아봤지. …아마도.`, expr: 'happy' },
+      { who: 'boss', text: '이 벨트는 이제 네 거다. 항구 사람들 모두가 너를 본다. 부끄럽지 않게 들고 다녀.' },
+      { who: 'reporter', text: '야항 신문 민 기자입니다! 챔피언, 한마디만요!' },
+      { prompt: '첫 인터뷰', choice: [
+        { label: '"이 항구는 내가 지킨다."', go: [{ who: 'reporter', text: '멋진데요! 1면이에요!', expr: 'happy' }, { act: () => { d.fame += 3; } }] },
+        { label: '"아직 시작일 뿐이다."', go: [{ who: 'reporter', text: '겸손한 챔피언이라… 독자들이 좋아하겠네요.' }, { act: () => { d.fame += 2; } }] },
+        { label: '"…배고프다."', go: [{ who: 'fankid', text: '챔피언도 배고프대! 순덕 이모네 가요!', expr: 'happy' }, { act: () => { d.fame += 1; } }] },
+      ] },
+      { who: 'fankid', text: '챔피언이다아! 내일 학교에서 다 자랑할 거예요!', expr: 'happy' },
+    ] },
+    { caption: '그날 밤, 항구 끝 등대 너머로 낯선 배의 불빛이 깜빡였다.', dur: 3 },
+    { bars: 0 }, { act: () => { d.flags.ceremony = 1; W.c.save(); } },
+  ];
+}
+function signalCine(W) {
+  const c = W.c, d = c.d;
+  return [
+    { bars: 1 }, { sfx: 'horn' }, { shake: .25, with: 1 },
+    { cam: 1640, dur: 1.8 },
+    { caption: '…부우우웅—. 바다 쪽에서 낮은 뱃고동이 길게 울렸다.', dur: 2.8 },
+    { say: [
+      { who: 'oldman', text: '…저 소리. 등대를 40년 지켰지만 저런 뱃고동은 딱 한 번 들어 봤네.' },
+      { who: 'oldman', text: '{y}선항(船港) 레슬링{/}. 배를 타고 다니며 항구의 링을 하나씩 집어삼키는 녀석들이지.' },
+      { who: 'me', text: '레슬링 단체가… 배를 타고 온다고요?' },
+      { who: 'oldman', text: '챔피언이 생긴 항구만 노린다더군. 벨트를 딴 지 사흘 안에 올 걸세. 단단히 준비하게.' },
+    ] },
+    { cam: null }, { bars: 0 }, { act: () => { d.ow.heard = 1; c.save(); } },
+  ];
+}
+function invasionCine(W, onFight) {
+  const d = W.c.d;
+  return [
+    { bars: 1 }, { at: 'lobby', x: 640 }, { music: 'boss' },
+    { sfx: 'horn' }, { shake: .7, with: 1 },
+    { title: '선항 레슬링', sub: '바다 건너에서 온 침공', dur: 2.6 },
+    { sfx: 'door' },
+    { spawn: 'owsailor', x: 70, face: 1 }, { spawn: 'whiteivory', x: 40, face: 1, with: 1 },
+    { walk: 'owsailor', to: 470, speed: 170 }, { walk: 'whiteivory', to: 420, speed: 105, with: 1 },
+    { face: 'me', dir: 'whiteivory' },
+    { say: [
+      { who: 'owsailor', text: '선항 레슬링이다! 이 항구의 챔피언은 앞으로 나와라!' },
+      { who: 'whiteivory', text: `…네가 ${d.name}인가. 사흘 전에 벨트를 감았다던.` },
+      { who: 'me', text: '당신들은 누구지?' },
+      { who: 'whiteivory', text: '흰상아. 선항 레슬링의 칼날이다. 오늘부터 이 항구는 우리 배의 닻을 받는다.' },
+      { who: 'whiteivory', text: '부둣가 특설 링으로 와라. 그 벨트가 진짜인지 보자.', expr: 'fierce' },
+    ] },
+    { caption: '선원들이 등대 돔 쪽으로 몰려간다. 멀리서 무언가 부서지는 소리가 울렸다.', dur: 2.6 }, { shake: .9, with: 1 },
+    { walk: 'whiteivory', to: 60, speed: 120 }, { walk: 'owsailor', to: 40, speed: 150, with: 1 },
+    { bars: 0 }, { act: onFight },
+  ];
+}
+function aftermathCine(W, won) {
+  return [
+    { bars: 1 }, { at: 'street', x: 1940 }, { cam: 1660, dur: 1.4 },
+    { caption: won ? '흰상아는 물러갔다. 하지만 선원들이 휩쓸고 간 등대 돔은…' : '흰상아에게 졌다. 선원들이 휩쓸고 간 등대 돔은…', dur: 2.8 },
+    { spawn: 'boss', x: 2060, face: -1 },
+    { say: [
+      { who: 'boss', text: '돔 지붕이 내려앉았어. 링도 엉망이고… 수리하는 데 한참 걸리겠어.' },
+      { who: 'boss', text: '하지만 벨트는 쉬지 않는다! 당분간 타이틀전은 {y}지하 격투장{/}에서 연다. 로비 지하 계단으로 내려가.' },
+      { who: 'me', text: won ? '…녀석들, 또 올 겁니다.' : '…다음엔 안 집니다.' },
+      { who: 'boss', text: '그래. 바다 건너 놈들한테 이 항구가 만만하지 않다는 걸 보여 줘야지.' },
+    ] },
+    { title: '등대 돔 파손', sub: '타이틀전은 지하 격투장에서 열린다', dur: 2.6 },
+    { cam: null }, { bars: 0 },
+  ];
+}
+
+// ---- chapter two: the second wave (서도현 teams up), the captain, the retreat, the rebuilt dome
+function secondWaveCine(W, onFight) {
+  return [
+    { bars: 1 }, { at: 'street', x: 1760 }, { sfx: 'horn' }, { shake: .5, with: 1 },
+    { title: '2차 침공', sub: '선항 레슬링이 돌아왔다', dur: 2.4 },
+    { spawn: 'whiteivory', x: 1990, face: -1 }, { spawn: 'owsailor', x: 2030, face: -1, with: 1 },
+    { walk: 'whiteivory', to: 1880, speed: 90 }, { walk: 'owsailor', to: 1920, speed: 90, with: 1 },
+    { face: 'me', dir: 'whiteivory' },
+    { say: [
+      { who: 'whiteivory', text: '지난번엔 인사만 한 거다. 오늘은 둘이서 간다.' },
+      { who: 'owsailor', text: '챔피언 혼자서 둘을 상대할 수 있을까~?' },
+    ] },
+    { spawn: 'dohyun', x: 1500, face: 1 }, { walk: 'dohyun', to: 1710, speed: 190 },
+    { say: [
+      { who: 'dohyun', text: '혼자 다 하려고? 이 항구는 내 항구이기도 해.', expr: 'fierce' },
+      { who: 'me', text: '…서도현. 너랑 같은 편이 될 줄은 몰랐다.' },
+      { who: 'dohyun', text: '착각하지 마. 벨트는 나중에 너한테서 뺏을 거다. 그 전에 바다 건너 놈들한테 뺏기면 곤란하거든.' },
+    ] },
+    { title: '태그 매치', sub: '챔피언 · 서도현 vs 흰상아 · 선항 선원', dur: 2 },
+    { bars: 0 }, { act: onFight },
+  ];
+}
+function afterSecondCine(W, won) {
+  return [
+    { bars: 1 }, { at: 'street', x: 1760 },
+    { spawn: 'dohyun', x: 1700, face: 1 },
+    { say: won ? [
+      { who: 'dohyun', text: '…나쁘지 않았어, 챔피언. 우리 둘이면 저 배도 가라앉히겠는데.' },
+      { who: 'oldman', text: '아직 끝이 아니야. 저 배의 선장, {y}고동{/}이 직접 내린다는 소문이 돌고 있어.' },
+    ] : [
+      { who: 'dohyun', text: '쳇… 저 녀석들, 진짜 강하네. 다음엔 안 진다.' },
+      { who: 'oldman', text: '선원들이 항구를 휘젓고 다니는군. 이제 선장 {y}고동{/}이 직접 내릴 걸세.' },
+    ] },
+    { caption: '며칠 뒤, 선장이 배에서 내린다는 소문이 항구에 퍼졌다.', dur: 2.6 },
+    { bars: 0 },
+  ];
+}
+function captainCine(W, onFight, again) {
+  if (again) return [
+    { bars: 1 }, { at: 'street', x: 1760 }, { sfx: 'horn' },
+    { spawn: 'godong', x: 1960, face: -1 },
+    { say: [{ who: 'godong', text: '돌아왔군. 닻은 쉽게 뽑히지 않는다. 다시 해 보거라.' }] },
+    { bars: 0 }, { act: onFight },
+  ];
+  return [
+    { bars: 1 }, { at: 'street', x: 1760 }, { cam: 1600, dur: 1.4 },
+    { sfx: 'horn' }, { shake: .9, with: 1 }, { wait: .8 }, { sfx: 'horn' }, { shake: 1, with: 1 },
+    { title: '선장 고동', sub: '선항 레슬링의 주인', dur: 2.8 },
+    { spawn: 'owsailor', x: 2060, face: -1 }, { spawn: 'godong', x: 2120, face: -1, with: 1 },
+    { walk: 'owsailor', to: 1980, speed: 80 }, { walk: 'godong', to: 1900, speed: 55, with: 1 },
+    { face: 'me', dir: 'godong' },
+    { say: [
+      { who: 'godong', text: '네가 흰상아를 돌려보낸 항구의 챔피언인가.' },
+      { who: 'godong', text: '나는 항구를 하나씩 집어삼켰다. 열두 개째에서 처음으로 배가 멈췄지. 여기서.' },
+      { who: 'me', text: '이 항구는 당신 배의 닻을 받지 않는다.' },
+      { who: 'godong', text: '좋다. 그럼 링에서 증명해라. 내가 지면 뱃머리를 돌리지.', expr: 'fierce' },
+    ] },
+    { cam: null }, { bars: 0 }, { act: onFight },
+  ];
+}
+function captainWinsCine(W, again) {
+  return [
+    { bars: 1 },
+    { say: [
+      { who: 'godong', text: again ? '…아직이다. 내일 다시 오너라.' : '파도는 언제나 이긴다. 하지만 너는 꽤 버티는군. 내일 다시 오너라.' },
+      { who: 'me', text: '…다음엔 반드시.' },
+    ] },
+    { caption: '선장 고동은 부둣가에 닻을 내린 채 기다린다. (다음 날 다시 도전)', dur: 2.6 },
+    { bars: 0 },
+  ];
+}
+function retreatCine(W) {
+  return [
+    { bars: 1 }, { at: 'street', x: 1760 }, { sfx: 'horn' },
+    { spawn: 'godong', x: 1900, face: -1 }, { spawn: 'whiteivory', x: 1980, face: -1, with: 1 },
+    { say: [
+      { who: 'godong', text: '…뱃머리를 돌려라. 이 항구는 닻이 걸리지 않는다.' },
+      { who: 'whiteivory', text: '기억해 두지. 언젠가 바다 저편에서 다시 만나자, 챔피언.' },
+    ] },
+    { walk: 'godong', to: 2280, speed: 60 }, { walk: 'whiteivory', to: 2290, speed: 70, with: 1 },
+    { title: '선항 레슬링 후퇴', sub: '항구를 지켜 냈다', dur: 2.8 }, { music: 'title' },
+    { spawn: 'boss', x: 1600, face: 1 }, { spawn: 'fankid', x: 1560, face: 1, stance: 'cheer', with: 1 },
+    { walk: 'boss', to: 1700, speed: 90 },
+    { say: [
+      { who: 'boss', text: '해냈다, 챔피언! 이제 돔을 다시 세우자. 닷새면 된다! …아마도.', expr: 'happy' },
+      { who: 'fankid', text: '챔피언이 바다 괴물을 물리쳤다아!', expr: 'happy' },
+    ] },
+    { act: () => { W.c.d.fame += 10; W.toast('항구의 영웅! 명성 +10', '#ffd65a'); W.c.save(); } },
+    { bars: 0 },
+  ];
+}
+function rebuiltCine(W) {
+  const c = W.c;
+  return [
+    { bars: 1 }, { at: 'street', x: 1940 }, { cam: 1660, dur: 1.2 },
+    { title: '등대 돔 재개장', sub: '타이틀전이 다시 등대 아래로', dur: 2.6 },
+    { spawn: 'boss', x: 2060, face: -1 }, { spawn: 'oldman', x: 1860, face: 1, with: 1 },
+    { say: [
+      { who: 'boss', text: '새 지붕, 새 링, 새 조명! 타이틀전은 오늘부터 다시 등대 돔에서 연다!', expr: 'happy' },
+      { who: 'oldman', text: '그리고… 바다 건너 항로가 열렸다네. 선항 레슬링이 다니던 그 뱃길 말일세.' },
+      { who: 'oldman', text: '이제 이 항구의 챔피언이 바다 밖으로 나갈 차례야. {y}세계 무대{/}가 기다리고 있어.' },
+    ] },
+    { act: () => { c.owRebuilt(); c.save(); W.toast('국제 항로 개방 — 세계 무대는 다음 장에서', '#49d6ff'); } },
+    { cam: null }, { bars: 0 },
+  ];
+}
+
+return { ceremonyCine, signalCine, invasionCine, aftermathCine, secondWaveCine, afterSecondCine, captainCine, captainWinsCine, retreatCine, rebuiltCine };
+})();
 // ---- world/menus.js
 __m["world/menus.js"] = (function () {
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
@@ -11319,7 +11738,7 @@ class ArenaMenu extends Menu {
     const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'];
     this.free = r.shuffle(pool).slice(0, 2).map((id, i) => ({ opp: id, oppName: CHARACTERS[id].name, mode: i ? 'pin' : 'single', arena: r.pick(['hall', 'pier']), reward: 0, fame: 0, kind: 'free', difficulty: d.season >= 2 ? 'hard' : r.pick(['easy', 'normal']), desc: '자유 경기: 기록과 부상은 남지만 랭킹은 그대로.' }));
     this.items = [];
-    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: 'dome', reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
+    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: this.c.titleVenue.arena, reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
     if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${matchName(d.contract)} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
     const wf = this.c.weeklyOffer();
     if (wf) this.items.push({ label: `주간 파이널: ${wf.oppName} (${wf.rank}위)`, sub: `보너스 경기 · AI ${DIFFICULTY[wf.difficulty].name} · 이기면 기술 전수 + ${fmtMoney(wf.reward)}`, act: () => { this.W.closeTop(); this.W.startMatch('weekly', wf); } });
@@ -11330,7 +11749,8 @@ class ArenaMenu extends Menu {
   startOfficial() {
     const d = this.c.d, ct = d.contract;
     this.W.closeTop();
-    if (ct.title && this.W.loc !== 'dome') { this.W.say([{ who: 'staff', text: '타이틀 매치는 등대 돔에서 열려요! 부둣길 끝의 등대 돔으로 가세요.' }]); return; }
+    const V = this.c.titleVenue;
+    if (ct.title && this.W.loc !== V.loc) { this.W.say([{ who: 'staff', text: V.loc === 'dome' ? '타이틀 매치는 등대 돔에서 열려요! 부둣길 끝의 등대 돔으로 가세요.' : '등대 돔이 부서져서 타이틀 매치는 지하 격투장에서 열려요! 로비의 지하 계단으로 내려가세요.' }]); return; }
     this.W.startMatch(ct.kind === 'event' ? 'event' : ct.title ? 'title' : 'official', ct);
   }
   update(dt) { super.update(dt); this.nav(this.items.length); if (this.back()) return; if (this.ok()) { this.game.audio.sfx('ok'); this.items[this.sel].act(); } }
@@ -12117,16 +12537,18 @@ const { CHARACTERS } = __m["data/characters.js"];
 const { MOVES, FINISHERS } = __m["data/moves.js"];
 const { LOCATIONS, bakeLocation, drawWindows, streetFar, FLOOR } = __m["world/locations.js"];
 const { NPCS, peopleAt, talk, roomBanter, preFightLine, PRE } = __m["world/npcs.js"];
+const { Cutscene } = __m["world/Cutscene.js"];
+const { ceremonyCine, signalCine, invasionCine, aftermathCine, secondWaveCine, afterSecondCine, captainCine, retreatCine, captainWinsCine, rebuiltCine } = __m["world/owStory.js"];
 const { beggarState, beggarTalk, thanksSteps, lessonReady } = __m["world/beggar.js"];
 const { Dialogue } = __m["world/Dialogue.js"];
-const { SLOT_NAMES, saleOn, merchantOn, BUFF_NAMES, GANG, LEARNABLE, learnedText } = __m["world/CareerManager.js"];
+const { SLOT_NAMES, saleOn, merchantOn, BUFF_NAMES, GANG, LEARNABLE, learnedText, OW } = __m["world/CareerManager.js"];
 const Menus = __m["world/menus.js"];
 const { Training } = __m["world/Training.js"];
 const { Actor } = __m["world/Actor.js"];
 const P = new Float32Array(16);
 class WorldScene {
   constructor(game, career, o = {}) {
-    this.game = game; this.c = career; this.t = 0; this.bc = new BodyCanvas(); this.overlays = []; this.dialog = null; this.toasts = []; this.prompt = null; this.camX = 0; this.farCache = {};
+    this.game = game; this.c = career; this.t = 0; this.bc = new BodyCanvas(); this.overlays = []; this.dialog = null; this.toasts = []; this.prompt = null; this.camX = 0; this.farCache = {}; this.cine = null; this.cineQ = [];
     this.player = new Actor(career.look(), { x: career.d.x || 240, face: 1, id: 'me' });
     this.player.name = career.d.name;
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
@@ -12158,11 +12580,11 @@ class WorldScene {
   }
   goDoor(d) {
     const A = this.game.audio;
-    if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast({ rivalgym: '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수"', dome: '"챔피언십 관계자 외 출입 금지"', basement: '"관계자 외 출입 금지" …문 아래에서 함성이 새어 나온다.', hideout: '어둡고 좁은 골목. 쓰레기 더미 너머가 보이지 않는다. 골목 앞 영감이 여기 산다던데…' }[d.lock] || '잠겨 있다', '#ff8a8a'); return; }
+    const d0 = this.c.d; if (d.lock && !this.unlocked(d.lock)) { A.sfx('deny'); this.toast({ rivalgym: '문이 잠겨 있다. "명성 40 이상만 도장 깨기 접수"', dome: d0 && d0.ow && OW.damaged.includes(d0.ow.state) ? '등대 돔은 선항 레슬링의 습격으로 부서져 수리 중이다. 출입 금지.' : '"챔피언십 관계자 외 출입 금지"', basement: '"관계자 외 출입 금지" …문 아래에서 함성이 새어 나온다.', hideout: '어둡고 좁은 골목. 쓰레기 더미 너머가 보이지 않는다. 골목 앞 영감이 여기 산다던데…' }[d.lock] || '잠겨 있다', '#ff8a8a'); return; }
     A.sfx('door');
     this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
-  unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return (d.contract && d.contract.title) || d.flags.champion; if (k === 'basement') return !!(d.revenge && d.revenge.invited) || !!d.flags.basementKnown; if (k === 'hideout') return !!d.flags.hideout; return true; }
+  unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return !(d.ow && OW.damaged.includes(d.ow.state)) && ((d.contract && d.contract.title) || d.flags.champion); if (k === 'basement') return !!(d.revenge && d.revenge.invited) || !!d.flags.basementKnown || !!(d.ow && OW.damaged.includes(d.ow.state)); if (k === 'hideout') return !!d.flags.hideout; return true; }
   say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
   toast(text, col = '#eef2ff') { this.toasts.push({ text, col, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
   open(o) { this.overlays.push(o); this.game.input.clear(); }
@@ -12193,6 +12615,20 @@ class WorldScene {
     // 골목 영감 walks up once a day on the street until he takes you in; in his gym he comes over when a lesson is due
     if (id === 'street' && !d.flags.hideout && d.day >= 2) { const B = beggarState(d), a = this.npcs.find(n => n.id === 'beggar'); if (a && B.askDay !== d.day && B.day !== d.day) { B.askDay = d.day; this.approach(a, () => this.say(beggarTalk(c, this)), { range: 380, speed: 55, near: 50 }); } }
     if (id === 'hideout' && lessonReady(d)) { const a = this.npcs.find(n => n.id === 'beggar'); if (a) this.approach(a, () => this.say(beggarTalk(c, this)), { range: 600, speed: 60, near: 50 }); }
+    // 선항 레슬링: whatever beat of the story is due (see CareerManager.owDue)
+    const due = !instant && !this.owBusy ? c.owDue(id) : null;
+    if (due) {
+      const s2 = d.season >= 2, foeLv = s2 ? 'expert' : 'hard';
+      if (due === 'signal') this.playCine(signalCine(this));
+      else {
+        this.owBusy = true;
+        if (due === 'invasion1') { const o = { opp: 'whiteivory', oppName: '흰상아', kind: 'invasion', mode: 'single', arena: 'pier', reward: 60000 + d.season * 20000, fame: 14, difficulty: foeLv }; this.playCine(invasionCine(this, () => this.startMatch('invasion', o))); }
+        if (due === 'invasion2') { const o = { opp: 'whiteivory', oppName: '흰상아 · 선항 선원', kind: 'invasion2', mode: 'tag', arena: 'pier', reward: 80000 + d.season * 20000, fame: 16, difficulty: foeLv }; this.playCine(secondWaveCine(this, () => this.startMatch('invasion2', o))); }
+        if (due === 'invasion3') { const o = { opp: 'godong', oppName: '선장 고동', kind: 'invasion3', mode: 'single', arena: 'pier', reward: 150000 + d.season * 40000, fame: 30, difficulty: foeLv }; this.playCine(captainCine(this, () => this.startMatch('invasion3', o), d.ow.state === 'CAPTAIN')); }
+        if (due === 'rebuilt') { this.playCine(rebuiltCine(this)); }
+        return;
+      }
+    }
     // the next opponent comes over in the waiting room, once per contract
     if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
       const key = d.contract.opp + d.contract.day, a = this.npcs.find(n => n.id === d.contract.opp);
@@ -12277,6 +12713,8 @@ class WorldScene {
   openLearn(by) { this.open(new Menus.LearnMenu(this, by)); }
   openInfo(tab = 1) { this.open(new Menus.InfoMenu(this, tab)); }
   startJob() { this.startTraining('job'); }
+  // cutscenes: queued, one at a time, started when nothing else is on screen
+  playCine(script, o = {}) { this.cineQ.push({ script, o }); }
   // 골목 영감: help counted once a day; thanks, and the invitation or the day's lesson when it adds up
   beggarHelped(n) { const c = this.c, d = c.d, B = beggarState(d); B.help += n; B.day = d.day; c.save(); this.say(thanksSteps(c, this, n)); }
   startTraining(game) {
@@ -12311,6 +12749,9 @@ class WorldScene {
     const lv = o && o.difficulty || 'normal';
     const foe = id => Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id));
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
+    if (kind === 'invasion') return { mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'invasion2') return { mode: 'tag', arena: 'pier', entrants: [me, { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('whiteivory'), foe('owsailor')], career: 1, title: '선항 레슬링 2차 침공 · 태그', music: 'boss', introTime: 4.2 };
+    if (kind === 'invasion3') return { mode: 'single', arena: 'pier', entrants: [me, Object.assign(foe('godong'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 3 }, title: '선항 레슬링 3차 침공 · 선장 고동', music: 'boss', introTime: 4.8, preTalk: this.preTalk('godong', o) };
     if (kind === 'brawl') {
       const B2 = c.gangMatch();
       return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), ...B2.gang], career: 1, title: B2.gang.length > 2 ? '로비 난투 1 대 3' : '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }].concat(B2.events), introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
@@ -12348,7 +12789,17 @@ class WorldScene {
       else if (L && L.fin) this.lesson = [{ who, text: `…내 피니셔까지 보여 줘야 하나. 좋아, '${FINISHERS[L.fin].name}'. 몸으로 기억해라.` }, { act: () => { c.learnFinisher(L.fin); c.save(); this.toast(`새 피니셔 습득: ${FINISHERS[L.fin].name} (Tab → 기술에서 F로 바꾸기)`, '#ffd65a'); this.game.audio.sfx('good'); } }];
       else this.lesson = [{ who, text: '더 가르칠 게 없군. 대신 이거라도 받아 둬.' }, { act: () => { c.earn(20000); this.toast('주간 파이널 특별 상금 +' + fmtMoney(20000), '#9be36b'); } }];
     }
-    if (kind === 'free' || kind === 'dojo' || kind === 'brawl' || kind === 'revenge' || kind === 'weekly') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
+    // 선항 레슬링: win or lose, the dome is wrecked by the time the match is over
+    if ((kind === 'invasion' || kind === 'invasion2' || kind === 'invasion3') && c.d.ow) {
+      const st0 = c.d.ow.state;
+      c.owAfterMatch(kind, !!res.won); c.save();
+      if (kind === 'invasion') this.playCine(aftermathCine(this, !!res.won));
+      if (kind === 'invasion2') this.playCine(afterSecondCine(this, !!res.won));
+      if (kind === 'invasion3') this.playCine(res.won ? retreatCine(this) : captainWinsCine(this, st0 === 'CAPTAIN'));
+    }
+    // the first belt: a ceremony
+    if (kind === 'title' && res.won && c.d.flags.champion && !c.d.flags.ceremony && c.d.flags.champDay === c.d.day) this.playCine(ceremonyCine(this));
+    if (kind === 'free' || kind === 'dojo' || kind === 'brawl' || kind === 'revenge' || kind === 'weekly' || kind === 'invasion' || kind === 'invasion2' || kind === 'invasion3') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
     if (kind === 'brawl') {
       if (res.won) { c.d.flags.gangBeaten = (c.d.flags.gangBeaten || 0) + 1; this.toast('악동단을 쫓아냈다! 사장님이 로비 지킴이 보너스를 줬다.', '#9be36b'); }
       else if (!res.quit) { const st = Math.min(12000, c.d.money); if (st > 0) { c.pay(st); this.toast(`악동단이 지갑을 털어 갔다… -${fmtMoney(st)}`, '#ff8a8a'); } }
@@ -12403,6 +12854,15 @@ class WorldScene {
       this.game.audio.sfx('bell3');
       this.say([{ who: 'staff', text: '자, 잠깐! 저 음악은…! 머니 인 더 뱅크 가방이다!' }, { who: o.opp, text: '수고했어, 챔피언. 숨 고를 시간은 없어. 가방, 지금 쓴다!', expr: 'fierce' }, { act: () => this.startMatch('title', o) }]);
     }
+    if (!this.cine && this.cineQ.length && !this.overlays.length && !this.dialog && !fading) { const n = this.cineQ.shift(); this.cine = new Cutscene(this, n.script, n.o); this.cine.start(); }
+    if (this.cine) {
+      this.cine.update(dt);
+      if (this.cine && this.cine.done) this.cine = null;
+      for (const a of this.npcs) this.npcThink(a, dt);
+      if (this.npcs.some(a => a.gone)) this.npcs = this.npcs.filter(a => !a.gone);
+      this.prompt = null; this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt);
+      return;
+    }
     for (const a of this.npcs) this.npcThink(a, dt);
     if (this.npcs.some(a => a.gone)) this.npcs = this.npcs.filter(a => !a.gone);
     this.tickApproach(dt);
@@ -12448,7 +12908,7 @@ class WorldScene {
     const c = this.c, d = c.d, ct = d.contract;
     if (d.injury >= B.injuryDanger) return { text: '항구의원에서 부상 치료하기', loc: 'clinic', x: 400, col: '#ff8a8a' };
     if (!d.flags.metBoss) return { text: '사장실에 가서 구만석 사장과 대화하기', loc: 'office', x: 400 };
-    if (ct && ct.title) return { text: `등대 돔 입장구에서 타이틀 매치 (~${ct.day}일)`, loc: 'dome', x: 480 };
+    if (ct && ct.title) { const V = this.c.titleVenue; return { text: `${V.name}에서 타이틀 매치 (~${ct.day}일)`, loc: V.loc, x: V.x }; }
     if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
     if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
     return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
@@ -12551,7 +13011,7 @@ class WorldScene {
       case 'racks': this.openShop(); break;
       case 'sale': this.openShop(); break;
       case 'dojo': this.dojoMenu(); break;
-      case 'undergroundRing': if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
+      case 'undergroundRing': if (d.contract && d.contract.title && this.c.titleVenue.loc === 'basement') this.startMatch('title', d.contract); else if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       default: this.toast(o.label);
@@ -12613,8 +13073,9 @@ class WorldScene {
     this.lights(w, cam);
     if (d.slot === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }
     u.clearRect(0, 0, VIEW_W, VIEW_H);
-    this.hud(u);
-    if (!this.dialog && !this.overlays.length && !(this.fadeT > 0)) this.drawGuide(u, cam);
+    if (!this.cine) this.hud(u);
+    if (!this.dialog && !this.overlays.length && !(this.fadeT > 0) && !this.cine) this.drawGuide(u, cam);
+    if (this.cine) this.cine.draw(u);
     if (this.prompt && !this.dialog && !this.overlays.length) this.drawPrompt(u, cam);
     if (this.dialog) this.dialog.draw(u);
     for (const o of this.overlays) o.draw(u, w);

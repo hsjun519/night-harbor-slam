@@ -102,6 +102,13 @@ export const GANG = [
   { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi'], wait: 5, late: { kkongchi: 60 } },
   { k: .62, ai: 'easy', who: ['galchi', 'myeolchi', 'kkongchi'], armed: ['galchi', 'kkongchi'], wait: 5, late: { kkongchi: 55 } },
 ];
+// 선항 레슬링: a promotion from across the sea. d.ow.state:
+//   LOCKED (no belt yet) → SIGNS (the first belt; the invasion exactly OW.delay days later, a foghorn the day after)
+//   → INVADED (흰상아 at the pier; the dome is wrecked, title matches move to the basement)
+//   → SECOND_WAVE (OW.gap days on: they come back, 서도현 teams up with you) → REGROUP
+//   → CAPTAIN (OW.gap days on: 선장 고동, a boss in three phases; lose and he waits for you the next day)
+//   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)
+export const OW = { delay: 3, gap: 4, rebuild: 5, damaged: ['INVADED', 'SECOND_WAVE', 'REGROUP', 'CAPTAIN', 'REBUILD'] };
 export const SLOTS = 3;
 // 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
 export const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
@@ -145,10 +152,10 @@ export class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking', mastery: {},
+      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length) this.owBegin(); } }
   // d.slot is the time of day (0 morning, 1 afternoon, 2 evening); the save slot is d.saveSlot.
   save(checkpoint) {
     const n = this.d.saveSlot || 1;
@@ -237,6 +244,8 @@ export class Career {
     }
     // contract deadline passed without a match
     if (d.contract && d.day >= d.contract.day) { msgs.push(`${d.contract.oppName}와의 계약 경기에 나가지 않았다. 명성 -6, 기권패 처리.`); d.fame = Math.max(0, d.fame - 6); d.record.l++; d.record.streak = 0; d.contract = null; d.flags.noShow = (d.flags.noShow || 0) + 1; }
+    // the champion's royalties: shirts, posters, a milk advert
+    if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
     d.day++;
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
@@ -294,10 +303,10 @@ export class Career {
     // events
     if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
     if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: 'dome', reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
-    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: 'dome', fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: 'dome', reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: 'dome', reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
+    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'royal', special: 'ladder', arena: this.titleVenue.arena, reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '4인 래더 매치. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 상대가 따면 네가 챔피언일 때 노린다.', event: 'mitb' + d.season, mitb: 1 });
+    if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: this.titleVenue.arena, fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: this.titleVenue.arena, reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
+    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
@@ -340,7 +349,7 @@ export class Career {
         if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
         else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; }
         else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
         if (c.cashIn) d.mitb = null;
@@ -392,6 +401,29 @@ export class Career {
     if (ch.finisher && FINISHERS[ch.finisher] && !this.finKnown().includes(ch.finisher)) return { fin: ch.finisher };
     return null;
   }
+  // where the belt is fought: the lighthouse dome, or the basement once 선항 레슬링 wrecked the dome
+  get titleVenue() { return this.d.ow && OW.damaged.includes(this.d.ow.state) ? { arena: 'basement', loc: 'basement', name: '지하 격투장', x: 540 } : { arena: 'dome', loc: 'dome', name: '등대 돔', x: 480 }; }
+  // which beat of the story is due when you walk into a place (not on the way back from a match)
+  owDue(loc) {
+    const d = this.d, o = d.ow;
+    if (!o || (loc !== 'lobby' && loc !== 'street')) return null;
+    if (o.state === 'SIGNS' && d.day >= o.at) return 'invasion1';
+    if (o.state === 'SIGNS' && !o.heard && d.day > o.champDay && loc === 'street') return 'signal';
+    if (o.state === 'INVADED' && d.day >= o.day1 + OW.gap) return 'invasion2';
+    if (o.state === 'REGROUP' && d.day >= o.day2 + OW.gap) return 'invasion3';
+    if (o.state === 'CAPTAIN' && d.day >= o.retry) return 'invasion3';
+    if (o.state === 'REBUILD' && d.day >= o.rebuildAt) return 'rebuilt';
+    return null;
+  }
+  owAfterMatch(kind, won) {
+    const d = this.d, o = d.ow;
+    if (!o) return;
+    if (kind === 'invasion') { o.state = 'INVADED'; o.day1 = d.day; o.won1 = !!won; }
+    else if (kind === 'invasion2') { o.state = 'REGROUP'; o.day2 = d.day; o.won2 = !!won; }
+    else if (kind === 'invasion3') { if (won) { o.state = 'REBUILD'; o.day3 = d.day; o.rebuildAt = d.day + OW.rebuild; } else { o.state = 'CAPTAIN'; o.retry = d.day + 1; o.losses3 = (o.losses3 || 0) + 1; } }
+  }
+  owRebuilt() { const o = this.d.ow; if (o) { o.state = 'INTERNATIONAL_ROUTE_OPEN'; o.opened = this.d.day; } }
+  owBegin() { const d = this.d; if (!d.ow || d.ow.state === 'LOCKED') d.ow = { state: 'SIGNS', champDay: d.day, at: d.day + OW.delay, heard: 0 }; }
   gangTier() { const d = this.d, p = (d.level || 1) + (d.flags.gangBeaten || 0) * 2; return clamp(Math.floor((p - 1) / 4), 0, GANG.length - 1); }
   // the lobby brawl's line-up for the current tier (season 2 sharpens their AI one step)
   gangMatch() {

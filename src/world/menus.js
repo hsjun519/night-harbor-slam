@@ -111,7 +111,7 @@ export class ArenaMenu extends Menu {
     const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'];
     this.free = r.shuffle(pool).slice(0, 2).map((id, i) => ({ opp: id, oppName: CHARACTERS[id].name, mode: i ? 'pin' : 'single', arena: r.pick(['hall', 'pier']), reward: 0, fame: 0, kind: 'free', difficulty: d.season >= 2 ? 'hard' : r.pick(['easy', 'normal']), desc: '자유 경기: 기록과 부상은 남지만 랭킹은 그대로.' }));
     this.items = [];
-    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: 'dome', reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
+    if (d.mitb && d.mitb.holder === 'player' && d.day <= d.mitb.until && !d.flags.champion) { const ch = this.c.champion, nm = CHARACTERS[ch] ? CHARACTERS[ch].name : '챔피언'; this.items.push({ label: `머니 인 더 뱅크 캐시인: ${nm}에게 지금 도전`, sub: `챔피언은 방어전 직후라 지쳐 있다 · ${d.mitb.until - d.day + 1}일 남음`, act: () => { this.W.closeTop(); this.W.startMatch('title', { opp: ch, oppName: nm, mode: 'single', arena: this.c.titleVenue.arena, reward: 200000, fame: 30, kind: 'title', title: 1, cashIn: 'player', difficulty: d.season >= 2 ? 'expert' : 'hard', bossPhases: 1 }); } }); }
     if (d.contract) this.items.push({ label: `계약 경기: ${d.contract.oppName} 입장`, sub: `${matchName(d.contract)} · ${ARENAS[d.contract.arena].name} · 보수 ${fmtMoney(d.contract.reward)}`, act: () => this.startOfficial() });
     const wf = this.c.weeklyOffer();
     if (wf) this.items.push({ label: `주간 파이널: ${wf.oppName} (${wf.rank}위)`, sub: `보너스 경기 · AI ${DIFFICULTY[wf.difficulty].name} · 이기면 기술 전수 + ${fmtMoney(wf.reward)}`, act: () => { this.W.closeTop(); this.W.startMatch('weekly', wf); } });
@@ -122,7 +122,8 @@ export class ArenaMenu extends Menu {
   startOfficial() {
     const d = this.c.d, ct = d.contract;
     this.W.closeTop();
-    if (ct.title && this.W.loc !== 'dome') { this.W.say([{ who: 'staff', text: '타이틀 매치는 등대 돔에서 열려요! 부둣길 끝의 등대 돔으로 가세요.' }]); return; }
+    const V = this.c.titleVenue;
+    if (ct.title && this.W.loc !== V.loc) { this.W.say([{ who: 'staff', text: V.loc === 'dome' ? '타이틀 매치는 등대 돔에서 열려요! 부둣길 끝의 등대 돔으로 가세요.' : '등대 돔이 부서져서 타이틀 매치는 지하 격투장에서 열려요! 로비의 지하 계단으로 내려가세요.' }]); return; }
     this.W.startMatch(ct.kind === 'event' ? 'event' : ct.title ? 'title' : 'official', ct);
   }
   update(dt) { super.update(dt); this.nav(this.items.length); if (this.back()) return; if (this.ok()) { this.game.audio.sfx('ok'); this.items[this.sel].act(); } }

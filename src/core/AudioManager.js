@@ -131,6 +131,7 @@ export class AudioManager {
       case 'coin': this.tone('square', 988, 988, .06, .09); this.tone('square', 1319, 1319, .22, .09, .06); break;
       case 'buy': this.tone('square', 784, 784, .06, .09); this.tone('square', 1047, 1047, .06, .09, .06); this.tone('square', 1319, 1319, .16, .09, .12); break;
       case 'heal': [523, 659, 784, 1047].forEach((f, i) => this.tone('sine', f, f, .18, .14, i * .07)); break;
+      case 'horn': this.tone('sawtooth', 84, 78, 2.2, .16 * p); this.tone('sine', 42, 40, 2.4, .3 * p); this.tone('triangle', 126, 118, 1.8, .06 * p); break;
       case 'warn': for (let i = 0; i < 2; i++) { this.tone('square', 740, 740, .12, .1, i * .26); this.tone('square', 554, 554, .12, .1, i * .26 + .13); } break;
       case 'door': this.burst(.14, .3, 'lowpass', 500, .8); this.tone('sine', 110, 70, .12, .3); this.tone('triangle', 300, 520, .2, .05, .06); break;
       case 'stat': this.tone('square', 523, 523, .05, .08); this.tone('square', 784, 784, .1, .08, .05); break;

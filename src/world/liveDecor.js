@@ -6,7 +6,25 @@ import { rect, bands, trophy } from '../render/painter.js';
 import { drawText } from '../render/pixelfont.js';
 import { drawPortrait } from '../render/head.js';
 import { shade } from '../render/palette.js';
+import { OW } from './CareerManager.js';
 
+// the street: once 선항 레슬링 hit the port, the dome door is taped off and its sign hangs broken
+export function streetLive(g, c, cam) {
+  const d = c.d, ox = -Math.round(cam);
+  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
+  const x = 2140 + ox;
+  if (x < -200 || x > 900) return;
+  for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', x - 14, 214 + i * 26, 70, 4); for (let k = 0; k < 70; k += 10) rect(g, '#1a1a1a', x - 14 + k, 214 + i * 26, 5, 4); }
+  rect(g, '#120c1e', x - 18, 168, 76, 16); rect(g, '#c2333f', x - 17, 169, 74, 14); drawText(g, d.ow.state === 'REBUILD' ? '재건 공사 중' : '수리 중', x + 20, 170, { size: 11, align: 'c', color: '#ffffff' });
+  for (const [dx, w, h] of [[-60, 18, 8], [-38, 10, 6], [70, 22, 9], [96, 12, 5]]) { rect(g, '#120c1e', x + dx - 1, 300 - h - 1, w + 2, h + 1); rect(g, '#6a6a7a', x + dx, 300 - h, w, h); }
+}
+// the basement on a title night: a banner over the cage
+export function basementLive(g, c, cam) {
+  const d = c.d, ox = -Math.round(cam);
+  if (!(d.ow && OW.damaged.includes(d.ow.state))) return;
+  const x = 440 + ox;
+  rect(g, '#120c1e', x - 1, 98, 202, 18); rect(g, '#5a1a1a', x, 99, 200, 16); drawText(g, '지하 챔피언십', x + 100, 101, { size: 11, align: 'c', color: '#ffd65a' });
+}
 function face(g, look, x, y, size, col, expr = 'neutral') {
   rect(g, '#120c1e', x - 1, y - 1, size + 2, size + 2);
   bands(g, x, y, size, size, [shade(col, -.35), shade(col, -.5), shade(col, -.6)]);
