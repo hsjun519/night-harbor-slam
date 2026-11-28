@@ -1,5 +1,6 @@
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 import { clamp, sgn } from '../core/util.js';
+import { SYNERGY } from '../data/synergy.js';
 import { mash, holdStrength, holdGrip, pressK } from './Mash.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES, HOLDS } from '../data/moves.js';
@@ -36,7 +37,13 @@ export class GrappleSystem {
     if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);
-    if (run && f.ground) { f.face = sgn(run.x - f.x) || f.face; return m.wrestle.start(f, run, f.moves.catch || 'backBody', { noReverse: true }); }
+    if (run && f.ground) {
+      f.face = sgn(run.x - f.x) || f.face;
+      const S = this.catchSynergy(f, run, I), id = S ? SYNERGY[S].b : f.moves.catch || 'backBody';
+      const ok = m.wrestle.start(f, run, id, { noReverse: true, whipCatch: true, power: S ? SYNERGY[S].power : 1 });
+      if (ok && S) m.emit('synergy', { a: f, v: run, id: S, name: SYNERGY[S].name, kind: SYNERGY[S].kind });
+      return ok;
+    }
     const v = this.grabTarget(f);
     if (v) return this.beginHold(f, v);
     const c = P.loose(f, CHAIR.pickR);
@@ -59,6 +66,15 @@ export class GrappleSystem {
     if (f.sigCd > 0) return { ok: false, id, why: `${Math.ceil(f.sigCd)}초 뒤에 다시` };
     if (f.fin < B.dashSigCost) return { ok: false, id, why: `게이지 ${B.dashSigCost} 필요` };
     return { ok: true, id, why: '' };
+  }
+  // the career's learned whip 시너지: K the first, W+K the second, S+K the third (too heavy to lift: the plain catch)
+  catchSynergy(f, v, I) {
+    if (!f.syn) return null;
+    const list = Object.keys(SYNERGY).filter(k => SYNERGY[k].run === 'catch' && f.syn.has(k) && MOVES[SYNERGY[k].b]);
+    const k = I && I.up ? 1 : I && I.down ? 2 : 0, id = list[k] || list[0] || null;
+    if (!id) return null;
+    const mv = MOVES[SYNERGY[id].b], c = this.check(f, v, mv);
+    return c.ok || (c.why === '너무 무겁다' && this.liftNeed(mv, v) <= this.liftPower(f, v) * 1.35) ? id : null;   // the run's momentum helps the lift
   }
   beginHold(f, v, pos) {
     const m = this.m;

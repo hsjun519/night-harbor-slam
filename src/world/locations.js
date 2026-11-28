@@ -285,6 +285,10 @@ function paintStreet(g, L) {
   for (let x = 1730; x < 2020; x += 40) rect(g, '#3a2a22', x, FLOOR - 36, 6, 30);
   box(g, 1760, FLOOR - 40, 60, 34, '#1f8fa6', { tape: 1 }); box(g, 1830, FLOOR - 30, 44, 24, '#d8a62e', {}); box(g, 1800, FLOOR - 64, 40, 24, '#c2333f', {});
   drawText(g, '하역장', 1820, FLOOR - 120, { size: 11, align: 'c', color: '#ffd65a', outline: '#120c1e' });
+  // 파식대 학원: a two-storey container on the dock, a blackboard for a sign
+  { const ax = 1898; rect(g, '#05060f', ax - 1, FLOOR - 117, 62, 117); rect(g, '#4a5a8a', ax, FLOOR - 116, 60, 116); for (let y = FLOOR - 112; y < FLOOR; y += 6) rect(g, '#3a4a78', ax, y, 60, 2); rect(g, '#2a3a5a', ax, FLOOR - 60, 60, 3);
+    rect(g, '#05060f', ax + 4, FLOOR - 112, 52, 22); rect(g, '#1f3a2a', ax + 5, FLOOR - 111, 50, 20); drawText(g, '파식대', ax + 30, FLOOR - 110, { size: 11, align: 'c', color: '#e6f2dc' }); rect(g, '#e6f2dc', ax + 12, FLOOR - 95, 36, 1);
+    rect(g, '#ffd27a', ax + 8, FLOOR - 52, 14, 12); rect(g, '#ffd27a', ax + 38, FLOOR - 52, 14, 12); rect(g, '#05060f', ax + 23, FLOOR - 36, 14, 36); rect(g, '#6a4a2e', ax + 24, FLOOR - 35, 12, 35); drawText(g, '학원', ax + 30, FLOOR - 76, { size: 11, align: 'c', color: '#ffd65a' }); }
   bld(2060, 220, 220, '#2a2246', '등대 돔', '#ffd65a', { big: 1 });
   door(g, 2150, 196, 40, 104, '#4a3d70', {});
   // the old passenger pier past the dome: open water under it (the deck itself follows the career: liveDecor.js)
@@ -322,7 +326,7 @@ export const LOCATIONS = {
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' },
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },

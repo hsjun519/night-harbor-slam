@@ -1,5 +1,6 @@
 // A match on screen: simulation + camera + effects + sound + HUD + pause + results.
 import { VIEW_W, VIEW_H, clamp, damp, fmtTime, sgn, josa } from '../core/util.js';
+import { SIGNATURES } from '../data/combos.js';
 import { MatchManager, MODES } from '../combat/MatchManager.js';
 import { ArenaRenderer } from '../render/ArenaRenderer.js';
 import { FighterRenderer } from '../render/FighterRenderer.js';
@@ -43,6 +44,7 @@ export class MatchScene {
     if (this.pre) this.m.holdIntro = true;
     this.wire();
     this.tut = cfg.tutorial ? new Tutorial(this) : null; this.tutDone = false;
+    this.lesson = cfg.lesson || null; this.lessonDone = 0;
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
@@ -74,6 +76,7 @@ export class MatchScene {
     m.on('block', e => { fx.spark(e.x, e.y, .5, '#9fd6ff', sgn(e.v.x - e.a.x)); A.sfx('block'); });
     m.on('crit', e => { fx.word('크리티컬!', e.x, e.y - 24, '#ffd65a', 2); fx.spark(e.x, e.y, 1.6, '#ffd65a'); S.flash(1, .85, .3, .3); S.shake(.22); A.sfx('counter'); cheer(.7); });
     m.on('slamBonus', e => { fx.word('링 충격!', e.v.x, e.v.y - 60, '#ff9a3a', 1); });
+    m.on('synergy', e => { const H = this.human, own = H && e.a === H; fx.word(e.kind === 'chain' ? '연계!' : '시너지!', e.v.x, e.v.y - 110, e.kind === 'chain' ? '#49d6ff' : '#ffd65a', 2); if (own && !SIGNATURES.some(g => g.name === e.name)) hud.push(e.name, { col: '#ffd65a', y: 120, life: 1.6, sub: e.kind === 'chain' ? '연계' : e.kind === 'special' ? '특수 시너지' : '시너지' }); if (this.lesson && own && e.id === this.lesson.id && !this.lessonDone) { this.lessonDone = this.m.time; A.sfx('good'); } });
     m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
     m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
     m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
@@ -282,6 +285,7 @@ export class MatchScene {
     if (this.ent) this.entranceFx(dt);
     if (this.online) this.onlineTick(dt); else m.update(dt);
     if (this.tut) this.tut.update(dt);
+    if (this.lessonDone && this.m.time - this.lessonDone > 2.2) { this.lessonDone = -1; this.finish(true); }
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
     for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
     this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
@@ -381,7 +385,7 @@ export class MatchScene {
     this.game.screen.resetFx();
     const r = this.m.result || { forfeit: true, quit };
     const summary = this.m.summary(), h = this.human;
-    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone });
+    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone, lesson: this.lessonDone === -1 });
   }
   // ---- drawing ----
   draw(w, u) {
@@ -405,6 +409,7 @@ export class MatchScene {
     this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
     this.drawBubbles(u, cam);
     if (this.tut && !this.paused) this.tut.draw(u);
+    if (this.lesson && !this.paused) { const L = this.lesson; rect(u, 'rgba(5,6,15,.82)', 0, 92, VIEW_W, 34); drawText(u, `백 관장: ${L.name} — ${L.how}`, VIEW_W / 2, 96, { size: 11, align: 'c', color: this.lessonDone ? '#6be38a' : '#ffd65a' }); drawText(u, this.lessonDone ? '그거다! 몸이 기억했다.' : '더미에게 한 번 제대로 이어 보자 · Esc: 그만두기', VIEW_W / 2, 110, { size: 11, align: 'c', color: '#c9d4ff' }); }
     if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
     if (this.online) {

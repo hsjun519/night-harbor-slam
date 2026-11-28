@@ -1,5 +1,6 @@
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
 import { BR } from './blackRope.js';
+import { SYNERGY, SYN_KIND, synMoves, needMoves, synName, comboOnly } from '../data/synergy.js';
 import { clamp, fmtMoney, fmtTime, josa, RNG } from '../core/util.js';
 import { drawText, textWidth, wrapText } from '../render/pixelfont.js';
 import { UI, mixHex } from '../render/palette.js';
@@ -362,6 +363,58 @@ export class LearnMenu extends Menu {
   }
 }
 
+// ---- 시너지: which ones this career can see (the dictionary: 백 관장's; 학원's too with the textbook)
+export function synRows(d, where) {
+  const all = Object.keys(SYNERGY).filter(id => (where === 'trainer' ? SYNERGY[id].kind === 'syn' : where === 'academy' ? SYNERGY[id].kind !== 'syn' : SYNERGY[id].kind === 'syn' || d.synText));
+  // the dictionary shows a 시너지 once one of its moves is yours; the shops show all of theirs
+  return where ? all : all.filter(id => needMoves(SYNERGY[id]).some(m => d.known.includes(m)));
+}
+export function synStatus(d, id) { const S = SYNERGY[id]; return (d.syn || []).includes(id) ? 'learned' : needMoves(S).every(m => d.known.includes(m)) ? 'ready' : 'missing'; }
+const SYN_COL = { learned: '#6be38a', ready: '#ffd65a', missing: '#7a80a0' }, SYN_TAG = { learned: '익힘', ready: '배울 수 있다', missing: '기술 부족' };
+// one row: name, the moves (missing ones marked), where, status, price
+function synRow(u, d, id, x, y, w, on, price) {
+  const S = SYNERGY[id], st = synStatus(d, id);
+  rect(u, on ? '#26315f' : '#141a36', x, y, w, 30);
+  drawText(u, S.name, x + 8, y + 2, { size: 11, color: on ? '#ffffff' : SYN_COL[st], bold: st !== 'missing' });
+  drawText(u, `${SYN_KIND[S.kind]} · ${S.kind === 'syn' ? '백 관장' : '파식대 학원'}`, x + w - 8, y + 2, { size: 11, align: 'r', color: UI.faint });
+  let px = x + 8; const parts = synMoves(S);
+  parts.forEach((m, i) => { const own = d.known.includes(m) || comboOnly(m), t = synName(m) + (own ? '' : '(미획득)') + (i < parts.length - 1 ? (S.kind === 'chain' ? ' ×2' : ' + ') : ''); if (S.kind === 'chain' && i > 0) return; drawText(u, S.kind === 'chain' ? synName(m) + ' 연속' + (own ? '' : '(미획득)') : t, px, y + 16, { size: 11, color: own ? '#c9d4ff' : '#ff8a8a' }); px += textWidth(t, 11) + 4; });
+  drawText(u, price != null ? (st === 'learned' ? SYN_TAG[st] : `${price ? fmtMoney(price) : '무료(다시 배우기)'} · ${SYN_TAG[st]}`) : SYN_TAG[st], x + w - 8, y + 16, { size: 11, align: 'r', color: SYN_COL[st] });
+}
+// 백 관장 (lessons on the dummy) and 파식대 학원 (books): pick one, pay, learn
+export class SynergyMenu extends Menu {
+  constructor(W, where) { super(W); this.where = where; }
+  list() { const L = synRows(this.c.d, this.where); return this.where === 'academy' && !this.c.d.synText ? ['_text'].concat(L) : L; }
+  price(id) { const d = this.c.d; if (id === '_text') return 50000; return d.synPaid && d.synPaid[id] ? 0 : SYNERGY[id].cost; }
+  update(dt) {
+    super.update(dt); const L = this.list(), c = this.c, d = c.d, A = this.game.audio, W = this.W;
+    this.nav(L.length);
+    if (this.back()) return;
+    if (!this.ok() || !L[this.sel]) return;
+    const id = L[this.sel];
+    if (id === '_text') { if (!c.pay(50000)) { A.sfx('deny'); W.toast('돈이 모자란다', '#ff8a8a'); return; } d.synText = 1; A.sfx('buy'); W.toast('시너지 교재를 샀다: 학원의 연계·특수 시너지도 사전에 나온다 (Tab → 시너지)', '#ffd65a'); c.save(); return; }
+    const S = SYNERGY[id], st = synStatus(d, id);
+    if (st === 'learned') { W.toast('이미 익힌 시너지다'); return; }
+    if (st === 'missing') { A.sfx('deny'); W.toast('필요한 기술: ' + needMoves(S).filter(m => !d.known.includes(m)).map(synName).join(', '), '#ff8a8a'); return; }
+    const p = this.price(id);
+    if (p && !c.pay(p)) { A.sfx('deny'); W.toast('돈이 모자란다', '#ff8a8a'); return; }
+    if (this.where === 'trainer') { d.synPaid[id] = 1; c.save(); W.closeTop(); A.sfx('ok'); W.synLesson(id); return; }
+    c.learnSynergy(id); c.save(); A.sfx('good'); W.toast(`${SYN_KIND[S.kind]} 습득: ${S.name} — ${S.how}`, '#6be38a');
+  }
+  draw(u) {
+    const d = this.c.d, L = this.list(), top = clamp(this.sel - 5, 0, Math.max(0, L.length - 7));
+    this.frame(u, this.where === 'trainer' ? '백 관장의 시너지 수업' : '파식대 학원 — 연계와 특수 시너지', 60, 24, 520, 312, this.where === 'trainer' ? '#6be38a' : '#c98aff');
+    L.slice(top, top + 7).forEach((id, j) => {
+      const i = top + j, y = 50 + j * 34, on = i === this.sel;
+      if (id === '_text') { rect(u, on ? '#26315f' : '#141a36', 72, y, 496, 30); drawText(u, '시너지 교재', 80, y + 2, { size: 11, color: '#ffd65a', bold: true }); drawText(u, '학원의 연계·특수 시너지를 시너지 사전에서 내 기술과 맞춰 볼 수 있다', 80, y + 16, { size: 11, color: '#c9d4ff' }); drawText(u, fmtMoney(50000), 560, y + 2, { size: 11, align: 'r', color: '#ffd65a' }); return; }
+      synRow(u, d, id, 72, y, 496, on, this.price(id));
+    });
+    const id = L[this.sel];
+    if (id && id !== '_text') wrapText('방법: ' + SYNERGY[id].how + (SYNERGY[id].power > 1 ? ` (위력 ${SYNERGY[id].power}배)` : ''), 480, 11).slice(0, 2).forEach((l, k) => drawText(u, l, 320, 290 + k * 13, { size: 11, align: 'c', color: '#9be3ff' }));
+    this.foot(u, this.where === 'trainer' ? '↑↓ 고르기 · Enter 수업료 내고 연습 링으로 · Esc 나가기' : '↑↓ 고르기 · Enter 사서 바로 익히기 · Esc 나가기', 320);
+  }
+}
+
 // ---- Tab: player info ----
 const POS_NAMES = { front: '정면 잡기', rear: '정면 잡기' }, SLOT_KEYS = SLOT_KEY;
 export class InfoMenu extends Menu {
@@ -371,6 +424,7 @@ export class InfoMenu extends Menu {
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
     if (this.tab === 2) { const r = []; for (const s of ['n', 'f', 'b', 'u', 'd', 'q', 'e', 'r', 'fk']) r.push({ pos: 'front', s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
     if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
+    if (this.tab === 4) return d.synBook ? synRows(d) : [];
     return [];
   }
   update(dt) {
@@ -379,7 +433,7 @@ export class InfoMenu extends Menu {
     if (this.pick) { this.pickUpdate(); return; }
     if (this.pickFin) { this.finUpdate(); return; }
     if (this.tab === 2 && inp.rawPressed('KeyF')) { const L = c.finKnown(); if (L.length > 1) { this.pickFin = { i: Math.max(0, L.indexOf(d.finisher)), list: L.slice() }; A.sfx('ok'); } else { A.sfx('deny'); this.W.toast('아직 다른 피니셔를 모른다'); } return; }
-    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 3 : 1)) % 4; this.sel = 0; A.sfx('ui'); }
+    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 4 : 1)) % 5; this.sel = 0; A.sfx('ui'); }
     const R = this.rows();
     this.nav(R.length);
     if (inp.pressed('info') || this.back()) { if (inp.pressed('info')) this.W.closeTop(); return; }
@@ -412,7 +466,7 @@ export class InfoMenu extends Menu {
     const c = this.c, d = c.d;
     fade(u, .55);
     panel(u, 30, 22, 580, 314, { accent: '#49d6ff' });
-    ['능력치', '커리어', '기술', '소지품'].forEach((t, i) => { const x = 110 + i * 140, on = i === this.tab; rect(u, on ? '#26315f' : '#141a36', x - 60, 30, 120, 18); drawText(u, t, x, 33, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
+    ['능력치', '커리어', '기술', '소지품', '시너지'].forEach((t, i) => { const x = 98 + i * 111, on = i === this.tab; rect(u, on ? '#26315f' : '#141a36', x - 52, 30, 104, 18); drawText(u, t, x, 33, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
     // portrait
     rect(u, '#05060f', 44, 58, 70, 70); rect(u, '#1b2450', 45, 59, 68, 68); drawPortrait(u, c.look(), 'neutral', 45, 59, 68, { px: 2, dy: 8 });
     drawText(u, d.name, 122, 58, { color: '#ffffff', bold: true });
@@ -489,6 +543,11 @@ export class InfoMenu extends Menu {
           wrapText(m.desc, 320, 11).slice(0, 3).forEach((l, k) => drawText(u, l, 320, 266 + k * 14, { size: 11, align: 'c', color: '#c9d4ff' }));
         }
       }
+    } else if (T === 4) {
+      const R = this.rows(), top = clamp(this.sel - 3, 0, Math.max(0, R.length - 5));
+      if (!d.synBook) { drawText(u, '백 관장에게 시너지 사전을 받자. (훈련장 → 백 관장 → 시너지)', 320, 170, { size: 11, align: 'c', color: UI.dim }); drawText(u, '시너지: 서로 다른 두 기술을 잇는 것 · 연계: 같은 기술을 한 번 더', 320, 190, { size: 11, align: 'c', color: UI.faint }); }
+      else if (!R.length) drawText(u, '아직 내 기술로 이어질 시너지가 없다. 기술을 더 배워 보자.', 320, 180, { size: 11, align: 'c', color: UI.dim });
+      else { drawText(u, `시너지 사전 — 노랑: 배울 수 있다 · 초록: 익힘 · 회색: 기술 부족${d.synText ? ' · 학원 교재 포함' : ''}`, 44, 130, { size: 11, color: UI.dim }); R.slice(top, top + 5).forEach((id, j) => synRow(u, d, id, 44, 146 + j * 32, 552, top + j === this.sel, null)); const S = SYNERGY[R[this.sel]]; if (S) wrapText('방법: ' + S.how, 540, 11).slice(0, 2).forEach((l, k) => drawText(u, l, 44, 304 + k * 0, { size: 11, color: '#9be3ff' })); }
     } else {
       const R = this.rows();
       if (!R.length) drawText(u, '사용할 수 있는 물건이 없다. 돛대 상회에서 살 수 있다.', 320, 180, { size: 11, align: 'c', color: UI.dim });

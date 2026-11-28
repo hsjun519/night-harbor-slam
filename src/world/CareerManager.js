@@ -1,5 +1,6 @@
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
 import { playerStage } from '../data/entrances.js';
+import { SYNERGY, needMoves, synReady } from '../data/synergy.js';
 import { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } from './blackRope.js';
 import { RNG, clamp, deepClone, fmtMoney } from '../core/util.js';
 import { Save } from '../core/SaveManager.js';
@@ -116,6 +117,8 @@ export const GANG = [
 //   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)
 export const OW = { delay: 3, gap: 4, rebuild: 5, damaged: ['INVADED', 'SECOND_WAVE', 'REGROUP', 'CAPTAIN', 'REBUILD'] };
 export const SLOTS = 3;
+// careers from before the 시너지: the chains that used to be free stay theirs
+export const OLD_FREE = ['slamElbow', 'busterElbow', 'breakerStretch', 'cutterHammer', 'spearHammer', 'suplex2', 'german2', 'dragon2', 'superBomb'];
 // 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
 export const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
 // a mastery key: a move id, or 'fin:' + finisher id
@@ -155,19 +158,21 @@ export class Career {
     c.save(true);
     return c;
   }
-  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.oldSyn(d); c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.oldSyn(d); c.migrate(); return c; }
+  // a save from before the 시너지 (no syn in it) keeps the chains that used to be free, if it has fought at all
+  oldSyn(raw) { if (raw && !('syn' in raw)) { const n = (this.d.record.w || 0) + (this.d.record.l || 0); this.d.syn = n ? OLD_FREE.slice() : []; } }
   constructor() {
     this.d = {
       v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
+      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
   // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
   frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
@@ -232,7 +237,7 @@ export class Career {
   entrant(ctrl = 'human') {
     const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower(), synergies: (this.d.syn || []).slice() };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -417,7 +422,15 @@ export class Career {
   rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
   money() { return fmtMoney(this.d.money); }
   learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
-  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
+  learn(id) {
+    const d = this.d;
+    if (d.known.includes(id)) return;
+    d.known.push(id);
+    // a move that completes a 시너지 (both moves now owned): news for the town
+    for (const k in SYNERGY) { const S = SYNERGY[k]; if (!(d.syn || []).includes(k) && needMoves(S).includes(id) && synReady(d.known, S) && (S.kind === 'syn' || d.synText)) (d.synNews || (d.synNews = [])).push(k); }
+  }
+  learnSynergy(id) { const d = this.d; if (SYNERGY[id] && !d.syn.includes(id)) d.syn.push(id); }
+  synergyState(id) { const d = this.d, S = SYNERGY[id]; return d.syn.includes(id) ? 'learned' : synReady(d.known, S) ? 'ready' : 'missing'; }
   weeklyOffer() {
     const d = this.d, key = 'wf' + d.season + '_' + d.day;
     if (!weeklyOn(d) || d.events[key]) return null;

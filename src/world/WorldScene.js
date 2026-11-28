@@ -1,5 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
+import { SYNERGY, SYN_KIND, synName, needMoves } from '../data/synergy.js';
 import { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } from './blackRope.js';
 import { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG, pick } from '../core/util.js';
 import { drawText, textWidth } from '../render/pixelfont.js';
@@ -262,6 +263,8 @@ export class WorldScene {
       return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), ...B2.gang], career: 1, title: B2.gang.length > 2 ? '로비 난투 1 대 3' : '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }].concat(B2.events), introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
+    if (kind === 'synLesson') { const S = SYNERGY[o.syn], mv = JSON.parse(JSON.stringify(c.d.moves)); if (MOVES[S.a] && MOVES[S.a].pos !== 'dash' && !Object.values(mv.front).includes(S.a)) mv.front.n = S.a; if (S.seq && !Object.values(mv.front).includes('irishWhip')) mv.front.f = 'irishWhip'; if (S.seq) mv.catch = S.a; const L = Object.assign(me, { moves: mv, synergies: (c.d.syn || []).concat([o.syn]), fin: 100 }); if (MOVES[S.a] && MOVES[S.a].pos === 'dash') L.char = Object.assign({}, L.char, { dashSig: S.a }); return { mode: 'practice', arena: 'gym', entrants: [L, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { id: o.syn, name: S.name, how: S.how } }; }
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
     if (o && o.mitb) { const id = o.mitbFoe && CHARACTERS[o.mitbFoe] ? o.mitbFoe : this.c.mitbFoe(); return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', special: 'ladder', arena: 'dome', entrants: [me, foe(id)], career: 1, title: '머니 인 더 뱅크', music: 'rumble', introTime: 3.6, dda: d.dda }; }
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
@@ -276,6 +279,7 @@ export class WorldScene {
     const c = this.c, { kind, offer, res } = info;
     if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
+    if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) {
       c.d.flags['dojo_' + offer.opp] = 1;
@@ -381,6 +385,7 @@ export class WorldScene {
     this.guide = this.findGuide();
     if (this.overlays.length) { this.overlays[this.overlays.length - 1].update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.dialog) { this.dialog.update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
+    if (this.c.d.synNews && this.c.d.synNews.length && !fading) { const k = this.c.d.synNews.shift(), S = SYNERGY[k]; if (S) this.toast(`시너지가 추가되었습니다: ${needMoves(S).map(synName).join(' + ')} → ${S.name} (${S.kind === 'syn' ? '백 관장' : '파식대 학원'})`, '#ffd65a'); }
     if (this.c.d.flags.seasonEnd && !fading) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
     let mx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
     if (fading) mx = 0;
@@ -531,9 +536,26 @@ export class WorldScene {
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
+      case 'academy': this.academyTalk(); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
+  synergyTalk() {
+    const d = this.c.d, first = !d.synBook;
+    if (first) { d.synBook = 1; this.c.save(); }
+    this.say([
+      ...(first ? [{ who: 'trainer', text: '기술은 하나씩 따로 놀면 반쪽이다. 서로 다른 둘을 이으면 {y}시너지{/}, 같은 기술을 한 번 더 걸면 {y}연계{/}라고 한다.' }, { who: 'trainer', text: '이 {y}시너지 사전{/}을 줄 테니 봐 둬. 네가 가진 기술로 이을 수 있는 게 노랗게 뜬다. (Tab → 시너지)' }, { act: () => this.toast('시너지 사전을 받았다 (Tab → 시너지)', '#ffd65a') }] : []),
+      { who: 'trainer', text: '두 기술을 다 가졌다고 저절로 이어지진 않아. 수업료를 내면 연습 링에서 더미로 몸에 붙여 주마. 연계와 특별한 건 부두의 {y}파식대 학원{/}에서 판다.' },
+      { choice: [{ label: '시너지 수업 받기', act: () => this.open(new Menus.SynergyMenu(this, 'trainer')) }, { label: '시너지 사전 보기', act: () => this.openInfo(4) }, { label: '그만두기', go: [] }] },
+    ]);
+  }
+  synLesson(id) { const S = SYNERGY[id]; this.say([{ who: 'trainer', text: `좋아, ${S.name}. ${S.how}. 더미한테 한 번 제대로 이어 봐라.` }, { act: () => this.startMatch('synLesson', { syn: id, kind: 'synLesson' }) }]); }
+  academyTalk() {
+    const d = this.c.d;
+    if (d.day < 3 && d.season === 1) { this.say([{ who: null, name: '파식대 학원', text: '"연계·시너지 전문 — 3일차부터 개강". 창문 너머로 칠판에 기술 이름들이 빼곡하다.' }]); return; }
+    this.say([{ who: null, name: '파식대 학원', text: '"파도를 식히는 대학원, 파식대". 칠판 가득 기술 이름과 화살표. 연계와 특수 시너지의 서를 판다. 비싸지만 강하다.' }, { act: () => this.open(new Menus.SynergyMenu(this, 'academy')) }]);
   }
   // ---- 부두 복구와 세계 무대, and the endings ----
   signLines() {

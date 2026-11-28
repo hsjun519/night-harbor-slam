@@ -60,7 +60,7 @@ export function peopleAt(loc, c) {
       add('auntie', 1010, -1);
       add('fankid', 1330, -1);
       add('busker', 1190, 1);
-      add('foreman', 1900, -1);
+      add('foreman', 1790, 1);   // by the crane, clear of 파식대 학원's door
       add('oldman', harborRepaired(d) ? 2590 : 2040, 1);   // once the pier is rebuilt the lighthouse keeper fishes off it
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
@@ -146,6 +146,7 @@ export function talk(id, c, W) {
         S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아. 나머지 반은 내 잔소리로 채우게 될 거다.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐. 약점은 숨기는 게 아니라 메우는 거야.`),
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
+          { label: '시너지 (사전·수업)', act: () => W.synergyTalk() },
           { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },

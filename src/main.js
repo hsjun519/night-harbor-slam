@@ -19,7 +19,7 @@ game.openSettings = () => game.push(new SettingsOverlay(game));
 game.playOnline = () => game.go(() => new OnlineScene(game));
 // 백 관장's basics in the gym ring; c may be null (from the title, with the rookie)
 function playTutorial(c, after) {
-  game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? c.entrant('human') : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
+  game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? Object.assign(c.entrant('human'), { synergies: null }) : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
 }
 game.playTutorial = playTutorial;
 function startCareer(kind, given, slot, confirmed) {

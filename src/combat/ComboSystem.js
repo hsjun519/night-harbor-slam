@@ -2,6 +2,7 @@
 // in a front hold (로프 회전 킥, 어깨 메기), the foe sitting on the top turnbuckle, and the counters that cost energy.
 // Humans and the computer go through the same calls; the computer decides through its reaction delay.
 import { sgn, clamp } from '../core/util.js';
+import { SYNERGY, synAllowed, synergyOf } from '../data/synergy.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 import { FOLLOW, UPGRADE, COUNTERS, SPECIALS, SIGNATURES, COMBO } from '../data/combos.js';
@@ -28,14 +29,15 @@ export class ComboSystem {
   // ---- 이어 걸기: pressed while a move is still early
   onMoveStart(e) {
     const { a, L } = e, U = UPGRADE[e.mv.id];
-    if (U && !e.fin && !L.counter && L.parts.length === 1) {
+    if (U && !e.fin && !L.counter && L.parts.length === 1 && synAllowed(a, e.mv.id, e.mv.id, 'upgrade').ok) {
       L.up = U;
       if (a.ai && a.ctrl === 'ai') { const D = a.ai.D, o = U.find(o => !o.cost || a.fin >= o.cost); if (o && a.ai.rng.chance(D.pick * (o.cost ? .55 : .45))) L.upAi = { o, at: .04 + a.ai.rng.next() * Math.max(.02, o.until - .08) }; }
     }
     // the chain this move belongs to
     const ch = a.comboSeq || (a.comboSeq = []);
-    if (!L.follow && !L.upgraded) ch.length = 0;
-    ch.push(e.mv.id);
+    if (!L.follow && !L.upgraded) { ch.length = 0; if (L.whipCatch) ch.push('irishWhip'); }   // a catch off the ropes starts with the whip
+    const lead = MOVES[L.parts[0]];
+    ch.push(L.parts.length > 1 && lead && lead.pos === 'chain' ? L.parts[L.parts.length - 1] : e.mv.id);   // 끌어올리기 + suplex counts as the suplex
     if (L.follow) this.signature(a);
   }
   upgradeTick(f, L) {
@@ -55,7 +57,8 @@ export class ComboSystem {
     return false;
   }
   upgrade(a, L, o) {
-    const m = this.m, mv = MOVES[o.to[0]];
+    const m = this.m, mv = MOVES[o.to[0]], from = L.move.id, sid = synergyOf(from, from, 'upgrade');
+    if (sid) m.emit('synergy', { a, v: L.v, id: sid, name: SYNERGY[sid].name, kind: SYNERGY[sid].kind });
     if (o.cost) a.fin -= o.cost;
     L.parts = o.to.slice(); L.part = 0; L.move = mv; L.up = null; L.upAi = null; L.upgraded = o.name;
     L.evI = 0; while (L.evI < mv.ev.length && mv.ev[L.evI][0] <= L.t) L.evI++;
@@ -77,7 +80,7 @@ export class ComboSystem {
     // a chain ends: after COMBO.maxChain moves only the pin is left, and the same move only COMBO.maxSame times in a row
     const seq = (a.comboSeq || []).filter(x => x !== 'pin');
     let same = 0; for (let i = seq.length - 1; i >= 0 && seq[i] === id; i--) same++;
-    const opts = list.filter(o => (!o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal))) && (o.pin || o.spring || (seq.length < COMBO.maxChain && !(o.id === id && same >= COMBO.maxSame))));
+    const opts = list.filter(o => (!o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal))) && (o.pin || o.spring || (seq.length < COMBO.maxChain && !(o.id === id && same >= COMBO.maxSame) && synAllowed(a, id, o.id, 'follow').ok)));
     if (!opts.length) { a.follow = null; return; }
     const spring = opts.some(o => o.spring);
     a.follow = { from: id, v, opts, t: 0, life: spring ? COMBO.springWindow : COMBO.window, want: null, ai: null };
@@ -104,7 +107,7 @@ export class ComboSystem {
     const free = f.fsm.is('IDLE', 'MOVE', 'GUARD') || (o.pin && (f.st === 'GET_UP' || (f.st === 'HITSTUN' && f.hsKind === 'lie')));
     if (!free || f.link || !f.ground) return false;
     if (v.rag && !v.rag.ground && v.rag.t < .45) return false;
-    return this.run(f, v, o);
+    return this.run(f, v, o, F.from);
   }
   close(f) { if (f.follow) { f.follow = null; } }
   aiPick(f, F) {
@@ -115,7 +118,7 @@ export class ComboSystem {
     if (pin && v.hp < v.maxHp * .55 && r.chance(D.pick * .4)) return pin;
     return null;
   }
-  run(a, v, o) {
+  run(a, v, o, from) {
     const m = this.m;
     this.close(a);
     if (o.pin) {
@@ -135,9 +138,15 @@ export class ComboSystem {
     a.face = side; a.x = clamp(px - side * 34 * k, m.arena.x0 + 20, m.arena.x1 - 20); v.x = px;
     if (m.arena.hasRing && a.side === 'in') a.x = clamp(a.x, m.arena.ropeL + 14, m.arena.ropeR - 14);
     const parts = o.lift ? ['liftUp', o.id] : [o.id];
-    if (!m.wrestle.begin(a, v, parts, { noReverse: !o.lift && !mv.roll, follow: true })) return false;
+    // a 시너지 or a 연계 hits harder; a learned three-move special (whip, catch, this) harder still
+    let sid = from ? synergyOf(from, o.id, 'follow') : null;
+    const seq = (a.comboSeq || []).filter(x => x !== 'pin');
+    for (const k in SYNERGY) { const S = SYNERGY[k]; if (S.run === 'seq' && S.b === o.id && (!a.syn || a.syn.has(k)) && S.seq.slice(0, -1).every((x, i, A) => seq[seq.length - A.length + i] === x)) sid = k; }
+    const power = sid ? SYNERGY[sid].power : 1;
+    if (!m.wrestle.begin(a, v, parts, { noReverse: !o.lift && !mv.roll, follow: true, power })) return false;
     a.link.follow = true;
-    m.emit('followUp', { a, v, o, name: o.name || mv.name });
+    m.emit('followUp', { a, v, o, name: sid ? SYNERGY[sid].name : o.name || mv.name });
+    if (sid) m.emit('synergy', { a, v, id: sid, name: SYNERGY[sid].name, kind: SYNERGY[sid].kind });
     return true;
   }
   chainPush(a, id) { const ch = a.comboSeq || (a.comboSeq = []); ch.push(id); this.signature(a); }

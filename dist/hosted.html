@@ -4378,18 +4378,20 @@ ATTACKS.springMoon = { ...ATTACKS.diveMoon, id: 'springMoon', name: '스프링�
 //   key: atk | grab | down | fin. id: a move started on the foe where they lie. lift: haul them up first (liftUp + id).
 //   pin: start a cover at once; the number multiplies how hard it is to kick out. spring: springboard from the apron.
 const FOLLOW = {
-  bodySlam: [{ key: 'atk', id: 'fElbow' }],
+  bodySlam: [{ key: 'atk', id: 'fElbow' }, { key: 'grab', id: 'bodySlam', lift: 1, name: '일으켜 한 번 더' }],
   spinebuster: [{ key: 'atk', id: 'bigElbow' }],
   backbreaker: [{ key: 'grab', id: 'backStretch' }],
   suplex: [{ key: 'grab', id: 'suplex', lift: 1, name: '끌어올려 한 번 더' }],
   ddt: [{ key: 'down', pin: 1.3 }],
-  powerbomb: [{ key: 'down', pin: 1.35 }],
-  piledriver: [{ key: 'down', pin: 1.35 }],
-  chokeslam: [{ key: 'down', pin: 1.3 }],
+  powerbomb: [{ key: 'grab', id: 'powerbomb', lift: 1, name: '다시 들어 올려 한 번 더' }, { key: 'down', pin: 1.35 }],
+  piledriver: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.35 }],
+  chokeslam: [{ key: 'atk', id: 'bigElbow' }, { key: 'down', pin: 1.3 }],
+  giantSwing: [{ key: 'atk', id: 'fElbow' }, { key: 'down', pin: 1.2 }],
+  airplane: [{ key: 'atk', id: 'bigElbow' }, { key: 'down', pin: 1.2 }],
   german: [{ key: 'down', pin: 1.2 }],
   runningBulldog: [{ key: 'down', pin: 1.25 }],
   f5: [{ key: 'down', pin: 1.4 }],
-  powerSlam: [{ key: 'down', pin: 1.4, direct: 1, name: '그대로 누르기' }],
+  powerSlam: [{ key: 'atk', id: 'fElbow' }, { key: 'down', pin: 1.4, direct: 1, name: '그대로 누르기' }],
   dragonSuplex: [{ key: 'down', pin: 1.5 }],
   cutter: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
   spear: [{ key: 'grab', id: 'anchorHammer' }, { key: 'down', pin: 1.2 }],
@@ -4434,12 +4436,73 @@ const COMBO = { window: 1.5, springWindow: 2.2, counterWindow: .16, maxChain: 3,
 
 return { COMBO_MOVES, FOLLOW, UPGRADE, COUNTERS, SPECIALS, SIGNATURES, COMBO };
 })();
+// ---- data/synergy.js
+__m["data/synergy.js"] = (function () {
+// 시너지 and 연계. A 시너지 chains two different moves (after the first, K goes straight into the second, harder than it
+// would hit alone); a 연계 is the same move again. Owning the moves is not enough: 백 관장 teaches a 시너지 for a fee,
+// on the dummy in the gym ring; 파식대 학원 sells the 연계 and the special ones (three moves, 골목 영감's moves) as
+// books. The computer and quick matches have every one of them (a fighter with no list is not limited).
+//   kind: 'syn' 백 관장 · 'chain' 연계 (학원) · 'special' (학원)
+//   how a chain runs: catch (after an Irish whip, K on the way back), follow (K right after the first move lets go),
+//   upgrade (pressed early in the first move: it turns into the longer one), seq (a three-move chain: the last hits harder)
+const { MOVES } = __m["data/moves.js"];
+const { COMBO_MOVES } = __m["data/combos.js"];
+const SYNERGY = {
+  // ---- 백 관장 (two different moves)
+  whipBomb: { kind: 'syn', a: 'irishWhip', b: 'powerbomb', run: 'catch', power: 1.35, cost: 45000, name: '파워밤 받아치기', how: '아이리시 휩으로 로프에 보낸 뒤, 튕겨 돌아오는 상대 앞에서 K' },
+  whipSlam: { kind: 'syn', a: 'irishWhip', b: 'powerSlam', run: 'catch', power: 1.3, cost: 40000, name: '파워 슬램 받아치기', how: '아이리시 휩 → 돌아오는 상대 앞에서 K' },
+  whipChoke: { kind: 'syn', a: 'irishWhip', b: 'chokeslam', run: 'catch', power: 1.3, cost: 50000, name: '초크슬램 받아치기', how: '아이리시 휩 → 돌아오는 상대 목을 잡아 K' },
+  whipBelly: { kind: 'syn', a: 'irishWhip', b: 'bellyToBelly', run: 'catch', power: 1.3, cost: 35000, name: '안아 던지기 받아치기', how: '아이리시 휩 → 돌아오는 상대를 안아 K' },
+  whipF5: { kind: 'syn', a: 'irishWhip', b: 'f5', run: 'catch', power: 1.3, cost: 60000, name: 'F5 받아치기', how: '아이리시 휩 → 돌아오는 상대를 들쳐 메며 K' },
+  slamElbow: { kind: 'syn', a: 'bodySlam', b: 'fElbow', run: 'follow', power: 1.2, cost: 25000, name: '항구의 밤', how: '바디 슬램으로 눕힌 직후 J: 뛰어올라 엘보 드롭' },
+  powerSlamElbow: { kind: 'syn', a: 'powerSlam', b: 'fElbow', run: 'follow', power: 1.25, cost: 35000, name: '파워 엘보', how: '파워 슬램 직후 J: 엘보 드롭' },
+  busterElbow: { kind: 'syn', a: 'spinebuster', b: 'bigElbow', run: 'follow', power: 1.2, cost: 35000, name: '뱃고동 엘보', how: '스파인버스터 직후 J: 로프까지 갔다 와서 엘보' },
+  breakerStretch: { kind: 'syn', a: 'backbreaker', b: 'backStretch', run: 'follow', power: 1.2, cost: 30000, name: '등 꺾기 조르기', how: '백브레이커 직후 K: 엎어 놓고 허리를 꺾는다' },
+  cutterHammer: { kind: 'syn', a: 'cutter', b: 'anchorHammer', run: 'follow', power: 1.2, cost: 45000, name: '번개 닻', how: '대시 커터 직후 K: 일으켜 거꾸로 내리꽂는다' },
+  spearHammer: { kind: 'syn', a: 'spear', b: 'anchorHammer', run: 'follow', power: 1.2, cost: 45000, name: '닻 내리기', how: '돌파 태클 직후 K: 일으켜 거꾸로 내리꽂는다' },
+  chokeElbow: { kind: 'syn', a: 'chokeslam', b: 'bigElbow', run: 'follow', power: 1.25, cost: 45000, name: '목조르고 뱃고동', how: '초크슬램 직후 J: 과시용 엘보' },
+  // ---- 파식대 학원: 연계 (the same move again)
+  suplex2: { kind: 'chain', a: 'suplex', b: 'suplex', run: 'follow', lift: 1, power: 1.1, cost: 160000, name: '2연속 수플렉스', how: '수플렉스가 끝나면 K: 끌어올려 한 번 더' },
+  bomb2: { kind: 'chain', a: 'powerbomb', b: 'powerbomb', run: 'follow', lift: 1, power: 1.15, cost: 260000, name: '2연속 파워밤', how: '파워밤이 끝나면 K: 다시 들어 올려 한 번 더' },
+  slam2: { kind: 'chain', a: 'bodySlam', b: 'bodySlam', run: 'follow', lift: 1, power: 1.1, cost: 140000, name: '2연속 바디 슬램', how: '바디 슬램이 끝나면 K: 일으켜 한 번 더' },
+  german2: { kind: 'chain', a: 'german', b: 'german', run: 'upgrade', power: 1, cost: 200000, name: '연속 저먼', how: '저먼 수플렉스를 거는 순간 K를 한 번 더' },
+  dragon2: { kind: 'chain', a: 'dragonSuplex', b: 'dragonSuplex', run: 'upgrade', power: 1, cost: 240000, name: '저먼에서 드래곤으로', how: '드래곤 수플렉스를 거는 순간 K를 한 번 더' },
+  // ---- 파식대 학원: special
+  superBomb: { kind: 'special', a: 'powerbomb', b: 'powerbomb', run: 'upgrade', power: 1, cost: 320000, name: '슈퍼 파워밤 · 북해 삼연타', how: '파워밤을 거는 순간 Space (에너지 50): 세 번 내리꽂는다' },
+  swingElbow: { kind: 'special', a: 'giantSwing', b: 'fElbow', run: 'follow', power: 1.35, cost: 220000, name: '회오리 엘보', how: '자이언트 스윙이 끝나면 J: 어지러운 상대에게 엘보' },
+  pileHammer: { kind: 'special', a: 'piledriver', b: 'anchorHammer', run: 'follow', power: 1.35, cost: 300000, name: '말뚝 닻', how: '파일드라이버가 끝나면 K: 다시 일으켜 거꾸로 내리꽂는다' },
+  planeElbow: { kind: 'special', a: 'airplane', b: 'bigElbow', run: 'follow', power: 1.35, cost: 240000, name: '비행기 착륙', how: '에어플레인 스핀이 끝나면 J: 뱃고동 엘보' },
+  harborStorm: { kind: 'special', seq: ['irishWhip', 'spinebuster', 'bigElbow'], a: 'spinebuster', b: 'bigElbow', run: 'seq', power: 1.6, cost: 400000, name: '부두의 폭풍', how: '아이리시 휩 → 돌아오는 상대를 K로 스파인버스터(받아치기) → J 뱃고동 엘보: 마지막 엘보가 1.6배' },
+};
+const SYN_KIND = { syn: '시너지', chain: '연계', special: '특수 시너지' };
+const fromTrainer = S => S.kind === 'syn';
+// moves that only exist inside a chain come with it (점프 엘보 드롭, 뱃고동 엘보, 등 꺾기 조르기, 닻 망치)
+const comboOnly = id => !!COMBO_MOVES[id] && !(MOVES[id] && MOVES[id].pos !== 'ground' && MOVES[id].pos !== 'chain');
+function synMoves(S) { return Array.from(new Set(S.seq ? S.seq : [S.a, S.b])); }
+function needMoves(S) { return synMoves(S).filter(id => !comboOnly(id)); }
+const synReady = (known, S) => needMoves(S).every(id => known.includes(id));
+const synName = id => (MOVES[id] ? MOVES[id].name : COMBO_MOVES[id] ? COMBO_MOVES[id].name : id);
+// the 시너지 that a chain from `from` into `to` would be, if any (the computer's follow-ups are left alone)
+function synergyOf(from, to, run) {
+  for (const id in SYNERGY) { const S = SYNERGY[id]; if (S.a === from && S.b === to && (!run || S.run === run || (run === 'follow' && S.run === 'seq'))) return id; }
+  return null;
+}
+// whether fighter f may chain from → to (f.syn: the career's learned list; none: every chain)
+function synAllowed(f, from, to, run) {
+  const id = synergyOf(from, to, run);
+  if (!id) return { ok: true, id: null };
+  return { ok: !f.syn || f.syn.has(id), id };
+}
+
+return { synMoves, needMoves, synergyOf, synAllowed, SYNERGY, SYN_KIND, fromTrainer, comboOnly, synReady, synName };
+})();
 // ---- combat/ComboSystem.js
 __m["combat/ComboSystem.js"] = (function () {
 // Follow-ups (연계) after a move lets go, upgrades pressed early in a move (연속 저먼, 슈퍼 파워밤), the Space specials
 // in a front hold (로프 회전 킥, 어깨 메기), the foe sitting on the top turnbuckle, and the counters that cost energy.
 // Humans and the computer go through the same calls; the computer decides through its reaction delay.
 const { sgn, clamp } = __m["core/util.js"];
+const { SYNERGY, synAllowed, synergyOf } = __m["data/synergy.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { FOLLOW, UPGRADE, COUNTERS, SPECIALS, SIGNATURES, COMBO } = __m["data/combos.js"];
@@ -4465,14 +4528,15 @@ class ComboSystem {
   // ---- 이어 걸기: pressed while a move is still early
   onMoveStart(e) {
     const { a, L } = e, U = UPGRADE[e.mv.id];
-    if (U && !e.fin && !L.counter && L.parts.length === 1) {
+    if (U && !e.fin && !L.counter && L.parts.length === 1 && synAllowed(a, e.mv.id, e.mv.id, 'upgrade').ok) {
       L.up = U;
       if (a.ai && a.ctrl === 'ai') { const D = a.ai.D, o = U.find(o => !o.cost || a.fin >= o.cost); if (o && a.ai.rng.chance(D.pick * (o.cost ? .55 : .45))) L.upAi = { o, at: .04 + a.ai.rng.next() * Math.max(.02, o.until - .08) }; }
     }
     // the chain this move belongs to
     const ch = a.comboSeq || (a.comboSeq = []);
-    if (!L.follow && !L.upgraded) ch.length = 0;
-    ch.push(e.mv.id);
+    if (!L.follow && !L.upgraded) { ch.length = 0; if (L.whipCatch) ch.push('irishWhip'); }   // a catch off the ropes starts with the whip
+    const lead = MOVES[L.parts[0]];
+    ch.push(L.parts.length > 1 && lead && lead.pos === 'chain' ? L.parts[L.parts.length - 1] : e.mv.id);   // 끌어올리기 + suplex counts as the suplex
     if (L.follow) this.signature(a);
   }
   upgradeTick(f, L) {
@@ -4492,7 +4556,8 @@ class ComboSystem {
     return false;
   }
   upgrade(a, L, o) {
-    const m = this.m, mv = MOVES[o.to[0]];
+    const m = this.m, mv = MOVES[o.to[0]], from = L.move.id, sid = synergyOf(from, from, 'upgrade');
+    if (sid) m.emit('synergy', { a, v: L.v, id: sid, name: SYNERGY[sid].name, kind: SYNERGY[sid].kind });
     if (o.cost) a.fin -= o.cost;
     L.parts = o.to.slice(); L.part = 0; L.move = mv; L.up = null; L.upAi = null; L.upgraded = o.name;
     L.evI = 0; while (L.evI < mv.ev.length && mv.ev[L.evI][0] <= L.t) L.evI++;
@@ -4514,7 +4579,7 @@ class ComboSystem {
     // a chain ends: after COMBO.maxChain moves only the pin is left, and the same move only COMBO.maxSame times in a row
     const seq = (a.comboSeq || []).filter(x => x !== 'pin');
     let same = 0; for (let i = seq.length - 1; i >= 0 && seq[i] === id; i--) same++;
-    const opts = list.filter(o => (!o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal))) && (o.pin || o.spring || (seq.length < COMBO.maxChain && !(o.id === id && same >= COMBO.maxSame))));
+    const opts = list.filter(o => (!o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal))) && (o.pin || o.spring || (seq.length < COMBO.maxChain && !(o.id === id && same >= COMBO.maxSame) && synAllowed(a, id, o.id, 'follow').ok)));
     if (!opts.length) { a.follow = null; return; }
     const spring = opts.some(o => o.spring);
     a.follow = { from: id, v, opts, t: 0, life: spring ? COMBO.springWindow : COMBO.window, want: null, ai: null };
@@ -4541,7 +4606,7 @@ class ComboSystem {
     const free = f.fsm.is('IDLE', 'MOVE', 'GUARD') || (o.pin && (f.st === 'GET_UP' || (f.st === 'HITSTUN' && f.hsKind === 'lie')));
     if (!free || f.link || !f.ground) return false;
     if (v.rag && !v.rag.ground && v.rag.t < .45) return false;
-    return this.run(f, v, o);
+    return this.run(f, v, o, F.from);
   }
   close(f) { if (f.follow) { f.follow = null; } }
   aiPick(f, F) {
@@ -4552,7 +4617,7 @@ class ComboSystem {
     if (pin && v.hp < v.maxHp * .55 && r.chance(D.pick * .4)) return pin;
     return null;
   }
-  run(a, v, o) {
+  run(a, v, o, from) {
     const m = this.m;
     this.close(a);
     if (o.pin) {
@@ -4572,9 +4637,15 @@ class ComboSystem {
     a.face = side; a.x = clamp(px - side * 34 * k, m.arena.x0 + 20, m.arena.x1 - 20); v.x = px;
     if (m.arena.hasRing && a.side === 'in') a.x = clamp(a.x, m.arena.ropeL + 14, m.arena.ropeR - 14);
     const parts = o.lift ? ['liftUp', o.id] : [o.id];
-    if (!m.wrestle.begin(a, v, parts, { noReverse: !o.lift && !mv.roll, follow: true })) return false;
+    // a 시너지 or a 연계 hits harder; a learned three-move special (whip, catch, this) harder still
+    let sid = from ? synergyOf(from, o.id, 'follow') : null;
+    const seq = (a.comboSeq || []).filter(x => x !== 'pin');
+    for (const k in SYNERGY) { const S = SYNERGY[k]; if (S.run === 'seq' && S.b === o.id && (!a.syn || a.syn.has(k)) && S.seq.slice(0, -1).every((x, i, A) => seq[seq.length - A.length + i] === x)) sid = k; }
+    const power = sid ? SYNERGY[sid].power : 1;
+    if (!m.wrestle.begin(a, v, parts, { noReverse: !o.lift && !mv.roll, follow: true, power })) return false;
     a.link.follow = true;
-    m.emit('followUp', { a, v, o, name: o.name || mv.name });
+    m.emit('followUp', { a, v, o, name: sid ? SYNERGY[sid].name : o.name || mv.name });
+    if (sid) m.emit('synergy', { a, v, id: sid, name: SYNERGY[sid].name, kind: SYNERGY[sid].kind });
     return true;
   }
   chainPush(a, id) { const ch = a.comboSeq || (a.comboSeq = []); ch.push(id); this.signature(a); }
@@ -4744,7 +4815,8 @@ class Fighter {
     this.dims = dimsFor(this.look.build, this.look.scale || 1);
     const s = this.stats = Object.assign({}, char.stats, o.stats || {});
     this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
-    this.moves = frontSlots(o.moves || char.moves); this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
+    this.moves = frontSlots(o.moves || char.moves);
+    this.syn = o.synergies ? new Set(o.synergies) : null; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;   // syn: a career's learned 시너지 (none given: every chain is open)
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
     this.moveUses = {}; this.mastery = o.mastery || null;   // career move mastery: landed uses this match, damage bonus per move
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
@@ -5617,6 +5689,7 @@ return { StunSystem };
 __m["combat/GrappleSystem.js"] = (function () {
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 const { clamp, sgn } = __m["core/util.js"];
+const { SYNERGY } = __m["data/synergy.js"];
 const { mash, holdStrength, holdGrip, pressK } = __m["combat/Mash.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES, HOLDS } = __m["data/moves.js"];
@@ -5652,7 +5725,13 @@ class GrappleSystem {
     if (dv) { const c = this.dashCheck(f); if (c.ok) { f.fin -= B.dashSigCost; f.sigCd = B.dashSigCd; f.dash = false; m.emit('dashSig', { f, v: dv, id: c.id }); return m.wrestle.start(f, dv, c.id, {}); } m.emit('deny', { f, why: c.why, mv: MOVES[c.id] }); }
     // catch somebody flying back from the ropes
     const run = f.nearestFoe(66, o => o.st === 'WHIPPED' && o.whip && o.whip.back && o.inv <= 0 && sgn(f.x - o.x) === o.whip.dir);
-    if (run && f.ground) { f.face = sgn(run.x - f.x) || f.face; return m.wrestle.start(f, run, f.moves.catch || 'backBody', { noReverse: true }); }
+    if (run && f.ground) {
+      f.face = sgn(run.x - f.x) || f.face;
+      const S = this.catchSynergy(f, run, I), id = S ? SYNERGY[S].b : f.moves.catch || 'backBody';
+      const ok = m.wrestle.start(f, run, id, { noReverse: true, whipCatch: true, power: S ? SYNERGY[S].power : 1 });
+      if (ok && S) m.emit('synergy', { a: f, v: run, id: S, name: SYNERGY[S].name, kind: SYNERGY[S].kind });
+      return ok;
+    }
     const v = this.grabTarget(f);
     if (v) return this.beginHold(f, v);
     const c = P.loose(f, CHAIR.pickR);
@@ -5675,6 +5754,15 @@ class GrappleSystem {
     if (f.sigCd > 0) return { ok: false, id, why: `${Math.ceil(f.sigCd)}초 뒤에 다시` };
     if (f.fin < B.dashSigCost) return { ok: false, id, why: `게이지 ${B.dashSigCost} 필요` };
     return { ok: true, id, why: '' };
+  }
+  // the career's learned whip 시너지: K the first, W+K the second, S+K the third (too heavy to lift: the plain catch)
+  catchSynergy(f, v, I) {
+    if (!f.syn) return null;
+    const list = Object.keys(SYNERGY).filter(k => SYNERGY[k].run === 'catch' && f.syn.has(k) && MOVES[SYNERGY[k].b]);
+    const k = I && I.up ? 1 : I && I.down ? 2 : 0, id = list[k] || list[0] || null;
+    if (!id) return null;
+    const mv = MOVES[SYNERGY[id].b], c = this.check(f, v, mv);
+    return c.ok || (c.why === '너무 무겁다' && this.liftNeed(mv, v) <= this.liftPower(f, v) * 1.35) ? id : null;   // the run's momentum helps the lift
   }
   beginHold(f, v, pos) {
     const m = this.m;
@@ -5972,6 +6060,7 @@ class WrestlingMoveSystem {
       power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
     L.crit = !o.noCrit && m.combat.rollCrit(a);   // one roll for the whole move
+    L.whipCatch = !!o.whipCatch;
     a.link = v.link = L;
     m.links.push(L);
     a.vx = a.vy = v.vx = v.vy = 0; v.y = a.y; v.side = a.side; v.ground = true; a.ground = true;
@@ -9782,6 +9871,7 @@ return { harborBegin, harborAdd, donate, morningGifts, harborRebuild, signReport
 __m["world/CareerManager.js"] = (function () {
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
 const { playerStage } = __m["data/entrances.js"];
+const { SYNERGY, needMoves, synReady } = __m["data/synergy.js"];
 const { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } = __m["world/blackRope.js"];
 const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
 const { Save } = __m["core/SaveManager.js"];
@@ -9897,6 +9987,8 @@ const GANG = [
 //   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)
 const OW = { delay: 3, gap: 4, rebuild: 5, damaged: ['INVADED', 'SECOND_WAVE', 'REGROUP', 'CAPTAIN', 'REBUILD'] };
 const SLOTS = 3;
+// careers from before the 시너지: the chains that used to be free stay theirs
+const OLD_FREE = ['slamElbow', 'busterElbow', 'breakerStretch', 'cutterHammer', 'spearHammer', 'suplex2', 'german2', 'dragon2', 'superBomb'];
 // 주간 파이널: three bonus matches a week (days 2, 4, 6 of each week) against one of the top of the ranking
 const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
 // a mastery key: a move id, or 'fin:' + finisher id
@@ -9936,19 +10028,21 @@ class Career {
     c.save(true);
     return c;
   }
-  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
-  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.migrate(); return c; }
+  static load(n) { const d = Save.get(saveKey(n)) || (n === 1 ? migrateLegacy(n) : null); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.oldSyn(d); c.migrate(); return c; }
+  static loadCheckpoint(n) { if (!Save.get(saveKey(n))) migrateLegacy(n); const d = Save.get(saveKey(n) + '.chk'); if (!d) return null; const c = new Career(); Object.assign(c.d, d); c.d.saveSlot = n; c.oldSyn(d); c.migrate(); return c; }
+  // a save from before the 시너지 (no syn in it) keeps the chains that used to be free, if it has fought at all
+  oldSyn(raw) { if (raw && !('syn' in raw)) { const n = (this.d.record.w || 0) + (this.d.record.l || 0); this.d.syn = n ? OLD_FREE.slice() : []; } }
   constructor() {
     this.d = {
       v: 2, saveSlot: 1, name: '신인', style: 'all', look: null, money: 60000, fame: 0, xp: 0, level: 1, points: 0, injury: 0, fatigue: 0,
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
+      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
   // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
   frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
@@ -10013,7 +10107,7 @@ class Career {
   entrant(ctrl = 'human') {
     const S = this.styleDef, bf = this.d.buffs || {}, st = Object.assign({}, this.stats), fat = this.d.fatigue, mv = this.d.moves;
     if (bf.atk) st.atk *= bf.atk;
-    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower() };
+    return { char: Object.assign({}, CHARACTERS.rookie, { id: 'player', name: this.d.name, nick: S.label, style: this.d.style, look: this.look(), stance: S.stance, stats: st, chain: S.chain, run: S.run, air: S.air, dive: mv.topDown || S.dive, topStand: mv.topStand || 'missileDropkick', ground: 'stomp', moves: this.d.moves, finisher: this.d.finisher, color: '#3fe0d0', lines: { win: '해냈다!', lose: '다음엔…', intro: '시작이다.' } }), ctrl, name: this.d.name, stats: st, hpStart: fat > 70 ? .9 : 1, fin: Math.max(this.d.flags.pajeon ? 20 : fat < 20 ? 10 : 0, bf.finStart || 0), mastery: this.masteryPower(), synergies: (this.d.syn || []).slice() };
   }
   // ---- time ----
   get timeText() { return `시즌 ${this.d.season} · ${this.d.day}일차 ${SLOT_NAMES[this.d.slot]}`; }
@@ -10198,7 +10292,15 @@ class Career {
   rel(id, v) { const n = this.d.npc[id] || (this.d.npc[id] = { talks: 0, rel: 0, seen: 0 }); if (v) n.rel = clamp(n.rel + v, -10, 10); return n; }
   money() { return fmtMoney(this.d.money); }
   learnable(by) { return LEARNABLE.filter(l => l.by === by && !this.d.known.includes(l.id)); }
-  learn(id) { if (!this.d.known.includes(id)) this.d.known.push(id); }
+  learn(id) {
+    const d = this.d;
+    if (d.known.includes(id)) return;
+    d.known.push(id);
+    // a move that completes a 시너지 (both moves now owned): news for the town
+    for (const k in SYNERGY) { const S = SYNERGY[k]; if (!(d.syn || []).includes(k) && needMoves(S).includes(id) && synReady(d.known, S) && (S.kind === 'syn' || d.synText)) (d.synNews || (d.synNews = [])).push(k); }
+  }
+  learnSynergy(id) { const d = this.d; if (SYNERGY[id] && !d.syn.includes(id)) d.syn.push(id); }
+  synergyState(id) { const d = this.d, S = SYNERGY[id]; return d.syn.includes(id) ? 'learned' : synReady(d.known, S) ? 'ready' : 'missing'; }
   weeklyOffer() {
     const d = this.d, key = 'wf' + d.season + '_' + d.day;
     if (!weeklyOn(d) || d.events[key]) return null;
@@ -10283,7 +10385,7 @@ class Career {
   swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
 }
 
-return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, AGI, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, SLOT_UNLOCK, SLOT_KEY, slotOpen, moveSlotName, learnedText, moveLabel };
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, AGI, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, OLD_FREE, weeklyOn, SLOT_OF, SLOT_UNLOCK, SLOT_KEY, slotOpen, moveSlotName, learnedText, moveLabel };
 })();
 // ---- world/liveDecor.js
 __m["world/liveDecor.js"] = (function () {
@@ -10789,6 +10891,10 @@ function paintStreet(g, L) {
   for (let x = 1730; x < 2020; x += 40) rect(g, '#3a2a22', x, FLOOR - 36, 6, 30);
   box(g, 1760, FLOOR - 40, 60, 34, '#1f8fa6', { tape: 1 }); box(g, 1830, FLOOR - 30, 44, 24, '#d8a62e', {}); box(g, 1800, FLOOR - 64, 40, 24, '#c2333f', {});
   drawText(g, '하역장', 1820, FLOOR - 120, { size: 11, align: 'c', color: '#ffd65a', outline: '#120c1e' });
+  // 파식대 학원: a two-storey container on the dock, a blackboard for a sign
+  { const ax = 1898; rect(g, '#05060f', ax - 1, FLOOR - 117, 62, 117); rect(g, '#4a5a8a', ax, FLOOR - 116, 60, 116); for (let y = FLOOR - 112; y < FLOOR; y += 6) rect(g, '#3a4a78', ax, y, 60, 2); rect(g, '#2a3a5a', ax, FLOOR - 60, 60, 3);
+    rect(g, '#05060f', ax + 4, FLOOR - 112, 52, 22); rect(g, '#1f3a2a', ax + 5, FLOOR - 111, 50, 20); drawText(g, '파식대', ax + 30, FLOOR - 110, { size: 11, align: 'c', color: '#e6f2dc' }); rect(g, '#e6f2dc', ax + 12, FLOOR - 95, 36, 1);
+    rect(g, '#ffd27a', ax + 8, FLOOR - 52, 14, 12); rect(g, '#ffd27a', ax + 38, FLOOR - 52, 14, 12); rect(g, '#05060f', ax + 23, FLOOR - 36, 14, 36); rect(g, '#6a4a2e', ax + 24, FLOOR - 35, 12, 35); drawText(g, '학원', ax + 30, FLOOR - 76, { size: 11, align: 'c', color: '#ffd65a' }); }
   bld(2060, 220, 220, '#2a2246', '등대 돔', '#ffd65a', { big: 1 });
   door(g, 2150, 196, 40, 104, '#4a3d70', {});
   // the old passenger pier past the dome: open water under it (the deck itself follows the career: liveDecor.js)
@@ -10826,7 +10932,7 @@ const LOCATIONS = {
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' },
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
@@ -11167,7 +11273,7 @@ function peopleAt(loc, c) {
       add('auntie', 1010, -1);
       add('fankid', 1330, -1);
       add('busker', 1190, 1);
-      add('foreman', 1900, -1);
+      add('foreman', 1790, 1);   // by the crane, clear of 파식대 학원's door
       add('oldman', harborRepaired(d) ? 2590 : 2040, 1);   // once the pier is rebuilt the lighthouse keeper fishes off it
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
@@ -11253,6 +11359,7 @@ function talk(id, c, W) {
         S(d.fatigue > 70 ? '얼굴이 반쪽이네. 오늘은 쉬어. 지친 몸으로 하는 훈련은 반도 안 남아. 나머지 반은 내 잔소리로 채우게 될 거다.' : `요즘 보니 ${names[weak]} 쪽이 약하더라. 그쪽 훈련을 해 봐. 약점은 숨기는 게 아니라 메우는 거야.`),
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
+          { label: '시너지 (사전·수업)', act: () => W.synergyTalk() },
           { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },
@@ -11513,7 +11620,7 @@ const TUTORIAL = [
   { say: '잡은 다음 {y}K{/}만 누르면 기본기, {y}→+K{/}·{y}←+K{/}·{y}W+K{/}·{y}S+K{/}마다 기술이 다르다. 레슬링 기술을 두 번 걸어 봐.', goal: '레슬링 기술 2번', need: 2,
     setup: (m, h, v) => { m.practice.stunLock = true; },
     on: { moveStart: (e, h) => e.a === h && !e.fin } },
-  { say: '기술이 끝나고 상대가 누워 있는 잠깐 사이, 화면 아래에 뜨는 키를 누르면 {y}연계{/}다. 바디 슬램 뒤엔 {y}J{/}로 엘보 드롭, 수플렉스 뒤엔 {y}K{/}로 끌어올려 한 번 더, DDT 뒤엔 {y}S{/}로 핀! 연계를 한 번 이어 봐.', goal: '기술 뒤 연계 1번', need: 1,
+  { say: '기술이 끝나고 상대가 누워 있는 잠깐 사이, 화면 아래 키를 누르면 기술이 이어진다. 다른 기술로 이으면 {y}시너지{/}(바디 슬램 뒤 {y}J{/}로 엘보 드롭), 같은 기술을 또 걸면 {y}연계{/}(수플렉스 뒤 {y}K{/}로 끌어올려 한 번 더), DDT 뒤 {y}S{/}는 핀! 커리어에선 시너지는 내가, 연계는 파식대 학원이 가르쳐야 쓸 수 있다. 오늘은 다 열어 뒀다. 하나 이어 봐.', goal: '기술 뒤 연계 1번', need: 1,
     setup: (m, h, v) => { m.practice.stunLock = true; fresh(v); },
     on: { followUp: (e, h) => e.a === h } },
   { say: '쓰러진 상대 옆에서 {y}S{/}를 누르면 {y}핀폴{/}이다. 심판이 바닥을 두 번 칠 때까지 눌러 봐.', goal: '핀폴 카운트 2', need: 1,
@@ -11634,6 +11741,7 @@ return { Tutorial, TutorialOffer, TUTORIAL };
 __m["scenes/MatchScene.js"] = (function () {
 // A match on screen: simulation + camera + effects + sound + HUD + pause + results.
 const { VIEW_W, VIEW_H, clamp, damp, fmtTime, sgn, josa } = __m["core/util.js"];
+const { SIGNATURES } = __m["data/combos.js"];
 const { MatchManager, MODES } = __m["combat/MatchManager.js"];
 const { ArenaRenderer } = __m["render/ArenaRenderer.js"];
 const { FighterRenderer } = __m["render/FighterRenderer.js"];
@@ -11675,6 +11783,7 @@ class MatchScene {
     if (this.pre) this.m.holdIntro = true;
     this.wire();
     this.tut = cfg.tutorial ? new Tutorial(this) : null; this.tutDone = false;
+    this.lesson = cfg.lesson || null; this.lessonDone = 0;
     const tint = this.m.arenaDef.tint || [1, 1, 1];
     game.screen.resetFx(); game.screen.goal.tint = tint.slice(); game.screen.fx.tint = tint.slice();
     game.audio.music(cfg.music || (cfg.mode === 'rumble' || cfg.mode === 'royal' ? 'rumble' : cfg.boss ? 'boss' : 'match'));
@@ -11706,6 +11815,7 @@ class MatchScene {
     m.on('block', e => { fx.spark(e.x, e.y, .5, '#9fd6ff', sgn(e.v.x - e.a.x)); A.sfx('block'); });
     m.on('crit', e => { fx.word('크리티컬!', e.x, e.y - 24, '#ffd65a', 2); fx.spark(e.x, e.y, 1.6, '#ffd65a'); S.flash(1, .85, .3, .3); S.shake(.22); A.sfx('counter'); cheer(.7); });
     m.on('slamBonus', e => { fx.word('링 충격!', e.v.x, e.v.y - 60, '#ff9a3a', 1); });
+    m.on('synergy', e => { const H = this.human, own = H && e.a === H; fx.word(e.kind === 'chain' ? '연계!' : '시너지!', e.v.x, e.v.y - 110, e.kind === 'chain' ? '#49d6ff' : '#ffd65a', 2); if (own && !SIGNATURES.some(g => g.name === e.name)) hud.push(e.name, { col: '#ffd65a', y: 120, life: 1.6, sub: e.kind === 'chain' ? '연계' : e.kind === 'special' ? '특수 시너지' : '시너지' }); if (this.lesson && own && e.id === this.lesson.id && !this.lessonDone) { this.lessonDone = this.m.time; A.sfx('good'); } });
     m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
     m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
     m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
@@ -11914,6 +12024,7 @@ class MatchScene {
     if (this.ent) this.entranceFx(dt);
     if (this.online) this.onlineTick(dt); else m.update(dt);
     if (this.tut) this.tut.update(dt);
+    if (this.lessonDone && this.m.time - this.lessonDone > 2.2) { this.lessonDone = -1; this.finish(true); }
     if (m.phase === 'end') { this.endT += dt; if (h && h.st !== 'KO' && h.alive && m.result && m.result.team === h.team && h.st !== 'WIN' && this.endT > 1.2 && !h.link && h.ground) h.set('WIN', { force: true }); if (this.endT > 1.4) for (const f of m.fighters) if (f.alive && f.st !== 'WIN' && m.result && m.result.team === f.team && !f.link && f.ground && f.st !== 'KO' && !h) f.set('WIN', { force: true }); if (this.endT > 3.4) this.resultShown = true; }
     for (const f of m.fighters) if (f.dash && f.ground && Math.abs(f.vx) > 200 && Math.random() < dt * 14) this.fx.dust(f.x - f.face * 12, f.y, .22);
     this.fx.update(m.freeze > 0 ? dt * .3 : dt * m.slowK);
@@ -12013,7 +12124,7 @@ class MatchScene {
     this.game.screen.resetFx();
     const r = this.m.result || { forfeit: true, quit };
     const summary = this.m.summary(), h = this.human;
-    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone });
+    if (this.onEnd) this.onEnd({ result: r, summary, human: h ? summary[h.idx] : null, won: !!(h && r.winner && r.team === h.team), draw: !!r.draw, time: this.m.clock, quit: !!quit, match: this.m, tutorial: !!this.tut, completed: this.tutDone, lesson: this.lessonDone === -1 });
   }
   // ---- drawing ----
   draw(w, u) {
@@ -12037,6 +12148,7 @@ class MatchScene {
     this.hud.draw(u, m, cam, { hide: m.phase === 'intro' && false });
     this.drawBubbles(u, cam);
     if (this.tut && !this.paused) this.tut.draw(u);
+    if (this.lesson && !this.paused) { const L = this.lesson; rect(u, 'rgba(5,6,15,.82)', 0, 92, VIEW_W, 34); drawText(u, `백 관장: ${L.name} — ${L.how}`, VIEW_W / 2, 96, { size: 11, align: 'c', color: this.lessonDone ? '#6be38a' : '#ffd65a' }); drawText(u, this.lessonDone ? '그거다! 몸이 기억했다.' : '더미에게 한 번 제대로 이어 보자 · Esc: 그만두기', VIEW_W / 2, 110, { size: 11, align: 'c', color: '#c9d4ff' }); }
     if (this.talk) this.talk.draw(u);
     if (m.phase === 'intro') { drawText(u, `${this.game.input.label('confirm')} 건너뛰기`, 632, 346, { size: 11, align: 'r', color: UI.dim, outline: '#05060f' }); }
     if (this.online) {
@@ -12996,6 +13108,7 @@ return { EndingScene, FB };
 __m["world/menus.js"] = (function () {
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
 const { BR } = __m["world/blackRope.js"];
+const { SYNERGY, SYN_KIND, synMoves, needMoves, synName, comboOnly } = __m["data/synergy.js"];
 const { clamp, fmtMoney, fmtTime, josa, RNG } = __m["core/util.js"];
 const { drawText, textWidth, wrapText } = __m["render/pixelfont.js"];
 const { UI, mixHex } = __m["render/palette.js"];
@@ -13357,6 +13470,58 @@ class LearnMenu extends Menu {
   }
 }
 
+// ---- 시너지: which ones this career can see (the dictionary: 백 관장's; 학원's too with the textbook)
+function synRows(d, where) {
+  const all = Object.keys(SYNERGY).filter(id => (where === 'trainer' ? SYNERGY[id].kind === 'syn' : where === 'academy' ? SYNERGY[id].kind !== 'syn' : SYNERGY[id].kind === 'syn' || d.synText));
+  // the dictionary shows a 시너지 once one of its moves is yours; the shops show all of theirs
+  return where ? all : all.filter(id => needMoves(SYNERGY[id]).some(m => d.known.includes(m)));
+}
+function synStatus(d, id) { const S = SYNERGY[id]; return (d.syn || []).includes(id) ? 'learned' : needMoves(S).every(m => d.known.includes(m)) ? 'ready' : 'missing'; }
+const SYN_COL = { learned: '#6be38a', ready: '#ffd65a', missing: '#7a80a0' }, SYN_TAG = { learned: '익힘', ready: '배울 수 있다', missing: '기술 부족' };
+// one row: name, the moves (missing ones marked), where, status, price
+function synRow(u, d, id, x, y, w, on, price) {
+  const S = SYNERGY[id], st = synStatus(d, id);
+  rect(u, on ? '#26315f' : '#141a36', x, y, w, 30);
+  drawText(u, S.name, x + 8, y + 2, { size: 11, color: on ? '#ffffff' : SYN_COL[st], bold: st !== 'missing' });
+  drawText(u, `${SYN_KIND[S.kind]} · ${S.kind === 'syn' ? '백 관장' : '파식대 학원'}`, x + w - 8, y + 2, { size: 11, align: 'r', color: UI.faint });
+  let px = x + 8; const parts = synMoves(S);
+  parts.forEach((m, i) => { const own = d.known.includes(m) || comboOnly(m), t = synName(m) + (own ? '' : '(미획득)') + (i < parts.length - 1 ? (S.kind === 'chain' ? ' ×2' : ' + ') : ''); if (S.kind === 'chain' && i > 0) return; drawText(u, S.kind === 'chain' ? synName(m) + ' 연속' + (own ? '' : '(미획득)') : t, px, y + 16, { size: 11, color: own ? '#c9d4ff' : '#ff8a8a' }); px += textWidth(t, 11) + 4; });
+  drawText(u, price != null ? (st === 'learned' ? SYN_TAG[st] : `${price ? fmtMoney(price) : '무료(다시 배우기)'} · ${SYN_TAG[st]}`) : SYN_TAG[st], x + w - 8, y + 16, { size: 11, align: 'r', color: SYN_COL[st] });
+}
+// 백 관장 (lessons on the dummy) and 파식대 학원 (books): pick one, pay, learn
+class SynergyMenu extends Menu {
+  constructor(W, where) { super(W); this.where = where; }
+  list() { const L = synRows(this.c.d, this.where); return this.where === 'academy' && !this.c.d.synText ? ['_text'].concat(L) : L; }
+  price(id) { const d = this.c.d; if (id === '_text') return 50000; return d.synPaid && d.synPaid[id] ? 0 : SYNERGY[id].cost; }
+  update(dt) {
+    super.update(dt); const L = this.list(), c = this.c, d = c.d, A = this.game.audio, W = this.W;
+    this.nav(L.length);
+    if (this.back()) return;
+    if (!this.ok() || !L[this.sel]) return;
+    const id = L[this.sel];
+    if (id === '_text') { if (!c.pay(50000)) { A.sfx('deny'); W.toast('돈이 모자란다', '#ff8a8a'); return; } d.synText = 1; A.sfx('buy'); W.toast('시너지 교재를 샀다: 학원의 연계·특수 시너지도 사전에 나온다 (Tab → 시너지)', '#ffd65a'); c.save(); return; }
+    const S = SYNERGY[id], st = synStatus(d, id);
+    if (st === 'learned') { W.toast('이미 익힌 시너지다'); return; }
+    if (st === 'missing') { A.sfx('deny'); W.toast('필요한 기술: ' + needMoves(S).filter(m => !d.known.includes(m)).map(synName).join(', '), '#ff8a8a'); return; }
+    const p = this.price(id);
+    if (p && !c.pay(p)) { A.sfx('deny'); W.toast('돈이 모자란다', '#ff8a8a'); return; }
+    if (this.where === 'trainer') { d.synPaid[id] = 1; c.save(); W.closeTop(); A.sfx('ok'); W.synLesson(id); return; }
+    c.learnSynergy(id); c.save(); A.sfx('good'); W.toast(`${SYN_KIND[S.kind]} 습득: ${S.name} — ${S.how}`, '#6be38a');
+  }
+  draw(u) {
+    const d = this.c.d, L = this.list(), top = clamp(this.sel - 5, 0, Math.max(0, L.length - 7));
+    this.frame(u, this.where === 'trainer' ? '백 관장의 시너지 수업' : '파식대 학원 — 연계와 특수 시너지', 60, 24, 520, 312, this.where === 'trainer' ? '#6be38a' : '#c98aff');
+    L.slice(top, top + 7).forEach((id, j) => {
+      const i = top + j, y = 50 + j * 34, on = i === this.sel;
+      if (id === '_text') { rect(u, on ? '#26315f' : '#141a36', 72, y, 496, 30); drawText(u, '시너지 교재', 80, y + 2, { size: 11, color: '#ffd65a', bold: true }); drawText(u, '학원의 연계·특수 시너지를 시너지 사전에서 내 기술과 맞춰 볼 수 있다', 80, y + 16, { size: 11, color: '#c9d4ff' }); drawText(u, fmtMoney(50000), 560, y + 2, { size: 11, align: 'r', color: '#ffd65a' }); return; }
+      synRow(u, d, id, 72, y, 496, on, this.price(id));
+    });
+    const id = L[this.sel];
+    if (id && id !== '_text') wrapText('방법: ' + SYNERGY[id].how + (SYNERGY[id].power > 1 ? ` (위력 ${SYNERGY[id].power}배)` : ''), 480, 11).slice(0, 2).forEach((l, k) => drawText(u, l, 320, 290 + k * 13, { size: 11, align: 'c', color: '#9be3ff' }));
+    this.foot(u, this.where === 'trainer' ? '↑↓ 고르기 · Enter 수업료 내고 연습 링으로 · Esc 나가기' : '↑↓ 고르기 · Enter 사서 바로 익히기 · Esc 나가기', 320);
+  }
+}
+
 // ---- Tab: player info ----
 const POS_NAMES = { front: '정면 잡기', rear: '정면 잡기' }, SLOT_KEYS = SLOT_KEY;
 class InfoMenu extends Menu {
@@ -13366,6 +13531,7 @@ class InfoMenu extends Menu {
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
     if (this.tab === 2) { const r = []; for (const s of ['n', 'f', 'b', 'u', 'd', 'q', 'e', 'r', 'fk']) r.push({ pos: 'front', s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
     if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
+    if (this.tab === 4) return d.synBook ? synRows(d) : [];
     return [];
   }
   update(dt) {
@@ -13374,7 +13540,7 @@ class InfoMenu extends Menu {
     if (this.pick) { this.pickUpdate(); return; }
     if (this.pickFin) { this.finUpdate(); return; }
     if (this.tab === 2 && inp.rawPressed('KeyF')) { const L = c.finKnown(); if (L.length > 1) { this.pickFin = { i: Math.max(0, L.indexOf(d.finisher)), list: L.slice() }; A.sfx('ok'); } else { A.sfx('deny'); this.W.toast('아직 다른 피니셔를 모른다'); } return; }
-    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 3 : 1)) % 4; this.sel = 0; A.sfx('ui'); }
+    if (inp.pressed('left') || inp.pressed('right')) { this.tab = (this.tab + (inp.pressed('left') ? 4 : 1)) % 5; this.sel = 0; A.sfx('ui'); }
     const R = this.rows();
     this.nav(R.length);
     if (inp.pressed('info') || this.back()) { if (inp.pressed('info')) this.W.closeTop(); return; }
@@ -13407,7 +13573,7 @@ class InfoMenu extends Menu {
     const c = this.c, d = c.d;
     fade(u, .55);
     panel(u, 30, 22, 580, 314, { accent: '#49d6ff' });
-    ['능력치', '커리어', '기술', '소지품'].forEach((t, i) => { const x = 110 + i * 140, on = i === this.tab; rect(u, on ? '#26315f' : '#141a36', x - 60, 30, 120, 18); drawText(u, t, x, 33, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
+    ['능력치', '커리어', '기술', '소지품', '시너지'].forEach((t, i) => { const x = 98 + i * 111, on = i === this.tab; rect(u, on ? '#26315f' : '#141a36', x - 52, 30, 104, 18); drawText(u, t, x, 33, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
     // portrait
     rect(u, '#05060f', 44, 58, 70, 70); rect(u, '#1b2450', 45, 59, 68, 68); drawPortrait(u, c.look(), 'neutral', 45, 59, 68, { px: 2, dy: 8 });
     drawText(u, d.name, 122, 58, { color: '#ffffff', bold: true });
@@ -13484,6 +13650,11 @@ class InfoMenu extends Menu {
           wrapText(m.desc, 320, 11).slice(0, 3).forEach((l, k) => drawText(u, l, 320, 266 + k * 14, { size: 11, align: 'c', color: '#c9d4ff' }));
         }
       }
+    } else if (T === 4) {
+      const R = this.rows(), top = clamp(this.sel - 3, 0, Math.max(0, R.length - 5));
+      if (!d.synBook) { drawText(u, '백 관장에게 시너지 사전을 받자. (훈련장 → 백 관장 → 시너지)', 320, 170, { size: 11, align: 'c', color: UI.dim }); drawText(u, '시너지: 서로 다른 두 기술을 잇는 것 · 연계: 같은 기술을 한 번 더', 320, 190, { size: 11, align: 'c', color: UI.faint }); }
+      else if (!R.length) drawText(u, '아직 내 기술로 이어질 시너지가 없다. 기술을 더 배워 보자.', 320, 180, { size: 11, align: 'c', color: UI.dim });
+      else { drawText(u, `시너지 사전 — 노랑: 배울 수 있다 · 초록: 익힘 · 회색: 기술 부족${d.synText ? ' · 학원 교재 포함' : ''}`, 44, 130, { size: 11, color: UI.dim }); R.slice(top, top + 5).forEach((id, j) => synRow(u, d, id, 44, 146 + j * 32, 552, top + j === this.sel, null)); const S = SYNERGY[R[this.sel]]; if (S) wrapText('방법: ' + S.how, 540, 11).slice(0, 2).forEach((l, k) => drawText(u, l, 44, 304 + k * 0, { size: 11, color: '#9be3ff' })); }
     } else {
       const R = this.rows();
       if (!R.length) drawText(u, '사용할 수 있는 물건이 없다. 돛대 상회에서 살 수 있다.', 320, 180, { size: 11, align: 'c', color: UI.dim });
@@ -13643,7 +13814,7 @@ const menuTime = fmtTime;
 const menuTW = textWidth;
 const menuMix = mixHex;
 
-return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, VendingMenu, FoodMenu, LearnMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
+return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, VendingMenu, FoodMenu, LearnMenu, synRows, synStatus, SynergyMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
 })();
 // ---- world/Training.js
 __m["world/Training.js"] = (function () {
@@ -14058,6 +14229,7 @@ return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retire
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
+const { SYNERGY, SYN_KIND, synName, needMoves } = __m["data/synergy.js"];
 const { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } = __m["world/blackRope.js"];
 const { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG, pick } = __m["core/util.js"];
 const { drawText, textWidth } = __m["render/pixelfont.js"];
@@ -14319,6 +14491,8 @@ class WorldScene {
       return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), ...B2.gang], career: 1, title: B2.gang.length > 2 ? '로비 난투 1 대 3' : '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }].concat(B2.events), introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
+    if (kind === 'synLesson') { const S = SYNERGY[o.syn], mv = JSON.parse(JSON.stringify(c.d.moves)); if (MOVES[S.a] && MOVES[S.a].pos !== 'dash' && !Object.values(mv.front).includes(S.a)) mv.front.n = S.a; if (S.seq && !Object.values(mv.front).includes('irishWhip')) mv.front.f = 'irishWhip'; if (S.seq) mv.catch = S.a; const L = Object.assign(me, { moves: mv, synergies: (c.d.syn || []).concat([o.syn]), fin: 100 }); if (MOVES[S.a] && MOVES[S.a].pos === 'dash') L.char = Object.assign({}, L.char, { dashSig: S.a }); return { mode: 'practice', arena: 'gym', entrants: [L, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { id: o.syn, name: S.name, how: S.how } }; }
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
     if (o && o.mitb) { const id = o.mitbFoe && CHARACTERS[o.mitbFoe] ? o.mitbFoe : this.c.mitbFoe(); return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', special: 'ladder', arena: 'dome', entrants: [me, foe(id)], career: 1, title: '머니 인 더 뱅크', music: 'rumble', introTime: 3.6, dda: d.dda }; }
     if (o && o.mode === 'rumble') { const pool = ['taesan', 'haneul', 'neon', 'mandeok', 'dongsu', 'bokja', 'dueok', 'palcho', 'baeksang', 'bjorn', 'baekpa', 'dohyun'], r = new RNG(d.day * 31); return { mode: 'rumble', arena: 'hall', entrants: [me, ...r.shuffle(pool).slice(0, 9).map(foe)], career: 1, title: '만선 럼블' }; }
@@ -14333,6 +14507,7 @@ class WorldScene {
     const c = this.c, { kind, offer, res } = info;
     if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
+    if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) {
       c.d.flags['dojo_' + offer.opp] = 1;
@@ -14438,6 +14613,7 @@ class WorldScene {
     this.guide = this.findGuide();
     if (this.overlays.length) { this.overlays[this.overlays.length - 1].update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
     if (this.dialog) { this.dialog.update(dt); this.physics(p, dt, 0); p.pose(dt); for (const a of this.npcs) a.pose(dt); return; }
+    if (this.c.d.synNews && this.c.d.synNews.length && !fading) { const k = this.c.d.synNews.shift(), S = SYNERGY[k]; if (S) this.toast(`시너지가 추가되었습니다: ${needMoves(S).map(synName).join(' + ')} → ${S.name} (${S.kind === 'syn' ? '백 관장' : '파식대 학원'})`, '#ffd65a'); }
     if (this.c.d.flags.seasonEnd && !fading) { this.c.d.flags.seasonEnd = false; this.open(new Menus.SeasonEndMenu(this)); return; }
     let mx = (inp.down('right') ? 1 : 0) - (inp.down('left') ? 1 : 0);
     if (fading) mx = 0;
@@ -14588,9 +14764,26 @@ class WorldScene {
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
+      case 'academy': this.academyTalk(); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
+  synergyTalk() {
+    const d = this.c.d, first = !d.synBook;
+    if (first) { d.synBook = 1; this.c.save(); }
+    this.say([
+      ...(first ? [{ who: 'trainer', text: '기술은 하나씩 따로 놀면 반쪽이다. 서로 다른 둘을 이으면 {y}시너지{/}, 같은 기술을 한 번 더 걸면 {y}연계{/}라고 한다.' }, { who: 'trainer', text: '이 {y}시너지 사전{/}을 줄 테니 봐 둬. 네가 가진 기술로 이을 수 있는 게 노랗게 뜬다. (Tab → 시너지)' }, { act: () => this.toast('시너지 사전을 받았다 (Tab → 시너지)', '#ffd65a') }] : []),
+      { who: 'trainer', text: '두 기술을 다 가졌다고 저절로 이어지진 않아. 수업료를 내면 연습 링에서 더미로 몸에 붙여 주마. 연계와 특별한 건 부두의 {y}파식대 학원{/}에서 판다.' },
+      { choice: [{ label: '시너지 수업 받기', act: () => this.open(new Menus.SynergyMenu(this, 'trainer')) }, { label: '시너지 사전 보기', act: () => this.openInfo(4) }, { label: '그만두기', go: [] }] },
+    ]);
+  }
+  synLesson(id) { const S = SYNERGY[id]; this.say([{ who: 'trainer', text: `좋아, ${S.name}. ${S.how}. 더미한테 한 번 제대로 이어 봐라.` }, { act: () => this.startMatch('synLesson', { syn: id, kind: 'synLesson' }) }]); }
+  academyTalk() {
+    const d = this.c.d;
+    if (d.day < 3 && d.season === 1) { this.say([{ who: null, name: '파식대 학원', text: '"연계·시너지 전문 — 3일차부터 개강". 창문 너머로 칠판에 기술 이름들이 빼곡하다.' }]); return; }
+    this.say([{ who: null, name: '파식대 학원', text: '"파도를 식히는 대학원, 파식대". 칠판 가득 기술 이름과 화살표. 연계와 특수 시너지의 서를 판다. 비싸지만 강하다.' }, { act: () => this.open(new Menus.SynergyMenu(this, 'academy')) }]);
   }
   // ---- 부두 복구와 세계 무대, and the endings ----
   signLines() {
@@ -15268,7 +15461,7 @@ game.openSettings = () => game.push(new SettingsOverlay(game));
 game.playOnline = () => game.go(() => new OnlineScene(game));
 // 백 관장's basics in the gym ring; c may be null (from the title, with the rookie)
 function playTutorial(c, after) {
-  game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? c.entrant('human') : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
+  game.playMatch({ mode: 'practice', arena: 'gym', entrants: [c ? Object.assign(c.entrant('human'), { synergies: null }) : { char: 'rookie', ctrl: 'human' }, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, music: 'gym', career: c ? 1 : 0 }, res => after(res));
 }
 game.playTutorial = playTutorial;
 function startCareer(kind, given, slot, confirmed) {

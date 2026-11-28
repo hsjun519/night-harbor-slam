@@ -36,6 +36,7 @@ export class WrestlingMoveSystem {
       power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
     L.crit = !o.noCrit && m.combat.rollCrit(a);   // one roll for the whole move
+    L.whipCatch = !!o.whipCatch;
     a.link = v.link = L;
     m.links.push(L);
     a.vx = a.vy = v.vx = v.vy = 0; v.y = a.y; v.side = a.side; v.ground = true; a.ground = true;
