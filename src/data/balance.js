@@ -31,7 +31,7 @@ export const BALANCE = {
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // special matches. These balance going for the prize against stopping the other one.
   // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
-  ladderH: 100, ladderSpread: 22, ladderPrizeY: 150, ladderClimb: 2.0, ladderSet: 1.4, ladderFoldCd: 4,
+  ladderH: 140, ladderSpread: 32, ladderPrizeY: 190, ladderClimb: 2.5, ladderSet: 1.4, ladderFoldCd: 4,
   // the case: timing hits needed (the count stays with the case), needle speed and how much each hit adds, zone width, its shrink per hit, its floor, pause after a miss, hanging time
   ladderHits: 10, caseSpeed: 1.1, caseSpeedUp: .09, caseZone: .3, caseZoneStep: .02, caseZoneMin: .09, caseFumble: .7, caseHang: 2.6,
   // cage: height, climb time, time to get over the top

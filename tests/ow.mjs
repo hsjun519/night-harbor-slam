@@ -33,8 +33,15 @@ c.makeOffers();
 const def = d.offers.find(o => o.title);
 check(def && def.arena === 'basement', 'a title defence is booked in the basement', JSON.stringify(def && { arena: def.arena, opp: def.opp }));
 // an old champion's save gets the story too
-const old = Career.create(3, { name: '옛 챔피언', style: 'all', look }); delete old.d.ow; old.d.titles.push({ name: 'x', season: 1, day: 5 }); old.d.day = 9; old.migrate();
+const old = Career.create(3, { name: '옛 챔피언', style: 'all', look }); delete old.d.ow; old.d.titles.push({ name: 'x', season: 1, day: 5 }); old.d.flags.champion = true; old.d.day = 9; old.migrate();
 check(old.d.ow.state === 'SIGNS' && old.d.ow.at === 9 + OW.delay, 'a save from before the story starts it from the next load', JSON.stringify(old.d.ow));
+const ex = Career.create(3, { name: '전 챔피언', style: 'all', look }); delete ex.d.ow; ex.d.titles.push({ name: 'x', season: 1, day: 5 }); ex.d.day = 9; ex.migrate();
+check(ex.d.ow.state === 'LOCKED', 'a former champion without the belt is not their target', JSON.stringify(ex.d.ow));
+// the belt lost (to a cash-in) before they arrive: they do not come
+{ const k = Career.create(3, { name: '파도', style: 'all', look }), e = k.d; e.flags.champion = true; e.day = 10; k.owBegin(); e.contract = { opp: 'neon', oppName: '네온', title: 1, cashIn: 'neon', kind: 'title', reward: 0, fame: 0, day: 10 };
+  k.applyResult('title', { human: { dmgTaken: 10, finishersTaken: 0, ko: false, ringOuts: 0 }, won: false, draw: false, result: { how: 'pin', winner: null } }, {});
+  e.day = 13; check(!e.flags.champion && e.ow.state === 'LOCKED' && !k.owDue('lobby') && !k.owDue('street'), 'a belt lost to a cash-in before the invasion: 선항 레슬링 does not come', JSON.stringify(e.ow));
+  e.flags.champion = true; k.owBegin(); check(e.ow.state === 'SIGNS', 'winning it back starts the story again'); }
 // the new faces play
 for (const id of ['whiteivory', 'godong', 'owsailor']) check(CHARACTERS[id] && CHARACTERS[id].thug && FINISHERS[CHARACTERS[id].finisher], `${CHARACTERS[id].name}: a wrestler with a finisher, kept out of the league`);
 {

@@ -32,6 +32,7 @@ const res = (won, how = 'pin', winner = null) => ({ human: { dmgTaken: 10, ko: f
   const c = fresh(), d = c.d; d.day = 7;
   const o = c.makeOffers().find(x => x.mitb);
   check(!!o && o.special === 'ladder', 'Money in the Bank is offered on days 6-10 to a challenger', JSON.stringify(c.d.offers.map(x => x.oppName)));
+  check(o.mode === 'single' && CHARACTERS[o.mitbFoe] && o.mitbFoe !== c.champion && o.desc.includes(CHARACTERS[o.mitbFoe].name), 'one on one: a single opponent from the top of the ranking, named in the offer', o.mitbFoe);
   d.contract = o; c.applyResult('event', res(true, 'ladder'), {});
   check(d.mitb && d.mitb.holder === 'player' && d.mitb.until === d.day + 7, 'winning it gives the case for seven days', JSON.stringify(d.mitb));
   const c2 = fresh(); c2.d.day = 7; const o2 = c2.makeOffers().find(x => x.mitb); c2.d.contract = o2;
@@ -64,15 +65,15 @@ const res = (won, how = 'pin', winner = null) => ({ human: { dmgTaken: 10, ko: f
   const msgs = c.nextDay(false);
   check(!d.mitb && msgs.some(m => m.includes('기한')), 'an unused case expires', JSON.stringify(msgs));
 }
-// ---- the match itself: four in the ring, one ladder, the case decides it
+// ---- the match itself: one on one, one ladder, the case decides it
 {
   let byCase = 0;
   for (let seed = 1; seed <= 4; seed++) {
-    const m = new MatchManager({ mode: 'royal', special: 'ladder', arena: 'dome', seed, skipIntro: true, entrants: ['taesan', 'haneul', 'neon', 'dueok'].map(id => ({ char: id, ctrl: 'ai', difficulty: 'hard' })) });
+    const m = new MatchManager({ mode: 'single', special: 'ladder', arena: 'dome', seed, skipIntro: true, entrants: [['taesan', 'haneul'], ['neon', 'dueok'], ['dohyun', 'baekpa'], ['bjorn', 'mandeok']][seed - 1].map(id => ({ char: id, ctrl: 'ai', difficulty: 'hard' })) });
     let t = 0; while (m.phase !== 'end' && t < 480) { m.update(1 / 60); t += 1 / 60; }
     if (m.result && m.result.how === 'ladder') byCase++;
   }
-  check(byCase >= 3, 'a four-way ladder match ends with somebody taking the case', `${byCase}/4`);
+  check(byCase >= 3, 'a one-on-one ladder match ends with somebody taking the case', `${byCase}/4`);
 }
 console.log(fails ? `\n${fails} FAILED` : '\nALL OK');
 process.exit(fails ? 1 : 0);

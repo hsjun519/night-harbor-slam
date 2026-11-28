@@ -80,14 +80,14 @@ function drawLadder(g, L, ar, camX) {
   // one half: a near rail, a far rail a little up and back, rungs between them
   const half = (dir, near) => {
     const bx = dir * spread, tx = dir * 3, dx = near ? 0 : 4, dy = near ? 0 : -3;
-    seg(bx + dx, dy, tx + dx, -H + dy, near ? 4 : 3, O);
-    seg(bx + dx, dy, tx + dx, -H + dy, near ? 2 : 1.4, near ? M : MD);
+    seg(bx + dx, dy, tx + dx, -H + dy, near ? 5.5 : 4, O);
+    seg(bx + dx, dy, tx + dx, -H + dy, near ? 3.2 : 2.2, near ? M : MD);
     if (near) seg(bx + dx - dir * .8, dy, tx + dx - dir * .8, -H + dy, .7, ML);
   };
   const rungs = dir => {
-    for (let i = 1; i < 9; i++) {
-      const t = i / 9, y = -H * t, rx = dir * spread * (1 - t) + dir * 3 * t;
-      g.fillStyle = O; g.fillRect(rx - 1, y - 2, 6, 4); g.fillStyle = MD; g.fillRect(rx, y - 1, 4, 2); g.fillStyle = ML; g.fillRect(rx, y - 1, 4, 1);
+    for (let i = 1; i < 12; i++) {
+      const t = i / 12, y = -H * t, rx = dir * spread * (1 - t) + dir * 3 * t;
+      g.fillStyle = O; g.fillRect(rx - 2, y - 2, 9, 5); g.fillStyle = MD; g.fillRect(rx - 1, y - 1, 7, 3); g.fillStyle = ML; g.fillRect(rx - 1, y - 1, 7, 1);
     }
   };
   for (const d of [1, -1]) { half(d, false); rungs(d); half(d, true); }

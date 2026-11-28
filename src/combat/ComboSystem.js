@@ -74,7 +74,10 @@ export class ComboSystem {
   open(a, v, id) {
     const m = this.m, list = FOLLOW[id];
     if (!list || !list.length || m.phase !== 'fight') { a.follow = null; return; }
-    const opts = list.filter(o => !o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal)));
+    // a chain ends: after COMBO.maxChain moves only the pin is left, and the same move only COMBO.maxSame times in a row
+    const seq = (a.comboSeq || []).filter(x => x !== 'pin');
+    let same = 0; for (let i = seq.length - 1; i >= 0 && seq[i] === id; i--) same++;
+    const opts = list.filter(o => (!o.pin || (m.rules.pin && v.side === 'in' && !(m.mode === 'tag' && !v.legal))) && (o.pin || o.spring || (seq.length < COMBO.maxChain && !(o.id === id && same >= COMBO.maxSame))));
     if (!opts.length) { a.follow = null; return; }
     const spring = opts.some(o => o.spring);
     a.follow = { from: id, v, opts, t: 0, life: spring ? COMBO.springWindow : COMBO.window, want: null, ai: null };

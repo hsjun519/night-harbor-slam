@@ -251,4 +251,5 @@ export const SIGNATURES = [
   { name: '북해 삼연타', seq: ['spb1', 'pbAgain', 'spb3'] },
   { name: '코너 폭격', seq: ['turnbuckleDrop', 'superGerman'] },
 ];
-export const COMBO = { window: 1.5, springWindow: 2.2, counterWindow: .16 };
+// maxChain: moves in one chain before only a pin is left; maxSame: the same move in a row (suplex into suplex: twice)
+export const COMBO = { window: 1.5, springWindow: 2.2, counterWindow: .16, maxChain: 3, maxSame: 2 };
