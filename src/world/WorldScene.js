@@ -2,7 +2,7 @@
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
 import { Career } from './CareerManager.js';
 import { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } from './quests.js';
-import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } from './gymGear.js';
+import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf, MECH_NAME, mechOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
 import { SYNERGY, SYN_KIND, synName, needMoves } from '../data/synergy.js';
 import { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } from './blackRope.js';
@@ -157,27 +157,29 @@ export class WorldScene {
         return;
       }
     }
-    // troublemakers from the docks burst into the lobby: the first time from day 3, then now and then
+    // troublemakers from the docks burst into the lobby: the first time from day 3, then now and then. Until they have
+    // had their say they are pending: slip out of a door and back and they are still there waiting for you.
+    if (id === 'lobby' && !instant && d.flags.gangPending === d.day) { this.gangArrives(true); return; }
     if (id === 'lobby' && !instant && d.day >= 3 && d.flags.gangDay !== d.day && !(R && !R.invited && d.day >= R.day)) {
       const roll = new RNG(d.day * 71 + d.season * 7).next();
       d.flags.gangDay = d.day;
-      if (!d.flags.gangSeen || roll < .16) this.gangArrives();
+      if (!d.flags.gangSeen || roll < .16) { d.flags.gangPending = d.day; this.gangArrives(); }
     }
   }
-  gangArrives() {
-    const p = this.player, from = Math.max(40, Math.min(p.x - 230, 90));
+  gangArrives(waiting) {
+    const p = this.player, from = waiting ? Math.max(40, Math.min(p.x - 150, 140)) : Math.max(40, Math.min(p.x - 230, 90));
     const mk = (id, x) => { const N = NPCS[id], a = new Actor(N.look, { x, face: 1, stance: 'street', id }); a.idx = this.npcs.length + 1; this.npcs.push(a); return a; };
     const boss = mk('galchi', from), kid = mk('myeolchi', from - 34);
     this.approach(boss, () => this.say(this.gangLines()), { speed: 175 });
     this.approach(kid, null, { speed: 175, near: 92 });
     if (GANG[this.c.gangTier()].who.includes('kkongchi')) this.approach(mk('kkongchi', from - 70), null, { speed: 160, near: 130 });
-    this.toast('부둣가 악동단이 로비에 들이닥쳤다!', '#ffb347');
-    this.game.audio.sfx('door'); this.game.audio.sfx('warn');
+    this.toast(waiting ? '부둣가 악동단이 아직 로비에서 기다리고 있었다!' : '부둣가 악동단이 로비에 들이닥쳤다!', '#ffb347');
+    this.game.audio.sfx(waiting ? 'warn' : 'door'); if (!waiting) this.game.audio.sfx('warn');
   }
   gangLeave() { for (const a of this.npcs) if (a.id === 'galchi' || a.id === 'myeolchi' || a.id === 'kkongchi') { a.leaving = true; a.scripted = false; } this.approachers = this.approachers.filter(ap => !ap.a.leaving); }
   gangLines() {
     const c = this.c, d = c.d, first = !d.flags.gangSeen;
-    d.flags.gangSeen = (d.flags.gangSeen || 0) + 1;
+    d.flags.gangSeen = (d.flags.gangSeen || 0) + 1; d.flags.gangPending = 0;   // they have had their say
     const offer = { opp: 'galchi', oppName: '부둣가 악동단', reward: 30000 + d.season * 5000, fame: 4, kind: 'brawl' };
     const fight = () => this.startMatch('brawl', offer), price = Math.min(8000, d.money), G = GANG[c.gangTier()], three = G.who.length > 2;
     return [
@@ -615,7 +617,7 @@ export class WorldScene {
     gymOf(d).pitched[id] = tierOf(d, id) + 1;
     this.say([
       { who: 'trainer', text: `강해진 만큼 더 강한 훈련기구를 사야하지 않겠어? ${josa(now.name, '은/는')} 이제 너한테 장난감이다.` },
-      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 더 어렵고 더 지치지만, 그만큼 훨씬 많이 남는다.` },
+      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 이번엔 {y}${MECH_NAME[mechOf(id, tierOf(d, id) + 1)]}{/}으로 단련한다. 더 지치지만, 그만큼 훨씬 많이 남는다.` },
       { choice: [{ label: `${next.name} 사기 (${fmtMoney(next.price)})`, act: () => this.buyGearNow(id) }, { label: '나중에', go: [{ who: 'trainer', text: '그래, 돈 모이면 말해라. 기구는 어디 안 간다.' }] }] },
     ]);
   }
@@ -623,7 +625,7 @@ export class WorldScene {
   gearList() {
     const d = this.c.d, rows = Object.keys(GEAR).map(id => ({ id, next: gearNext(d, id), now: gearNow(d, id) })).filter(r => r.next);
     if (!rows.length) { this.say([{ who: 'trainer', text: '더 살 기구가 없다. 이제 기구가 아니라 링이 널 키울 거다.' }]); return; }
-    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
+    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} (${MECH_NAME[mechOf(r.id, tierOf(d, r.id) + 1)]}) ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
   }
   // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
   synergyTalk() {

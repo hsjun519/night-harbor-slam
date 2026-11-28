@@ -204,6 +204,8 @@ export class AIController {
     // outside with the foe out there too: fight first, get back in before the count runs out
     const bothOut = t.side === 'out' && f.side === 'out' && !t.entering && t.st !== 'ENTER_RING';
     if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', (bothOut && f.outCount < 6 ? .25 : 3) + (f.outCount > 5 ? 6 : 0), null);
+    // no count out (the ladder, the cell): still come back in when the fight, the ladder or the case is in the ring
+    if (f.side === 'out' && ar.hasRing && m.rules.ringOut === 'none' && !t.entering && (t.side === 'in' || tUp || (m.special && m.special.ladder))) add('return', tUp ? 16 : bothOut ? .4 : 7, null);
     // the foe went out of the ring: go after them (not where leaving the ring eliminates you)
     if (ar.hasRing && f.side === 'in' && t.side === 'out' && m.rules.ringOut !== 'elim' && m.rules.leave !== false && !t.entering && t.st !== 'ENTER_RING') add('chaseOut', 5, t);
     if (m.rules.ringOut === 'elim' && ar.hasRing && f.side === 'in') for (const o of m.fighters) {
@@ -219,7 +221,7 @@ export class AIController {
       else if (L.state === 'open') {
         if (cl && cl.st === 'LADDER') {
           if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl);
-          if (L.foldCd <= 0) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
+          if (L.foldCd <= 0 && f.fin >= B.ladderFoldCost) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
           add('chaseClimb', (cl.climb.p >= .6 ? 10 : 4) * (1.4 - KI), cl);
         } else if (!cl) add('climbLadder', (dist < 120 && !tDown && t.st !== 'STAGGER' ? .3 : 1.2) + (tDown || t.st === 'STAGGER' || t.st === 'GET_UP' ? 9 : 0) + (dist > 170 ? 2.5 : 0) + (SP.prize.hits >= SP.prize.need * .6 ? 3 : 0), null);
       }
@@ -392,7 +394,7 @@ export class AIController {
       }
       case 'foldLadder': {
         const L = m.special && m.special.ladder;
-        if (!L || L.state !== 'open' || L.foldCd > 0) { this.planT = 0; break; }
+        if (!L || L.state !== 'open' || L.foldCd > 0 || f.fin < B.ladderFoldCost) { this.planT = 0; break; }
         const tx = L.x + (f.x < L.x ? -1 : 1) * (B.ladderSpread + 8);
         if (Math.abs(f.x - tx) > 8) this.move(tx, 6, Math.abs(f.x - tx) > 100);
         else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = .5; }

@@ -19,6 +19,8 @@ export function specialRules(cfg) {
   if (cfg.iron) r.time = cfg.iron;
   return r;
 }
+// the case dial: is the needle on the green arc (an arc may run past 12 o'clock); how far it is past the arc's start
+export function caseIn(M, margin = 0) { const w = M.z[1] - M.z[0], off = ((M.n - M.z[0]) % 1 + 1) % 1; return off >= margin && off <= w - margin; }
 const NAMES = ['첫 번째', '두 번째', '세 번째', '네 번째', '다섯 번째', '여섯 번째', '일곱 번째'];
 const CLIMB = new Set(['LADDER', 'CAGE_CLIMB']);
 
@@ -180,6 +182,7 @@ export class SpecialRules {
     if (!c) return false;
     if (c.kind === 'ladder' && (!this.ladder || this.ladder.state !== 'open')) return false;
     if (c.rock > 0) c.rock -= dt;
+    if (c.slipT > 0) c.slipT -= dt;
     if (f.climbAnim > 0) f.climbAnim -= dt;
     const top = c.kind === 'ladder' ? c.p >= 1 : c.over != null;
     // facing: at the top of the ladder A/D picks the side to come down; on the cage A/D looks in or out
@@ -205,7 +208,8 @@ export class SpecialRules {
     return true;
   }
   place0(f, c) { const ar = this.m.arena; f.y = ar.matY; f.ground = true; f.side = 'in'; if (c.kind === 'ladder') f.x = this.ladder.x + c.side * (B.ladderSpread + 14); else f.x = (c.side < 0 ? ar.ropeL : ar.ropeR) - c.side * 16; }
-  // J up there: punch the one level with you, kick the one below, kick somebody on the floor underneath, or dive
+  // J up there: punch the one level with you, kick the one below, kick somebody standing underneath (low on it), or dive
+  // at the nearest foe on the mat (from a third of the way up; on the ladder you turn to them). Nothing in reach: say so.
   climbAttack(f) {
     const c = f.climb, m = this.m, others = this.climbers(f, c.kind).filter(o => f.isFoe(o));
     const level = others.find(o => Math.abs(o.climb.p - c.p) <= B.climbReach * .5);
@@ -213,10 +217,11 @@ export class SpecialRules {
     const below = others.find(o => o.climb.p < c.p && c.p - o.climb.p <= B.climbReach);
     if (below) { this.climbHit(f, below, 'kick'); return; }
     if (c.p < .7) {
-      const g = m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && o.side === 'in' && Math.abs(o.x - f.x) < 36 && STATES[o.st].hit && !o.link);
+      const g = m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && o.side === 'in' && Math.abs(o.x - f.x) < 40 && STATES[o.st].hit && !o.link);
       if (g) { f.climbAnim = .3; m.combat.damage(g, 4, 10, f, { src: 'climb' }); if (g.alive && g.st !== 'KO') { m.combat.stagger(g, B.climbKickStagger, f); g.vx = (sgn(g.x - f.x) || -f.face) * 140; } m.emit('climbKick', { a: f, v: g }); return; }
     }
-    if (c.p >= .3 && c.over == null) this.climbDive(f);
+    if (c.p >= .3 && c.over == null && this.climbDive(f)) return;
+    m.emit('climbNoTarget', { f });
   }
   // K up there: the one above you by the leg; at the top of the ladder, the case
   climbGrab(f) {
@@ -225,27 +230,46 @@ export class SpecialRules {
     if (above) { f.climbAnim = .35; this.knockOff(above, f, sgn(above.x - f.x) || c.side); c.p = Math.max(0, c.p - B.climbPullSlip); c.rock = .4; if (c.over != null) c.over = null; m.emit('legPull', { a: f, v: above }); return; }
     if (c.kind === 'ladder' && c.p >= 1) this.casePress(f);
   }
-  // a blow up there: the first rocks them and they slip down; the second (or a kick low down) knocks them off
+  // a blow up there slips them a step down and they wobble (no climbing for a moment); near the bottom, or after
+  // ladderSlipsMax blows in a row, they come off
   climbHit(a, v, kind) {
-    const vc = v.climb, m = this.m;
+    const m = this.m;
     a.climbAnim = .3;
     m.combat.damage(v, kind === 'punch' ? 4 : 5, 12, a, { src: 'climb' });
     if (v.st === 'KO' || !v.climb) return;
-    if (vc.rock > 0 || vc.p < .2 || (kind === 'kick' && vc.p < .4)) this.knockOff(v, a, sgn(v.x - a.x) || -a.face);
-    else { vc.rock = B.climbRock; vc.p = Math.max(.05, vc.p - (kind === 'kick' ? .28 : .16)); if (vc.over != null) vc.over = null; v.flash = .1; v.hitShake = .2; }
+    this.slip(v, a, kind === 'kick' ? B.ladderKickSlip : B.ladderPunchSlip, sgn(v.x - a.x) || -a.face);
     m.hitstop(.06);
     m.emit('climbHit', { a, v, kind });
   }
+  slip(v, a, amt, dir) {
+    const c = v.climb, top = c.p >= 1;
+    c.slips = (c.slipT > 0 ? c.slips || 0 : 0) + 1; c.slipT = B.ladderSlipWindow;
+    c.p = Math.max(0, c.p - amt);
+    if (c.over != null) c.over = null;
+    if (top && c.meter) c.meter.fumble = Math.max(c.meter.fumble, B.caseFumble);   // knocked off the case for a moment
+    if (c.p <= B.ladderSlipOff || c.slips >= B.ladderSlipsMax) { this.knockOff(v, a, dir); return; }
+    c.rock = B.climbRock; v.flash = .1; v.hitShake = .2;
+    this.place(v);
+    this.m.emit('climbSlip', { v, a, p: c.p, slips: c.slips });
+  }
+  // a strike from the floor (or a chair) on somebody up the ladder: low down, or a big blow, and they come off;
+  // higher up they slip a step. On the cage wall any strike from the floor still pulls you off.
+  struck(v, a, d, dir) {
+    if (v.st !== 'LADDER' || !v.climb || v.climb.p < .3 || (d && d.lv >= 4)) { this.knockOff(v, a, v.st === 'CAGE_CLIMB' && v.climb ? -v.climb.side : dir); return; }
+    this.slip(v, a, B.ladderFloorSlip, dir);
+    this.m.emit('climbHit', { a, v, kind: 'floor' });
+  }
   climbDive(f) {
-    const m = this.m, c = f.climb;
-    const n = f.nearestFoe(320, o => o.side === 'in' && !o.climb && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 24);
+    const m = this.m, c = f.climb, lad = c.kind === 'ladder';
+    const n = f.nearestFoe(340, o => o.side === 'in' && !o.climb && o.alive && o.st !== 'CASE_HANG' && (lad || (sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 24)));
     if (!n) return false;
+    if (lad) f.face = sgn(n.x - f.x) || f.face;
     const down = n.st === 'DOWN' || n.st === 'GET_UP' || (n.st === 'HITSTUN' && n.hsKind === 'lie');
     const d = down ? (ATTACKS[f.char.dive] || ATTACKS.diveElbow) : (ATTACKS[f.char.topStand] || ATTACKS.missileDropkick);
     const h = c.kind === 'ladder' ? c.p * B.ladderH : c.p * B.cageH, dx = Math.abs(n.x - f.x), T = .62 + h / 400;
     f.climb = null;
     f.set('JUMP', { force: true });
-    f.vy = -180; f.vx = f.face * clamp(dx / T, 60, 320); f.ground = false;
+    f.vy = -180; f.vx = f.face * clamp(dx / T, lad ? 20 : 60, 320); f.ground = false;
     f.set('AIR_ATTACK', { force: true });
     f.atk = { def: d, t: 0, hit: new Set(), connected: false, chain: -1, boost: 1 + h / 100 * B.climbDiveBoost, done: false };
     m.addHype(8);
@@ -272,6 +296,8 @@ export class SpecialRules {
     if (!L || f.side !== 'in') return false;
     if (L.state === 'folded' && Math.abs(f.x - L.x) < 64) { L.state = 'rising'; L.t = 0; L.by = f; f.landT = B.ladderSet + .05; f.vx = 0; f.face = sgn(L.x - f.x) || f.face; m.emit('ladderRaise', { f }); return true; }
     if (L.state === 'open' && Math.abs(f.x - L.x) < B.ladderSpread + 26 && L.foldCd <= 0) {
+      if (f.fin < B.ladderFoldCost) { if (!(f.foldNagT > m.time)) { f.foldNagT = m.time + 1.5; m.emit('ladderFoldNoEnergy', { f, need: B.ladderFoldCost }); } return false; }   // folding it takes energy
+      f.fin -= B.ladderFoldCost;
       L.state = 'closing'; L.t = 0; L.dir = sgn(L.x - f.x) || 1; L.foldCd = B.ladderFoldCd; f.landT = .35;
       for (const o of m.fighters) if (o.st === 'LADDER' && o.climb) {
         if (o.climb.p >= 1 && o.climb.meter && o.climb.meter.used) this.toHang(o);   // hands on the case: left hanging from it
@@ -293,35 +319,46 @@ export class SpecialRules {
     }
     return false;
   }
-  // ==================================================================== the case: a timing meter whose count stays with the case
+  // ==================================================================== the case: a round timing dial whose count stays with the case
+  // The needle goes round; K while it is over the green arc is a hit. Each hit puts the arc somewhere ahead, narrower,
+  // and the needle goes a little faster.
   meterTick(f, dt) {
     const c = f.climb;
-    if (!c.meter) c.meter = { n: 0, dir: 1, z: this.zone(), fumble: 0, used: false };
+    if (!c.meter) c.meter = { n: 0, z: this.zone(0), fumble: 0, used: false, wasIn: false, plan: null, planAt: .5 };
     this.meterRun(f, c.meter, dt);
   }
   meterRun(f, M, dt) {
     const P = this.prize;
     if (M.fumble > 0) M.fumble -= dt;
-    M.n += M.dir * (B.caseSpeed + P.hits * B.caseSpeedUp) * dt;
-    if (M.n > 1) { M.n = 2 - M.n; M.dir = -1; } else if (M.n < 0) { M.n = -M.n; M.dir = 1; }
-    if (f.ctrl === 'ai' && f.ai && M.fumble <= 0 && !P.taken) {   // the computer presses when it sees the needle in the zone, and sometimes too early
-      const D = f.ai.D, inZ = M.n >= M.z[0] && M.n <= M.z[1];
-      if (inZ && f.ai.rng.chance(dt * (1.2 + D.pick * 3))) this.casePress(f);
-      else if (!inZ && f.ai.rng.chance(dt * D.err * 1.4)) this.casePress(f);
-    }
+    M.n = (M.n + (B.caseSpeed + P.hits * B.caseSpeedUp) * dt) % 1;
+    if (f.ctrl === 'ai' && f.ai && !P.taken) this.aiDial(f, M);
   }
-  zone() {
+  // the computer decides once per pass, as the needle comes onto the arc: a hit somewhere inside it, a beat too late, or let it go
+  aiDial(f, M) {
+    const D = f.ai.D, inZ = caseIn(M), w = M.z[1] - M.z[0];
+    if (inZ && !M.wasIn) {
+      const r = f.ai.rng.next(), hit = (B.caseAiHit + D.pick * B.caseAiPick) * Math.sqrt(w / B.caseZone);
+      M.plan = r < hit ? 'hit' : r < hit + D.err * B.caseAiErr ? 'late' : null;
+      M.planAt = .25 + f.ai.rng.next() * .5;
+    }
+    M.wasIn = inZ;
+    if (M.fumble > 0 || !M.plan) return;
+    const off = ((M.n - M.z[0]) % 1 + 1) % 1;
+    if (M.plan === 'hit' && inZ && off >= w * M.planAt) { M.plan = null; this.casePress(f); }
+    else if (M.plan === 'late' && !inZ && off > w && off < w + .08) { M.plan = null; this.casePress(f); }
+  }
+  zone(from = 0) {
     const P = this.prize, w = Math.max(B.caseZoneMin, B.caseZone - P.hits * B.caseZoneStep), r = this.m.rng.next();
-    const c = .1 + w / 2 + r * (.8 - w);
-    return [c - w / 2, c + w / 2];
+    const a = (from + .22 + r * .5) % 1;   // somewhere ahead of the needle, never right under it
+    return [a, a + w];
   }
   casePress(f) {
     const c = f.climb || f.hang, P = this.prize, m = this.m;
     const M = c && c.meter;
     if (!M || M.fumble > 0 || P.taken) return;
     M.used = true;
-    if (M.n >= M.z[0] && M.n <= M.z[1]) {
-      P.hits++; M.z = this.zone();
+    if (caseIn(M)) {
+      P.hits++; M.z = this.zone(M.n); M.wasIn = false; M.plan = null;
       m.emit('caseHit', { f, hits: P.hits, need: P.need });
       if (P.hits >= P.need) { P.taken = f; this.win(f, 'ladder'); }
     } else { M.fumble = B.caseFumble; m.emit('caseMiss', { f, hits: P.hits }); }

@@ -196,6 +196,11 @@ export class HUD {
     const SP = m.special;
     if (SP && SP.ladder) {
       const L = SP.ladder, c = f.climb, P0 = SP.prize;
+      for (const o of m.fighters) {   // the other one's dial too: you can see when they are about to hit
+        if (o === f) continue;
+        const M = o.st === 'LADDER' && o.climb && o.climb.p >= 1 ? o.climb.meter : o.st === 'CASE_HANG' && o.hang ? o.hang.meter : null;
+        if (M) this.caseMeter(g, o, M, P0, camX);
+      }
       if (f.st === 'LADDER' && c) {
         if (c.p >= 1) P.push([[inp.label('grab')], `타이밍! 가방 ${P0.hits}/${P0.need}`], [[inp.label('left') + '/' + inp.label('right')], '내려갈 쪽'], [[inp.label('atk')], '공격·다이빙']);
         else P.push([[inp.label('up')], '오르기'], [[inp.label('atk')], '주먹·발차기'], [[inp.label('grab')], '위 상대 다리 잡기']);
@@ -206,7 +211,7 @@ export class HUD {
         if (L.state === 'folded') P.push([[inp.label('grab')], '사다리 펼치기']);
         else if (L.state === 'open') {
           if (foeOn && foeOn.climb && foeOn.climb.p <= B.climbPullMax && Math.abs(foeOn.x - f.x) < 46) P.push([[inp.label('grab')], '끌어내리기!']);
-          else if (L.foldCd <= 0) P.push([[inp.label('grab')], foeOn ? '사다리 접기!' : '사다리 접기']);
+          else if (L.foldCd <= 0) P.push([[inp.label('grab')], f.fin >= B.ladderFoldCost ? `${foeOn ? '사다리 접기!' : '사다리 접기'} (에너지 ${B.ladderFoldCost})` : `사다리 접기: 에너지 ${B.ladderFoldCost} 필요`]);
           P.push([[inp.label('up')], '사다리 오르기']);
         }
       }
@@ -292,14 +297,24 @@ export class HUD {
     this.bottomPrompts(g, P);
     void sgn; void clamp;
   }
-  // the timing meter for the case: press K while the needle is in the green
+  // the round timing dial for the case, beside the climber and never off the screen: K while the needle is on the green
+  // arc (red while you fumble); the pips under it count the hits the case has taken
   caseMeter(g, f, M, P0, camX) {
-    const x = Math.round(f.x - camX) - 34, y = Math.round(Math.min(f.joints.y(J.head), f.y - 90)) - 30, w = 68;
-    rect(g, '#05060f', x - 2, y - 2, w + 4, 11); rect(g, '#1b2450', x, y, w, 7);
-    rect(g, M.fumble > 0 ? '#5a1a2a' : '#2f8f4e', x + Math.round(M.z[0] * w), y, Math.max(2, Math.round((M.z[1] - M.z[0]) * w)), 7);
-    const nx = x + Math.round(M.n * w); rect(g, '#05060f', nx - 2, y - 3, 4, 13); rect(g, '#ffffff', nx - 1, y - 2, 2, 11);
-    const n = P0.need, cw = Math.floor((w - 4) / n);
-    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', x + 2 + i * cw, y + 10, cw - 1, 3);
+    const s = f.climb && f.climb.side ? f.climb.side : 1, R = 15, TAU = Math.PI * 2;
+    const cx = clamp(Math.round(f.x - camX) + s * 42, R + 8, 640 - R - 8), cy = clamp(Math.round(f.joints.y(J.head)) + 2, 64 + R, 292);
+    ellipse(g, '#05060f', cx, cy, R + 5, R + 5); ellipse(g, '#141a36', cx, cy, R + 3, R + 3); ellipse(g, '#0a0d20', cx, cy, R - 4, R - 4);
+    const w = M.z[1] - M.z[0], N = 76;
+    for (let i = 0; i < N; i++) {
+      const t = i / N, on = ((t - M.z[0]) % 1 + 1) % 1 <= w, a = t * TAU - Math.PI / 2;
+      rect(g, on ? (M.fumble > 0 ? '#c2333f' : '#3fd46b') : '#33405e', Math.round(cx + Math.cos(a) * R) - 1, Math.round(cy + Math.sin(a) * R) - 1, 3, 3);
+    }
+    const na = M.n * TAU - Math.PI / 2;
+    for (let k = 0; k <= R + 1; k++) { const x = Math.round(cx + Math.cos(na) * k), y = Math.round(cy + Math.sin(na) * k); rect(g, '#05060f', x - 1, y - 1, 3, 3); }
+    for (let k = 2; k <= R + 1; k++) rect(g, '#ffffff', Math.round(cx + Math.cos(na) * k), Math.round(cy + Math.sin(na) * k), 1, 1);
+    rect(g, '#ffd65a', cx - 1, cy - 1, 3, 3);
+    const n = P0.need, pw = 3, gap = 1, tw = n * (pw + gap) - gap, px = cx - Math.round(tw / 2);
+    rect(g, '#05060f', px - 2, cy + R + 6, tw + 4, 7);
+    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', px + i * (pw + gap), cy + R + 8, pw, 3);
   }
   bottomPrompts(g, P) {
     const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);

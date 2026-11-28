@@ -1,7 +1,7 @@
 // Training equipment: four grades a station; each costs more, trains more, tires more and plays a harder game
 // (typing, rhythm, snake from the third grade); 백 관장 brings it up once a station has been outgrown.
 // Run: node tests/gym.mjs
-import { GEAR, tierOf, gainK, tireOf, feeK, outgrown, buyGear, gymOf, gearNext } from '../src/world/gymGear.js';
+import { GEAR, tierOf, gainK, tireOf, feeK, outgrown, buyGear, gymOf, gearNext, mechOf, MECH_NAME } from '../src/world/gymGear.js';
 import { Career } from '../src/world/CareerManager.js';
 import { Save } from '../src/core/SaveManager.js';
 
@@ -11,7 +11,8 @@ for (const k of ['save2', 'save2.chk']) Save.del(k);
 const look = { build: 'athletic', skin: 'tan', head: { face: 'square', hair: 'side', hairCol: '#222' }, top: { kind: 'none' }, bottom: { kind: 'tights', c1: '#157f8c', c2: '#ffd65a' }, boots: { c1: '#222' } };
 const c = Career.create(2, { name: '파도', style: 'all', look }), d = c.d;
 check(Object.values(GEAR).every(T => T.length === 4 && T.every((g, i) => i === 0 || g.price > T[i - 1].price)), 'four grades a station, each dearer than the last');
-check(GEAR.bench[2].mech === 'typing' && GEAR.rope[2].mech === 'rhythm' && GEAR.mitt[2].mech === 'snake', 'the third grade brings typing (bench), rhythm (rope) and snake (mitts)');
+check(Object.entries(GEAR).every(([id, T]) => new Set(T.map((g, i) => mechOf(id, i))).size === 4), 'every purchase trains a different way: no two grades of a station share a game', JSON.stringify(Object.fromEntries(Object.entries(GEAR).map(([id, T]) => [id, T.map((g, i) => mechOf(id, i))]))));
+check(Object.values(GEAR).every(T => T.every((g, i) => !i || MECH_NAME[g.mech])), 'each bought grade names its game');
 check(tierOf(d, 'bench') === 0 && gainK(d, 'bench') === 1 && tireOf(d, 'bench') === 14 && feeK(d, 'bench') === 1, 'the gym starts with what it has: normal effect, fatigue +14');
 check(!outgrown(d, 'bench', ['atk', 'hp']), 'a rookie has not outgrown anything');
 gymOf(d).runs.bench = 3; d.lv.atk = 3; d.lv.hp = 3;

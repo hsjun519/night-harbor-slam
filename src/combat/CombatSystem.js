@@ -164,7 +164,7 @@ export class CombatSystem {
     const kb = d.kb / v.stats.kbr * (100 / (60 + v.stats.weight * .4)), m = this.m;
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
     const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON' || v.st === 'SEATED';
-    if (v.st === 'LADDER' || v.st === 'CAGE_CLIMB') { m.special.knockOff(v, a, v.st === 'CAGE_CLIMB' && v.climb ? -v.climb.side : dir); return; }
+    if (v.st === 'LADDER' || v.st === 'CAGE_CLIMB') { m.special.struck(v, a, d, dir); return; }   // up the ladder: a step down; low or on the cage: off
     if (v.st === 'CASE_HANG') { m.special.dropHang(v, a); return; }
     if (v.st === 'SEATED') { const o0 = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1), out = m.rules.cage ? -o0 : o0; v.seat = null; v.seatOver = !m.rules.cage; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }

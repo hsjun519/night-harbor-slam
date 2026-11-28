@@ -119,6 +119,9 @@ export class MatchScene {
     m.on('ladderRaise', e => { A.sfx('clang', { p: .6 }); fx.word('사다리를 펼친다', e.f.x, e.f.y - 96, '#c9d4ff', 1); });
     m.on('ladderUp', () => { A.sfx('clang', { p: .7 }); cheer(.5); });
     m.on('ladderDrop', () => { A.sfx('clang', { p: .5 }); });
+    m.on('ladderFoldNoEnergy', e => { if (e.f.ctrl === 'human') { A.sfx('deny'); fx.word(`에너지 ${e.need} 필요`, e.f.x, e.f.y - 96, '#ff8a8a', 1); } });
+    m.on('climbNoTarget', e => { if (e.f.ctrl === 'human') fx.word('닿는 상대가 없다', e.f.x, e.f.y - 110, '#c9d4ff', 1); });
+    m.on('climbSlip', e => { fx.word('주르륵!', e.v.x, e.v.y - 90, '#ffd65a', 1); });
     m.on('ladderFold', e => { A.sfx('clang'); S.shake(.45); fx.word('사다리를 접었다!', e.by.x, e.by.y - 96, '#ffffff', 2); cheer(1.1); });
     m.on('ladderCross', e => { A.sfx('step'); fx.word('넘어간다', e.f.x, e.f.y - 100, '#c9d4ff', 1); });
     m.on('caseHit', e => { A.sfx('tick'); fx.word(`${e.hits}/${e.need}`, e.f.x, e.f.y - 120, e.hits >= e.need - 2 ? '#ff8a2b' : '#ffd65a', 2); if (e.hits >= e.need - 3) cheer(.6); });

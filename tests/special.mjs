@@ -3,6 +3,7 @@
 import { MatchManager } from '../src/combat/MatchManager.js';
 import { CHARACTERS } from '../src/data/characters.js';
 import { BALANCE as B0 } from '../src/data/balance.js';
+import { caseIn } from '../src/combat/SpecialRules.js';
 
 let fails = 0;
 const log = (...a) => console.log(...a);
@@ -47,8 +48,8 @@ const AR = new MatchManager({ mode: 'single', arena: 'hall', entrants: [{ char: 
 // ---- ladder: folded in the middle, K stands it up, both sides can be climbed, the case takes timing hits that stay with it
 const L0 = m => m.special.ladder, P0 = m => m.special.prize;
 const toX = x => (m, h) => Math.abs(h.x - x) > 4 ? Math.sign(x - h.x) : 0;
-// press K only while the needle is inside the zone (once per frame at most)
-const timing = (m, h, v, i, I) => { const c = h.climb || h.hang, M = c && c.meter; if (M && M.fumble <= 0 && M.n >= M.z[0] + .01 && M.n <= M.z[1] - .01 && !(h.lastPress > m.time - .12)) { I.grab = true; h.lastPress = m.time; } };
+// press K only while the needle is on the green arc of the dial (once per frame at most)
+const timing = (m, h, v, i, I) => { const c = h.climb || h.hang, M = c && c.meter; if (M && M.fumble <= 0 && caseIn(M, .01) && !(h.lastPress > m.time - .12)) { I.grab = true; h.lastPress = m.time; } };
 const setUp = [{ t: 3, mx: toX(AR.mid - 50), until: (m, h) => Math.abs(h.x - (AR.mid - 50)) <= 5 }, { t: .05, press: ['grab'] }, { t: 1.4, until: m => L0(m).state === 'open' }];
 const climbUp = [{ t: 1.5, mx: toX(AR.mid - 30), until: (m, h) => Math.abs(h.x - (AR.mid - 30)) <= 5 }, { t: .05, press: ['jump'] }, { t: 2.5, hold: ['up'], until: (m, h) => h.climb && h.climb.p >= 1 }];
 run('ladder: lying folded at the start; K unfolds it, W climbs, ten timing hits take the case', { special: 'ladder' }, (m, h, v) => { h.x = AR.mid - 120; v.x = AR.ropeR - 30; },
@@ -62,11 +63,27 @@ run('ladder: the count stays with the case — knocked off at 3, the other one c
    { t: .05, fn: (m, h, v, i) => { if (i === 0) { v.x = m.special.ladder.x + 30; m.special.ladderClimb(v); v.climb.p = 1; } } }, { t: .6, fn: (m, h, v) => { v.intent.up = true; } }],
   (m, h, v) => (P0(m).hits === 3 && v.st === 'LADDER' && v.climb.p >= 1 && h.st === 'DOWN' && h.downTime >= 3) || `hits=${P0(m).hits} v=${v.st} h=${h.st} down=${h.downTime}`);
 run('ladder: folded from below while working the case: left hanging from it, a blow drops them', { special: 'ladder' }, (m, h, v) => { h.x = AR.mid - 120; v.x = AR.ropeR - 30; v.ai = null; v.ctrl = 'human'; },
-  [...setUp, ...climbUp, { t: 3, fn: timing, until: m => P0(m).hits >= 1 }, { t: .05, fn: (m, h, v, i) => { if (i === 0) { v.x = m.special.ladder.x + 40; v.set('IDLE', { force: true }); m.special.ladderGrab(v); } } }, { t: .4 }],
+  [...setUp, ...climbUp, { t: 3, fn: timing, until: m => P0(m).hits >= 1 }, { t: .05, fn: (m, h, v, i) => { if (i === 0) { v.x = m.special.ladder.x + 40; v.set('IDLE', { force: true }); v.fin = 100; m.special.ladderGrab(v); } } }, { t: .4 }],
   (m, h, v, ev) => (h.st === 'CASE_HANG' && (ev.caseHang || []).length === 1 && m.special.ladder.state !== 'open') || `h=${h.st} hang=${(ev.caseHang || []).length} L=${m.special.ladder.state}`);
-run('ladder: both sides climbed; a punch level with you rocks them, a second knocks them off', { special: 'ladder' }, (m, h, v) => { v.ai = null; v.ctrl = 'human'; const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 30; v.x = L.x + 30; m.special.ladderClimb(h); m.special.ladderClimb(v); h.climb.p = .6; v.climb.p = .62; },
-  [{ t: .05, press: ['atk'] }, { t: .3, fn: (m, h, v) => { v.intent.up = false; } }, { t: .05, press: ['atk'] }, { t: .6 }],
-  (m, h, v, ev) => ((ev.climbHit || []).length >= 1 && v.st === 'DOWN' && (ev.climbFall || []).length === 1 && h.st === 'LADDER') || `hits=${(ev.climbHit || []).length} v=${v.st} falls=${(ev.climbFall || []).length}`);
+const both = (ph, pv) => (m, h, v) => { v.ai = null; v.ctrl = 'human'; const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 30; v.x = L.x + 30; m.special.ladderClimb(h); m.special.ladderClimb(v); h.climb.p = ph; v.climb.p = pv; };
+run('ladder: a punch level with you slips them a step down and they wobble — still on it', { special: 'ladder' }, both(.6, .62),
+  [{ t: .05, press: ['atk'] }, { t: .2 }],
+  (m, h, v, ev) => ((ev.climbHit || []).length === 1 && v.st === 'LADDER' && v.climb.p < .62 - B0.ladderPunchSlip + .01 && v.climb.p > .3 && v.climb.rock > 0) || `hits=${(ev.climbHit || []).length} v=${v.st} p=${v.climb && v.climb.p}`);
+run('ladder: blow after blow they slip down step by step; the fourth in a row knocks them off', { special: 'ladder' }, both(.6, .62),
+  [{ t: .05, press: ['atk'] }, { t: .3 }, { t: .05, press: ['atk'] }, { t: .3 }, { t: .05, press: ['atk'] }, { t: .3, fn: (m, h, v) => { h.p3 = v.climb ? v.climb.p : -1; } }, { t: .05, press: ['atk'] }, { t: .6 }],
+  (m, h, v, ev) => ((ev.climbHit || []).length >= 4 && h.p3 > 0 && h.p3 < .45 && v.st === 'DOWN' && (ev.climbFall || []).length === 1 && h.st === 'LADDER') || `hits=${(ev.climbHit || []).length} p3=${h.p3} v=${v.st} falls=${(ev.climbFall || []).length}`);
+run('ladder: a strike from the floor slips a climber high up a step; low on it, it takes them off', { special: 'ladder' }, both(.22, .7),
+  [{ t: .05, fn: (m, h, v, i) => { if (i === 0) { m.special.struck(v, h, { lv: 2 }, 1); h.pv = v.climb && v.climb.p; m.special.struck(h, v, { lv: 2 }, -1); } } }, { t: .3 }],
+  (m, h, v) => (v.st === 'LADDER' && Math.abs(h.pv - (.7 - B0.ladderFloorSlip)) < .02 && h.st === 'DOWN') || `v=${v.st} pv=${h.pv} h=${h.st}`);
+run('ladder: folding it takes energy', { special: 'ladder' }, (m, h, v) => { const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 40; h.fin = 0; },
+  [{ t: .05, press: ['grab'] }, { t: .4 }, { t: .05, fn: (m, h, v, i) => { if (i === 0) { h.st0 = m.special.ladder.state; h.fin = B0.ladderFoldCost + 10; } } }, { t: .05, press: ['grab'] }, { t: .8 }],
+  (m, h, v, ev) => (h.st0 === 'open' && (ev.ladderFold || []).length === 1 && m.special.ladder.state === 'folded' && Math.abs(h.fin - 10) < 1) || `first=${h.st0} folds=${(ev.ladderFold || []).length} L=${m.special.ladder.state} fin=${h.fin}`);
+run('ladder: J at the top with the foe right underneath dives onto them', { special: 'ladder' }, (m, h, v) => { const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 30; m.special.ladderClimb(h); h.climb.p = 1; m.special.place(h); v.x = L.x + 4; v.face = -1; },
+  [{ t: .05, press: ['atk'] }, { t: .1 }],
+  (m, h, v, ev) => ((ev.climbDive || []).length === 1 && !h.climb) || `dives=${(ev.climbDive || []).length} st=${h.st}`);
+run('ladder: the computer thrown out of the ring comes back in while you climb (no count out here)', { special: 'ladder' }, (m, h, v) => { const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 30; m.special.ladderClimb(h); h.climb.p = .4; v.ai.behavior = null; v.side = 'out'; v.x = AR.x1 - 30; v.y = AR.floorY; },
+  [{ t: 9, fn: (m, h) => { if (h.climb) h.climb.p = Math.min(.95, h.climb.p); }, until: (m, h, v) => v.side === 'in' }],
+  (m, h, v) => (v.side === 'in') || `v=${v.st}/${v.side} x=${v.x | 0} goal=${v.ai && v.ai.goal && v.ai.goal.name}`, { foeCtrl: 'ai', lv: 'hard' });
 run('ladder: the one below grabs the leg of the one above and pulls them off', { special: 'ladder' }, (m, h, v) => { v.ai = null; v.ctrl = 'human'; const L = m.special.ladder; L.state = 'open'; L.k = 1; h.x = L.x - 30; v.x = L.x + 30; m.special.ladderClimb(h); m.special.ladderClimb(v); h.climb.p = .45; v.climb.p = .85; },
   [{ t: .05, press: ['grab'] }, { t: .5 }],
   (m, h, v, ev) => ((ev.legPull || []).length === 1 && v.st === 'DOWN') || `pull=${(ev.legPull || []).length} v=${v.st}`);
@@ -120,6 +137,9 @@ run('cage: nobody is counted out and nobody goes over the top', { special: 'cage
 run('hell in a cell: outside the ring as long as you like, no count', { special: 'cell' }, (m, h, v) => { h.x = AR.x0 + 40; h.side = 'out'; h.y = AR.floorY; v.x = AR.x1 - 40; v.side = 'out'; v.y = AR.floorY; },
   [{ t: 14 }],
   (m, h, v, ev) => (m.phase === 'fight' && !(ev.count || []).some(e => e.out)) || `phase=${m.phase} counts=${(ev.count || []).length}`);
+run('hell in a cell: the computer out on the floor comes back in to the one in the ring', { special: 'cell' }, (m, h, v) => { h.x = AR.mid; v.ai.behavior = null; v.side = 'out'; v.x = AR.x1 - 40; v.y = AR.floorY; },
+  [{ t: 10, until: (m, h, v) => v.side === 'in' }],
+  (m, h, v) => (v.side === 'in') || `v=${v.st}/${v.side} goal=${v.ai && v.ai.goal && v.ai.goal.name}`, { foeCtrl: 'ai', lv: 'normal' });
 // ---- falls
 const koFoe = (m, h, v) => { v.hp = 0; m.knockOut(v, h, 100, -100, 1); };
 run('best of three falls: the first KO is a fall, the match goes on; the second wins it', { falls: 2 }, null,

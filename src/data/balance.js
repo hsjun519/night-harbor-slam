@@ -30,10 +30,18 @@ export const BALANCE = {
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, carryEscape: .7, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // special matches. These balance going for the prize against stopping the other one.
-  // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
-  ladderH: 140, ladderSpread: 32, ladderPrizeY: 190, ladderClimb: 2.5, ladderSet: 1.4, ladderFoldCd: 4,
-  // the case: timing hits needed (the count stays with the case), needle speed and how much each hit adds, zone width, its shrink per hit, its floor, pause after a miss, hanging time
-  ladderHits: 10, caseSpeed: 1.1, caseSpeedUp: .09, caseZone: .3, caseZoneStep: .02, caseZoneMin: .09, caseFumble: .7, caseHang: 2.6,
+  // ladder: height (its top and the case stay below the scoreboard), half spread of its feet, climb time, time to stand it up,
+  // wait between two folds, energy (finisher gauge) a fold costs
+  ladderH: 118, ladderSpread: 32, ladderPrizeY: 166, ladderClimb: 2.5, ladderSet: 1.4, ladderFoldCd: 4, ladderFoldCost: 25,
+  // blows up there slip you a step down (a punch, a kick, a strike from the floor); you come off near the bottom, or after
+  // ladderSlipsMax blows within ladderSlipWindow seconds
+  ladderPunchSlip: .09, ladderKickSlip: .14, ladderFloorSlip: .18, ladderSlipOff: .1, ladderSlipsMax: 4, ladderSlipWindow: 1.8,
+  // the case: a round timing dial. hits needed (the count stays with the case), needle turns per second and what each hit adds,
+  // the green arc (share of a turn), its shrink per hit, its floor, pause after a miss, hanging time
+  ladderHits: 10, caseSpeed: .62, caseSpeedUp: .035, caseZone: .26, caseZoneStep: .022, caseZoneMin: .07, caseFumble: .7, caseHang: 2.6,
+  // the computer at the dial: on each pass of the needle over the arc it hits with caseAiHit + pick * caseAiPick (less as the
+  // arc narrows), presses a beat late with err * caseAiErr, or lets it go by
+  caseAiHit: .18, caseAiPick: .42, caseAiErr: .4,
   // cage: height, climb time, time to get over the top
   cageH: 150, cageClimb: 4.0, cageOver: 2.0,
   // fights up there: reach in height, rocked time after a blow, highest a pull from the floor reaches, down time after a fall, get-up boost while the other one escapes, dive damage per 100 px

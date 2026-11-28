@@ -2840,10 +2840,18 @@ const BALANCE = {
   grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, carryEscape: .7, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // special matches. These balance going for the prize against stopping the other one.
-  // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
-  ladderH: 140, ladderSpread: 32, ladderPrizeY: 190, ladderClimb: 2.5, ladderSet: 1.4, ladderFoldCd: 4,
-  // the case: timing hits needed (the count stays with the case), needle speed and how much each hit adds, zone width, its shrink per hit, its floor, pause after a miss, hanging time
-  ladderHits: 10, caseSpeed: 1.1, caseSpeedUp: .09, caseZone: .3, caseZoneStep: .02, caseZoneMin: .09, caseFumble: .7, caseHang: 2.6,
+  // ladder: height (its top and the case stay below the scoreboard), half spread of its feet, climb time, time to stand it up,
+  // wait between two folds, energy (finisher gauge) a fold costs
+  ladderH: 118, ladderSpread: 32, ladderPrizeY: 166, ladderClimb: 2.5, ladderSet: 1.4, ladderFoldCd: 4, ladderFoldCost: 25,
+  // blows up there slip you a step down (a punch, a kick, a strike from the floor); you come off near the bottom, or after
+  // ladderSlipsMax blows within ladderSlipWindow seconds
+  ladderPunchSlip: .09, ladderKickSlip: .14, ladderFloorSlip: .18, ladderSlipOff: .1, ladderSlipsMax: 4, ladderSlipWindow: 1.8,
+  // the case: a round timing dial. hits needed (the count stays with the case), needle turns per second and what each hit adds,
+  // the green arc (share of a turn), its shrink per hit, its floor, pause after a miss, hanging time
+  ladderHits: 10, caseSpeed: .62, caseSpeedUp: .035, caseZone: .26, caseZoneStep: .022, caseZoneMin: .07, caseFumble: .7, caseHang: 2.6,
+  // the computer at the dial: on each pass of the needle over the arc it hits with caseAiHit + pick * caseAiPick (less as the
+  // arc narrows), presses a beat late with err * caseAiErr, or lets it go by
+  caseAiHit: .18, caseAiPick: .42, caseAiErr: .4,
   // cage: height, climb time, time to get over the top
   cageH: 150, cageClimb: 4.0, cageOver: 2.0,
   // fights up there: reach in height, rocked time after a blow, highest a pull from the floor reaches, down time after a fall, get-up boost while the other one escapes, dive damage per 100 px
@@ -5589,7 +5597,7 @@ class CombatSystem {
     const kb = d.kb / v.stats.kbr * (100 / (60 + v.stats.weight * .4)), m = this.m;
     v.flash = .1; v.hitShake = .12 + d.lv * .03; v.expr = 'hurt'; v.exprT = .5;
     const onPerch = v.st === 'PERCH' || v.st === 'CLIMB' || v.st === 'HANG' || v.st === 'APRON' || v.st === 'SEATED';
-    if (v.st === 'LADDER' || v.st === 'CAGE_CLIMB') { m.special.knockOff(v, a, v.st === 'CAGE_CLIMB' && v.climb ? -v.climb.side : dir); return; }
+    if (v.st === 'LADDER' || v.st === 'CAGE_CLIMB') { m.special.struck(v, a, d, dir); return; }   // up the ladder: a step down; low or on the cage: off
     if (v.st === 'CASE_HANG') { m.special.dropHang(v, a); return; }
     if (v.st === 'SEATED') { const o0 = v.seat ? v.seat.face : (v.x < v.arena.mid ? -1 : 1), out = m.rules.cage ? -o0 : o0; v.seat = null; v.seatOver = !m.rules.cage; this.launch(v, out * 170, -120, out * 3, a); m.emit('seatKnock', { a, v }); return; }
     if (v.st === 'HANG' || v.st === 'APRON') { v.side = 'out'; this.launch(v, (v.x < v.arena.mid ? -1 : 1) * 120, -60, dir * 2, a); return; }
@@ -6932,6 +6940,8 @@ class AIController {
     // outside with the foe out there too: fight first, get back in before the count runs out
     const bothOut = t.side === 'out' && f.side === 'out' && !t.entering && t.st !== 'ENTER_RING';
     if (f.side === 'out' && ar.hasRing && m.rules.ringOut !== 'none') add('return', (bothOut && f.outCount < 6 ? .25 : 3) + (f.outCount > 5 ? 6 : 0), null);
+    // no count out (the ladder, the cell): still come back in when the fight, the ladder or the case is in the ring
+    if (f.side === 'out' && ar.hasRing && m.rules.ringOut === 'none' && !t.entering && (t.side === 'in' || tUp || (m.special && m.special.ladder))) add('return', tUp ? 16 : bothOut ? .4 : 7, null);
     // the foe went out of the ring: go after them (not where leaving the ring eliminates you)
     if (ar.hasRing && f.side === 'in' && t.side === 'out' && m.rules.ringOut !== 'elim' && m.rules.leave !== false && !t.entering && t.st !== 'ENTER_RING') add('chaseOut', 5, t);
     if (m.rules.ringOut === 'elim' && ar.hasRing && f.side === 'in') for (const o of m.fighters) {
@@ -6947,7 +6957,7 @@ class AIController {
       else if (L.state === 'open') {
         if (cl && cl.st === 'LADDER') {
           if (cl.climb.p <= B.climbPullMax) add('pullClimber', 14 * KI, cl);
-          if (L.foldCd <= 0) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
+          if (L.foldCd <= 0 && f.fin >= B.ladderFoldCost) add('foldLadder', (cl.climb.p >= 1 ? 12 : 4) * KI, cl);
           add('chaseClimb', (cl.climb.p >= .6 ? 10 : 4) * (1.4 - KI), cl);
         } else if (!cl) add('climbLadder', (dist < 120 && !tDown && t.st !== 'STAGGER' ? .3 : 1.2) + (tDown || t.st === 'STAGGER' || t.st === 'GET_UP' ? 9 : 0) + (dist > 170 ? 2.5 : 0) + (SP.prize.hits >= SP.prize.need * .6 ? 3 : 0), null);
       }
@@ -7120,7 +7130,7 @@ class AIController {
       }
       case 'foldLadder': {
         const L = m.special && m.special.ladder;
-        if (!L || L.state !== 'open' || L.foldCd > 0) { this.planT = 0; break; }
+        if (!L || L.state !== 'open' || L.foldCd > 0 || f.fin < B.ladderFoldCost) { this.planT = 0; break; }
         const tx = L.x + (f.x < L.x ? -1 : 1) * (B.ladderSpread + 8);
         if (Math.abs(f.x - tx) > 8) this.move(tx, 6, Math.abs(f.x - tx) > 100);
         else if (this.wait <= 0 && f.fsm.is('IDLE', 'MOVE')) { this.tap('grab'); this.wait = .5; }
@@ -7376,6 +7386,8 @@ function specialRules(cfg) {
   if (cfg.iron) r.time = cfg.iron;
   return r;
 }
+// the case dial: is the needle on the green arc (an arc may run past 12 o'clock); how far it is past the arc's start
+function caseIn(M, margin = 0) { const w = M.z[1] - M.z[0], off = ((M.n - M.z[0]) % 1 + 1) % 1; return off >= margin && off <= w - margin; }
 const NAMES = ['첫 번째', '두 번째', '세 번째', '네 번째', '다섯 번째', '여섯 번째', '일곱 번째'];
 const CLIMB = new Set(['LADDER', 'CAGE_CLIMB']);
 
@@ -7537,6 +7549,7 @@ class SpecialRules {
     if (!c) return false;
     if (c.kind === 'ladder' && (!this.ladder || this.ladder.state !== 'open')) return false;
     if (c.rock > 0) c.rock -= dt;
+    if (c.slipT > 0) c.slipT -= dt;
     if (f.climbAnim > 0) f.climbAnim -= dt;
     const top = c.kind === 'ladder' ? c.p >= 1 : c.over != null;
     // facing: at the top of the ladder A/D picks the side to come down; on the cage A/D looks in or out
@@ -7562,7 +7575,8 @@ class SpecialRules {
     return true;
   }
   place0(f, c) { const ar = this.m.arena; f.y = ar.matY; f.ground = true; f.side = 'in'; if (c.kind === 'ladder') f.x = this.ladder.x + c.side * (B.ladderSpread + 14); else f.x = (c.side < 0 ? ar.ropeL : ar.ropeR) - c.side * 16; }
-  // J up there: punch the one level with you, kick the one below, kick somebody on the floor underneath, or dive
+  // J up there: punch the one level with you, kick the one below, kick somebody standing underneath (low on it), or dive
+  // at the nearest foe on the mat (from a third of the way up; on the ladder you turn to them). Nothing in reach: say so.
   climbAttack(f) {
     const c = f.climb, m = this.m, others = this.climbers(f, c.kind).filter(o => f.isFoe(o));
     const level = others.find(o => Math.abs(o.climb.p - c.p) <= B.climbReach * .5);
@@ -7570,10 +7584,11 @@ class SpecialRules {
     const below = others.find(o => o.climb.p < c.p && c.p - o.climb.p <= B.climbReach);
     if (below) { this.climbHit(f, below, 'kick'); return; }
     if (c.p < .7) {
-      const g = m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && o.side === 'in' && Math.abs(o.x - f.x) < 36 && STATES[o.st].hit && !o.link);
+      const g = m.fighters.find(o => f.isFoe(o) && o.alive && !o.climb && o.ground && o.side === 'in' && Math.abs(o.x - f.x) < 40 && STATES[o.st].hit && !o.link);
       if (g) { f.climbAnim = .3; m.combat.damage(g, 4, 10, f, { src: 'climb' }); if (g.alive && g.st !== 'KO') { m.combat.stagger(g, B.climbKickStagger, f); g.vx = (sgn(g.x - f.x) || -f.face) * 140; } m.emit('climbKick', { a: f, v: g }); return; }
     }
-    if (c.p >= .3 && c.over == null) this.climbDive(f);
+    if (c.p >= .3 && c.over == null && this.climbDive(f)) return;
+    m.emit('climbNoTarget', { f });
   }
   // K up there: the one above you by the leg; at the top of the ladder, the case
   climbGrab(f) {
@@ -7582,27 +7597,46 @@ class SpecialRules {
     if (above) { f.climbAnim = .35; this.knockOff(above, f, sgn(above.x - f.x) || c.side); c.p = Math.max(0, c.p - B.climbPullSlip); c.rock = .4; if (c.over != null) c.over = null; m.emit('legPull', { a: f, v: above }); return; }
     if (c.kind === 'ladder' && c.p >= 1) this.casePress(f);
   }
-  // a blow up there: the first rocks them and they slip down; the second (or a kick low down) knocks them off
+  // a blow up there slips them a step down and they wobble (no climbing for a moment); near the bottom, or after
+  // ladderSlipsMax blows in a row, they come off
   climbHit(a, v, kind) {
-    const vc = v.climb, m = this.m;
+    const m = this.m;
     a.climbAnim = .3;
     m.combat.damage(v, kind === 'punch' ? 4 : 5, 12, a, { src: 'climb' });
     if (v.st === 'KO' || !v.climb) return;
-    if (vc.rock > 0 || vc.p < .2 || (kind === 'kick' && vc.p < .4)) this.knockOff(v, a, sgn(v.x - a.x) || -a.face);
-    else { vc.rock = B.climbRock; vc.p = Math.max(.05, vc.p - (kind === 'kick' ? .28 : .16)); if (vc.over != null) vc.over = null; v.flash = .1; v.hitShake = .2; }
+    this.slip(v, a, kind === 'kick' ? B.ladderKickSlip : B.ladderPunchSlip, sgn(v.x - a.x) || -a.face);
     m.hitstop(.06);
     m.emit('climbHit', { a, v, kind });
   }
+  slip(v, a, amt, dir) {
+    const c = v.climb, top = c.p >= 1;
+    c.slips = (c.slipT > 0 ? c.slips || 0 : 0) + 1; c.slipT = B.ladderSlipWindow;
+    c.p = Math.max(0, c.p - amt);
+    if (c.over != null) c.over = null;
+    if (top && c.meter) c.meter.fumble = Math.max(c.meter.fumble, B.caseFumble);   // knocked off the case for a moment
+    if (c.p <= B.ladderSlipOff || c.slips >= B.ladderSlipsMax) { this.knockOff(v, a, dir); return; }
+    c.rock = B.climbRock; v.flash = .1; v.hitShake = .2;
+    this.place(v);
+    this.m.emit('climbSlip', { v, a, p: c.p, slips: c.slips });
+  }
+  // a strike from the floor (or a chair) on somebody up the ladder: low down, or a big blow, and they come off;
+  // higher up they slip a step. On the cage wall any strike from the floor still pulls you off.
+  struck(v, a, d, dir) {
+    if (v.st !== 'LADDER' || !v.climb || v.climb.p < .3 || (d && d.lv >= 4)) { this.knockOff(v, a, v.st === 'CAGE_CLIMB' && v.climb ? -v.climb.side : dir); return; }
+    this.slip(v, a, B.ladderFloorSlip, dir);
+    this.m.emit('climbHit', { a, v, kind: 'floor' });
+  }
   climbDive(f) {
-    const m = this.m, c = f.climb;
-    const n = f.nearestFoe(320, o => o.side === 'in' && !o.climb && sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 24);
+    const m = this.m, c = f.climb, lad = c.kind === 'ladder';
+    const n = f.nearestFoe(340, o => o.side === 'in' && !o.climb && o.alive && o.st !== 'CASE_HANG' && (lad || (sgn(o.x - f.x) === f.face && Math.abs(o.x - f.x) > 24)));
     if (!n) return false;
+    if (lad) f.face = sgn(n.x - f.x) || f.face;
     const down = n.st === 'DOWN' || n.st === 'GET_UP' || (n.st === 'HITSTUN' && n.hsKind === 'lie');
     const d = down ? (ATTACKS[f.char.dive] || ATTACKS.diveElbow) : (ATTACKS[f.char.topStand] || ATTACKS.missileDropkick);
     const h = c.kind === 'ladder' ? c.p * B.ladderH : c.p * B.cageH, dx = Math.abs(n.x - f.x), T = .62 + h / 400;
     f.climb = null;
     f.set('JUMP', { force: true });
-    f.vy = -180; f.vx = f.face * clamp(dx / T, 60, 320); f.ground = false;
+    f.vy = -180; f.vx = f.face * clamp(dx / T, lad ? 20 : 60, 320); f.ground = false;
     f.set('AIR_ATTACK', { force: true });
     f.atk = { def: d, t: 0, hit: new Set(), connected: false, chain: -1, boost: 1 + h / 100 * B.climbDiveBoost, done: false };
     m.addHype(8);
@@ -7629,6 +7663,8 @@ class SpecialRules {
     if (!L || f.side !== 'in') return false;
     if (L.state === 'folded' && Math.abs(f.x - L.x) < 64) { L.state = 'rising'; L.t = 0; L.by = f; f.landT = B.ladderSet + .05; f.vx = 0; f.face = sgn(L.x - f.x) || f.face; m.emit('ladderRaise', { f }); return true; }
     if (L.state === 'open' && Math.abs(f.x - L.x) < B.ladderSpread + 26 && L.foldCd <= 0) {
+      if (f.fin < B.ladderFoldCost) { if (!(f.foldNagT > m.time)) { f.foldNagT = m.time + 1.5; m.emit('ladderFoldNoEnergy', { f, need: B.ladderFoldCost }); } return false; }   // folding it takes energy
+      f.fin -= B.ladderFoldCost;
       L.state = 'closing'; L.t = 0; L.dir = sgn(L.x - f.x) || 1; L.foldCd = B.ladderFoldCd; f.landT = .35;
       for (const o of m.fighters) if (o.st === 'LADDER' && o.climb) {
         if (o.climb.p >= 1 && o.climb.meter && o.climb.meter.used) this.toHang(o);   // hands on the case: left hanging from it
@@ -7650,35 +7686,46 @@ class SpecialRules {
     }
     return false;
   }
-  // ==================================================================== the case: a timing meter whose count stays with the case
+  // ==================================================================== the case: a round timing dial whose count stays with the case
+  // The needle goes round; K while it is over the green arc is a hit. Each hit puts the arc somewhere ahead, narrower,
+  // and the needle goes a little faster.
   meterTick(f, dt) {
     const c = f.climb;
-    if (!c.meter) c.meter = { n: 0, dir: 1, z: this.zone(), fumble: 0, used: false };
+    if (!c.meter) c.meter = { n: 0, z: this.zone(0), fumble: 0, used: false, wasIn: false, plan: null, planAt: .5 };
     this.meterRun(f, c.meter, dt);
   }
   meterRun(f, M, dt) {
     const P = this.prize;
     if (M.fumble > 0) M.fumble -= dt;
-    M.n += M.dir * (B.caseSpeed + P.hits * B.caseSpeedUp) * dt;
-    if (M.n > 1) { M.n = 2 - M.n; M.dir = -1; } else if (M.n < 0) { M.n = -M.n; M.dir = 1; }
-    if (f.ctrl === 'ai' && f.ai && M.fumble <= 0 && !P.taken) {   // the computer presses when it sees the needle in the zone, and sometimes too early
-      const D = f.ai.D, inZ = M.n >= M.z[0] && M.n <= M.z[1];
-      if (inZ && f.ai.rng.chance(dt * (1.2 + D.pick * 3))) this.casePress(f);
-      else if (!inZ && f.ai.rng.chance(dt * D.err * 1.4)) this.casePress(f);
-    }
+    M.n = (M.n + (B.caseSpeed + P.hits * B.caseSpeedUp) * dt) % 1;
+    if (f.ctrl === 'ai' && f.ai && !P.taken) this.aiDial(f, M);
   }
-  zone() {
+  // the computer decides once per pass, as the needle comes onto the arc: a hit somewhere inside it, a beat too late, or let it go
+  aiDial(f, M) {
+    const D = f.ai.D, inZ = caseIn(M), w = M.z[1] - M.z[0];
+    if (inZ && !M.wasIn) {
+      const r = f.ai.rng.next(), hit = (B.caseAiHit + D.pick * B.caseAiPick) * Math.sqrt(w / B.caseZone);
+      M.plan = r < hit ? 'hit' : r < hit + D.err * B.caseAiErr ? 'late' : null;
+      M.planAt = .25 + f.ai.rng.next() * .5;
+    }
+    M.wasIn = inZ;
+    if (M.fumble > 0 || !M.plan) return;
+    const off = ((M.n - M.z[0]) % 1 + 1) % 1;
+    if (M.plan === 'hit' && inZ && off >= w * M.planAt) { M.plan = null; this.casePress(f); }
+    else if (M.plan === 'late' && !inZ && off > w && off < w + .08) { M.plan = null; this.casePress(f); }
+  }
+  zone(from = 0) {
     const P = this.prize, w = Math.max(B.caseZoneMin, B.caseZone - P.hits * B.caseZoneStep), r = this.m.rng.next();
-    const c = .1 + w / 2 + r * (.8 - w);
-    return [c - w / 2, c + w / 2];
+    const a = (from + .22 + r * .5) % 1;   // somewhere ahead of the needle, never right under it
+    return [a, a + w];
   }
   casePress(f) {
     const c = f.climb || f.hang, P = this.prize, m = this.m;
     const M = c && c.meter;
     if (!M || M.fumble > 0 || P.taken) return;
     M.used = true;
-    if (M.n >= M.z[0] && M.n <= M.z[1]) {
-      P.hits++; M.z = this.zone();
+    if (caseIn(M)) {
+      P.hits++; M.z = this.zone(M.n); M.wasIn = false; M.plan = null;
       m.emit('caseHit', { f, hits: P.hits, need: P.need });
       if (P.hits >= P.need) { P.taken = f; this.win(f, 'ladder'); }
     } else { M.fumble = B.caseFumble; m.emit('caseMiss', { f, hits: P.hits }); }
@@ -7712,7 +7759,7 @@ class SpecialRules {
   }
 }
 
-return { specialRules, SpecialRules, SPECIAL };
+return { specialRules, caseIn, SpecialRules, SPECIAL };
 })();
 // ---- combat/MatchEvents.js
 __m["combat/MatchEvents.js"] = (function () {
@@ -9267,6 +9314,11 @@ class HUD {
     const SP = m.special;
     if (SP && SP.ladder) {
       const L = SP.ladder, c = f.climb, P0 = SP.prize;
+      for (const o of m.fighters) {   // the other one's dial too: you can see when they are about to hit
+        if (o === f) continue;
+        const M = o.st === 'LADDER' && o.climb && o.climb.p >= 1 ? o.climb.meter : o.st === 'CASE_HANG' && o.hang ? o.hang.meter : null;
+        if (M) this.caseMeter(g, o, M, P0, camX);
+      }
       if (f.st === 'LADDER' && c) {
         if (c.p >= 1) P.push([[inp.label('grab')], `타이밍! 가방 ${P0.hits}/${P0.need}`], [[inp.label('left') + '/' + inp.label('right')], '내려갈 쪽'], [[inp.label('atk')], '공격·다이빙']);
         else P.push([[inp.label('up')], '오르기'], [[inp.label('atk')], '주먹·발차기'], [[inp.label('grab')], '위 상대 다리 잡기']);
@@ -9277,7 +9329,7 @@ class HUD {
         if (L.state === 'folded') P.push([[inp.label('grab')], '사다리 펼치기']);
         else if (L.state === 'open') {
           if (foeOn && foeOn.climb && foeOn.climb.p <= B.climbPullMax && Math.abs(foeOn.x - f.x) < 46) P.push([[inp.label('grab')], '끌어내리기!']);
-          else if (L.foldCd <= 0) P.push([[inp.label('grab')], foeOn ? '사다리 접기!' : '사다리 접기']);
+          else if (L.foldCd <= 0) P.push([[inp.label('grab')], f.fin >= B.ladderFoldCost ? `${foeOn ? '사다리 접기!' : '사다리 접기'} (에너지 ${B.ladderFoldCost})` : `사다리 접기: 에너지 ${B.ladderFoldCost} 필요`]);
           P.push([[inp.label('up')], '사다리 오르기']);
         }
       }
@@ -9363,14 +9415,24 @@ class HUD {
     this.bottomPrompts(g, P);
     void sgn; void clamp;
   }
-  // the timing meter for the case: press K while the needle is in the green
+  // the round timing dial for the case, beside the climber and never off the screen: K while the needle is on the green
+  // arc (red while you fumble); the pips under it count the hits the case has taken
   caseMeter(g, f, M, P0, camX) {
-    const x = Math.round(f.x - camX) - 34, y = Math.round(Math.min(f.joints.y(J.head), f.y - 90)) - 30, w = 68;
-    rect(g, '#05060f', x - 2, y - 2, w + 4, 11); rect(g, '#1b2450', x, y, w, 7);
-    rect(g, M.fumble > 0 ? '#5a1a2a' : '#2f8f4e', x + Math.round(M.z[0] * w), y, Math.max(2, Math.round((M.z[1] - M.z[0]) * w)), 7);
-    const nx = x + Math.round(M.n * w); rect(g, '#05060f', nx - 2, y - 3, 4, 13); rect(g, '#ffffff', nx - 1, y - 2, 2, 11);
-    const n = P0.need, cw = Math.floor((w - 4) / n);
-    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', x + 2 + i * cw, y + 10, cw - 1, 3);
+    const s = f.climb && f.climb.side ? f.climb.side : 1, R = 15, TAU = Math.PI * 2;
+    const cx = clamp(Math.round(f.x - camX) + s * 42, R + 8, 640 - R - 8), cy = clamp(Math.round(f.joints.y(J.head)) + 2, 64 + R, 292);
+    ellipse(g, '#05060f', cx, cy, R + 5, R + 5); ellipse(g, '#141a36', cx, cy, R + 3, R + 3); ellipse(g, '#0a0d20', cx, cy, R - 4, R - 4);
+    const w = M.z[1] - M.z[0], N = 76;
+    for (let i = 0; i < N; i++) {
+      const t = i / N, on = ((t - M.z[0]) % 1 + 1) % 1 <= w, a = t * TAU - Math.PI / 2;
+      rect(g, on ? (M.fumble > 0 ? '#c2333f' : '#3fd46b') : '#33405e', Math.round(cx + Math.cos(a) * R) - 1, Math.round(cy + Math.sin(a) * R) - 1, 3, 3);
+    }
+    const na = M.n * TAU - Math.PI / 2;
+    for (let k = 0; k <= R + 1; k++) { const x = Math.round(cx + Math.cos(na) * k), y = Math.round(cy + Math.sin(na) * k); rect(g, '#05060f', x - 1, y - 1, 3, 3); }
+    for (let k = 2; k <= R + 1; k++) rect(g, '#ffffff', Math.round(cx + Math.cos(na) * k), Math.round(cy + Math.sin(na) * k), 1, 1);
+    rect(g, '#ffd65a', cx - 1, cy - 1, 3, 3);
+    const n = P0.need, pw = 3, gap = 1, tw = n * (pw + gap) - gap, px = cx - Math.round(tw / 2);
+    rect(g, '#05060f', px - 2, cy + R + 6, tw + 4, 7);
+    for (let i = 0; i < n; i++) rect(g, i < P0.hits ? '#ffd65a' : '#3a4258', px + i * (pw + gap), cy + R + 8, pw, 3);
   }
   bottomPrompts(g, P) {
     const ww = P.map(([k, t]) => k.reduce((s, kk) => s + Math.max(11, textWidth(kk, 11) + 6) + 2, 0) + textWidth(t, 11) + 14);
@@ -12065,6 +12127,9 @@ class MatchScene {
     m.on('ladderRaise', e => { A.sfx('clang', { p: .6 }); fx.word('사다리를 펼친다', e.f.x, e.f.y - 96, '#c9d4ff', 1); });
     m.on('ladderUp', () => { A.sfx('clang', { p: .7 }); cheer(.5); });
     m.on('ladderDrop', () => { A.sfx('clang', { p: .5 }); });
+    m.on('ladderFoldNoEnergy', e => { if (e.f.ctrl === 'human') { A.sfx('deny'); fx.word(`에너지 ${e.need} 필요`, e.f.x, e.f.y - 96, '#ff8a8a', 1); } });
+    m.on('climbNoTarget', e => { if (e.f.ctrl === 'human') fx.word('닿는 상대가 없다', e.f.x, e.f.y - 110, '#c9d4ff', 1); });
+    m.on('climbSlip', e => { fx.word('주르륵!', e.v.x, e.v.y - 90, '#ffd65a', 1); });
     m.on('ladderFold', e => { A.sfx('clang'); S.shake(.45); fx.word('사다리를 접었다!', e.by.x, e.by.y - 96, '#ffffff', 2); cheer(1.1); });
     m.on('ladderCross', e => { A.sfx('step'); fx.word('넘어간다', e.f.x, e.f.y - 100, '#c9d4ff', 1); });
     m.on('caseHit', e => { A.sfx('tick'); fx.word(`${e.hits}/${e.need}`, e.f.x, e.f.y - 120, e.hits >= e.need - 2 ? '#ff8a2b' : '#ffd65a', 2); if (e.hits >= e.need - 3) cheer(.6); });
@@ -12825,40 +12890,43 @@ return { addAff, questDue, makeQuest, questAsk, questReward, QUEST, QUEST_ITEMS,
 __m["world/gymGear.js"] = (function () {
 // Training equipment. Every station in the gym has four grades: the one it came with, and three that 백 관장 talks
 // you into buying once you have outgrown the last ("강해진 만큼 더 강한 훈련기구를 사야하지 않겠어?"). Each grade
-// costs more, plays harder (faster, or a new game: typing for the bench, a rhythm game for the rope, snake for the
-// mitts), tires you more, and trains more. d.gym = { tier: { station: n }, runs: { station: n }, pitched: { station: n } }
+// costs more, tires you more, trains more, and is trained a different way: no two grades of a station share a game.
+// d.gym = { tier: { station: n }, runs: { station: n }, pitched: { station: n } }
 const GEAR = {
   bench: [
     { name: '낡은 벤치', price: 0 },
-    { name: '올림픽 바벨', price: 90000, speed: 1.4, zone: .8 },
+    { name: '올림픽 바벨', price: 90000, mech: 'mash', k: 1 },
     { name: '파워 랙', price: 220000, mech: 'typing', target: 16, time: 12 },
-    { name: '크레인 바벨', price: 480000, mech: 'typing', target: 22, time: 11, len: 6 },
+    { name: '크레인 바벨', price: 480000, mech: 'rhythm', lanes: 3, notes: 24, speed: 1.15 },
   ],
   rope: [
     { name: '줄넘기', price: 0 },
-    { name: '쇠 손잡이 줄', price: 80000, gap: .38 },
-    { name: '박자 발판', price: 200000, mech: 'rhythm', lanes: 3, notes: 22, speed: 1 },
-    { name: '번개 발판', price: 450000, mech: 'rhythm', lanes: 4, notes: 30, speed: 1.35 },
+    { name: '쇠 손잡이 줄', price: 80000, mech: 'rhythm', lanes: 2, notes: 20, speed: .95 },
+    { name: '스텝 사다리', price: 200000, mech: 'snake', step: .14, target: 8 },
+    { name: '번개 발판', price: 450000, mech: 'react', win: .7, total: 14 },
   ],
   mitt: [
     { name: '미트', price: 0 },
-    { name: '스파링 미트', price: 85000, len: 4 },
-    { name: '스텝 매트', price: 210000, mech: 'snake', step: .15, target: 8 },
-    { name: '번개 스텝 매트', price: 460000, mech: 'snake', step: .1, target: 10 },
+    { name: '스파링 미트', price: 85000, mech: 'react', win: .85, total: 12 },
+    { name: '스텝 매트', price: 210000, mech: 'snake', step: .13, target: 9 },
+    { name: '번개 미트', price: 460000, mech: 'rhythm', lanes: 4, notes: 28, speed: 1.3 },
   ],
   bridge: [
     { name: '목 브릿지', price: 0 },
-    { name: '무게 조끼', price: 80000, force: 1.35 },
-    { name: '흔들 발판', price: 190000, force: 1.7, time: 12 },
-    { name: '파도 발판', price: 420000, force: 2.1, time: 14 },
+    { name: '무게 조끼', price: 80000, mech: 'mash', k: 1.2 },
+    { name: '흔들 발판', price: 190000, mech: 'breath', fill: 1.4, band: .8 },
+    { name: '파도 발판', price: 420000, mech: 'react', win: .75, total: 14 },
   ],
   breath: [
     { name: '호흡 훈련', price: 0 },
-    { name: '고지대 마스크', price: 75000, fill: 1.35, band: .8 },
-    { name: '잠수 수조', price: 180000, fill: 1.7, band: .65 },
-    { name: '심해 수조', price: 400000, fill: 2.1, band: .55 },
+    { name: '고지대 마스크', price: 75000, mech: 'rope', gap: .42 },
+    { name: '잠수 수조', price: 180000, mech: 'bridge', force: 1.5, time: 12 },
+    { name: '심해 수조', price: 400000, mech: 'rhythm', lanes: 4, notes: 26, speed: 1.2 },
   ],
 };
+// the games, by name (the base game of a station is named after the station)
+const MECH_NAME = { bench: '타이밍', rope: '박자', mitt: '순서 기억', bridge: '균형', breath: '호흡', typing: '타자', rhythm: '리듬 발판', snake: '스텝', mash: '연타', react: '반응' };
+const mechOf = (id, tier) => (GEAR[id] && GEAR[id][tier] && GEAR[id][tier].mech) || id;
 const GEAR_GAIN = .4, GEAR_TIRE = .5, GEAR_COST = .5;   // per grade: training effect, fatigue, session fee
 const gymOf = d => d.gym || (d.gym = { tier: {}, runs: {}, pitched: {} });
 const tierOf = (d, id) => (GEAR[id] ? gymOf(d).tier[id] || 0 : 0);
@@ -12882,7 +12950,7 @@ function buyGear(c, id) {
   return true;
 }
 
-return { outgrown, buyGear, GEAR, GEAR_GAIN, GEAR_TIRE, GEAR_COST, gymOf, tierOf, gearNow, gearNext, gainK, tireOf, feeK };
+return { outgrown, buyGear, GEAR, MECH_NAME, mechOf, GEAR_GAIN, GEAR_TIRE, GEAR_COST, gymOf, tierOf, gearNow, gearNext, gainK, tireOf, feeK };
 })();
 // ---- world/Cutscene.js
 __m["world/Cutscene.js"] = (function () {
@@ -13237,7 +13305,7 @@ return { ceremonyCine, signalCine, invasionCine, aftermathCine, secondWaveCine, 
 __m["world/Training.js"] = (function () {
 // Training mini-games (timing, rhythm, memory, balance, breathing) and the dock part-time job.
 const { clamp, fmtMoney, RNG } = __m["core/util.js"];
-const { GEAR, gearNow, tierOf, gainK, tireOf, gymOf, outgrown } = __m["world/gymGear.js"];
+const { GEAR, gearNow, tierOf, gainK, tireOf, gymOf, outgrown, MECH_NAME } = __m["world/gymGear.js"];
 const { drawText } = __m["render/pixelfont.js"];
 const { UI, mixHex } = __m["render/palette.js"];
 const { rect, ellipse } = __m["render/painter.js"];
@@ -13253,6 +13321,18 @@ const GAMES = {
   scrap: { name: '고물 정리 돕기', kind: '타이밍', stats: [], pose: 'carry', x: 812, mech: 'job', desc: '영감이 주워 온 고물을 수레에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
   fish: { name: '부두 낚시', kind: '타이밍', stats: [], pose: 'calm', x: 1736, mech: 'fish', desc: '찌가 쑥 들어가는 순간 {y}J{/}(또는 Space·E·Enter). 다섯 번 던진다. 너무 일찍 당기면 놓친다.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
+};
+// how each game is played, when a station's grade plays it instead of its own game
+const MECH_DESC = {
+  bench: '바늘이 초록 칸에 들어왔을 때 {y}J{/}. 8번 들어 올리자. 세 번 놓치면 끝.',
+  rope: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.',
+  bridge: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자.',
+  breath: '{y}J{/}(또는 Space)를 누르고 있으면 차오른다. 초록 띠에서 손을 떼자. 5번.',
+  typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.',
+  rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.',
+  snake: '{y}W A S D{/}로 방향을 바꿔 목표를 밟아라. 벽이나 내 발에 걸리면 끝.',
+  mash: '{y}J{/}를 연타해 게이지를 꼭대기까지 밀어 올려라. 손을 쉬면 내려온다. 3세트.',
+  react: '화살표가 뜨는 순간 그 방향({y}W A S D{/})을 눌러라. 빠를수록 좋다. 일찍 누르면 실수.',
 };
 
 class Training {
@@ -13279,6 +13359,8 @@ class Training {
       case 'snake': { this.s = { w: 22, h: 9, body: [[5, 4], [4, 4], [3, 4]], dir: [1, 0], want: [1, 0], step: this.T.step || .15, st: 0, eaten: 0, target: this.T.target || 8, left: 30, dead: 0 }; this.newFood(); break; }
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
       case 'fish': this.s = { cast: 0, wait: 1.2 + r.next() * 2.4, bite: 0, st: 0, small: 0, big: 0, log: [], state: 'wait' }; break;
+      case 'mash': { const k = this.T.k || 1; this.s = { fill: 0, set: 0, sets: 3, done: 0, left: 4.5, decay: .5 * k, add: .085 / k, best: 0, armed: false }; break; }
+      case 'react': this.s = { n: 0, total: this.T.total || 12, cue: null, wait: .8 + r.next() * .8, win: this.T.win || .8, hits: 0, fast: 0, miss: 0 }; break;
     }
     void r;
   }
@@ -13438,6 +13520,32 @@ class Training {
         if (s.cast >= 5) this.finish((s.small + s.big * 2) / 5);
         break;
       }
+      case 'mash': {   // three sets: push the bar to the top before the clock runs out; it sinks when you rest
+        if (!s.armed) { if (!inp.actDown()) s.armed = true; break; }
+        s.left -= dt; s.fill = Math.max(0, s.fill - s.decay * dt);
+        if (inp.actPressed()) { s.fill += s.add; this.W.player.vy = -40; A.sfx('tick', { pitch: .8 + s.fill * .6 }); }
+        s.best = Math.max(s.best, s.fill);
+        const next = ok => { if (ok) s.done++; s.set++; s.fill = 0; s.best = 0; s.left = 4.5; if (s.set >= s.sets) this.finish(s.done / s.sets + (ok ? 0 : s.part || 0)); };
+        if (s.fill >= 1) { this.pop('들어 올렸다!', '#6be38a'); A.sfx('stat'); next(true); }
+        else if (s.left <= 0) { s.part = s.best / s.sets * .5; this.pop('힘이 빠졌다…', '#ff8a8a'); A.sfx('miss'); next(false); }
+        break;
+      }
+      case 'react': {   // an arrow, then the same direction as fast as you can; pressing before it shows is a slip
+        const keys = ['up', 'left', 'down', 'right'], pressed = keys.find(k => inp.pressed(k));
+        if (!s.cue) {
+          s.wait -= dt;
+          if (pressed) { s.miss++; this.pop('너무 빨라', '#ff8a8a', 320, 128); A.sfx('miss'); }
+          if (s.wait <= 0) { s.cue = { dir: this.rng.pick(keys), t: 0 }; A.sfx('ui', { pitch: 1.3 }); }
+        } else {
+          s.cue.t += dt;
+          const end = msg => { s.n++; s.cue = null; s.wait = .45 + this.rng.next() * .9; if (msg) this.pop(msg[0], msg[1], 320, 128); if (s.n >= s.total) this.finish((s.hits + s.fast * .25) / s.total - s.miss * .03); };
+          if (pressed) {
+            if (pressed === s.cue.dir) { const quick = s.cue.t < s.win * .5; s.hits++; if (quick) s.fast++; this.W.player.stance = 'mitt'; this.W.player.expr = 'fierce'; this.W.player.exprT = .2; A.sfx(quick ? 'punch2' : 'punch1'); end(quick ? ['번개!', '#ffd65a'] : ['좋아', '#6be38a']); }
+            else { s.miss++; A.sfx('miss'); end(['반대야!', '#ff8a8a']); }
+          } else if (s.cue.t > s.win) { A.sfx('miss'); end(['늦었다', '#ff8a8a']); }
+        }
+        break;
+      }
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
@@ -13462,10 +13570,11 @@ class Training {
     fade(u, this.phase === 'play' ? .25 : .5);
     const big = this.phase === 'play' && (this.mech === 'rhythm' || this.mech === 'snake');
     panel(u, 120, 40, 400, this.phase === 'play' ? (big ? 210 : 120) : 200, { accent: this.tier ? '#49d6ff' : '#ffd65a', alpha: .94 });
-    drawText(u, `${G.name} · ${this.T.name && this.tier ? this.T.name + ' · ' : ''}${{ typing: '타자', rhythm: '리듬', snake: '스텝' }[this.mech] || G.kind}`, 320, 48, { align: 'c', color: this.tier ? '#49d6ff' : '#ffd65a', bold: true });
+    drawText(u, `${G.name} · ${this.T.name && this.tier ? this.T.name + ' · ' : ''}${(GEAR[this.id] && MECH_NAME[this.mech]) || G.kind}`, 320, 48, { align: 'c', color: this.tier ? '#49d6ff' : '#ffd65a', bold: true });
     if (this.phase === 'intro') {
-      drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
-      if (this.mech === 'typing' || this.mech === 'rhythm' || this.mech === 'snake') drawText(u, { typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.', rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.', snake: 'W A S D로 방향을 바꿔 미트를 쳐라. 벽이나 내 발에 걸리면 끝.' }[this.mech], 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
+      const own = this.mech === this.id || !MECH_DESC[this.mech];
+      if (!own) drawText(u, `${MECH_NAME[this.mech]} 훈련 — 이 기구는 방식이 다르다`, 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
+      drawText(u, own ? G.desc : MECH_DESC[this.mech], 320, 78, { size: 11, align: 'c', color: '#eef2ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else if (this.id === 'fish') drawText(u, '잡은 생선은 레슬러에게 선물하면 호감도가 오른다. 시간 1칸 · 피로 +4', 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else drawText(u, this.id === 'cleanup' ? '돈은 안 되지만 로비와 훈련장이 다시 열린다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
@@ -13552,6 +13661,23 @@ class Training {
         const bob = s.state === 'bite' ? 10 : Math.round(Math.sin(this.t * 3) * 1.5); rect(u, '#05060f', 317, 96 + bob, 7, 9); rect(u, '#ff5b5b', 318, 97 + bob, 5, 4); rect(u, '#ffffff', 318, 101 + bob, 5, 3);
         if (s.state === 'bite') drawText(u, '지금!', 320, 70, { align: 'c', color: '#ffd65a', bold: true });
         drawText(u, `${s.cast}/5 · ${s.log.join(' ')}`, 320, 138, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'mash': {
+        const x = 304, y = 62, h = 84, k = Math.min(1, s.fill);
+        rect(u, '#05060f', x - 2, y - 2, 36, h + 4); rect(u, '#1a1d33', x, y, 32, h); rect(u, '#ffd65a', x, y, 32, 2);
+        rect(u, k > .8 ? '#6be38a' : '#49d6ff', x + 3, y + h * (1 - k), 26, h * k);
+        drawText(u, `세트 ${Math.min(s.set + 1, s.sets)}/${s.sets} · 성공 ${s.done}`, 400, 86, { size: 11, color: UI.dim });
+        drawText(u, `남은 ${Math.max(0, s.left).toFixed(1)}초`, 400, 102, { size: 11, color: s.left < 1.5 ? '#ff8a8a' : UI.dim });
+        keycap(u, 'J', 262, 96); drawText(u, '연타!', 250, 80, { size: 11, color: '#ffd65a' });
+        break;
+      }
+      case 'react': {
+        const A2 = { up: '↑', left: '←', down: '↓', right: '→' };
+        rect(u, '#05060f', 292, 66, 56, 56); rect(u, s.cue ? '#26315f' : '#141a36', 294, 68, 52, 52);
+        if (s.cue) { drawText(u, A2[s.cue.dir], 320, 76, { scale: 3, align: 'c', color: '#ffd65a', bold: true }); gauge(u, 294, 124, 52, 3, 1 - s.cue.t / s.win, 'fin', { col: '#ffd65a' }); }
+        else drawText(u, '…', 320, 86, { align: 'c', color: UI.dim });
+        drawText(u, `${s.n}/${s.total} · 성공 ${s.hits} (번개 ${s.fast}) · 실수 ${s.miss}`, 320, 142, { size: 11, align: 'c', color: UI.dim });
         break;
       }
       case 'job': {
@@ -14943,7 +15069,7 @@ __m["world/WorldScene.js"] = (function () {
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
 const { Career } = __m["world/CareerManager.js"];
 const { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } = __m["world/quests.js"];
-const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } = __m["world/gymGear.js"];
+const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf, MECH_NAME, mechOf } = __m["world/gymGear.js"];
 const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
 const { SYNERGY, SYN_KIND, synName, needMoves } = __m["data/synergy.js"];
 const { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } = __m["world/blackRope.js"];
@@ -15097,27 +15223,29 @@ class WorldScene {
         return;
       }
     }
-    // troublemakers from the docks burst into the lobby: the first time from day 3, then now and then
+    // troublemakers from the docks burst into the lobby: the first time from day 3, then now and then. Until they have
+    // had their say they are pending: slip out of a door and back and they are still there waiting for you.
+    if (id === 'lobby' && !instant && d.flags.gangPending === d.day) { this.gangArrives(true); return; }
     if (id === 'lobby' && !instant && d.day >= 3 && d.flags.gangDay !== d.day && !(R && !R.invited && d.day >= R.day)) {
       const roll = new RNG(d.day * 71 + d.season * 7).next();
       d.flags.gangDay = d.day;
-      if (!d.flags.gangSeen || roll < .16) this.gangArrives();
+      if (!d.flags.gangSeen || roll < .16) { d.flags.gangPending = d.day; this.gangArrives(); }
     }
   }
-  gangArrives() {
-    const p = this.player, from = Math.max(40, Math.min(p.x - 230, 90));
+  gangArrives(waiting) {
+    const p = this.player, from = waiting ? Math.max(40, Math.min(p.x - 150, 140)) : Math.max(40, Math.min(p.x - 230, 90));
     const mk = (id, x) => { const N = NPCS[id], a = new Actor(N.look, { x, face: 1, stance: 'street', id }); a.idx = this.npcs.length + 1; this.npcs.push(a); return a; };
     const boss = mk('galchi', from), kid = mk('myeolchi', from - 34);
     this.approach(boss, () => this.say(this.gangLines()), { speed: 175 });
     this.approach(kid, null, { speed: 175, near: 92 });
     if (GANG[this.c.gangTier()].who.includes('kkongchi')) this.approach(mk('kkongchi', from - 70), null, { speed: 160, near: 130 });
-    this.toast('부둣가 악동단이 로비에 들이닥쳤다!', '#ffb347');
-    this.game.audio.sfx('door'); this.game.audio.sfx('warn');
+    this.toast(waiting ? '부둣가 악동단이 아직 로비에서 기다리고 있었다!' : '부둣가 악동단이 로비에 들이닥쳤다!', '#ffb347');
+    this.game.audio.sfx(waiting ? 'warn' : 'door'); if (!waiting) this.game.audio.sfx('warn');
   }
   gangLeave() { for (const a of this.npcs) if (a.id === 'galchi' || a.id === 'myeolchi' || a.id === 'kkongchi') { a.leaving = true; a.scripted = false; } this.approachers = this.approachers.filter(ap => !ap.a.leaving); }
   gangLines() {
     const c = this.c, d = c.d, first = !d.flags.gangSeen;
-    d.flags.gangSeen = (d.flags.gangSeen || 0) + 1;
+    d.flags.gangSeen = (d.flags.gangSeen || 0) + 1; d.flags.gangPending = 0;   // they have had their say
     const offer = { opp: 'galchi', oppName: '부둣가 악동단', reward: 30000 + d.season * 5000, fame: 4, kind: 'brawl' };
     const fight = () => this.startMatch('brawl', offer), price = Math.min(8000, d.money), G = GANG[c.gangTier()], three = G.who.length > 2;
     return [
@@ -15555,7 +15683,7 @@ class WorldScene {
     gymOf(d).pitched[id] = tierOf(d, id) + 1;
     this.say([
       { who: 'trainer', text: `강해진 만큼 더 강한 훈련기구를 사야하지 않겠어? ${josa(now.name, '은/는')} 이제 너한테 장난감이다.` },
-      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 더 어렵고 더 지치지만, 그만큼 훨씬 많이 남는다.` },
+      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 이번엔 {y}${MECH_NAME[mechOf(id, tierOf(d, id) + 1)]}{/}으로 단련한다. 더 지치지만, 그만큼 훨씬 많이 남는다.` },
       { choice: [{ label: `${next.name} 사기 (${fmtMoney(next.price)})`, act: () => this.buyGearNow(id) }, { label: '나중에', go: [{ who: 'trainer', text: '그래, 돈 모이면 말해라. 기구는 어디 안 간다.' }] }] },
     ]);
   }
@@ -15563,7 +15691,7 @@ class WorldScene {
   gearList() {
     const d = this.c.d, rows = Object.keys(GEAR).map(id => ({ id, next: gearNext(d, id), now: gearNow(d, id) })).filter(r => r.next);
     if (!rows.length) { this.say([{ who: 'trainer', text: '더 살 기구가 없다. 이제 기구가 아니라 링이 널 키울 거다.' }]); return; }
-    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
+    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} (${MECH_NAME[mechOf(r.id, tierOf(d, r.id) + 1)]}) ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
   }
   // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
   synergyTalk() {

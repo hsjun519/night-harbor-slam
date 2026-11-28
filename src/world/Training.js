@@ -1,6 +1,6 @@
 // Training mini-games (timing, rhythm, memory, balance, breathing) and the dock part-time job.
 import { clamp, fmtMoney, RNG } from '../core/util.js';
-import { GEAR, gearNow, tierOf, gainK, tireOf, gymOf, outgrown } from './gymGear.js';
+import { GEAR, gearNow, tierOf, gainK, tireOf, gymOf, outgrown, MECH_NAME } from './gymGear.js';
 import { drawText } from '../render/pixelfont.js';
 import { UI, mixHex } from '../render/palette.js';
 import { rect, ellipse } from '../render/painter.js';
@@ -17,6 +17,18 @@ const GAMES = {
   scrap: { name: '고물 정리 돕기', kind: '타이밍', stats: [], pose: 'carry', x: 812, mech: 'job', desc: '영감이 주워 온 고물을 수레에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
   fish: { name: '부두 낚시', kind: '타이밍', stats: [], pose: 'calm', x: 1736, mech: 'fish', desc: '찌가 쑥 들어가는 순간 {y}J{/}(또는 Space·E·Enter). 다섯 번 던진다. 너무 일찍 당기면 놓친다.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
+};
+// how each game is played, when a station's grade plays it instead of its own game
+const MECH_DESC = {
+  bench: '바늘이 초록 칸에 들어왔을 때 {y}J{/}. 8번 들어 올리자. 세 번 놓치면 끝.',
+  rope: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.',
+  bridge: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자.',
+  breath: '{y}J{/}(또는 Space)를 누르고 있으면 차오른다. 초록 띠에서 손을 떼자. 5번.',
+  typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.',
+  rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.',
+  snake: '{y}W A S D{/}로 방향을 바꿔 목표를 밟아라. 벽이나 내 발에 걸리면 끝.',
+  mash: '{y}J{/}를 연타해 게이지를 꼭대기까지 밀어 올려라. 손을 쉬면 내려온다. 3세트.',
+  react: '화살표가 뜨는 순간 그 방향({y}W A S D{/})을 눌러라. 빠를수록 좋다. 일찍 누르면 실수.',
 };
 
 export class Training {
@@ -43,6 +55,8 @@ export class Training {
       case 'snake': { this.s = { w: 22, h: 9, body: [[5, 4], [4, 4], [3, 4]], dir: [1, 0], want: [1, 0], step: this.T.step || .15, st: 0, eaten: 0, target: this.T.target || 8, left: 30, dead: 0 }; this.newFood(); break; }
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
       case 'fish': this.s = { cast: 0, wait: 1.2 + r.next() * 2.4, bite: 0, st: 0, small: 0, big: 0, log: [], state: 'wait' }; break;
+      case 'mash': { const k = this.T.k || 1; this.s = { fill: 0, set: 0, sets: 3, done: 0, left: 4.5, decay: .5 * k, add: .085 / k, best: 0, armed: false }; break; }
+      case 'react': this.s = { n: 0, total: this.T.total || 12, cue: null, wait: .8 + r.next() * .8, win: this.T.win || .8, hits: 0, fast: 0, miss: 0 }; break;
     }
     void r;
   }
@@ -202,6 +216,32 @@ export class Training {
         if (s.cast >= 5) this.finish((s.small + s.big * 2) / 5);
         break;
       }
+      case 'mash': {   // three sets: push the bar to the top before the clock runs out; it sinks when you rest
+        if (!s.armed) { if (!inp.actDown()) s.armed = true; break; }
+        s.left -= dt; s.fill = Math.max(0, s.fill - s.decay * dt);
+        if (inp.actPressed()) { s.fill += s.add; this.W.player.vy = -40; A.sfx('tick', { pitch: .8 + s.fill * .6 }); }
+        s.best = Math.max(s.best, s.fill);
+        const next = ok => { if (ok) s.done++; s.set++; s.fill = 0; s.best = 0; s.left = 4.5; if (s.set >= s.sets) this.finish(s.done / s.sets + (ok ? 0 : s.part || 0)); };
+        if (s.fill >= 1) { this.pop('들어 올렸다!', '#6be38a'); A.sfx('stat'); next(true); }
+        else if (s.left <= 0) { s.part = s.best / s.sets * .5; this.pop('힘이 빠졌다…', '#ff8a8a'); A.sfx('miss'); next(false); }
+        break;
+      }
+      case 'react': {   // an arrow, then the same direction as fast as you can; pressing before it shows is a slip
+        const keys = ['up', 'left', 'down', 'right'], pressed = keys.find(k => inp.pressed(k));
+        if (!s.cue) {
+          s.wait -= dt;
+          if (pressed) { s.miss++; this.pop('너무 빨라', '#ff8a8a', 320, 128); A.sfx('miss'); }
+          if (s.wait <= 0) { s.cue = { dir: this.rng.pick(keys), t: 0 }; A.sfx('ui', { pitch: 1.3 }); }
+        } else {
+          s.cue.t += dt;
+          const end = msg => { s.n++; s.cue = null; s.wait = .45 + this.rng.next() * .9; if (msg) this.pop(msg[0], msg[1], 320, 128); if (s.n >= s.total) this.finish((s.hits + s.fast * .25) / s.total - s.miss * .03); };
+          if (pressed) {
+            if (pressed === s.cue.dir) { const quick = s.cue.t < s.win * .5; s.hits++; if (quick) s.fast++; this.W.player.stance = 'mitt'; this.W.player.expr = 'fierce'; this.W.player.exprT = .2; A.sfx(quick ? 'punch2' : 'punch1'); end(quick ? ['번개!', '#ffd65a'] : ['좋아', '#6be38a']); }
+            else { s.miss++; A.sfx('miss'); end(['반대야!', '#ff8a8a']); }
+          } else if (s.cue.t > s.win) { A.sfx('miss'); end(['늦었다', '#ff8a8a']); }
+        }
+        break;
+      }
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
@@ -226,10 +266,11 @@ export class Training {
     fade(u, this.phase === 'play' ? .25 : .5);
     const big = this.phase === 'play' && (this.mech === 'rhythm' || this.mech === 'snake');
     panel(u, 120, 40, 400, this.phase === 'play' ? (big ? 210 : 120) : 200, { accent: this.tier ? '#49d6ff' : '#ffd65a', alpha: .94 });
-    drawText(u, `${G.name} · ${this.T.name && this.tier ? this.T.name + ' · ' : ''}${{ typing: '타자', rhythm: '리듬', snake: '스텝' }[this.mech] || G.kind}`, 320, 48, { align: 'c', color: this.tier ? '#49d6ff' : '#ffd65a', bold: true });
+    drawText(u, `${G.name} · ${this.T.name && this.tier ? this.T.name + ' · ' : ''}${(GEAR[this.id] && MECH_NAME[this.mech]) || G.kind}`, 320, 48, { align: 'c', color: this.tier ? '#49d6ff' : '#ffd65a', bold: true });
     if (this.phase === 'intro') {
-      drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
-      if (this.mech === 'typing' || this.mech === 'rhythm' || this.mech === 'snake') drawText(u, { typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.', rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.', snake: 'W A S D로 방향을 바꿔 미트를 쳐라. 벽이나 내 발에 걸리면 끝.' }[this.mech], 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
+      const own = this.mech === this.id || !MECH_DESC[this.mech];
+      if (!own) drawText(u, `${MECH_NAME[this.mech]} 훈련 — 이 기구는 방식이 다르다`, 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
+      drawText(u, own ? G.desc : MECH_DESC[this.mech], 320, 78, { size: 11, align: 'c', color: '#eef2ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else if (this.id === 'fish') drawText(u, '잡은 생선은 레슬러에게 선물하면 호감도가 오른다. 시간 1칸 · 피로 +4', 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else drawText(u, this.id === 'cleanup' ? '돈은 안 되지만 로비와 훈련장이 다시 열린다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
@@ -316,6 +357,23 @@ export class Training {
         const bob = s.state === 'bite' ? 10 : Math.round(Math.sin(this.t * 3) * 1.5); rect(u, '#05060f', 317, 96 + bob, 7, 9); rect(u, '#ff5b5b', 318, 97 + bob, 5, 4); rect(u, '#ffffff', 318, 101 + bob, 5, 3);
         if (s.state === 'bite') drawText(u, '지금!', 320, 70, { align: 'c', color: '#ffd65a', bold: true });
         drawText(u, `${s.cast}/5 · ${s.log.join(' ')}`, 320, 138, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'mash': {
+        const x = 304, y = 62, h = 84, k = Math.min(1, s.fill);
+        rect(u, '#05060f', x - 2, y - 2, 36, h + 4); rect(u, '#1a1d33', x, y, 32, h); rect(u, '#ffd65a', x, y, 32, 2);
+        rect(u, k > .8 ? '#6be38a' : '#49d6ff', x + 3, y + h * (1 - k), 26, h * k);
+        drawText(u, `세트 ${Math.min(s.set + 1, s.sets)}/${s.sets} · 성공 ${s.done}`, 400, 86, { size: 11, color: UI.dim });
+        drawText(u, `남은 ${Math.max(0, s.left).toFixed(1)}초`, 400, 102, { size: 11, color: s.left < 1.5 ? '#ff8a8a' : UI.dim });
+        keycap(u, 'J', 262, 96); drawText(u, '연타!', 250, 80, { size: 11, color: '#ffd65a' });
+        break;
+      }
+      case 'react': {
+        const A2 = { up: '↑', left: '←', down: '↓', right: '→' };
+        rect(u, '#05060f', 292, 66, 56, 56); rect(u, s.cue ? '#26315f' : '#141a36', 294, 68, 52, 52);
+        if (s.cue) { drawText(u, A2[s.cue.dir], 320, 76, { scale: 3, align: 'c', color: '#ffd65a', bold: true }); gauge(u, 294, 124, 52, 3, 1 - s.cue.t / s.win, 'fin', { col: '#ffd65a' }); }
+        else drawText(u, '…', 320, 86, { align: 'c', color: UI.dim });
+        drawText(u, `${s.n}/${s.total} · 성공 ${s.hits} (번개 ${s.fast}) · 실수 ${s.miss}`, 320, 142, { size: 11, align: 'c', color: UI.dim });
         break;
       }
       case 'job': {
