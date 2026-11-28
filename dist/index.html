@@ -2853,7 +2853,14 @@ const BALANCE = {
   // how much the computer prefers stopping a climber (pull, fold) to climbing after them: 0 never, 1 always
   climbAiInterfere: .6,
   // career rubber band: a win sharpens the other wrestlers (more after a streak), a loss eases them off
-  ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
+  // the career's rubber band (two of them: ordinary matches, and strong foes: titles, 선항, bosses). A win nudges the next
+  // foes up (more on a streak of three and five), a loss eases them (more on a second loss); over the last ten the
+  // win rate is pulled toward the band (ordinary 62-72%, strong 50-60%). Strong foes feel the band at ddaStrongK.
+  ddaWin: .02, ddaWin3: .06, ddaWin5: .09, ddaLose: .08, ddaLose2: .12, ddaPull: .03, ddaMin: -.3, ddaMax: .45,
+  ddaTarget: [.62, .72], ddaTargetStrong: [.5, .6], ddaLog: 10, ddaStrongK: .7,
+  // the limits, so that growing still pays: foes ranked below you are raised at most ddaCapBelow, the ones within two
+  // places ddaCapNear; every level above 1 takes ddaLevelFade off any cap (at most half); every level up eases the band
+  ddaCapBelow: .08, ddaCapNear: .22, ddaLevelFade: .02, ddaLevelCredit: .04,
   // emergency escape
   burstCost: 46,
   // critical hits: a chance on every hit and every move (once per move); damage x critMul, stun x critStun + critStunFlat of the gauge
@@ -10150,7 +10157,7 @@ class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
+      dda: 0, ddaBoss: 0, ddaLog: [], ddaLogBoss: [], mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
@@ -10178,11 +10185,27 @@ class Career {
   }
   get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
   // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
-  ddaFor(id) {
-    const k = this.d.dda || 0, c = CHARACTERS[id];
+  // strong foes have their own band: title matches, 선항 레슬링, bosses, the underground revenge
+  static strongKind(kind, o) { return ['title', 'invasion', 'invasion2', 'invasion3', 'revenge'].includes(kind) || !!(o && (o.bossPhases || o.title)) || !!(o && CHARACTERS[o.opp] && CHARACTERS[o.opp].boss); }
+  ddaFor(id, strong) {
+    const d = this.d, raw = strong ? (d.ddaBoss || 0) * B.ddaStrongK : d.dda || 0, c = CHARACTERS[id];
+    // the band cannot undo your growth: foes below you in the ranking barely move, the ones around you only so far,
+    // and the higher your level the less any foe is raised (easing off is never limited)
+    const rk = this.rankOf(id), me = this.rank, below = rk > me + 1 && rk < 99, near = Math.abs(rk - me) <= 2;
+    const cap = (below ? B.ddaCapBelow : near ? B.ddaCapNear : B.ddaMax) * (1 - Math.min(.5, ((d.level || 1) - 1) * B.ddaLevelFade));
+    const k = raw > 0 ? Math.min(raw, cap) : raw;
     if (!c || Math.abs(k) < .005) return {};
     const s = c.stats;
     return { stats: { hp: s.hp * (1 + k * .8), atk: s.atk * (1 + k * .5), stun: s.stun * (1 + k * .5) }, aiBoost: k };
+  }
+  // one step of the rubber band: the streak decides the size, the last ten results pull it toward the band
+  ddaStep(k0, won, strong) {
+    const d = this.d, logK = strong ? 'ddaLogBoss' : 'ddaLog', log = d[logK] || (d[logK] = []);
+    log.push(won ? 1 : 0); while (log.length > B.ddaLog) log.shift();
+    const st = d.record.streak || 0, step = won ? (st >= 5 ? B.ddaWin5 : st >= 3 ? B.ddaWin3 : B.ddaWin) : -(st <= -2 ? B.ddaLose2 : B.ddaLose);
+    const T = strong ? B.ddaTargetStrong : B.ddaTarget, rate = log.reduce((s, x) => s + x, 0) / log.length;
+    const pull = log.length >= 4 ? (rate > T[1] ? B.ddaPull : rate < T[0] ? -B.ddaPull : 0) : 0;
+    return clamp(k0 + step + pull, B.ddaMin, B.ddaMax);
   }
   // Money in the Bank: the case you hold, or the one somebody holds against you
   get mitbOpen() { const M = this.d.mitb; return !!(M && this.d.day <= M.until); }
@@ -10280,6 +10303,8 @@ class Career {
     const d = this.d, ups = [];
     d.xp += n;
     while (d.xp >= this.xpNeed()) { d.xp -= this.xpNeed(); d.level++; d.points += 2; ups.push(d.level); }
+    // growing up is felt: every level eases both bands a little
+    if (ups.length) { d.dda = Math.max(B.ddaMin, (d.dda || 0) - B.ddaLevelCredit * ups.length); d.ddaBoss = Math.max(B.ddaMin, (d.ddaBoss || 0) - B.ddaLevelCredit * ups.length); }
     return ups;
   }
   // ---- offers ----
@@ -10353,7 +10378,7 @@ class Career {
     // move mastery: landed grapple moves and the finisher (sparring counts half)
     out.mastery = this.gainMastery(h && h.uses, kind === 'practice' ? MASTERY.practice : 1);
     if (kind === 'practice') { out.lines.push('연습 경기는 기록에 남지 않는다.'); d.fatigue = Math.min(100, d.fatigue + 8); this.save(); return out; }
-    if (!draw && !res.result.forfeit) { const k0 = d.dda || 0; d.dda = clamp(k0 + (won ? (d.record.streak >= 2 ? B.ddaWinStreak : B.ddaWin) : -B.ddaLose), B.ddaMin, B.ddaMax); const p = Math.round(d.dda * 100); if (Math.round(k0 * 100) !== p) out.lines.push(won ? `상대 보정 ${p >= 0 ? '+' : ''}${p}% (이길수록 상대가 강해진다)` : `상대 보정 ${p >= 0 ? '+' : ''}${p}% (조금 숨 돌릴 틈이 생겼다)`); }
+    if (!draw && !res.result.forfeit && kind !== 'practice') { const strong = Career.strongKind(kind, d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer), key = strong ? 'ddaBoss' : 'dda', k0 = d[key] || 0; d[key] = this.ddaStep(k0, !!won, strong); const p = Math.round(d[key] * 100); if (Math.round(k0 * 100) !== p) out.lines.push(`${strong ? '강적' : '상대'} 보정 ${p >= 0 ? '+' : ''}${p}% (${won ? '이길수록 다음 상대가 강해진다' : '조금 숨 돌릴 틈이 생겼다'})`); }
     d.fatigue = Math.min(100, d.fatigue + (kind === 'official' || kind === 'event' || kind === 'title' ? 24 : 16));
     const c = d.contract && (kind === 'official' || kind === 'event' || kind === 'title') ? d.contract : info.offer;
     if (draw) d.record.d++;
@@ -14644,6 +14669,7 @@ return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retire
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
+const { Career } = __m["world/CareerManager.js"];
 const { drawBelt } = __m["render/FighterRenderer.js"];
 const { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } = __m["world/quests.js"];
 const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } = __m["world/gymGear.js"];
@@ -14914,7 +14940,7 @@ class WorldScene {
   matchConfig(kind, o) {
     const c = this.c, d = c.d, me = c.entrant('human');
     const lv = o && o.difficulty || 'normal';
-    const foe = id => { const e = Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id)); if (isBR(id) && kind !== 'tutorial') { const M = brMods(c, id, e.stats); e.stats = M.stats; e.moves = M.moves; } return e; };
+    const foe = id => { const e = Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id, Career.strongKind(kind, o))); if (isBR(id) && kind !== 'tutorial') { const M = brMods(c, id, e.stats); e.stats = M.stats; e.moves = M.moves; } return e; };
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
     if (kind === 'invasion') return { beltHolder: d.flags.champion ? 'player' : null, entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
     if (kind === 'invasion2') return { mode: 'tag', arena: 'pier', entrants: [me, o.partner === 'brLeader' ? Object.assign(foe('brLeader'), { team: 0 }) : { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('whiteivory'), foe('owsailor')], career: 1, title: '선항 레슬링 2차 침공 · 태그', music: 'boss', introTime: 4.2 };

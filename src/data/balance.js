@@ -41,7 +41,14 @@ export const BALANCE = {
   // how much the computer prefers stopping a climber (pull, fold) to climbing after them: 0 never, 1 always
   climbAiInterfere: .6,
   // career rubber band: a win sharpens the other wrestlers (more after a streak), a loss eases them off
-  ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
+  // the career's rubber band (two of them: ordinary matches, and strong foes: titles, 선항, bosses). A win nudges the next
+  // foes up (more on a streak of three and five), a loss eases them (more on a second loss); over the last ten the
+  // win rate is pulled toward the band (ordinary 62-72%, strong 50-60%). Strong foes feel the band at ddaStrongK.
+  ddaWin: .02, ddaWin3: .06, ddaWin5: .09, ddaLose: .08, ddaLose2: .12, ddaPull: .03, ddaMin: -.3, ddaMax: .45,
+  ddaTarget: [.62, .72], ddaTargetStrong: [.5, .6], ddaLog: 10, ddaStrongK: .7,
+  // the limits, so that growing still pays: foes ranked below you are raised at most ddaCapBelow, the ones within two
+  // places ddaCapNear; every level above 1 takes ddaLevelFade off any cap (at most half); every level up eases the band
+  ddaCapBelow: .08, ddaCapNear: .22, ddaLevelFade: .02, ddaLevelCredit: .04,
   // emergency escape
   burstCost: 46,
   // critical hits: a chance on every hit and every move (once per move); damage x critMul, stun x critStun + critStunFlat of the gauge

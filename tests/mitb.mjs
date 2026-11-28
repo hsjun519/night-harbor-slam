@@ -16,10 +16,10 @@ const res = (won, how = 'pin', winner = null) => ({ human: { dmgTaken: 10, ko: f
   d.contract = null;
   for (let i = 0; i < 4; i++) { d.record.streak = i; c.applyResult('free', res(true), { offer: { opp: 'dohyun', oppName: '서도현' } }); }
   const up = d.dda;
-  check(up > .15, 'four wins in a row sharpen the opponents', `dda=${up}`);
+  check(up > .04, 'four wins in a row sharpen the opponents (level-ups ease it a little)', `dda=${up}`);
   const st = c.ddaFor('taesan');
-  check(st.stats && st.stats.hp > CHARACTERS.taesan.stats.hp && st.aiBoost === up, 'their health and attack go up with it', JSON.stringify(st));
-  const f = { aiBoost: up, char: { ai: {} } }, ai = new AIController(f, 'normal', { next: () => .5, chance: () => false });
+  check(st.stats && st.stats.hp > CHARACTERS.taesan.stats.hp && st.aiBoost > 0 && st.aiBoost <= up + 1e-9, 'their health and attack go up with it (never past the band)', JSON.stringify(st));
+  const f = { aiBoost: st.aiBoost, char: { ai: {} } }, ai = new AIController(f, 'normal', { next: () => .5, chance: () => false });
   check(ai.D.react < DIFFICULTY.normal.react && ai.D.pick > DIFFICULTY.normal.pick, 'and the computer reads faster', `react=${ai.D.react}`);
   c.applyResult('free', res(false), { offer: { opp: 'dohyun', oppName: '서도현' } });
   c.applyResult('free', res(false), { offer: { opp: 'dohyun', oppName: '서도현' } });
