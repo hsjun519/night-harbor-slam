@@ -64,7 +64,7 @@ export function highlights(d, id) {
   if (o && o.day1 != null) {
     add('ow', '선항 레슬링', '바다 건너에서 배가 왔다. 등대 돔이 무너졌다', { day: o.day1, other: 'owsailor', expr: 'fierce' });
     const iw = !!(o.won1 || o.won2);
-    add('ivory', '흰상아', iw ? '선항 레슬링의 칼날을 꺾었다' : '흰상아에게 졌다. 그래도 물러서지 않았다', { day: o.day1, other: 'whiteivory', tone: iw ? 'win' : 'loss', expr: iw ? 'fierce' : 'hurt' });
+    add('ivory', '쇄파', iw ? '선항의 제6갑판장을 꺾었다' : '쇄파에게 졌다. 그래도 물러서지 않았다', { day: o.day1, other: 'whiteivory', tone: iw ? 'win' : 'loss', expr: iw ? 'fierce' : 'hurt' });
   }
   if (o && (o.state === 'REBUILD' || o.state === 'INTERNATIONAL_ROUTE_OPEN')) add('godong', '선장 고동', o.losses3 ? `${o.losses3}번 쓰러진 끝에 바다의 왕을 돌려보냈다` : '바다의 왕을 돌려보냈다', { day: o.day3, other: 'godong', tone: 'gold', expr: 'fierce' });
   else if (o && o.losses3) add('godong', '선장 고동', '끝내 그 닻을 뽑지 못했다', { other: 'godong', tone: 'loss', expr: 'hurt' });
@@ -90,7 +90,7 @@ export function scriptLines(d, id) {
     else if (h.k === 'champ') scene(`등대 돔${when}`, `${josa(me, '이/가')} 챔피언 벨트를 허리에 감는다.`);
     else if (h.k === 'mitb') scene('래더 꼭대기', '가방에 손이 닿는다.');
     else if (h.k === 'ow') scene('항구', '바다 건너에서 배가 온다. 등대 돔이 무너진다.');
-    else if (h.k === 'ivory') scene('부둣가 특설 링', `흰상아와 싸운다. ${h.tone === 'win' ? '이긴다' : '진다. 그래도 물러서지 않는다'}.`);
+    else if (h.k === 'ivory') scene('부둣가 특설 링', `쇄파와 싸운다. ${h.tone === 'win' ? '이긴다' : '진다. 그래도 물러서지 않는다'}.`);
     else if (h.k === 'godong') scene('부둣가', h.tone === 'loss' ? '선장 고동 앞에 쓰러진다. 닻은 뽑히지 않는다.' : '선장 고동이 뱃머리를 돌린다.');
     else if (h.k === 'harbor') scene(`부두${when}`, '무너진 부두가 다시 선다.');
   }

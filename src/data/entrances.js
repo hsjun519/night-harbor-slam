@@ -22,11 +22,22 @@ export const ENTRANCE_TIERS = {
 export const ENTRANCES = {
   // 야항 레슬링의 왕: the hall goes dark, mist along the floor, a shape in the fog walking slowly; the fog lifts at the ring
   fogking: { tier: 'king', fog: 1, light: { col: '#6a5ab8', dim: .82 }, screen: { col: '#9aa3c2', icon: 'fog', en: 'KING OF THE FOG' }, silhouette: 1, walk: 60, crowd: 'hush', titles: ['야항 레슬링의 왕', '안개왕'] },
-  // 선항 레슬링 간부: a ship's horn, cold white light, waves on the board, pyro on both sides of the aisle, the deckhands cheering
-  whiteivory: { tier: 'officer', horn: 1, light: { col: '#e6f2ff', dim: .38 }, screen: { col: '#e6f2ff', icon: 'wave', en: 'WHITE IVORY' }, flames: 1, crowd: 'sailors', pose: 'bow', escort: ['owsailor'], titles: ['WHITE IVORY', '흰상아'] },
-  // 선항 레슬링의 왕: everything fades, a low call and the horn, the whale on the board, blue-white light, huge flames,
-  // the officers and deckhands react, a slow walk the camera keeps close to, a roar at the ring and three lines of billing
-  godong: { tier: 'king', fadeOut: 1, horn: 2, light: { col: '#9fd6ff', dim: .9 }, screen: { col: '#9fd6ff', icon: 'whale', en: 'KING OF THE OCEAN' }, flames: 2, escort: ['whiteivory', 'owsailor'], walk: 52, cam: 'low', crowd: 'hush', pre: 3, hold: 2.8, titles: ['OCEAN WRESTLING', 'KING OF THE OCEAN', '고동 — 흰긴수염고래'] },
+  // 선항 레슬링: every officer walks out in their own light, and the higher the rank the darker the hall and the longer
+  // the walk. fx: jelly (drifting glowing motes) | green (a murky floor) | metal (clanging steps) | sweep (fast blue beams)
+  // | shark (a fin cutting the floor) | wing (a giant black wing passing over) | mono (black and white) | ink (dark fog)
+  // | bass (deep thumps) | heartbeat (three beats, 쿵. 쿵. 쿵.). flameCol: one colour or a list taken in turn; fogCol.
+  haemu: { tier: 'officer', fx: 'jelly', light: { col: '#b8a8ff', dim: .5 }, screen: { col: '#c9b6ff', icon: 'jelly', en: 'HAEMU · JELLYFISH' }, fog: 1, fogCol: '#6a5ab8', flames: 0, crowd: 'sailors', pose: 'taunt', escort: ['owsailor'], titles: ['선항 갑판장', '해무 — 해파리'] },
+  heungnin: { tier: 'officer', fx: 'green', light: { col: '#3a8a4a', dim: .55 }, screen: { col: '#c9c24a', icon: 'moray', en: 'HEUNGNIN · MORAY' }, flames: 0, crowd: 'sailors', pose: 'taunt', titles: ['선항 갑판장', '흑린 — 곰치'] },
+  jeokgap: { tier: 'officer', fx: 'metal', light: { col: '#ff5a3a', dim: .45 }, screen: { col: '#ff5a3a', icon: 'crab', en: 'JEOKGAP · KING CRAB' }, flames: 2, flameCol: '#ff4a2e', crowd: 'sailors', pose: 'roar', walk: 90, titles: ['선항 갑판장', '적갑 — 왕게'] },
+  cheongchang: { tier: 'officer', fx: 'sweep', light: { col: '#49a6ff', dim: .5 }, screen: { col: '#7fc8ff', icon: 'sail', en: 'CHEONGCHANG · SAILFISH' }, flames: 1, flameCol: '#49a6ff', walk: 150, crowd: 'sailors', pose: 'bow', titles: ['선항 상급 갑판장', '청창 — 돛새치'] },
+  whiteivory: { tier: 'officer', fx: 'shark', horn: 1, light: { col: '#e6f2ff', dim: .5 }, screen: { col: '#e6f2ff', icon: 'shark', en: 'SWAEPA · GREAT WHITE' }, flames: 1, crowd: 'sailors', pose: 'roar', escort: ['owsailor'], titles: ['선항 제6갑판장', '쇄파 — 백상아리'] },
+  heugik: { tier: 'officer', fx: 'wing', light: { col: '#8a93b8', dim: .7 }, screen: { col: '#e8ecf4', icon: 'manta', en: 'HEUGIK · GIANT MANTA' }, flames: 1, walk: 80, cam: 'low', crowd: 'hush', pose: 'roar', pre: 1.8, hold: 1.8, titles: ['선항 최강 갑판장', '흑익 — 대왕쥐가오리'] },
+  baegan: { tier: 'officer', fx: 'mono', horn: 1, light: { col: '#f4f6fa', dim: .7 }, screen: { col: '#f4f6fa', icon: 'orca', en: 'BAEGAN · ORCA' }, flames: 2, flameCol: '#f4f6fa', walk: 95, cam: 'close', crowd: 'hush', pose: 'bow', pre: 2, hold: 2, escort: ['owmate', 'owsailor'], titles: ['선항 레슬링 제1항해사', '백안 — 범고래'] },
+  mukhae: { tier: 'officer', fx: 'ink', fog: 1, fogCol: '#1a2a5a', light: { col: '#ff4a5a', dim: .75 }, screen: { col: '#ff4a5a', icon: 'squid', en: 'MUKHAE · GIANT SQUID' }, flames: 0, walk: 80, cam: 'low', crowd: 'hush', pose: 'taunt', pre: 2.2, hold: 2, titles: ['선항 레슬링 제2항해사', '묵해 — 대왕오징어'] },
+  simyeon: { tier: 'king', fx: 'bass', fadeOut: 1, light: { col: '#9aa3b2', dim: .85 }, screen: { col: '#c9d4e6', icon: 'sperm', en: 'SIMYEON · SPERM WHALE' }, flames: 1, walk: 60, cam: 'low', crowd: 'hush', pre: 2.6, hold: 2.4, titles: ['선항 레슬링 부선장', '심연 — 향유고래'] },
+  // 선장: the music dies, three heartbeats, the horn, the blue whale crossing the board, blue and gold fire, a slow walk
+  godong: { tier: 'king', fx: 'heartbeat', fadeOut: 1, horn: 1, light: { col: '#9fd6ff', dim: .9 }, screen: { col: '#9fd6ff', icon: 'whale', en: 'KING OF THE OCEAN' }, flames: 2, flameCol: ['#4aa6ff', '#ffd65a'], escort: ['simyeon', 'baegan'], walk: 52, cam: 'low', crowd: 'hush', pre: 4, hold: 3, titles: ['THE KING OF THE OCEAN', '선장 고동 — 흰긴수염고래'] },
+  owchief: { tier: 'known', light: { col: '#9aa3b2', dim: .3 }, screen: { col: '#9aa3b2', icon: 'wave', en: 'OCEAN WRESTLING' }, crowd: 'sailors', pose: 'roar' },
   // BLACK ROPE: red-purple light, their theme, the crew's name on the board, boos and cheers at once, a taunt at you
   brLeader: { tier: 'rival', screen: { col: '#b066d8', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#b066d8', dim: .42 }, escort: ['brPower', 'brShow'], crowd: 'mixed', pose: 'taunt' },
   brPower: { tier: 'rival', screen: { col: '#c2333f', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#c2333f', dim: .4 }, walk: 95, pose: 'roar' },

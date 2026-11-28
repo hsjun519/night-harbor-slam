@@ -64,7 +64,7 @@ export class FighterRenderer {
     bc.begin(jt.x(0), jt.y(0) - 4);
     const tails = f.tails ? f.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - camX)), w: T.w, c: T.c, front: T.front })) : null;
     const Bt = f.match && f.match.belt, wear = Bt && Bt.on === f && !f.hidden, look = wear && f.st !== 'WIN' ? beltLook(f.look) : f.look;   // worn: part of the body
-    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
+    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN' || !!f.look.capeAlways, sway: Math.sin((f.poseT || 0) * 2) * 2 });
     bc.finish({ flat: f.flash > .05 ? WHITE : extra.flat });
     const blink = f.inv > 0 && f.protect > 0 && (this.frame >> 2) & 1;
     bc.drawTo(g, 0, 0, extra.alpha != null ? extra.alpha : blink ? .55 : 1);

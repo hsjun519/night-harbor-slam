@@ -1687,6 +1687,7 @@ const BUILDS = {
   lean: { spine: 22, nk: 4, hd: 12, ua: 15.5, fa: 15, th: 21, sh: 20, ft: 4, fl: 9.5, sx: [-8.4, 7.4], hx: [-3.4, 3.4], uaR: [5.8, 4.6, .6], faR: [4.8, 3.6, .7], hR: 4.1, thR: [7.8, 5.6, .9], shR: [5.6, 3.9, 1], ftR: 4, nkR: 4.3, head: 1, mus: .9, prof: [[0, 7, 7], [.14, 8.2, 8.4], [.36, 7.4, 7.8], [.56, 9.4, 9.2], [.76, 11.6, 11], [.9, 10, 9.8], [1, 6, 6]] },
   heavy: { spine: 24, nk: 3, hd: 12, ua: 16, fa: 15, th: 18, sh: 17, ft: 4, fl: 11, sx: [-13.5, 11], hx: [-5.6, 5.6], uaR: [9, 7.2, .6], faR: [7, 5, .6], hR: 5.2, thR: [11.6, 8, .5], shR: [7.6, 5.4, .8], ftR: 5, nkR: 7, head: 1.02, mus: 0, belly: 1, prof: [[0, 11, 12], [.12, 13.4, 16], [.3, 14, 20.5], [.5, 15.4, 19], [.74, 17.4, 16.4], [.9, 14.6, 13.4], [1, 8, 8]] },
   giant: { spine: 27, nk: 4, hd: 12.5, ua: 19, fa: 18, th: 23, sh: 22, ft: 5, fl: 12, sx: [-12.5, 10.5], hx: [-4.8, 4.8], uaR: [8.4, 6.6, .9], faR: [6.8, 4.9, .9], hR: 5.6, thR: [10.4, 7.6, .8], shR: [7.2, 5, 1], ftR: 5.2, nkR: 6, head: 1.02, mus: .9, prof: [[0, 9.4, 9.4], [.14, 11.4, 11.4], [.36, 11, 11.4], [.56, 13.6, 13], [.76, 17, 15.6], [.9, 14.6, 13.6], [1, 8, 8]] },
+  titan: { spine: 26, nk: 3, hd: 12.5, ua: 18.5, fa: 17.5, th: 21, sh: 20, ft: 5, fl: 12, sx: [-14.5, 12], hx: [-5.2, 5.2], uaR: [10, 7.8, 1.3], faR: [8, 5.6, 1.3], hR: 5.8, thR: [11.4, 8.2, 1], shR: [8, 5.4, 1.3], ftR: 5.4, nkR: 7, head: 1, mus: 1.3, prof: [[0, 10, 10], [.14, 12.2, 12.2], [.36, 12.4, 12.6], [.56, 16, 14.6], [.76, 19.6, 17.4], [.9, 17, 15.2], [1, 9, 9]] },
   fem: { spine: 21, nk: 4, hd: 12, ua: 14.5, fa: 14, th: 20.5, sh: 19.5, ft: 4, fl: 9, sx: [-7.6, 6.6], hx: [-3.8, 3.8], uaR: [5, 4, .5], faR: [4.3, 3.3, .6], hR: 3.9, thR: [8.6, 5.8, .8], shR: [5.7, 3.8, 1.1], ftR: 3.9, nkR: 3.9, head: 1, mus: .55, fem: 1, prof: [[0, 8.6, 8], [.14, 9.8, 9.2], [.36, 7.2, 7.4], [.56, 8.4, 8.6], [.74, 9.4, 11.2], [.88, 8.6, 8.8], [1, 5.2, 5.2]] },
   femPower: { spine: 22, nk: 4, hd: 12, ua: 15.5, fa: 15, th: 20, sh: 19, ft: 4, fl: 10, sx: [-9, 7.8], hx: [-4.4, 4.4], uaR: [6.6, 5.2, .9], faR: [5.4, 4, .9], hR: 4.4, thR: [10, 6.8, .9], shR: [6.5, 4.3, 1.2], ftR: 4.3, nkR: 4.6, head: 1, mus: .9, fem: 1, prof: [[0, 9.6, 9], [.14, 11, 10.4], [.36, 8.8, 8.8], [.56, 10.4, 10.2], [.74, 12, 12.6], [.88, 10.8, 10.4], [1, 6.2, 6.2]] },
   slim: { spine: 22, nk: 4, hd: 12, ua: 15, fa: 14.5, th: 20, sh: 19, ft: 4, fl: 9.5, sx: [-7.6, 6.6], hx: [-3.2, 3.2], uaR: [5.2, 4.4, .3], faR: [4.5, 3.6, .4], hR: 4, thR: [7.4, 5.4, .5], shR: [5.2, 4, .6], ftR: 4, nkR: 4, head: 1, mus: 0, prof: [[0, 7.6, 7.6], [.14, 8.4, 8.6], [.36, 8, 8.4], [.56, 9, 9], [.76, 10.6, 10], [.9, 9.4, 9], [1, 5.6, 5.6]] },
@@ -1975,6 +1976,33 @@ const MASK = {
   fog(p, o) { MASK.plain(p, o); p.clip(o.outline, true, () => { p.line(o.c2R[2], 1.1, [[6.8, -13], [6, 13]]); p.poly(o.c2R[1], [[-.4, -2.8], [6, -1], [5.6, .6], [0, -.6]]); p.poly(o.c2R[1], [[7.4, -1], [11, -2.6], [10.8, -.6], [7.6, .6]]); p.line(o.c1R[1], .9, [[4.4, 6], [9, 6]]); }); },
   oni(p, o) { MASK.plain(p, o); for (const pts of [[[0, -11], [-1, -19], [5, -12]], [[6, -11], [9.4, -18], [9.6, -9.4]]]) { p.poly(o.c3R[1], pts); p.poly(o.c3R[3], pts.map(q => [q[0] * .8 + 1, q[1] * .9 - 1])); } p.clip(o.outline, true, () => { p.poly(o.c2R[2], [[-1, -5.4], [5.4, -2.6], [5, -4.6], [0, -7]]); p.poly(o.c2R[2], [[7.4, -2.8], [11, -5.6], [10.6, -3.8]]); p.poly('#fff3d8', [[3.6, 7.6], [5, 7.6], [4.2, 4.4]]); p.poly('#fff3d8', [[8, 7.4], [9.4, 7.4], [8.9, 4.4]]); }); },
   anchor(p, o) { MASK.plain(p, o); p.clip(o.outline, true, () => { p.line(o.c2R[2], 1.5, [[6.6, -11], [6.4, 10]]); p.line(o.c2R[2], 1.4, [[2, -8], [10.4, -8]]); p.line(o.c2R[2], 1.6, [[-1, 5], [2, 9], [6.4, 10.4], [10, 8.6]]); }); },
+  // 고동 before the reveal: white, the blue-black back of a whale over the brow, gold trim, the pleats of its throat
+  whale(p, o) {
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => {
+      p.blob(o.c2R[2], [[-12, -14], [12, -14], [11, -4.6], [4, -6.4], [-3, -5], [-12, -2]]);
+      p.blob(o.c2R[3], [[-6, -12], [4, -12.6], [6, -9.6], [-2, -9]]);
+      p.line(o.c3R[2], 1, [[-11.4, -2.4], [-3, -5.4], [4, -6.8], [11, -5]]);
+      for (let i = 0; i < 4; i++) p.line(o.c1R[1], .6, [[0, 5 + i * 1.9], [11, 4.4 + i * 1.9]]);
+    });
+    p.poly(o.c3R[3], [[1.6, -10.8], [3.4, -12.8], [5.2, -10.8], [3.4, -9]]);
+  },
+  // 묵해: a squid's mantle sweeping back off the skull to a diamond fin; feeding tentacles hang from the chin
+  squid(p, o) {
+    p.blob(o.c1R[1], [[-9, -4], [-11, -12], [-14, -17], [-17.4, -19.4], [-16.4, -14], [-15, -8], [-12.6, -1]]);
+    p.poly(o.c1R[2], [[-18, -20], [-14, -20.4], [-15.6, -16.6]]); p.poly(o.c1R[0], [[-17.6, -15.2], [-14.6, -13.6], [-16.8, -11.6]]);
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => { p.line(o.c2R[2], .8, [[-1, -12], [-4, -6], [-9, -3]]); p.line(o.c2R[2], .8, [[4, -11.6], [2, -6]]); p.blob(o.c1R[3], [[-6, -12], [2, -12.6], [5, -10], [-2, -9]]); });
+    p.clip(o.outline, true, () => { p.blob(o.c2R[1], [[-12, 4], [0, 2], [11, 3], [11, 14], [-12, 14]]); });
+    for (const x of [0, 2.6, 5.2, 7.8]) p.blob(o.c1R[1], [[x, 9], [x + 2.4, 9], [x + 1.8, 16 + (x % 3)], [x + .6, 16]]);
+  },
+  // 흑익: a black hood, the white underside of a manta on the jaw, and its two cephalic lobes curling forward
+  // beside the mouth like horns
+  manta(p, o) {
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => { p.blob(o.c2R[2], [[1, 6], [5, 5], [11, 5.4], [11, 14], [2, 14]]); p.line(o.c1R[0], .7, [[2, 8.4], [10.6, 8]]); p.blob(o.c1R[3], [[-8, -12], [2, -12.6], [7, -10], [-3, -8.6]]); });
+    for (const [y, k] of [[3.4, 1], [8.6, -1]]) { p.blob(o.c1R[1], [[8.4, y - 1.6], [13, y - 2.4 * k], [17, y - .4 * k], [15.6, y + 1.4 * k], [12, y + .6], [9, y + 1.8]]); p.line(o.c1R[3], .5, [[10, y - .6], [15.6, y - .8 * k]]); }
+  },
   visor(p, o) { p.blob(o.c1R[1], [[-10, -9], [0, -14.4], [8, -13], [11.4, -7], [12, 5], [10, 12], [2, 13], [-4, 9], [-9, 2]]); p.blob(o.c1R[2], [[-7, -9], [0, -13], [7.6, -11.6], [10.4, -6], [10.8, 4], [8, 10], [2, 10]]); p.poly('#1a1030', [[.4, -4.4], [11.4, -5.2], [11.6, .8], [.6, 1.4]]); p.poly(o.c2R[3], [[1.4, -3.4], [10.4, -4.2], [10.6, -.4], [1.6, .4]]); p.poly('#ffffff', [[2.4, -2.8], [5, -3.2], [4, -.6], [2.6, -.4]]); for (const [x, y] of [[-6, -6], [-6, 4], [3, 10]]) p.ell(o.c1R[4], x, y, .9); p.line(o.c1R[3], .9, [[1, 4], [10, 3.4]]); p.line(o.c1R[3], .9, [[1.4, 6.4], [9.6, 5.8]]); },
 };
 
@@ -1987,7 +2015,18 @@ const HAT = {
   bandana(p, h) { const R = rampHex(h.hatCol || '#d23b5a'); p.blob(R[1], [[-11.6, -2], [-11.8, -10], [-6, -14.6], [2, -15], [8.6, -12], [10.4, -6.6], [0, -8]]); p.blob(R[2], [[-8.6, -9], [-5, -13.4], [2, -13.8], [8, -11], [9, -8], [0, -9.4]]); p.poly(R[2], [[-11, -4], [-17, -1], [-14, 3], [-10.4, -1]]); for (const [x, y] of [[-5, -11], [1, -12], [5, -10]]) p.ell(R[4], x, y, .9); },
   headset(p) { p.line('#1a2148', 1.8, [[-5, -12.4], [-6.6, -6], [-5, -1]]); p.line('#1a2148', 1.6, [[-5.4, -12], [0, -14.4], [4, -13.6]]); p.ell('#1a2148', -4.8, .4, 3, 3.6); p.ell('#49d6ff', -4.8, .4, 1.4, 1.8); p.line('#1a2148', 1, [[-4, 3], [1, 8], [5.6, 8.4]]); p.ell('#1a2148', 6, 8.2, 1.2); },
   nurse(p) { p.poly('#f5f7ff', [[-6, -12], [-5, -18], [5, -18.6], [6.4, -12.6]]); p.rect('#ff4f6d', -.9, -17.4, 1.6, 4.4); p.rect('#ff4f6d', -2.3, -16, 4.4, 1.6); },
+  // 적갑: a red crab-shell helmet, spines along the crown, a dark brow ridge
+  helm(p, h) { const R = rampHex(h.hatCol || '#b8322a'); p.blob(R[1], [[-12.6, 1], [-13, -9], [-7, -16.4], [2, -17], [9.6, -12.6], [11.6, -6], [10.4, -4.4], [1, -6.4], [-5, -4], [-7, 2]]); p.blob(R[2], [[-10, -8], [-6, -14.6], [2, -15.2], [8.6, -11.4], [9.6, -7.6], [1, -8.6], [-6, -6]]); for (const [x, y] of [[-9, -13], [-4, -16.4], [1.6, -16.8], [6.6, -14]]) p.poly(R[3], [[x - 1.6, y + 1], [x, y - 3.6], [x + 1.6, y + 1]]); p.poly(R[0], [[0, -6.6], [11.8, -6.4], [11.2, -4.6], [1, -5]]); p.ell('#f0d8b0', -8, -6, 1, 1); },
+  // 해무: a jellyfish bell over the head, frilled at the rim, a glow inside it
+  bell(p, h) { const R = rampHex(h.hatCol || '#c9b6ff'), g2 = h.glowCol || '#7fe8ff'; p.blob(R[2], [[-13, -3], [-13.4, -12], [-7, -19.4], [1, -20.6], [9, -17], [12.4, -9], [12, -4]]); p.blob(R[3], [[-9, -10], [-5, -17], [1.4, -18.6], [7, -15.6], [4, -13], [-4, -11.6]]); for (let x = -12; x < 12; x += 3) p.ell(R[1], x + 1.5, -3.6, 1.7, 1.2); p.ell('#eafcff', -2, -15, 1.4, .9); p.ell(g2, 3, -9, 1.1, 1.1); p.ell(g2, -5, -8, .9, .9); p.ell(g2, 7, -12, .8, .8); },
   crown(p) { p.poly('#e0a32e', [[-8, -10], [-9.6, -18], [-5, -14], [-1, -20], [2.6, -14.4], [7.6, -18.6], [7.6, -10.6]]); p.poly('#ffe07a', [[-6.6, -11.4], [-7.4, -15.4], [-4.4, -12.8], [-1, -17.4], [2, -13], [5.8, -15.8], [6, -11.6]]); p.ell('#ff4f6d', -1, -12.4, 1.3); },
+};
+// face paint and marks beyond the old four (stripe, lines, star, wave)
+const PAINT = {
+  orca(p, h) { p.blob(h.paintCol || '#f4f6fa', [[-3.8, -3.2], [-1.6, -6.6], [3, -7], [5, -5.6], [2.6, -4.2], [-.6, -2.6]]); },   // 백안: an orca's white patch behind and above the eye
+  gills(p, h) { for (let i = 0; i < 3; i++) p.line(h.paintCol || '#4a5868', .9, [[-2.4 + i * 1.7, 3.4], [-1.2 + i * 1.7, 8.4]]); },   // 쇄파: three gill slits
+  spots(p, h) { for (const [x, y] of [[0, 3], [2.4, 6], [-2, 7], [5, 8.6], [1, 9.8], [-3, 3.6]]) p.ell(h.paintCol || '#c9c24a', x, y, .8, .8); },   // 흑린: a moray's speckles
+  sucker(p, h) { p.g.strokeStyle = h.paintCol || '#e8c8a8'; p.g.lineWidth = .7; for (const [x, y, r] of [[-1, 4, 1.6], [2.4, 7.4, 1.2], [-3.4, 8, 1]]) { p.g.beginPath(); p.g.ellipse(x, y, r, r, 0, 0, 7); p.g.stroke(); } },   // 심연: round scars of a squid's suckers
 };
 const GLASS = {
   shades(p) { p.poly('#140a22', [[-.4, -3.4], [6.2, -3.4], [5.4, 1.2], [1, 1.2]]); p.poly('#140a22', [[6.8, -3.4], [11.2, -3.2], [10.6, 1], [7.4, 1]]); p.line('#140a22', 1.1, [[-5, -2], [1, -2.8]]); p.poly('#4b5a9c', [[1, -2.6], [3.6, -2.6], [2.4, -.4], [1.4, -.4]]); p.poly('#4b5a9c', [[7.6, -2.6], [9, -2.6], [8.4, -.6]]); },
@@ -2012,10 +2051,16 @@ function headTexture(look, expr = 'neutral') {
     if (h.maskHair && hairFn) hairFn(p, h, H, S);
     (MASK[m.kind] || MASK.plain)(p, o);
     if (m.kind !== 'visor' && m.kind !== 'fog') {
-      const rim = o.c3R[2];
+      const rim = m.rim ? rampHex(m.rim)[2] : o.c3R[2];
       p.ell(rim, 3.5, -1.1, 3.6, 3); p.ell(rim, 8.5, -1.1, 2.7, 2.8);
-      p.ell(S[2], 3.5, -1.1, 2.7, 2.2); p.ell(S[2], 8.5, -1.1, 1.9, 2.1);
-      paintEyes(p, h, expr, S);
+      if (m.glow) {   // dark eye holes with a small light in them, no whites: the officers' masks
+        p.ell('#05060c', 3.5, -1.1, 2.7, 2.2); p.ell('#05060c', 8.5, -1.1, 1.9, 2.1);
+        const gc = expr === 'ko' || expr === 'blink' ? '#2a2f45' : m.glow, sq = expr === 'fierce' || expr === 'shout' ? .55 : 1;
+        p.ell(gc, 4, -1, 1.1, .9 * sq); p.ell(gc, 8.9, -1, .9, .8 * sq);
+      } else {
+        p.ell(S[2], 3.5, -1.1, 2.7, 2.2); p.ell(S[2], 8.5, -1.1, 1.9, 2.1);
+        paintEyes(p, h, expr, S);
+      }
       if (!m.noMouth) { p.blob(rim, [[2, 4.6], [6, 3.8], [10, 4.6], [10, 9], [6.4, 10.4], [2.4, 8.8]]); p.blob(S[2], [[3, 5.2], [6, 4.6], [9.4, 5.2], [9.4, 8.4], [6.4, 9.4], [3.2, 8.2]]); paintMouth(p, h, expr, S); }
     }
     if (m.kind === 'fog') { const col = expr === 'fierce' || expr === 'shout' ? '#ff5fa2' : expr === 'ko' ? '#5a5f7a' : '#49d6ff'; p.poly(col, [[.8, -1.9], [5.2, -.6], [4.8, .2], [1.2, -.8]]); p.poly(col, [[8, -.6], [10.4, -1.7], [10.2, -.8], [8.2, .2]]); }
@@ -2032,7 +2077,7 @@ function headTexture(look, expr = 'neutral') {
     if (!h.noEar) { p.ell(S[0], -5.2, .4, 3, 3.9); p.ell(S[2], -5, .3, 2.2, 3.1); p.ell(S[1], -4.7, .8, 1.1, 1.8); }
     if (h.earring) p.ell(h.earring, -5, 4.2, 1.1);
     if (h.beard && BEARD[h.beard]) BEARD[h.beard](p, h, H, S);
-    if (h.paint) h.paint === 'stripe' ? p.poly(h.paintCol, [[-1, -3.6], [10.4, -3.6], [10.2, .8], [-1, .8]]) : h.paint === 'lines' ? (p.line(h.paintCol, 1.1, [[1.6, 2.4], [1.2, 6]]), p.line(h.paintCol, 1.1, [[3.6, 2.8], [3.4, 6.4]]), p.line(h.paintCol, 1.1, [[9.6, 2.6], [9.6, 5.4]])) : h.paint === 'star' ? p.poly(h.paintCol, [[3.4, -6], [4.6, -2.6], [8, -1.4], [4.6, 0], [3.4, 4], [2.2, 0], [-1.4, -1.4], [2.2, -2.6]]) : h.paint === 'wave' ? p.line(h.paintCol, 1.6, [[-3, 4], [0, 2], [2, 4], [4.4, 2.2], [6.4, 4], [9.6, 2.2]]) : 0;
+    if (h.paint) h.paint === 'stripe' ? p.poly(h.paintCol, [[-1, -3.6], [10.4, -3.6], [10.2, .8], [-1, .8]]) : h.paint === 'lines' ? (p.line(h.paintCol, 1.1, [[1.6, 2.4], [1.2, 6]]), p.line(h.paintCol, 1.1, [[3.6, 2.8], [3.4, 6.4]]), p.line(h.paintCol, 1.1, [[9.6, 2.6], [9.6, 5.4]])) : h.paint === 'star' ? p.poly(h.paintCol, [[3.4, -6], [4.6, -2.6], [8, -1.4], [4.6, 0], [3.4, 4], [2.2, 0], [-1.4, -1.4], [2.2, -2.6]]) : h.paint === 'wave' ? p.line(h.paintCol, 1.6, [[-3, 4], [0, 2], [2, 4], [4.4, 2.2], [6.4, 4], [9.6, 2.2]]) : PAINT[h.paint] ? PAINT[h.paint](p, h) : 0;
     paintEyes(p, h, expr, S);
     // nose
     p.blob(S[3], [[6.6, -.6], [8.4, -.4], [11.6, 2.6], [10.6, 4], [7.4, 3.8]]);
@@ -2047,6 +2092,7 @@ function headTexture(look, expr = 'neutral') {
       const R = rampHex(h.mask.c1);
       p.blob(R[2], [[-10, -5.6], [0, -6.4], [10.6, -5.8], [11, -.6], [9, 2.2], [7, 1], [5, 2.6], [0, 2], [-9, -1]]); p.line(R[3], .9, [[-8, -4.6], [0, -5.4], [10, -4.8]]);
       p.ell(S[2], 3.5, -1.2, 2.5, 2); p.ell(S[2], 8.5, -1.2, 1.8, 1.9); paintEyes(p, h, expr, S);
+      if (h.mask.bill) { const Bl = rampHex(h.mask.bill); p.poly(Bl[2], [[9.6, -2.8], [19.4, -.8], [9.8, .4]]); p.line(Bl[4], .6, [[10, -2], [18.6, -.8]]); }   // 청창: a sailfish's spear of a bill
     }
     if (h.tear && (expr === 'hurt' || expr === 'sad')) p.ell('#7fd8ff', 1.6, 2, 1, 1.4);
   }
@@ -2114,6 +2160,7 @@ const EMBLEMS = {
   eye: ['..###..', '.#...#.', '#..#..#', '#.###.#', '#..#..#', '.#...#.', '..###..'],
   fist: ['.####..', '######.', '#.#.##.', '#######', '######.', '.####..', '.####..'],
   drop: ['...#...', '..###..', '..###..', '.#####.', '.####.#', '.#####.', '..###..'],
+  whale: ['#......###.', '##..#######', '.##########', '##..######.', '#.....##...'],
 };
 function emblemAt(name, x, y) { // x,y in pixels around the emblem centre
   const b = EMBLEMS[name];
@@ -2196,6 +2243,8 @@ function torsoShader(look, dims) {
       case 'hoodie': cloth = c1; if (Math.abs(c) < .05 && v > .2) cloth = c2; if (v > .86) cloth = c3; if (v < .34 && v > .16 && Math.abs(c) < .5 && v > .16 + Math.abs(c) * .2) o.dt -= .4; break;
       case 'track': cloth = c1; if (Math.abs(c) < .05) cloth = c2; if (v > .9) cloth = c2; if (Math.abs(v - .74) < .03) cloth = c2; break;
       case 'suit': { cloth = c1; const w = (v - .42) * .62; if (v > .42 && Math.abs(c) < w) { cloth = c2; if (Math.abs(c) < .07) cloth = c3; } else if (v > .42 && Math.abs(c) < w + .12) o.dt -= .8; if (Math.abs(c) < .05 && (Math.abs(v - .32) < .015 || Math.abs(v - .22) < .015)) o.dt -= 2; break; }
+      case 'opencoat': { const w = .22 + Math.max(0, v - .3) * .32; if (Math.abs(c + .04) > w || v > .93) cloth = Math.abs(Math.abs(c + .04) - w) < .05 && v <= .93 ? c2 : c1; break; }   // a coat worn open over the bare chest, trimmed
+      case 'orca': cloth = c1; if (c > -.12 && c < .5 && v > .2 && v < .74 && v - .2 > Math.abs(c - .19) * .45) cloth = c2; if (v > .9 && Math.abs(c) < .22) cloth = c2; break;   // black with an orca's white belly
       case 'coat': { cloth = c1; const w = (v - .3) * .5; if (v > .3 && Math.abs(c) < w) { cloth = c2; if (Math.abs(c) < .06 && t.c3) cloth = c3; } else if (Math.abs(Math.abs(c) - w) < .05) o.dt -= 1; break; }
       case 'shirt': cloth = c1; if (Math.abs(c) < .035) o.dt -= .9; if (v > .92 && Math.abs(c) < .3) cloth = skin; if (t.c2 && v < .2) cloth = c2; break;
       case 'apron': cloth = c1; if (v < .74 && Math.abs(c) < .62) cloth = c2; if (v >= .74 && Math.abs(Math.abs(c) - .36) < .06) cloth = c2; break;
@@ -2296,6 +2345,15 @@ function drawBody(bc, jt, dims, look, o = {}) {
     bc.capsule(X(li + 1), Y(li + 1), dims.shR[0] + loose * .5, X(li + 2), Y(li + 2), dims.shR[1] + loose, seg.sh, g + 1, dims.shR[2], dims.shR[0] * 1.3, dk);
     bc.capsule(X(li + 2), Y(li + 2), dims.ftR, X(li + 3), Y(li + 3), dims.ftR * .78, seg.foot, g + 2, 0, dims.ftR * 1.5, dk);
   };
+  // epaulettes: a pad on the shoulder with gold fringe, or a spined pauldron (armor)
+  const epa = (si, g) => {
+    const E = look.epaulet; if (!E) return;
+    const er = EPA.get(E) || EPA.set(E, { c: ramp(E.c), fr: E.fr ? ramp(E.fr) : null }).get(E), r = (E.armor ? 1.3 : 1) * dims.uaR[0] * .62;
+    const x = X(si) + upx * dims.uaR[0] * .45, y = Y(si) + upy * dims.uaR[0] * .45;
+    bc.capsule(x - fxv * r, y - fyv * r, r * .66, x + fxv * r, y + fyv * r, r * .66, [{ t: 1, ramp: er.c }], g, 0, 0, 0);
+    if (E.armor) for (let k = -1; k <= 1; k++) { const bx = x + fxv * k * r * .7, by = y + fyv * k * r * .7; bc.poly([[bx - 1.6, by + upy * r * .4], [bx + upx * (r * .5 + 4.5), by + upy * (r * .5 + 4.5)], [bx + 1.6, by + upy * r * .4]], er.c, g); }
+    if (er.fr) for (let k = -1; k <= 1; k++) { const bx = x + fxv * k * r * .72, by = y + fyv * k * r * .72; bc.capsule(bx - upx * r * .45, by - upy * r * .45, .8, bx - upx * (r * .45 + 4), by - upy * (r * .45 + 4), .7, [{ t: 1, ramp: er.fr }], g, 0, 0, 0); }
+  };
   const tail = (T, g) => {
     for (let i = 0; i < T.pts.length - 2; i += 2) { const k = i / (T.pts.length - 2); bc.capsule(T.pts[i], T.pts[i + 1], T.w * (1 - k * .55), T.pts[i + 2], T.pts[i + 3], T.w * (1 - (k + .1) * .55), [{ t: 1, ramp: ramp(T.c) }], g, 0, 0, k * .1); }
   };
@@ -2303,14 +2361,15 @@ function drawBody(bc, jt, dims, look, o = {}) {
     if (o.tails) for (const T of o.tails) if (!T.front) tail(T, 40);
     if (look.cape && o.cape !== false) {
       const a = 3 + (o.sway || 0), c = look.cape, x = X(J.neck), y = Y(J.neck), w = dims.prof[4][1] * .9, hem = (c.len || 1) * (dims.spine + dims.th);
-      bc.poly([[x - fxv * 2 - 1, y + 2], [x - fxv * (w + 2), y + 6], [x - fxv * (w + 7 + a) , y + hem], [x - fxv * (w * .1 - 3 + a * .5), y + hem + 2]], ramp(c.c1), 41, { folds: 2, phase: (o.sway || 0) * .4 });
+      if (c.wing) bc.poly([[x - fxv * 2, y + 1], [x - fxv * (w + 26 + a), y + 8], [x - fxv * (w + 18), y + hem * .75], [x + fxv * (w * .4), y + hem * .55], [x + fxv * (w + 20 + a * .5), y + hem * .35], [x + fxv * (w + 12), y + 4]], ramp(c.c1), 41, { folds: 3, phase: (o.sway || 0) * .4 });   // 흑익: a manta's wings
+      else bc.poly([[x - fxv * 2 - 1, y + 2], [x - fxv * (w + 2), y + 6], [x - fxv * (w + 7 + a) , y + hem], [x - fxv * (w * .1 - 3 + a * .5), y + hem + 2]], ramp(c.c1), 41, { folds: 2, phase: (o.sway || 0) * .4 });
     }
-    arm(7, true, 1); leg(14, true, 4);
+    arm(7, true, 1); epa(7, 2); leg(14, true, 4);
     const bx = X(0) - upx * dims.thR[0] * .55, by = Y(0) - upy * dims.thR[0] * .55, tx = X(1) + upx * (dims.nk * .7 + 2), ty = Y(1) + upy * (dims.nk * .7 + 2);
     if (look.skirtBack || look.coat) skirt(bc, P, dims, look.coat || look.skirtBack, fxv, fyv, upx, upy, 9, true, o);
     bc.torso(bx, by, tx, ty, fxv, fyv, dims.prof, torsoShader(look, dims), 10, 0);
     leg(10, false, 11);
-    if (look.titleBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy);
+    if (look.titleBelt || look.wearBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy, look.titleBelt ? 'gold' : look.wearBelt);
     if (look.coat || look.skirt) skirt(bc, P, dims, look.coat || look.skirt, fxv, fyv, upx, upy, 19, false, o);
     if (look.sash) { const x = X(J.pN), y = Y(J.pN) - 4; bc.poly([[x - 3, y], [x + 3, y], [x + 3.5 + (o.sway || 0), y + 14], [x - 2 + (o.sway || 0), y + 15]], ramp(look.sash), 21, { folds: 1 }); }
     bc.capsule(X(1) + upx * 1, Y(1) + upy * 1, dims.nkR, X(2) + upx * 3, Y(2) + upy * 3, dims.nkR * .92, [{ t: 1, ramp: look.neckCol ? ramp(look.neckCol) : seg.skin }], 14, 0, dims.nkR * 1.6, .12);
@@ -2322,14 +2381,18 @@ function drawBody(bc, jt, dims, look, o = {}) {
   if (layer !== 'back') {
     if (o.prop && o.prop.draw) o.prop.draw(bc, jt, dims);
     arm(4, false, 24);
+    epa(4, 27);
   }
 }
 // The championship belt, worn: drawn after the near leg (the thighs would cover a belt painted on the torso) and
 // before the near arm, as a band round the waist on the body's own axes, so it turns, leans and shades with the body:
 // leather strap with gold edges, a side plate toward the back, the big bevelled plate with a red stone on the front.
 let TBR = null;
-function titleBelt(bc, P, dims, fx, fy, ux, uy) {
-  const R = TBR || (TBR = { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') });
+const EPA = new WeakMap();
+// style: 'gold' (the championship belt) or 'captain' (고동's own: navy leather, the gold plate holds a blue stone, the sea)
+function titleBelt(bc, P, dims, fx, fy, ux, uy, style = 'gold') {
+  const all = TBR || (TBR = { gold: { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') }, captain: { gold: ramp('#c9a22e'), deep: ramp('#8a6a1a'), strap: ramp('#16213e'), gem: ramp('#3f78c0') } });
+  const R = all[style] || all.gold;
   const back = dims.prof[1][1] + 1.2, front = dims.prof[1][2] + 1.4, cx = P[0] + ux * 5, cy = P[1] + uy * 5;
   const at = (a, b) => [cx + fx * a + ux * b, cy + fy * a + uy * b];   // a: toward the front, b: up
   const band = (a0, a1, b0, b1, r, g, o) => bc.poly([at(a0, b1), at(a1, b1), at(a1, b0), at(a0, b0)], r, g, o);
@@ -2565,9 +2628,37 @@ const LOOKS = {
   brSpeed: { build: 'lean', scale: .96, skin: 'light', head: { face: 'slim', hair: 'spiky', hairCol: '#b066d8', hat: 'bandana', hatCol: '#14101c', browTilt: .2 }, top: { kind: 'tank', c1: '#b066d8', c2: '#14101c' }, bottom: { kind: 'shorts', c1: '#14101c', c2: '#b066d8', pat: 'side' }, boots: { c1: '#f2efe4', c2: '#b066d8', h: .4 }, wrist: { c: '#b066d8', len: .2 } },
   brTech: { build: 'slim', scale: 1, skin: 'pale', head: { face: 'long', hair: 'side', hairCol: '#2a2230', glass: 'square', browTilt: .4 }, top: { kind: 'none' }, bottom: { kind: 'tights', c1: '#2a2230', c2: '#9be3ff', pat: 'side' }, boots: { c1: '#14101c', c2: '#9be3ff', h: .8 }, wrist: { c: '#9be3ff', len: .6 } },
   brShow: { build: 'athletic', scale: 1, skin: 'tan', head: { face: 'round', hair: 'mohawk', hairCol: '#ffd65a', glass: 'shades', browTilt: .1 }, top: { kind: 'vest', c1: '#ffd65a', c2: '#14101c' }, bottom: { kind: 'tights', c1: '#14101c', c2: '#ffd65a', pat: 'side' }, boots: { c1: '#ffd65a', c2: '#14101c', h: .8 }, wrist: { c: '#ffd65a', len: .4 } },
-  whiteivory: { build: 'athletic', scale: 1.06, skin: 'light', head: { face: 'slim', hair: 'slick', hairCol: '#f2f2f2', browTilt: .3 }, top: { kind: 'vest', c1: '#f2efe4', c2: '#3a6a8a' }, bottom: { kind: 'tights', c1: '#f2efe4', c2: '#3a6a8a', pat: 'side' }, boots: { c1: '#e6e9f2', c2: '#3a6a8a', h: .8 }, wrist: { c: '#f2efe4', len: .4 } },
-  godong: { build: 'heavy', scale: 1.12, skin: 'tan', head: { face: 'square', hair: 'bald', beard: 'long', hairCol: '#2a2a2a', browTilt: .8 }, top: { kind: 'coat', c1: '#1c2a3a', c2: '#c9a22e' }, bottom: { kind: 'pants', c1: '#1c2a3a', c2: '#c9a22e', pat: 'side' }, boots: { c1: '#14121c', c2: '#c9a22e', h: .7 }, sleeve: { c: '#1c2a3a', len: 1.8 }, coat: { c1: '#1c2a3a', len: .7, open: 1 } },
-  owsailor: { build: 'athletic', scale: 1, skin: 'tan', head: { face: 'jaw', hair: 'buzz', hairCol: '#1c1420', hat: 'beanie', hatCol: '#2a4a6a', beard: 'stubble' }, top: { kind: 'tank', c1: '#f2efe4', c2: '#2a4a6a' }, bottom: { kind: 'pants', c1: '#2a4a6a', c2: '#f2efe4', pat: 'side' }, boots: { c1: '#14121c', c2: '#2a4a6a', h: .4 }, wrist: { c: '#2a4a6a', len: .2 } },
+  // ---- 선항 레슬링: the creature each one is named for, worn as gear and paint, never as a costume ----
+  // 고동 (흰긴수염고래): an old captain who never stopped lifting. White-grey hair swept back, a trimmed white beard,
+  // an old scar, a white captain's coat worn open over a huge chest with the blue whale inked on it, gold epaulettes,
+  // navy tights, and the captain's own belt.
+  godong: { build: 'titan', scale: 1.1, skin: 'light', head: { face: 'square', hair: 'slick', hairCol: '#dde2ea', beard: 'full', wrinkle: 1, scar: 1, browTilt: .5, browW: 2.1, browCol: '#eef1f6', eye: '#2f5f92' }, top: { kind: 'opencoat', c1: '#e9ecf2', c2: '#c9a22e', emblem: 'whale', ce: '#3f78c0' }, emblemSkin: 1, bottom: { kind: 'tights', c1: '#16213e', c2: '#c9a22e', pat: 'side' }, boots: { c1: '#16213e', c2: '#c9a22e', h: .85 }, wrist: { c: '#e9ecf2', len: .3 }, coat: { c1: '#e2e6ee', len: .95, open: 1 }, epaulet: { c: '#e0b23c', fr: '#fff0a8' }, wearBelt: 'captain' },
+  // before the tenth floor: the same giant in a whale mask, a navy coat and a long cloak
+  godongMask: { build: 'titan', scale: 1.1, skin: 'light', head: { face: 'square', hair: 'slick', hairCol: '#dde2ea', mask: { full: 1, kind: 'whale', c1: '#eef0f4', c2: '#1a2c52', c3: '#c9a22e', noMouth: 1, rim: '#0e1628', glow: '#9fd6ff' } }, top: { kind: 'opencoat', c1: '#16213e', c2: '#c9a22e' }, bottom: { kind: 'tights', c1: '#0e1628', c2: '#c9a22e', pat: 'side' }, boots: { c1: '#0e1628', c2: '#c9a22e', h: .85 }, wrist: { c: '#16213e', len: .5 }, coat: { c1: '#121c34', len: 1.05, open: 1 }, epaulet: { c: '#c9a22e', fr: '#e0c46a' }, cape: { c1: '#0c1426', len: 1.4 }, capeAlways: 1 },
+  // 심연 (향유고래): a towering vice captain, square-topped dark hair, the round scars squid leave, a long charcoal coat
+  simyeon: { build: 'giant', scale: 1.14, skin: 'tan', head: { face: 'jaw', hair: 'flat', hairCol: '#3a3f4a', beard: 'stubble', scar: 1, paint: 'sucker', paintCol: '#e8c8a8', browTilt: .65, browW: 2, eye: '#8fa6c2' }, top: { kind: 'opencoat', c1: '#2c313c', c2: '#9aa3b2' }, bottom: { kind: 'tights', c1: '#1c2029', c2: '#9aa3b2', pat: 'side' }, boots: { c1: '#1c2029', c2: '#5a6272', h: .8 }, wrist: { c: '#2c313c', len: .55 }, knee: '#2c313c', coat: { c1: '#262b35', len: .9, open: 1 }, scarBody: 1, epaulet: { c: '#9aa3b2' } },
+  // 백안 (범고래): rank and order. Black and white like an orca, the white patch by the eye, silver epaulettes
+  baegan: { build: 'power', scale: 1.1, skin: 'light', head: { face: 'jaw', hair: 'slick', hairCol: '#0e1016', paint: 'orca', paintCol: '#f4f6fa', browTilt: .6, browW: 1.9, eye: '#14161e' }, top: { kind: 'orca', c1: '#101218', c2: '#f4f6fa' }, bottom: { kind: 'tights', c1: '#101218', c2: '#f4f6fa', pat: 'side' }, boots: { c1: '#101218', c2: '#f4f6fa', h: .85 }, wrist: { c: '#f4f6fa', len: .4 }, knee: '#f4f6fa', sleeve: { c: '#101218', len: .55 }, epaulet: { c: '#b8c0cc', fr: '#e8ecf4' } },
+  // 묵해 (대왕오징어): tall and long-limbed, a squid's mantle for a mask, tentacles off the back and the waist, ink and crimson
+  mukhae: { build: 'lean', scale: 1.12, skin: 'pale', head: { face: 'long', hair: 'bald', mask: { full: 1, kind: 'squid', c1: '#5a1636', c2: '#0c0a14', c3: '#ff4a5a', noMouth: 1, rim: '#2a0c1e', glow: '#ff4a5a' } }, top: { kind: 'harness', c1: '#2a0c1e', c2: '#ff4a5a' }, bottom: { kind: 'tights', c1: '#1a0a16', c2: '#8a2a4a', pat: 'spots' }, boots: { c1: '#1a0a16', c2: '#5a1636', h: .8 }, wrist: { c: '#5a1636', len: .6 }, coat: { c1: '#14080f', len: .95, open: 1 }, tails: [{ at: 'back', n: 6, len: 6, w: 2.4, c: '#5a1636' }, { at: 'back', n: 7, len: 6.5, w: 2, c: '#7a2448' }, { at: 'waist', n: 6, len: 5.6, w: 2.2, c: '#5a1636' }] },
+  // 흑익 (대왕쥐가오리): a giant in black with a white underside, a manta hood, wings of a cape for the walk to the ring
+  heugik: { build: 'giant', scale: 1.1, skin: 'tan', head: { face: 'jaw', hair: 'bald', mask: { full: 1, kind: 'manta', c1: '#14161f', c2: '#e8ecf4', c3: '#9aa3b2', rim: '#05060c', glow: '#e8ecf4' } }, top: { kind: 'vest', c1: '#14161f', c2: '#e8ecf4' }, bottom: { kind: 'tights', c1: '#14161f', c2: '#e8ecf4', pat: 'half' }, boots: { c1: '#14161f', c2: '#e8ecf4', h: .8 }, wrist: { c: '#14161f', len: .7 }, cape: { c1: '#0e1016', len: 1.1, wing: 1 }, tattoo: 'chest' },
+  // 쇄파 (백상아리, once 흰상아): slate and white, gill slits on the cheek, dead black eyes, a sawtooth down the legs
+  whiteivory: { build: 'power', scale: 1.06, skin: 'light', head: { face: 'jaw', hair: 'buzz', hairCol: '#8a96a6', paint: 'gills', paintCol: '#4a5868', scar: 1, browTilt: .85, browW: 1.9, eye: '#0e1016' }, top: { kind: 'none' }, bottom: { kind: 'tights', c1: '#4a5868', c2: '#f2f4f8', pat: 'flame' }, boots: { c1: '#f2f4f8', c2: '#4a5868', h: .82 }, wrist: { c: '#4a5868', len: .45 }, knee: '#4a5868', scarBody: 1, tattoo: 'chest' },
+  // 청창 (돛새치): cobalt and silver, a half mask with a spear of a bill, the bars of a sailfish down the legs
+  cheongchang: { build: 'athletic', scale: 1.04, skin: 'tan', head: { face: 'slim', hair: 'slick', hairCol: '#16306e', mask: { c1: '#1f4fa8', bill: '#cfd8e6' }, browTilt: .6 }, top: { kind: 'singlet', c1: '#1f4fa8', c2: '#cfd8e6', emblem: 'bolt', ce: '#7fc8ff' }, bottom: { kind: 'tights', c1: '#16306e', c2: '#7fc8ff', pat: 'bands' }, boots: { c1: '#cfd8e6', c2: '#1f4fa8', h: .8 }, wrist: { c: '#1f4fa8', len: .5 }, knee: '#1f4fa8' },
+  // 적갑 (왕게): armoured in red, a spined crab-shell helmet, pauldrons, gauntlets, the shell's plates on the shorts
+  jeokgap: { build: 'power', scale: 1.12, skin: 'tan', head: { face: 'square', hair: 'buzz', hairCol: '#2a1414', hat: 'helm', hatCol: '#b8322a', beard: 'stubble', browTilt: .5, browW: 2 }, top: { kind: 'harness', c1: '#b8322a', c2: '#f0d8b0' }, bottom: { kind: 'shorts', c1: '#8a2420', c2: '#f0d8b0', pat: 'scale' }, boots: { c1: '#8a2420', c2: '#f0d8b0', h: .7 }, glove: '#c23a2e', wrist: { c: '#b8322a', len: .55 }, elbow: '#b8322a', knee: '#b8322a', epaulet: { c: '#c23a2e', armor: 1 } },
+  // 흑린 (곰치): lean, green-black and speckled, a mask over the eyes, yellow eyes that do not blink
+  heungnin: { build: 'lean', scale: 1.04, skin: 'pale', head: { face: 'long', hair: 'slick', hairCol: '#12241a', mask: { c1: '#1f3a2a' }, paint: 'spots', paintCol: '#c9c24a', eye: '#d8c84a', browTilt: .7 }, top: { kind: 'strap', c1: '#1f3a2a', c2: '#c9c24a' }, bottom: { kind: 'tights', c1: '#1f3a2a', c2: '#c9c24a', pat: 'spots' }, boots: { c1: '#12241a', c2: '#c9c24a', h: .8 }, wrist: { c: '#1f3a2a', len: .7 }, tattoo: 'chest' },
+  // 해무 (해파리): slender and pale, a jellyfish bell over the head and stinging threads hanging from it, a faint glow
+  haemu: { build: 'slim', scale: 1.02, skin: 'pale', head: { face: 'slim', hair: 'bob', hairCol: '#a898d8', hat: 'bell', hatCol: '#c9b6ff', eye: '#5ad8f0', browTilt: .3 }, top: { kind: 'singlet', c1: '#8a7ad0', c2: '#7fe8ff' }, bottom: { kind: 'tights', c1: '#5a4aa0', c2: '#7fe8ff', pat: 'side' }, boots: { c1: '#c9b6ff', c2: '#5a4aa0', h: .7 }, wrist: { c: '#7fe8ff', len: .4 }, tails: [{ at: 'head', n: 7, len: 5.6, w: 1.5, c: '#b8a8e8' }, { at: 'head', n: 6, len: 5.6, w: 1.2, c: '#7fe8ff' }, { at: 'head', n: 7, len: 5, w: 1.4, c: '#d8ccff' }] },
+  // the crew: deckhands, sailors, the boatswain's mate. Navy, white, the whale on the chest, built for hauling rope
+  owsailor: { build: 'power', scale: 1.02, skin: 'tan', head: { face: 'jaw', hair: 'buzz', hairCol: '#1c1420', hat: 'beanie', hatCol: '#16213e', beard: 'stubble', browTilt: .7 }, top: { kind: 'tank', c1: '#1a2440', c2: '#e9ecf2', emblem: 'whale', ce: '#e9ecf2' }, bottom: { kind: 'pants', c1: '#16213e', c2: '#e9ecf2', pat: 'side' }, boots: { c1: '#0e0c14', c2: '#3a4a6a', h: .5 }, wrist: { c: '#e9ecf2', len: .3 }, tattoo: 'chest' },
+  owmate: { build: 'power', scale: 1.06, skin: 'light', head: { face: 'square', hair: 'buzz', hairCol: '#2a2030', hat: 'cap', hatCol: '#16213e', beard: 'chops', browTilt: .7 }, top: { kind: 'jacket', c1: '#16213e', c2: '#e9ecf2', c3: '#16213e' }, bottom: { kind: 'pants', c1: '#101828', c2: '#c9a22e', pat: 'side' }, boots: { c1: '#0e0c14', c2: '#c9a22e', h: .5 }, sleeve: { c: '#16213e', len: .9 }, wrist: { c: '#e9ecf2', len: .3 } },
+  owchief: { build: 'giant', scale: 1.06, skin: 'tan', head: { face: 'jaw', hair: 'bald', beard: 'full', hairCol: '#4a3a30', hat: 'beanie', hatCol: '#3a1a1a', scar: 1, browTilt: .8 }, top: { kind: 'opencoat', c1: '#22283a', c2: '#9aa3b2' }, bottom: { kind: 'pants', c1: '#1a1e2a', c2: '#9aa3b2', pat: 'side' }, boots: { c1: '#0e0c14', c2: '#5a6272', h: .6 }, coat: { c1: '#1e2434', len: .7, open: 1 }, wrist: { c: '#22283a', len: .5 } },
+  // 역조 (혹등고래) as he was: the sixth boatswain, navy and white, the long white wraps of a humpback's flippers
+  yeokjo: { build: 'power', scale: 1.08, skin: 'tan', head: { face: 'jaw', hair: 'short', hairCol: '#1c1a24', beard: 'stubble', browTilt: .4 }, top: { kind: 'vest', c1: '#1a2a44', c2: '#e9ecf2' }, bottom: { kind: 'tights', c1: '#1a2a44', c2: '#e9ecf2', pat: 'side' }, boots: { c1: '#1a2a44', c2: '#e9ecf2', h: .75 }, wrist: { c: '#e9ecf2', len: .6 }, tattoo: 'chest' },
   oldman: { build: 'elder', scale: .96, skin: 'tan', head: { face: 'long', hair: 'bald', beard: 'long', hairCol: '#e6e9f2', hat: 'beanie', hatCol: '#3a5a8c', wrinkle: 1 }, top: { kind: 'coat', c1: '#d8a62e', c2: '#3b4668' }, bottom: { kind: 'pants', c1: '#3b4668' }, boots: { c1: '#2c3f5c', c2: '#d8a62e', h: 0 }, sleeve: { c: '#d8a62e', len: 1.8 }, coat: { c1: '#d8a62e', len: .5, open: 1 } },
   nurse: { build: 'fem', scale: .95, skin: 'light', head: { face: 'round', hair: 'bun', hairCol: '#5a3a2a', lashes: 1, hat: 'nurse', blush: 1 }, top: { kind: 'shirt', c1: '#9fe0d0' }, bottom: { kind: 'pants', c1: '#9fe0d0' }, boots: { c1: '#f2f4fa', c2: '#9fe0d0', h: 0 }, sleeve: { c: '#9fe0d0', len: .7 } },
   busker: { build: 'slim', scale: .99, skin: 'brown', head: { face: 'slim', hair: 'mullet', hairCol: '#1c1424', beard: 'goatee', hat: 'beanie', hatCol: '#d2456a' }, top: { kind: 'jacket', c1: '#3b5a3f', c2: '#d8cfb8', c3: '#c98432' }, bottom: { kind: 'pants', c1: '#2d3348' }, boots: { c1: '#7a4a28', c2: '#c98432', h: 0 }, sleeve: { c: '#3b5a3f', len: 1.8 } },
@@ -2778,29 +2869,118 @@ const CHARACTERS = {
     finisher: 'encore', taunt: 'tauntDance', win: 'win', ai: { aggr: .6, air: .4, grab: .45, def: .4, rope: .5, taunt: .92, dirty: .85 }, voice: 1.2,
     lines: { intro: '조명, 이쪽! 주인공 등장이다!', win: '박수! 더 크게!', lose: '…앙코르는 다음에.' },
   },
+  // ---- 선항 레슬링: 선장 · 부선장 · 항해사 · 육대 갑판장 · 선원장 · 정식 선원 · 일반 선원 (and the one who was sent away)
+  haemu: {
+    name: '해무', nick: '해파리 · 갑판장', style: 'tech', look: LOOKS.haemu, stance: 'tech', color: '#c9b6ff', thug: 1, ow: 1, rank: '갑판장',
+    stats: { hp: 108, stun: 104, atk: 1.04, grp: 1.04, spd: 1.06, jump: 1.1, rec: 1.06, down: 1.04, fin: 1.1, weight: 74, lift: 1.3, kbr: .9 },
+    chain: ['palm', 'slap', 'backhand'], run: 'slideKick', air: 'dropkick', dive: 'diveMoon', ground: 'stomp',
+    moves: { front: front('ddt', 'irishWhip', 'headDrop', 'armDrag', 'suplex'), rear: front('dragonSuplex', 'ringOut', 'bulldog', 'anchorHold', 'german'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'haemu', taunt: 'tauntBow', win: 'win', ai: { aggr: .6, air: .4, grab: .5, def: .5, rope: .4, taunt: .5, dirty: .5 }, voice: 1.15,
+    lines: { intro: '갑판장 해무다. 이름 정도는 기억해 두라고.', win: '봤지? 이게 갑판장이다.', lose: '…안개가 걷혔군.' },
+  },
+  heungnin: {
+    name: '흑린', nick: '곰치 · 갑판장', style: 'tech', look: LOOKS.heungnin, stance: 'street', color: '#c9c24a', thug: 1, ow: 1, rank: '갑판장',
+    stats: { hp: 112, stun: 108, atk: 1.06, grp: 1.1, spd: 1.08, jump: 1, rec: 1.1, down: 1.06, fin: 1.08, weight: 80, lift: 1.4, kbr: .95 },
+    chain: ['jab', 'claw', 'claw2'], run: 'slideKick', air: 'crossbody', dive: 'diveHead', ground: 'stomp',
+    moves: { front: front('ddt', 'irishWhip', 'gutBuster', 'slapFest', 'headDrop'), rear: front('bulldog', 'ringOut', 'anchorHold', 'atomic', 'runningBulldog'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'heungnin', taunt: 'taunt', win: 'win', ai: { aggr: .7, air: .3, grab: .55, def: .45, rope: .35, taunt: .45, dirty: .85 }, voice: 1,
+    lines: { intro: '규칙은 많을수록 재밌지. 깰 게 많거든.', win: '곰치는 굴에서 기다리는 법이야.', lose: '흐흐… 오늘은 굴이 좁았네.' },
+  },
+  jeokgap: {
+    name: '적갑', nick: '왕게 · 갑판장', style: 'power', look: LOOKS.jeokgap, stance: 'power', color: '#c23a2e', thug: 1, ow: 1, rank: '갑판장',
+    stats: { hp: 132, stun: 124, atk: 1.12, grp: 1.12, spd: .9, jump: .86, rec: 1, down: 1.04, fin: 1.04, weight: 130, lift: 2.2, kbr: 1.4 },
+    chain: ['palm', 'overhand', 'headbutt'], run: 'shoulder', air: 'buttDrop', dive: 'diveQuake', ground: 'stomp',
+    moves: { front: front('powerSlam', 'irishWhip', 'chokeslam', 'backbreaker', 'bellyToBelly'), rear: front('german', 'ringOut', 'backdropDriver', 'atomic', 'bulldog'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'jeokgap', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .55, air: .05, grab: .7, def: .7, rope: .15, taunt: .1, dirty: .05 }, voice: .7,
+    lines: { intro: '정식 경기다. 서로 정정당당하게.', win: '…좋은 경기였다.', lose: '졌다. 변명은 없다.' },
+  },
+  cheongchang: {
+    name: '청창', nick: '돛새치 · 상급 갑판장', style: 'air', look: LOOKS.cheongchang, stance: 'air', color: '#7fc8ff', thug: 1, ow: 1, rank: '상급 갑판장', topStand: 'topCrossbody',
+    stats: { hp: 120, stun: 116, atk: 1.12, grp: 1.08, spd: 1.2, jump: 1.2, rec: 1.14, down: 1.12, fin: 1.14, weight: 86, lift: 1.5, kbr: 1 },
+    chain: ['jab', 'lowkick', 'spinkick'], run: 'flyKnee', air: 'dropkick', dive: 'diveMoon', ground: 'stomp',
+    moves: { front: front('suplex', 'irishWhip', 'headDrop', 'ddt', 'bellyToBelly'), rear: front('dragonSuplex', 'ringOut', 'german', 'runningBulldog', 'bulldog'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'sail', taunt: 'tauntBow', win: 'win', ai: { aggr: .75, air: .8, grab: .35, def: .55, rope: .7, taunt: .2, dirty: .2 }, voice: 1.05,
+    lines: { intro: '드디어 진짜 상대로군. 처음부터 전력이다.', win: '빨랐지? 다음엔 따라와 봐.', lose: '…좋아. 이런 상대를 기다렸다.' },
+  },
   whiteivory: {
-    name: '흰상아', nick: '선항 레슬링의 칼날', style: 'tech', look: LOOKS.whiteivory, stance: 'tech', color: '#e6e9f2', thug: 1, ow: 1,
-    stats: { hp: 118, stun: 112, atk: 1.1, grp: 1.14, spd: 1.06, jump: 1.06, rec: 1.1, down: 1.1, fin: 1.08, weight: 92, lift: 1.7, kbr: 1.1 },
-    chain: ['jab', 'elbow', 'knee'], run: 'bigboot', air: 'dropkick', dive: 'diveMoon', ground: 'stomp',
+    name: '쇄파', nick: '백상아리 · 제6갑판장', style: 'power', look: LOOKS.whiteivory, stance: 'street', color: '#e6e9f2', thug: 1, ow: 1, rank: '제6갑판장',
+    stats: { hp: 126, stun: 120, atk: 1.16, grp: 1.14, spd: 1.08, jump: 1.04, rec: 1.1, down: 1.1, fin: 1.1, weight: 98, lift: 1.8, kbr: 1.15 },
+    chain: ['hook', 'elbow', 'headbutt'], run: 'bigboot', air: 'dropkick', dive: 'diveHead', ground: 'stomp',
     moves: { front: front('suplex', 'irishWhip', 'bellyToBelly', 'f5', 'ddt'), rear: front('dragonSuplex', 'ringOut', 'german', 'backdropDriver', 'runningBulldog'), catch: 'spinebuster', counter: 'armDrag' },
-    finisher: 'ivory', taunt: 'tauntBow', win: 'win', ai: { aggr: .75, air: .35, grab: .6, def: .6, rope: .4, taunt: .2, dirty: .3 }, voice: 1.15,
-    lines: { intro: '이 항구의 챔피언이 너인가. …작군.', win: '바다는 하얗게 부서진다.', lose: '…기억해 두지. 이 항구의 이름.' },
+    finisher: 'ivory', taunt: 'taunt', win: 'winFlex', ai: { aggr: .82, air: .3, grab: .6, def: .5, rope: .4, taunt: .25, dirty: .45 }, voice: 1,
+    lines: { intro: '제6갑판장 쇄파. 그 자리의 옛 주인 이름은 꺼내지 마라.', win: '비교할 사람은 이제 없다.', lose: '…이걸로 끝이 아니다.' },
+  },
+  heugik: {
+    name: '흑익', nick: '대왕쥐가오리 · 최강 갑판장', style: 'power', look: LOOKS.heugik, stance: 'power', color: '#e8ecf4', thug: 1, ow: 1, rank: '최강 갑판장',
+    stats: { hp: 140, stun: 132, atk: 1.16, grp: 1.18, spd: .98, jump: 1, rec: 1.1, down: 1.1, fin: 1.1, weight: 128, lift: 2.2, kbr: 1.4 },
+    chain: ['palm', 'elbow', 'overhand'], run: 'lariat', air: 'flyingElbow', dive: 'diveSplash', ground: 'elbowdrop',
+    moves: { front: front('powerbomb', 'irishWhip', 'airplane', 'chokeslam', 'powerSlam'), rear: front('backdropDriver', 'ringOut', 'german', 'dragonSuplex', 'atomic'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'manta', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .65, air: .25, grab: .65, def: .65, rope: .3, taunt: .15, dirty: .15 }, voice: .6,
+    lines: { intro: '…역조의 자리를 넘본 자는 많았지. 너는 어떨까.', win: '날개를 접을 때가 아니야.', lose: '그 녀석이었다면… 웃었겠군.' },
+  },
+  baegan: {
+    name: '백안', nick: '범고래 · 제1항해사', style: 'tech', look: LOOKS.baegan, stance: 'tech', color: '#f4f6fa', thug: 1, ow: 1, rank: '제1항해사',
+    stats: { hp: 146, stun: 138, atk: 1.2, grp: 1.22, spd: 1.04, jump: 1, rec: 1.14, down: 1.14, fin: 1.12, weight: 118, lift: 2.3, kbr: 1.4 },
+    chain: ['jab', 'cross', 'uppercut'], run: 'bigboot', air: 'dropkick', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('suplex', 'irishWhip', 'powerbomb', 'piledriver', 'bellyToBelly'), rear: front('german', 'ringOut', 'dragonSuplex', 'backdropDriver', 'anchorHold'), catch: 'spinebuster', counter: 'armDrag' },
+    finisher: 'orca', taunt: 'tauntBow', win: 'win', ai: { aggr: .6, air: .2, grab: .7, def: .75, rope: .3, taunt: .1, dirty: .05 }, voice: .75,
+    lines: { intro: '제1항해사 백안. 질서대로, 1대1로 끝낸다.', win: '서열은 이렇게 정해진다.', lose: '…인정하지. 너는 위로 올라갈 자격이 있다.' },
+  },
+  mukhae: {
+    name: '묵해', nick: '대왕오징어 · 제2항해사', style: 'tech', look: LOOKS.mukhae, stance: 'dance', color: '#ff4a5a', thug: 1, ow: 1, rank: '제2항해사',
+    stats: { hp: 140, stun: 134, atk: 1.16, grp: 1.24, spd: 1.06, jump: 1.04, rec: 1.16, down: 1.12, fin: 1.16, weight: 100, lift: 1.9, kbr: 1.15 },
+    chain: ['slap', 'backhand', 'spinback'], run: 'slideKick', air: 'crossbody', dive: 'diveMoon', ground: 'elbowdrop',
+    moves: { front: front('giantSwing', 'irishWhip', 'headDrop', 'ddt', 'slapFest'), rear: front('anchorHold', 'ringOut', 'dragonSuplex', 'atomic', 'bulldog'), catch: 'backBody', counter: 'armDrag' },
+    finisher: 'kraken', taunt: 'tauntDance', win: 'win', ai: { aggr: .6, air: .45, grab: .6, def: .55, rope: .5, taunt: .6, dirty: .4 }, voice: .9,
+    lines: { intro: '이기기만 하는 경기는 지루하지. 오늘은 재밌게 해 줄까?', win: '박수는 나중에. 막은 아직 안 내렸어.', lose: '하하… 이거야. 이런 경기를 기다렸어.' },
+  },
+  simyeon: {
+    name: '심연', nick: '향유고래 · 부선장', style: 'heavy', look: LOOKS.simyeon, stance: 'heavy', color: '#9aa3b2', thug: 1, ow: 1, rank: '부선장',
+    stats: { hp: 160, stun: 150, atk: 1.24, grp: 1.24, spd: .92, jump: .86, rec: 1.06, down: 1.14, fin: 1.1, weight: 170, lift: 2.6, kbr: 1.65 },
+    chain: ['sumoPush', 'palm', 'headbutt'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', ground: 'elbowdrop',
+    moves: { front: front('piledriver', 'irishWhip', 'powerbomb', 'chokeslam', 'powerSlam'), rear: front('backdropDriver', 'ringOut', 'german', 'atomic', 'anchorHold'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'abyss', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .55, air: .05, grab: .7, def: .8, rope: .1, taunt: .1, dirty: .1 }, voice: .5,
+    lines: { intro: '선장님의 배는 내가 지킨다. 그게 내가 고른 길이다.', win: '깊은 곳은 조용하지.', lose: '…선장님. 이 녀석은 진짜입니다.' },
   },
   godong: {
-    name: '고동', nick: '선항 레슬링 선장', style: 'heavy', look: LOOKS.godong, stance: 'heavy', color: '#c9a22e', thug: 1, ow: 1,
-    stats: { hp: 150, stun: 132, atk: 1.18, grp: 1.2, spd: .86, jump: .8, rec: 1, down: 1.1, fin: 1.05, weight: 160, lift: 2.6, kbr: 1.7 },
-    chain: ['sumoPush', 'palm', 'belly'], run: 'bodyBlock', air: 'buttDrop', dive: 'diveQuake', ground: 'stomp',
+    name: '고동', nick: '흰긴수염고래 · 선장', style: 'power', look: LOOKS.godong, stance: 'power', color: '#9fd6ff', thug: 1, ow: 1, rank: '선장',
+    stats: { hp: 175, stun: 165, atk: 1.28, grp: 1.3, spd: .96, jump: .9, rec: 1.12, down: 1.2, fin: 1.15, weight: 175, lift: 2.8, kbr: 1.8 },
+    chain: ['palm', 'overhand', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveQuake', ground: 'elbowdrop',
     moves: { front: front('chokeslam', 'irishWhip', 'powerSlam', 'powerbomb', 'airplane'), rear: front('backdropDriver', 'ringOut', 'giantSwing', 'atomic', 'german'), catch: 'spinebuster', counter: 'hipToss' },
-    finisher: 'godong', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .7, air: .05, grab: .7, def: .55, rope: .1, taunt: .25, dirty: .4 }, voice: .45,
-    lines: { intro: '이 항구, 오늘부터 우리 배의 닻이 내린다.', win: '파도는 언제나 이긴다.', lose: '…뱃머리를 돌려라.' },
+    finisher: 'godong', taunt: 'tauntCall', win: 'win', ai: { aggr: .6, air: .05, grab: .75, def: .7, rope: .1, taunt: .2, dirty: .1 }, voice: .45,
+    lines: { intro: '처음부터 정의도 악도 없다. 승리가 정할 뿐이다.', win: '패배함으로써 악이, 승리함으로써 정의가 발현되는 법이지.', lose: '…좋은 파도였다.' },
+  },
+  owchief: {
+    name: '선원장', nick: '선항 레슬링 선원장', style: 'power', look: LOOKS.owchief, stance: 'power', color: '#9aa3b2', thug: 1, ow: 1, rank: '선원장',
+    stats: { hp: 118, stun: 114, atk: 1.08, grp: 1.08, spd: .94, jump: .9, rec: 1, down: 1.04, fin: 1, weight: 124, lift: 2.1, kbr: 1.3 },
+    chain: ['palm', 'overhand', 'headbutt'], run: 'shoulder', air: 'buttDrop', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('powerSlam', 'irishWhip', 'bodySlam', 'powerbomb', 'backbreaker'), rear: front('backdropDriver', 'ringOut', 'german', 'atomic', 'bulldog'), catch: 'spinebuster', counter: 'hipToss' },
+    finisher: 'quarry', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .7, air: .1, grab: .65, def: .55, rope: .15, taunt: .2, dirty: .3 }, voice: .7,
+    lines: { intro: '선원들은 내 밑에서 배운다. 너도 한 수 배워 가라.', win: '갑판 청소나 하고 와라.', lose: '…갑판장님들께 맡겨야겠군.' },
+  },
+  owmate: {
+    name: '선항 정식 선원', nick: '선항 레슬링 정식 선원', style: 'brawl', look: LOOKS.owmate, stance: 'street', color: '#9bc3e3', thug: 1, ow: 1, rank: '정식 선원',
+    stats: { hp: 96, stun: 98, atk: 1, grp: 1, spd: 1, jump: .96, rec: 1, down: 1, fin: .95, weight: 96, lift: 1.5, kbr: 1 },
+    chain: ['jab', 'cross', 'uppercut'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('bodySlam', 'irishWhip', 'suplex', 'powerSlam', 'gutBuster'), rear: front('german', 'ringOut', 'atomic', 'bulldog', 'backdropDriver'), catch: 'backBody', counter: 'hipToss' },
+    finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .5, def: .4, rope: .25, taunt: .3, dirty: .6 }, voice: .85,
+    lines: { intro: '정식 선원이다. 갑판원이랑은 다르다고.', win: '선항의 이름으로!', lose: '…보고하러 가야겠군.' },
   },
   owsailor: {
-    name: '선항 선원', nick: '선항 레슬링 갑판원', style: 'brawl', look: LOOKS.owsailor, stance: 'street', color: '#9bc3e3', thug: 1, ow: 1,
-    stats: { hp: 84, stun: 88, atk: .96, grp: .94, spd: 1, jump: .96, rec: .96, down: .96, fin: .9, weight: 88, lift: 1.3, kbr: .95 },
+    name: '선항 선원', nick: '선항 레슬링 일반 선원', style: 'brawl', look: LOOKS.owsailor, stance: 'street', color: '#9bc3e3', thug: 1, ow: 1, rank: '일반 선원',
+    stats: { hp: 86, stun: 90, atk: .97, grp: .95, spd: 1, jump: .96, rec: .96, down: .96, fin: .9, weight: 92, lift: 1.4, kbr: .98 },
     chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'flyingElbow', dive: 'diveElbow', ground: 'stomp',
     moves: { front: front('bodySlam', 'irishWhip', 'suplex', 'ddt', 'gutBuster'), rear: front('german', 'ringOut', 'atomic', 'bulldog', 'backdropDriver'), catch: 'backBody', counter: 'hipToss' },
     finisher: 'club', taunt: 'tauntCall', win: 'winFlex', ai: { aggr: .8, air: .2, grab: .45, def: .3, rope: .2, taunt: .4, dirty: .8 }, voice: .9,
     lines: { intro: '선장님 명령이다!', win: '항구 하나 접수!', lose: '으, 물러나라!' },
+  },
+  yeokjo: {
+    name: '역조', nick: '혹등고래 · 전 제6갑판장', style: 'all', look: LOOKS.yeokjo, stance: 'tech', color: '#e9ecf2', thug: 1, ow: 1, rank: '전 제6갑판장',
+    stats: { hp: 138, stun: 132, atk: 1.16, grp: 1.2, spd: 1.04, jump: 1, rec: 1.18, down: 1.16, fin: 1.16, weight: 112, lift: 2.1, kbr: 1.3 },
+    chain: ['jab', 'elbow', 'knee'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', ground: 'stomp',
+    moves: { front: front('suplex', 'irishWhip', 'powerbomb', 'ddt', 'bellyToBelly'), rear: front('german', 'ringOut', 'backdropDriver', 'dragonSuplex', 'atomic'), catch: 'spinebuster', counter: 'armDrag' },
+    finisher: 'blackwave', taunt: 'tauntBow', win: 'win', ai: { aggr: .6, air: .3, grab: .65, def: .7, rope: .35, taunt: .15, dirty: .05 }, voice: .8,
+    lines: { intro: '파도는 거슬러도 된다.', win: '…거스른 쪽이 이길 때도 있지.', lose: '그래. 그게 네 파도다.' },
   },
   myeolchi: {
     name: '멸치', nick: '부둣가 악동단 막내', style: 'air', look: LOOKS.myeolchi, stance: 'air', color: '#9be36b', thug: 1, topStand: 'topCrossbody',
@@ -2995,11 +3175,22 @@ const ENTRANCE_TIERS = {
 const ENTRANCES = {
   // 야항 레슬링의 왕: the hall goes dark, mist along the floor, a shape in the fog walking slowly; the fog lifts at the ring
   fogking: { tier: 'king', fog: 1, light: { col: '#6a5ab8', dim: .82 }, screen: { col: '#9aa3c2', icon: 'fog', en: 'KING OF THE FOG' }, silhouette: 1, walk: 60, crowd: 'hush', titles: ['야항 레슬링의 왕', '안개왕'] },
-  // 선항 레슬링 간부: a ship's horn, cold white light, waves on the board, pyro on both sides of the aisle, the deckhands cheering
-  whiteivory: { tier: 'officer', horn: 1, light: { col: '#e6f2ff', dim: .38 }, screen: { col: '#e6f2ff', icon: 'wave', en: 'WHITE IVORY' }, flames: 1, crowd: 'sailors', pose: 'bow', escort: ['owsailor'], titles: ['WHITE IVORY', '흰상아'] },
-  // 선항 레슬링의 왕: everything fades, a low call and the horn, the whale on the board, blue-white light, huge flames,
-  // the officers and deckhands react, a slow walk the camera keeps close to, a roar at the ring and three lines of billing
-  godong: { tier: 'king', fadeOut: 1, horn: 2, light: { col: '#9fd6ff', dim: .9 }, screen: { col: '#9fd6ff', icon: 'whale', en: 'KING OF THE OCEAN' }, flames: 2, escort: ['whiteivory', 'owsailor'], walk: 52, cam: 'low', crowd: 'hush', pre: 3, hold: 2.8, titles: ['OCEAN WRESTLING', 'KING OF THE OCEAN', '고동 — 흰긴수염고래'] },
+  // 선항 레슬링: every officer walks out in their own light, and the higher the rank the darker the hall and the longer
+  // the walk. fx: jelly (drifting glowing motes) | green (a murky floor) | metal (clanging steps) | sweep (fast blue beams)
+  // | shark (a fin cutting the floor) | wing (a giant black wing passing over) | mono (black and white) | ink (dark fog)
+  // | bass (deep thumps) | heartbeat (three beats, 쿵. 쿵. 쿵.). flameCol: one colour or a list taken in turn; fogCol.
+  haemu: { tier: 'officer', fx: 'jelly', light: { col: '#b8a8ff', dim: .5 }, screen: { col: '#c9b6ff', icon: 'jelly', en: 'HAEMU · JELLYFISH' }, fog: 1, fogCol: '#6a5ab8', flames: 0, crowd: 'sailors', pose: 'taunt', escort: ['owsailor'], titles: ['선항 갑판장', '해무 — 해파리'] },
+  heungnin: { tier: 'officer', fx: 'green', light: { col: '#3a8a4a', dim: .55 }, screen: { col: '#c9c24a', icon: 'moray', en: 'HEUNGNIN · MORAY' }, flames: 0, crowd: 'sailors', pose: 'taunt', titles: ['선항 갑판장', '흑린 — 곰치'] },
+  jeokgap: { tier: 'officer', fx: 'metal', light: { col: '#ff5a3a', dim: .45 }, screen: { col: '#ff5a3a', icon: 'crab', en: 'JEOKGAP · KING CRAB' }, flames: 2, flameCol: '#ff4a2e', crowd: 'sailors', pose: 'roar', walk: 90, titles: ['선항 갑판장', '적갑 — 왕게'] },
+  cheongchang: { tier: 'officer', fx: 'sweep', light: { col: '#49a6ff', dim: .5 }, screen: { col: '#7fc8ff', icon: 'sail', en: 'CHEONGCHANG · SAILFISH' }, flames: 1, flameCol: '#49a6ff', walk: 150, crowd: 'sailors', pose: 'bow', titles: ['선항 상급 갑판장', '청창 — 돛새치'] },
+  whiteivory: { tier: 'officer', fx: 'shark', horn: 1, light: { col: '#e6f2ff', dim: .5 }, screen: { col: '#e6f2ff', icon: 'shark', en: 'SWAEPA · GREAT WHITE' }, flames: 1, crowd: 'sailors', pose: 'roar', escort: ['owsailor'], titles: ['선항 제6갑판장', '쇄파 — 백상아리'] },
+  heugik: { tier: 'officer', fx: 'wing', light: { col: '#8a93b8', dim: .7 }, screen: { col: '#e8ecf4', icon: 'manta', en: 'HEUGIK · GIANT MANTA' }, flames: 1, walk: 80, cam: 'low', crowd: 'hush', pose: 'roar', pre: 1.8, hold: 1.8, titles: ['선항 최강 갑판장', '흑익 — 대왕쥐가오리'] },
+  baegan: { tier: 'officer', fx: 'mono', horn: 1, light: { col: '#f4f6fa', dim: .7 }, screen: { col: '#f4f6fa', icon: 'orca', en: 'BAEGAN · ORCA' }, flames: 2, flameCol: '#f4f6fa', walk: 95, cam: 'close', crowd: 'hush', pose: 'bow', pre: 2, hold: 2, escort: ['owmate', 'owsailor'], titles: ['선항 레슬링 제1항해사', '백안 — 범고래'] },
+  mukhae: { tier: 'officer', fx: 'ink', fog: 1, fogCol: '#1a2a5a', light: { col: '#ff4a5a', dim: .75 }, screen: { col: '#ff4a5a', icon: 'squid', en: 'MUKHAE · GIANT SQUID' }, flames: 0, walk: 80, cam: 'low', crowd: 'hush', pose: 'taunt', pre: 2.2, hold: 2, titles: ['선항 레슬링 제2항해사', '묵해 — 대왕오징어'] },
+  simyeon: { tier: 'king', fx: 'bass', fadeOut: 1, light: { col: '#9aa3b2', dim: .85 }, screen: { col: '#c9d4e6', icon: 'sperm', en: 'SIMYEON · SPERM WHALE' }, flames: 1, walk: 60, cam: 'low', crowd: 'hush', pre: 2.6, hold: 2.4, titles: ['선항 레슬링 부선장', '심연 — 향유고래'] },
+  // 선장: the music dies, three heartbeats, the horn, the blue whale crossing the board, blue and gold fire, a slow walk
+  godong: { tier: 'king', fx: 'heartbeat', fadeOut: 1, horn: 1, light: { col: '#9fd6ff', dim: .9 }, screen: { col: '#9fd6ff', icon: 'whale', en: 'KING OF THE OCEAN' }, flames: 2, flameCol: ['#4aa6ff', '#ffd65a'], escort: ['simyeon', 'baegan'], walk: 52, cam: 'low', crowd: 'hush', pre: 4, hold: 3, titles: ['THE KING OF THE OCEAN', '선장 고동 — 흰긴수염고래'] },
+  owchief: { tier: 'known', light: { col: '#9aa3b2', dim: .3 }, screen: { col: '#9aa3b2', icon: 'wave', en: 'OCEAN WRESTLING' }, crowd: 'sailors', pose: 'roar' },
   // BLACK ROPE: red-purple light, their theme, the crew's name on the board, boos and cheers at once, a taunt at you
   brLeader: { tier: 'rival', screen: { col: '#b066d8', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#b066d8', dim: .42 }, escort: ['brPower', 'brShow'], crowd: 'mixed', pose: 'taunt' },
   brPower: { tier: 'rival', screen: { col: '#c2333f', icon: 'rope', en: 'BLACK ROPE' }, light: { col: '#c2333f', dim: .4 }, walk: 95, pose: 'roar' },
@@ -3727,12 +3918,21 @@ const MOVES = {
     ev: [[0, 'grunt'], [.14, 'impact', { p: .5, d: .3, word: '퍽!' }], [.6, 'impact', { p: 1.25, d: .7, word: '쾅!' }]],
   },
 };
-// 선항 레슬링's finishers: 흰상아 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
+// 선항 레슬링's finishers: 쇄파 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
 // BLACK ROPE: the leader's knot (a dragon suplex into the bridge), the wall's quarry slam (a power slam from higher up)
 MOVES.fKnot = Object.assign({}, MOVES.dragonSuplex, { name: '블랙 매듭', pos: 'fin', hp: 35, stun: 58, gain: 0, evo: null, desc: '양팔로 목을 묶어 브리지로 넘긴다. BLACK ROPE 리더의 피니셔.', ev: [[.1, 'cry'], [.18, 'grunt'], [.56, 'lift'], [.68, 'whoosh'], [.84, 'impact', { p: 2.2, d: 1, word: '블랙 매듭!' }]] });
 MOVES.fQuarry = Object.assign({}, MOVES.powerSlam, { name: '채석장 슬램', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, quake: 70, desc: '바위를 옮기듯 들어 올려 온몸으로 내리찍는다.', ev: [[.1, 'cry'], [.14, 'grunt'], [.42, 'lift'], [.62, 'whoosh'], [.78, 'impact', { p: 2.4, d: 1, word: '쿠구궁!!' }]] });
-MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '상아 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는 흰상아의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
+MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '쇄파 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는다. 부서지는 파도, 쇄파의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
 MOVES.fGodong = Object.assign({}, MOVES.powerbomb, { name: '선장의 닻', pos: 'fin', hp: 40, stun: 60, gain: 0, quake: 80, desc: '배 위에서 단련한 팔로 하늘까지 들어 올려 내리꽂는다.', ev: [[.1, 'cry'], [.2, 'grunt'], [.6, 'lift'], [.94, 'whoosh'], [1.12, 'impact', { p: 2.6, d: 1, word: '뱃고동!!' }]] });
+// the rest of 선항 레슬링: each officer's finisher, on the move it grew out of
+MOVES.fHaemu = Object.assign({}, MOVES.ddt, { name: '안개 독침', pos: 'fin', hp: 32, stun: 60, gain: 0, evo: null, sig: 0, desc: '안개처럼 감겨들어 목을 휘감고 머리부터 꽂는다. 해무의 피니셔.' });
+MOVES.fHeungnin = Object.assign({}, MOVES.anchorHold, { name: '곰치 굴', pos: 'fin', hp: 30, stun: 64, gain: 0, evo: null, sig: 0, desc: '뒤에서 목을 물고 굴 속으로 끌고 들어가듯 매트에 눌러 조인다.' });
+MOVES.fJeokgap = Object.assign({}, MOVES.chokeslam, { name: '왕게 집게', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, sig: 0, quake: 60, desc: '두 손을 집게처럼 목과 허리에 걸어 들어 올려 내리찍는다.' });
+MOVES.fSail = Object.assign({}, MOVES.fTyphoon, { name: '돛새치 창', desc: '바다에서 가장 빠른 물고기처럼 솟구쳐 꽂힌다. 청창의 피니셔.' });
+MOVES.fManta = Object.assign({}, MOVES.airplane, { name: '흑익 활강', pos: 'fin', hp: 37, stun: 62, gain: 0, evo: null, sig: 0, quake: 50, desc: '날개를 펼치듯 어깨에 걸쳐 돌다가 활강하듯 내리꽂는다.' });
+MOVES.fOrca = Object.assign({}, MOVES.german, { name: '범고래 사냥', pos: 'fin', hp: 38, stun: 62, gain: 0, evo: null, sig: 0, quake: 55, desc: '허리를 끌어안아 높이 던져 꽂는다. 먹잇감을 던지는 범고래처럼.' });
+MOVES.fKraken = Object.assign({}, MOVES.giantSwing, { name: '심해 소용돌이', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, sig: 0, desc: '다리를 휘감아 소용돌이처럼 돌리다 깊은 곳으로 내던진다.' });
+MOVES.fAbyss = Object.assign({}, MOVES.piledriver, { name: '심해 낙하', pos: 'fin', hp: 40, stun: 64, gain: 0, evo: null, sig: 0, quake: 70, desc: '거꾸로 들어 올린 채 깊은 바다로 가라앉듯 무겁게 꽂는다.' });
 for (const id in MOVES) MOVES[id].id = id;
 
 // Looping tie-ups used while nobody has chosen a move yet, and the pinfall cover.
@@ -3764,7 +3964,15 @@ const FINISHERS = {
   swallow: { name: '제비 낙하', type: 'dive', parts: ['fTyphoon'], reach: 180, color: '#d98cff', line: '하늘은 내 거야!' },
   stitch: { name: '바늘땀 수플렉스', type: 'stance', parts: ['gRoll', 'gRoll', 'dragonSuplex'], reach: 40, rear: 1, color: '#9be3ff', line: '세 땀이면 충분해.' },
   encore: { name: '앙코르 스핀', type: 'strike', parts: ['fNeon'], reach: 84, color: '#ffd65a', line: '앙코르! 앙코르!' },
-  ivory: { name: '상아 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  ivory: { name: '쇄파 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  haemu: { name: '안개 독침', type: 'grab', parts: ['fHaemu'], reach: 44, color: '#c9b6ff', line: '안개 속에선 아무도 못 피해.' },
+  heungnin: { name: '곰치 굴', type: 'grab', parts: ['fHeungnin'], reach: 40, rear: 1, color: '#c9c24a', line: '굴에 들어오면 못 나간다.' },
+  jeokgap: { name: '왕게 집게', type: 'grab', parts: ['fJeokgap'], reach: 48, armor: 1, color: '#c23a2e', line: '집게는 한 번 물면 놓지 않는다.' },
+  sail: { name: '돛새치 창', type: 'dive', parts: ['fSail'], reach: 175, color: '#7fc8ff', line: '바다에서 제일 빠른 창이다!' },
+  manta: { name: '흑익 활강', type: 'grab', parts: ['fManta'], reach: 46, armor: 1, color: '#e8ecf4', line: '날개를 펴라.' },
+  orca: { name: '범고래 사냥', type: 'grab', parts: ['fOrca'], reach: 42, rear: 1, armor: 1, color: '#f4f6fa', line: '서열은 이렇게 정해진다.' },
+  kraken: { name: '심해 소용돌이', type: 'grab', parts: ['fKraken'], reach: 44, color: '#ff4a5a', line: '막이 오른다. 깊은 곳으로.' },
+  abyss: { name: '심해 낙하', type: 'grab', parts: ['fAbyss'], reach: 48, armor: 1, color: '#9aa3b2', line: '깊은 곳은 조용하지.' },
   godong: { name: '선장의 닻', type: 'grab', parts: ['fGodong'], reach: 50, armor: 1, color: '#c9a22e', line: '닻을 내려라!' },
   blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },
   whitewave: { name: '백파 수플렉스', type: 'grab', parts: ['fWhitewave'], reach: 46, color: '#e6e9f2', line: '파도는 늙지 않는다.' },
@@ -6728,6 +6936,7 @@ function updateTails(f, dt, groundY) {
   const H = jt.H * DEG, S = jt.S * DEG, fc = jt.face;
   const anchor = t => {
     if (t.at === 'waist') return [jt.x(0) - Math.cos(S) * fc * 8, jt.y(0) - Math.sin(S) * fc * 8 - 3];
+    if (t.at === 'back') return [jt.x(J.chest) - Math.cos(S) * fc * 9 * (f.look.scale || 1), jt.y(J.chest) - Math.sin(S) * fc * 9 - 2];   // between the shoulder blades
     const hx = jt.x(J.head), hy = jt.y(J.head);
     return [hx - Math.cos(H) * fc * 9.5 * (f.look.scale || 1), hy - Math.sin(H) * fc * 9.5 - 2];
   };
@@ -8620,6 +8829,15 @@ function screenIcon(g, kind, x, y, col, t) {
   else if (kind === 'fog') { for (let i = 0; i < 3; i++) px((i * 4 + Math.round(t * 6)) % 10, 4 + i * 4, 7, 2, '#9aa3c2'); }
   else if (kind === 'wave') { for (let i = 0; i < 12; i++) px(i, 8 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#e6f2ff'); px(1, 14, 11, 1, '#9fd6ff'); }
   else if (kind === 'whale') { px(0, 6, 14, 6, '#9fd6ff'); px(2, 4, 8, 2, '#9fd6ff'); px(14, 4, 2, 4, '#9fd6ff'); px(16, 2, 2, 3, '#9fd6ff'); px(3, 8, 1, 1, '#05060c'); px(5, 12, 7, 1, '#e6f2ff'); if (Math.floor(t * 2) % 2) px(6, 0, 1, 3, '#e6f2ff'); }
+  else if (kind === 'jelly') { px(3, 1, 9, 5, '#c9b6ff'); px(4, 0, 7, 1, '#c9b6ff'); for (let i = 0; i < 4; i++) px(4 + i * 2, 6 + (Math.floor(t * 4 + i) % 2), 1, 7, '#7fe8ff'); }
+  else if (kind === 'moray') { for (let i = 0; i < 14; i++) px(i, 7 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#3a6a4a'); px(13, 5, 4, 4, '#3a6a4a'); px(15, 6, 1, 1, '#ffd65a'); }
+  else if (kind === 'crab') { px(3, 6, 10, 5, '#ff5a3a'); px(0, 3, 3, 3, '#ff5a3a'); px(13, 3, 3, 3, '#ff5a3a'); px(5, 4, 1, 2, '#ffffff'); px(10, 4, 1, 2, '#ffffff'); for (let i = 0; i < 3; i++) { px(2 + i * 2, 11, 1, 2, '#c23a2e'); px(9 + i * 2, 11, 1, 2, '#c23a2e'); } }
+  else if (kind === 'sail') { px(0, 9, 16, 3, '#7fc8ff'); px(16, 10, 4, 1, '#cfd8e6'); px(3, 2, 2, 7, '#1f4fa8'); px(5, 1, 3, 8, '#1f4fa8'); px(8, 3, 3, 6, '#1f4fa8'); }
+  else if (kind === 'shark') { px(0, 8, 16, 4, '#8a96a6'); px(6, 3, 3, 5, '#8a96a6'); px(5, 5, 1, 3, '#8a96a6'); px(15, 6, 3, 2, '#8a96a6'); px(15, 11, 3, 2, '#8a96a6'); px(2, 10, 9, 2, '#e6f2ff'); px(13, 9, 1, 1, '#05060c'); }
+  else if (kind === 'manta') { px(5, 5, 8, 5, '#e8ecf4'); px(0, 8, 5, 2, '#e8ecf4'); px(13, 8, 5, 2, '#e8ecf4'); px(1, 7, 4, 1, '#e8ecf4'); px(13, 7, 4, 1, '#e8ecf4'); px(7, 3, 1, 2, '#e8ecf4'); px(10, 3, 1, 2, '#e8ecf4'); px(8, 10, 2, 4, '#e8ecf4'); }
+  else if (kind === 'orca') { px(0, 6, 16, 6, '#f4f6fa'); px(6, 1, 3, 5, '#f4f6fa'); px(16, 4, 2, 3, '#f4f6fa'); px(16, 10, 2, 3, '#f4f6fa'); px(2, 7, 3, 2, '#05060c'); px(4, 10, 8, 2, '#05060c'); }
+  else if (kind === 'squid') { px(5, 0, 6, 8, '#ff4a5a'); px(4, 1, 1, 3, '#ff4a5a'); px(11, 1, 1, 3, '#ff4a5a'); for (let i = 0; i < 4; i++) px(5 + i * 2 - (i > 1 ? 1 : 0), 8, 1, 5 + (Math.floor(t * 3 + i) % 2) * 2, '#ff4a5a'); px(7, 4, 1, 1, '#ffffff'); }
+  else if (kind === 'sperm') { px(0, 4, 8, 8, '#c9d4e6'); px(8, 6, 8, 5, '#c9d4e6'); px(16, 5, 2, 3, '#c9d4e6'); px(16, 10, 2, 3, '#c9d4e6'); px(2, 6, 1, 1, '#05060c'); px(1, 11, 6, 1, '#9aa3b2'); }
   else if (kind === 'belt') { px(0, 6, 16, 4, '#8a6a2a'); px(5, 4, 6, 8, '#ffd65a'); px(7, 6, 2, 4, '#fff3b0'); }
   else if (kind === 'star') { px(5, 0, 2, 12); px(0, 5, 12, 2); px(2, 2, 8, 8, col); px(4, 4, 4, 4, '#ffffff'); }
 }
@@ -8945,7 +9163,7 @@ class FighterRenderer {
     bc.begin(jt.x(0), jt.y(0) - 4);
     const tails = f.tails ? f.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - camX)), w: T.w, c: T.c, front: T.front })) : null;
     const Bt = f.match && f.match.belt, wear = Bt && Bt.on === f && !f.hidden, look = wear && f.st !== 'WIN' ? beltLook(f.look) : f.look;   // worn: part of the body
-    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
+    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN' || !!f.look.capeAlways, sway: Math.sin((f.poseT || 0) * 2) * 2 });
     bc.finish({ flat: f.flash > .05 ? WHITE : extra.flat });
     const blink = f.inv > 0 && f.protect > 0 && (this.frame >> 2) & 1;
     bc.drawTo(g, 0, 0, extra.alpha != null ? extra.alpha : blink ? .55 : 1);
@@ -10210,7 +10428,7 @@ const GANG = [
 ];
 // 선항 레슬링: a promotion from across the sea. d.ow.state:
 //   LOCKED (no belt yet) → SIGNS (the first belt; the invasion exactly OW.delay days later, a foghorn the day after)
-//   → INVADED (흰상아 at the pier; the dome is wrecked, title matches move to the basement)
+//   → INVADED (쇄파 at the pier; the dome is wrecked, title matches move to the basement)
 //   → SECOND_WAVE (OW.gap days on: they come back, 서도현 teams up with you) → REGROUP
 //   → CAPTAIN (OW.gap days on: 선장 고동, a boss in three phases; lose and he waits for you the next day)
 //   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)
@@ -11443,7 +11661,7 @@ function highlights(d, id) {
   if (o && o.day1 != null) {
     add('ow', '선항 레슬링', '바다 건너에서 배가 왔다. 등대 돔이 무너졌다', { day: o.day1, other: 'owsailor', expr: 'fierce' });
     const iw = !!(o.won1 || o.won2);
-    add('ivory', '흰상아', iw ? '선항 레슬링의 칼날을 꺾었다' : '흰상아에게 졌다. 그래도 물러서지 않았다', { day: o.day1, other: 'whiteivory', tone: iw ? 'win' : 'loss', expr: iw ? 'fierce' : 'hurt' });
+    add('ivory', '쇄파', iw ? '선항의 제6갑판장을 꺾었다' : '쇄파에게 졌다. 그래도 물러서지 않았다', { day: o.day1, other: 'whiteivory', tone: iw ? 'win' : 'loss', expr: iw ? 'fierce' : 'hurt' });
   }
   if (o && (o.state === 'REBUILD' || o.state === 'INTERNATIONAL_ROUTE_OPEN')) add('godong', '선장 고동', o.losses3 ? `${o.losses3}번 쓰러진 끝에 바다의 왕을 돌려보냈다` : '바다의 왕을 돌려보냈다', { day: o.day3, other: 'godong', tone: 'gold', expr: 'fierce' });
   else if (o && o.losses3) add('godong', '선장 고동', '끝내 그 닻을 뽑지 못했다', { other: 'godong', tone: 'loss', expr: 'hurt' });
@@ -11469,7 +11687,7 @@ function scriptLines(d, id) {
     else if (h.k === 'champ') scene(`등대 돔${when}`, `${josa(me, '이/가')} 챔피언 벨트를 허리에 감는다.`);
     else if (h.k === 'mitb') scene('래더 꼭대기', '가방에 손이 닿는다.');
     else if (h.k === 'ow') scene('항구', '바다 건너에서 배가 온다. 등대 돔이 무너진다.');
-    else if (h.k === 'ivory') scene('부둣가 특설 링', `흰상아와 싸운다. ${h.tone === 'win' ? '이긴다' : '진다. 그래도 물러서지 않는다'}.`);
+    else if (h.k === 'ivory') scene('부둣가 특설 링', `쇄파와 싸운다. ${h.tone === 'win' ? '이긴다' : '진다. 그래도 물러서지 않는다'}.`);
     else if (h.k === 'godong') scene('부둣가', h.tone === 'loss' ? '선장 고동 앞에 쓰러진다. 닻은 뽑히지 않는다.' : '선장 고동이 뱃머리를 돌린다.');
     else if (h.k === 'harbor') scene(`부두${when}`, '무너진 부두가 다시 선다.');
   }
@@ -12226,7 +12444,10 @@ class MatchScene {
       const E = e.E, f = e.f;
       this.ent = { f, E, t: 0, k: 0, out: false, fog: 0, flameT: -1, titles: [], walk: false, queue: [] };
       if (E.fadeOut) { this.game.audio.music(null); this.ent.musicAt = 1.6; } else A.music(E.theme);
-      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0), fn: () => A.sfx('horn') });
+      const beats = E.fx === 'heartbeat' ? 3 : 0;   // 고동: 쿵. 쿵. 쿵. before the horn
+      for (let i = 0; i < beats; i++) this.ent.queue.push({ at: .5 + i * .85, fn: () => { A.sfx('thud', { p: 1, pitch: .35 }); S.shake(.3); hud.push('쿵.', { col: '#9fd6ff', scale: 3, y: 120, life: .7 }); } });
+      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0) + beats * .85, fn: () => A.sfx('horn') });
+      if (E.fx === 'bass') for (let i = 0; i < 4; i++) this.ent.queue.push({ at: .4 + i * .7, fn: () => { A.sfx('thud', { p: .9, pitch: .3 }); S.shake(.18); } });
       this.ar.setScreen(f.name, E.screen.en || (f.ctrl === 'human' && E.label ? E.label : f.char.nick), E.screen.col || f.char.color, true, E.screen.icon);
       if (E.crowd === 'hush') A.cheer(0); else if (E.crowd === 'boo') A.sfx('boo'); else if (E.crowd === 'mixed') { A.sfx('boo'); A.cheer(.8); } else A.cheer(E.tier === 'normal' ? .4 : .9);
     });
@@ -12480,11 +12701,25 @@ class MatchScene {
     const e = this.ent, E = e.E, f = e.f, k = e.k;
     if (k <= 0) return;
     w.globalAlpha = Math.min(.92, E.light.dim * k); rect(w, '#03040a', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1;
+    this.drawEntranceFx(w, cam, k);
     if (f.hidden) return;
     const sx = Math.round(f.x - cam), top = 0, bot = f.y + 6, wTop = 26, wBot = 64;
     w.save(); w.globalCompositeOperation = 'lighter'; w.globalAlpha = .22 * k; w.fillStyle = E.light.col;
     w.beginPath(); w.moveTo(sx - wTop / 2, top); w.lineTo(sx + wTop / 2, top); w.lineTo(sx + wBot / 2, bot); w.lineTo(sx - wBot / 2, bot); w.closePath(); w.fill();
     w.globalAlpha = .18 * k; w.beginPath(); w.ellipse(sx, bot - 2, wBot / 2 + 6, 7, 0, 0, Math.PI * 2); w.fill();
+    w.restore();
+  }
+  // the big shapes of an officer's entrance, drawn over the dimmed hall: blue beams sweeping (청창), a shark's fin
+  // cutting along the floor (쇄파), a giant wing passing over (흑익), white beams in the dark (백안), a whale (고동)
+  drawEntranceFx(w, cam, k) {
+    const e = this.ent, E = e.E, t = e.t, ar = this.m.arena;
+    if (!E.fx) return;
+    w.save();
+    if (E.fx === 'sweep') { w.globalCompositeOperation = 'lighter'; w.globalAlpha = .16 * k; w.fillStyle = '#49a6ff'; for (let i = 0; i < 3; i++) { const x = ((t * 260 + i * 260) % (VIEW_W + 240)) - 120; w.beginPath(); w.moveTo(x - 8, 0); w.lineTo(x + 8, 0); w.lineTo(x + 46, VIEW_H); w.lineTo(x - 30, VIEW_H); w.closePath(); w.fill(); } }
+    if (E.fx === 'mono') { w.globalCompositeOperation = 'lighter'; w.globalAlpha = .12 * k; w.fillStyle = '#ffffff'; for (const x of [70, VIEW_W - 70]) { w.beginPath(); w.moveTo(x - 6, 0); w.lineTo(x + 6, 0); w.lineTo(x + 40, VIEW_H); w.lineTo(x - 40, VIEW_H); w.closePath(); w.fill(); } }
+    if (E.fx === 'shark') { const x = ((t * 150) % (VIEW_W + 120)) - 60, y = ar.floorY - cam * 0 + 2; w.globalAlpha = .85 * k; w.fillStyle = '#1a2230'; w.beginPath(); w.moveTo(x, y); w.lineTo(x + 10, y - 22); w.lineTo(x + 24, y); w.closePath(); w.fill(); w.fillStyle = '#e6f2ff'; for (let i = 0; i < 6; i++) w.fillRect(Math.round(x - 6 - i * 7), y - 1 + (i % 2), 5, 1); }
+    if (E.fx === 'wing' && t > .4 && t < 3.4) { const q = (t - .4) / 3, x = -260 + q * (VIEW_W + 520), y = 40 + Math.sin(q * 3) * 10; w.globalAlpha = .55 * k; w.fillStyle = '#05060c'; w.beginPath(); w.moveTo(x - 220, y + 46); w.quadraticCurveTo(x - 90, y - 10, x, y); w.quadraticCurveTo(x + 90, y - 10, x + 220, y + 46); w.quadraticCurveTo(x + 60, y + 30, x + 14, y + 70); w.lineTo(x - 14, y + 70); w.quadraticCurveTo(x - 60, y + 30, x - 220, y + 46); w.closePath(); w.fill(); }
+    if (E.fx === 'heartbeat' && t > 3 && t < 7.5) { const q = (t - 3) / 4.5, x = VIEW_W + 120 - q * (VIEW_W + 360), y = 150 + Math.sin(q * 6) * 4; w.globalAlpha = .22 * k * Math.sin(q * Math.PI); w.fillStyle = '#9fd6ff'; w.beginPath(); w.ellipse(x, y, 120, 22, 0, 0, Math.PI * 2); w.fill(); w.beginPath(); w.moveTo(x + 110, y); w.lineTo(x + 170, y - 22); w.lineTo(x + 160, y + 2); w.lineTo(x + 172, y + 24); w.closePath(); w.fill(); }
     w.restore();
   }
   // mist along the floor, pyro at the aisle, the hall's light coming up and down
@@ -12494,12 +12729,21 @@ class MatchScene {
     e.k = Math.min(1, e.k + dt * 1.6);
     if (e.musicAt && e.t >= e.musicAt) { e.musicAt = 0; A.music(E.theme); }
     for (const q of e.queue) if (!q.done && e.t >= q.at) { q.done = true; q.fn(); }
-    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, '#8a84b8', 2); } }
+    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, E.fogCol || '#8a84b8', 2); } }
+    // each officer's own particles while they walk
+    if (E.fx && !f.hidden && e.walk) {
+      e.fxT = (e.fxT || 0) + dt;
+      if (E.fx === 'jelly' && e.fxT > .09) { e.fxT = 0; fx.spark(f.x + (Math.random() - .5) * 70, f.y - Math.random() * 80, .25, Math.random() < .5 ? '#c9b6ff' : '#7fe8ff', -Math.PI / 2); }
+      if (E.fx === 'green' && e.fxT > .12) { e.fxT = 0; fx.smoke(f.x + (Math.random() - .5) * 60, ar.floorY - 2, '#1f3a2a', 2); }
+      if (E.fx === 'metal' && e.fxT > .55) { e.fxT = 0; A.sfx('clang', { p: .35, pitch: .7 }); fx.spark(f.x, ar.floorY - 6, .6, '#ffb08a', -Math.PI / 2); }
+      if (E.fx === 'shark' && e.fxT > .1) { e.fxT = 0; fx.spark(f.x - f.face * 20, ar.floorY - 4, .4, '#e6f2ff', -Math.PI / 2 - f.face * .6); }
+      if (E.fx === 'ink' && e.fxT > .08) { e.fxT = 0; fx.smoke(f.x + (Math.random() - .5) * 90, ar.floorY - 6, '#14102a', 2); }
+    }
     if (e.flameT >= 0 && e.flameT < (E.flames > 1 ? 2.4 : 1.4)) {
       e.flameT += dt;
       if (Math.floor(e.flameT * 8) !== Math.floor((e.flameT - dt) * 8)) {
         const right = f.x > ar.mid, x0 = right ? ar.x1 - 24 : ar.x0 + 24, x1 = right ? ar.ropeR + ar.apron + 30 : ar.ropeL - ar.apron - 30;
-        const col = E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
+        const FC = E.flameCol, col = FC ? (Array.isArray(FC) ? FC[(e.flameN = (e.flameN || 0) + 1) % FC.length] : FC) : E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
         for (const x of E.flames > 1 ? [x0, (x0 + x1) / 2, x1] : [x0, x1]) { fx.spark(x, ar.floorY - 10, E.flames > 1 ? 1.6 : 1, col, -Math.PI / 2); fx.spark(x, ar.floorY - 40, .8, '#ffffff', -Math.PI / 2); }
       }
     }
@@ -12520,7 +12764,7 @@ class MatchScene {
       tmp.copy(a.joints); for (let i = 0; i < JN; i++) tmp.p[i * 2] -= cam;
       w.globalAlpha = .35; rect(w, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); w.globalAlpha = 1;
       bc.begin(tmp.x(0), tmp.y(0) - 4);
-      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
+      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: !!a.look.capeAlways });
       bc.finish(); bc.drawTo(w);
       if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 30, -.4 * c.face, c.face, 0);
     }
@@ -12842,7 +13086,7 @@ function allianceCine(W, o, onFight) {
         { label: '"내 싸움은 내가 한다."', go: [{ who: 'brLeader', text: '흥, 그럴 줄 알았다. 우리는 우리 방식대로 저 배에 도전하겠다.' }, { act: () => { B.allied = false; o.partner = 'dohyun'; } }] },
       ] },
     ] },
-    { title: 'RIVALS UNITED', sub: `챔피언 · ${N('brLeader')} vs 흰상아 · 선항 선원`, dur: 2.2, when: () => B.allied === true },
+    { title: 'RIVALS UNITED', sub: `챔피언 · ${N('brLeader')} vs 쇄파 · 선항 선원`, dur: 2.2, when: () => B.allied === true },
     { walk: 'brLeader', to: -60, speed: 150, when: () => B.allied === false }, { walk: 'brPower', to: -60, speed: 150, with: 1, when: () => B.allied === false },
     { say: [{ who: 'dohyun', text: '혼자 다 하려고? 쳇, 그럼 내가 끼어 주지. 이 항구는 내 항구이기도 하니까.' }], when: () => B.allied === false },
     { bars: 0 }, { act: onFight },
@@ -13133,7 +13377,7 @@ return { Cutscene };
 // ---- world/owStory.js
 __m["world/owStory.js"] = (function () {
 // 선항 레슬링, chapter one: the champion's ceremony, a foghorn the day after, the invasion exactly three days after the
-// first belt (흰상아 and her deckhands walk into the lobby), the match at the pier and the wrecked dome. Each
+// first belt (쇄파 and her deckhands walk into the lobby), the match at the pier and the wrecked dome. Each
 // function returns a Cutscene script (see Cutscene.js) for WorldScene.playCine.
 const { josa } = __m["core/util.js"];
 function ceremonyCine(W) {
@@ -13188,7 +13432,7 @@ function invasionCine(W, onFight) {
       { who: 'owsailor', text: '선항 레슬링이다! 이 항구의 챔피언은 앞으로 나와라!' },
       { who: 'whiteivory', text: `…네가 ${d.name}인가. 사흘 전에 벨트를 감았다던.` },
       { who: 'me', text: '당신들은 누구지?' },
-      { who: 'whiteivory', text: '흰상아. 선항 레슬링의 칼날이다. 오늘부터 이 항구는 우리 배의 닻을 받는다.' },
+      { who: 'whiteivory', text: '쇄파. 선항 레슬링 제6갑판장이다. 오늘부터 이 항구는 우리 배의 닻을 받는다.' },
       { who: 'whiteivory', text: '부둣가 특설 링으로 와라. 그 벨트가 진짜인지 보자.', expr: 'fierce' },
     ] },
     { caption: '선원들이 등대 돔 쪽으로 몰려간다. 멀리서 무언가 부서지는 소리가 울렸다.', dur: 2.6 }, { shake: .9, with: 1 },
@@ -13199,7 +13443,7 @@ function invasionCine(W, onFight) {
 function aftermathCine(W, won) {
   return [
     { bars: 1 }, { at: 'street', x: 1940 }, { cam: 1660, dur: 1.4 },
-    { caption: won ? '흰상아는 물러갔다. 하지만 선원들이 휩쓸고 간 등대 돔은…' : '흰상아에게 졌다. 선원들이 휩쓸고 간 등대 돔은…', dur: 2.8 },
+    { caption: won ? '쇄파는 물러갔다. 하지만 선원들이 휩쓸고 간 등대 돔은…' : '쇄파에게 졌다. 선원들이 휩쓸고 간 등대 돔은…', dur: 2.8 },
     { spawn: 'boss', x: 2060, face: -1 },
     { say: [
       { who: 'boss', text: '돔 지붕이 내려앉았어. 링도 엉망이고… 수리하는 데 한참 걸리겠어.' },
@@ -13230,7 +13474,7 @@ function secondWaveCine(W, onFight) {
       { who: 'me', text: '…서도현. 너랑 같은 편이 될 줄은 몰랐다.' },
       { who: 'dohyun', text: '착각하지 마. 벨트는 나중에 너한테서 뺏을 거다. 그 전에 바다 건너 놈들한테 뺏기면 곤란하거든.' },
     ] },
-    { title: '태그 매치', sub: '챔피언 · 서도현 vs 흰상아 · 선항 선원', dur: 2 },
+    { title: '태그 매치', sub: '챔피언 · 서도현 vs 쇄파 · 선항 선원', dur: 2 },
     { bars: 0 }, { act: onFight },
   ];
 }
@@ -13264,7 +13508,7 @@ function captainCine(W, onFight, again) {
     { walk: 'owsailor', to: 1980, speed: 80 }, { walk: 'godong', to: 1900, speed: 55, with: 1 },
     { face: 'me', dir: 'godong' },
     { say: [
-      { who: 'godong', text: '네가 흰상아를 돌려보낸 항구의 챔피언인가.' },
+      { who: 'godong', text: '네가 쇄파를 돌려보낸 항구의 챔피언인가.' },
       { who: 'godong', text: '나는 항구를 하나씩 집어삼켰다. 열두 개째에서 처음으로 배가 멈췄지. 여기서.' },
       { who: 'me', text: '이 항구는 당신 배의 닻을 받지 않는다.' },
       { who: 'godong', text: '좋다. 그럼 링에서 증명해라. 내가 지면 뱃머리를 돌리지.', expr: 'fierce' },
@@ -15206,8 +15450,8 @@ class WorldScene {
       if (due === 'signal') this.playCine(signalCine(this));
       else {
         this.owBusy = true;
-        if (due === 'invasion1') { const o = { opp: 'whiteivory', oppName: '흰상아', kind: 'invasion', mode: 'single', arena: 'pier', reward: 60000 + d.season * 20000, fame: 14, difficulty: foeLv }; this.playCine(invasionCine(this, () => this.startMatch('invasion', o))); }
-        if (due === 'invasion2') { const o = { opp: 'whiteivory', oppName: '흰상아 · 선항 선원', kind: 'invasion2', mode: 'tag', arena: 'pier', reward: 80000 + d.season * 20000, fame: 16, difficulty: foeLv }; this.playCine(brState(d).stage !== 'NONE' ? allianceCine(this, o, () => this.startMatch('invasion2', o)) : secondWaveCine(this, () => this.startMatch('invasion2', o))); }
+        if (due === 'invasion1') { const o = { opp: 'whiteivory', oppName: '쇄파', kind: 'invasion', mode: 'single', arena: 'pier', reward: 60000 + d.season * 20000, fame: 14, difficulty: foeLv }; this.playCine(invasionCine(this, () => this.startMatch('invasion', o))); }
+        if (due === 'invasion2') { const o = { opp: 'whiteivory', oppName: '쇄파 · 선항 선원', kind: 'invasion2', mode: 'tag', arena: 'pier', reward: 80000 + d.season * 20000, fame: 16, difficulty: foeLv }; this.playCine(brState(d).stage !== 'NONE' ? allianceCine(this, o, () => this.startMatch('invasion2', o)) : secondWaveCine(this, () => this.startMatch('invasion2', o))); }
         if (due === 'invasion3') { const o = { opp: 'godong', oppName: '선장 고동', kind: 'invasion3', mode: 'single', arena: 'pier', reward: 150000 + d.season * 40000, fame: 30, difficulty: foeLv }; this.playCine(captainCine(this, () => this.startMatch('invasion3', o), d.ow.state === 'CAPTAIN')); }
         if (due === 'rebuilt') { this.playCine(rebuiltCine(this)); }
         return;

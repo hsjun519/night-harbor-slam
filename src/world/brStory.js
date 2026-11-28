@@ -100,7 +100,7 @@ export function allianceCine(W, o, onFight) {
         { label: '"내 싸움은 내가 한다."', go: [{ who: 'brLeader', text: '흥, 그럴 줄 알았다. 우리는 우리 방식대로 저 배에 도전하겠다.' }, { act: () => { B.allied = false; o.partner = 'dohyun'; } }] },
       ] },
     ] },
-    { title: 'RIVALS UNITED', sub: `챔피언 · ${N('brLeader')} vs 흰상아 · 선항 선원`, dur: 2.2, when: () => B.allied === true },
+    { title: 'RIVALS UNITED', sub: `챔피언 · ${N('brLeader')} vs 쇄파 · 선항 선원`, dur: 2.2, when: () => B.allied === true },
     { walk: 'brLeader', to: -60, speed: 150, when: () => B.allied === false }, { walk: 'brPower', to: -60, speed: 150, with: 1, when: () => B.allied === false },
     { say: [{ who: 'dohyun', text: '혼자 다 하려고? 쳇, 그럼 내가 끼어 주지. 이 항구는 내 항구이기도 하니까.' }], when: () => B.allied === false },
     { bars: 0 }, { act: onFight },

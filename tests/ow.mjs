@@ -48,7 +48,7 @@ for (const id of ['whiteivory', 'godong', 'owsailor']) check(CHARACTERS[id] && C
   const m = new MatchManager({ mode: 'single', arena: 'pier', seed: 4, skipIntro: true, entrants: [{ char: 'rookie', ctrl: 'ai', difficulty: 'hard' }, { char: 'whiteivory', ctrl: 'ai', difficulty: 'hard' }] });
   let t = 0, fin = 0; m.on('finisherHit', () => fin++);
   while (m.phase !== 'end' && t < 300) { m.update(1 / 60); t += 1 / 60; }
-  check(m.phase === 'end' && !m.faults, `흰상아 plays a full match (${Math.round(t)} s, ${m.result && m.result.how}, finishers ${fin})`);
+  check(m.phase === 'end' && !m.faults, `쇄파 plays a full match (${Math.round(t)} s, ${m.result && m.result.how}, finishers ${fin})`);
 }
 // ---- the cutscene engine on a stand-in town
 {

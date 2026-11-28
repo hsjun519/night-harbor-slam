@@ -455,12 +455,21 @@ export const MOVES = {
     ev: [[0, 'grunt'], [.14, 'impact', { p: .5, d: .3, word: '퍽!' }], [.6, 'impact', { p: 1.25, d: .7, word: '쾅!' }]],
   },
 };
-// 선항 레슬링's finishers: 흰상아 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
+// 선항 레슬링's finishers: 쇄파 spins you face first from the shoulders, 고동 drops the anchor (a towering powerbomb)
 // BLACK ROPE: the leader's knot (a dragon suplex into the bridge), the wall's quarry slam (a power slam from higher up)
 MOVES.fKnot = Object.assign({}, MOVES.dragonSuplex, { name: '블랙 매듭', pos: 'fin', hp: 35, stun: 58, gain: 0, evo: null, desc: '양팔로 목을 묶어 브리지로 넘긴다. BLACK ROPE 리더의 피니셔.', ev: [[.1, 'cry'], [.18, 'grunt'], [.56, 'lift'], [.68, 'whoosh'], [.84, 'impact', { p: 2.2, d: 1, word: '블랙 매듭!' }]] });
 MOVES.fQuarry = Object.assign({}, MOVES.powerSlam, { name: '채석장 슬램', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, quake: 70, desc: '바위를 옮기듯 들어 올려 온몸으로 내리찍는다.', ev: [[.1, 'cry'], [.14, 'grunt'], [.42, 'lift'], [.62, 'whoosh'], [.78, 'impact', { p: 2.4, d: 1, word: '쿠구궁!!' }]] });
-MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '상아 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는 흰상아의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
+MOVES.fIvory = Object.assign({}, MOVES.f5, { name: '쇄파 회오리', pos: 'fin', hp: 34, stun: 56, gain: 0, evo: null, desc: '어깨에 메고 돌려 얼굴부터 꽂는다. 부서지는 파도, 쇄파의 피니셔.', ev: [[.1, 'cry'], [.2, 'grunt'], [.5, 'lift'], [.86, 'whoosh'], [1.16, 'impact', { p: 2.2, d: 1, word: '상아 회오리!' }]] });
 MOVES.fGodong = Object.assign({}, MOVES.powerbomb, { name: '선장의 닻', pos: 'fin', hp: 40, stun: 60, gain: 0, quake: 80, desc: '배 위에서 단련한 팔로 하늘까지 들어 올려 내리꽂는다.', ev: [[.1, 'cry'], [.2, 'grunt'], [.6, 'lift'], [.94, 'whoosh'], [1.12, 'impact', { p: 2.6, d: 1, word: '뱃고동!!' }]] });
+// the rest of 선항 레슬링: each officer's finisher, on the move it grew out of
+MOVES.fHaemu = Object.assign({}, MOVES.ddt, { name: '안개 독침', pos: 'fin', hp: 32, stun: 60, gain: 0, evo: null, sig: 0, desc: '안개처럼 감겨들어 목을 휘감고 머리부터 꽂는다. 해무의 피니셔.' });
+MOVES.fHeungnin = Object.assign({}, MOVES.anchorHold, { name: '곰치 굴', pos: 'fin', hp: 30, stun: 64, gain: 0, evo: null, sig: 0, desc: '뒤에서 목을 물고 굴 속으로 끌고 들어가듯 매트에 눌러 조인다.' });
+MOVES.fJeokgap = Object.assign({}, MOVES.chokeslam, { name: '왕게 집게', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, sig: 0, quake: 60, desc: '두 손을 집게처럼 목과 허리에 걸어 들어 올려 내리찍는다.' });
+MOVES.fSail = Object.assign({}, MOVES.fTyphoon, { name: '돛새치 창', desc: '바다에서 가장 빠른 물고기처럼 솟구쳐 꽂힌다. 청창의 피니셔.' });
+MOVES.fManta = Object.assign({}, MOVES.airplane, { name: '흑익 활강', pos: 'fin', hp: 37, stun: 62, gain: 0, evo: null, sig: 0, quake: 50, desc: '날개를 펼치듯 어깨에 걸쳐 돌다가 활강하듯 내리꽂는다.' });
+MOVES.fOrca = Object.assign({}, MOVES.german, { name: '범고래 사냥', pos: 'fin', hp: 38, stun: 62, gain: 0, evo: null, sig: 0, quake: 55, desc: '허리를 끌어안아 높이 던져 꽂는다. 먹잇감을 던지는 범고래처럼.' });
+MOVES.fKraken = Object.assign({}, MOVES.giantSwing, { name: '심해 소용돌이', pos: 'fin', hp: 36, stun: 60, gain: 0, evo: null, sig: 0, desc: '다리를 휘감아 소용돌이처럼 돌리다 깊은 곳으로 내던진다.' });
+MOVES.fAbyss = Object.assign({}, MOVES.piledriver, { name: '심해 낙하', pos: 'fin', hp: 40, stun: 64, gain: 0, evo: null, sig: 0, quake: 70, desc: '거꾸로 들어 올린 채 깊은 바다로 가라앉듯 무겁게 꽂는다.' });
 for (const id in MOVES) MOVES[id].id = id;
 
 // Looping tie-ups used while nobody has chosen a move yet, and the pinfall cover.
@@ -492,7 +501,15 @@ export const FINISHERS = {
   swallow: { name: '제비 낙하', type: 'dive', parts: ['fTyphoon'], reach: 180, color: '#d98cff', line: '하늘은 내 거야!' },
   stitch: { name: '바늘땀 수플렉스', type: 'stance', parts: ['gRoll', 'gRoll', 'dragonSuplex'], reach: 40, rear: 1, color: '#9be3ff', line: '세 땀이면 충분해.' },
   encore: { name: '앙코르 스핀', type: 'strike', parts: ['fNeon'], reach: 84, color: '#ffd65a', line: '앙코르! 앙코르!' },
-  ivory: { name: '상아 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  ivory: { name: '쇄파 회오리', type: 'grab', parts: ['fIvory'], reach: 46, armor: 1, color: '#f2efe4', line: '바다는 하얗게 부서진다.' },
+  haemu: { name: '안개 독침', type: 'grab', parts: ['fHaemu'], reach: 44, color: '#c9b6ff', line: '안개 속에선 아무도 못 피해.' },
+  heungnin: { name: '곰치 굴', type: 'grab', parts: ['fHeungnin'], reach: 40, rear: 1, color: '#c9c24a', line: '굴에 들어오면 못 나간다.' },
+  jeokgap: { name: '왕게 집게', type: 'grab', parts: ['fJeokgap'], reach: 48, armor: 1, color: '#c23a2e', line: '집게는 한 번 물면 놓지 않는다.' },
+  sail: { name: '돛새치 창', type: 'dive', parts: ['fSail'], reach: 175, color: '#7fc8ff', line: '바다에서 제일 빠른 창이다!' },
+  manta: { name: '흑익 활강', type: 'grab', parts: ['fManta'], reach: 46, armor: 1, color: '#e8ecf4', line: '날개를 펴라.' },
+  orca: { name: '범고래 사냥', type: 'grab', parts: ['fOrca'], reach: 42, rear: 1, armor: 1, color: '#f4f6fa', line: '서열은 이렇게 정해진다.' },
+  kraken: { name: '심해 소용돌이', type: 'grab', parts: ['fKraken'], reach: 44, color: '#ff4a5a', line: '막이 오른다. 깊은 곳으로.' },
+  abyss: { name: '심해 낙하', type: 'grab', parts: ['fAbyss'], reach: 48, armor: 1, color: '#9aa3b2', line: '깊은 곳은 조용하지.' },
   godong: { name: '선장의 닻', type: 'grab', parts: ['fGodong'], reach: 50, armor: 1, color: '#c9a22e', line: '닻을 내려라!' },
   blackwave: { name: '검은 파도', type: 'grab', parts: ['fBlackwave'], reach: 46, armor: 1, color: '#4a7ad8', line: '파도는 검을수록 깊다.' },
   whitewave: { name: '백파 수플렉스', type: 'grab', parts: ['fWhitewave'], reach: 46, color: '#e6e9f2', line: '파도는 늙지 않는다.' },

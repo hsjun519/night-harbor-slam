@@ -9,9 +9,12 @@ let fails = 0;
 const check = (ok, what, extra = '') => { if (ok) console.log('ok  ', what); else { fails++; console.log('FAIL', what, extra); } };
 // ---- data
 const G = resolveEntrance('godong'), F = resolveEntrance('fogking'), W = resolveEntrance('whiteivory'), L = resolveEntrance('brLeader'), N = resolveEntrance('galchi');
-check(G.tier === 'king' && G.titles.length === 3 && G.flames === 2 && G.escort.includes('whiteivory') && G.horn === 2 && G.fadeOut, '고동: fade, horn, whale, flames, escorts, three lines of billing');
+check(G.tier === 'king' && G.titles.length === 2 && G.flames === 2 && G.escort.includes('simyeon') && G.horn === 1 && G.fadeOut && G.fx === 'heartbeat' && G.screen.icon === 'whale', '고동: the hall goes quiet, three heartbeats and the horn, the whale, blue and gold fire, the vice captain at his side');
 check(F.tier === 'king' && F.fog && F.light.dim > .7 && F.screen.icon === 'fog', '안개왕: dark hall, mist, a slow walk');
-check(W.tier === 'officer' && W.screen.en === 'WHITE IVORY' && W.horn === 1 && W.crowd === 'sailors', '흰상아: horn, white light, WHITE IVORY');
+check(W.tier === 'officer' && W.screen.en === 'SWAEPA · GREAT WHITE' && W.horn === 1 && W.crowd === 'sailors' && W.fx === 'shark', '쇄파: horn, white light, a fin cutting the floor');
+const OFF = ['haemu', 'heungnin', 'jeokgap', 'cheongchang', 'whiteivory', 'heugik', 'baegan', 'mukhae', 'simyeon', 'godong'].map(id => [id, resolveEntrance(id)]);
+check(OFF.every(([id, E]) => E.fx && E.screen.icon && E.titles && E.titles.length === 2) && new Set(OFF.map(([id, E]) => E.fx)).size === OFF.length, 'every officer of 선항 has an entrance of their own (light, picture, billing)', OFF.map(([id, E]) => id + ':' + E.fx).join(' '));
+check(OFF.every(([id, E]) => id === 'godong' || E.pre < G.pre), 'and nobody builds up longer than the captain');
 check(L.tier === 'rival' && L.screen.en === 'BLACK ROPE' && L.crowd === 'mixed' && L.escort.length === 2, 'BLACK ROPE leader: purple light, logo, boos and cheers, the crew');
 check(N.tier === 'normal' && N.pose === 'none' && N.pre < .5, 'an ordinary wrestler: short and plain');
 check(G.pre > F.pre && F.pre > W.pre && W.pre > N.pre, 'the bigger the name, the longer the build-up');

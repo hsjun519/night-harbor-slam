@@ -158,6 +158,33 @@ const MASK = {
   fog(p, o) { MASK.plain(p, o); p.clip(o.outline, true, () => { p.line(o.c2R[2], 1.1, [[6.8, -13], [6, 13]]); p.poly(o.c2R[1], [[-.4, -2.8], [6, -1], [5.6, .6], [0, -.6]]); p.poly(o.c2R[1], [[7.4, -1], [11, -2.6], [10.8, -.6], [7.6, .6]]); p.line(o.c1R[1], .9, [[4.4, 6], [9, 6]]); }); },
   oni(p, o) { MASK.plain(p, o); for (const pts of [[[0, -11], [-1, -19], [5, -12]], [[6, -11], [9.4, -18], [9.6, -9.4]]]) { p.poly(o.c3R[1], pts); p.poly(o.c3R[3], pts.map(q => [q[0] * .8 + 1, q[1] * .9 - 1])); } p.clip(o.outline, true, () => { p.poly(o.c2R[2], [[-1, -5.4], [5.4, -2.6], [5, -4.6], [0, -7]]); p.poly(o.c2R[2], [[7.4, -2.8], [11, -5.6], [10.6, -3.8]]); p.poly('#fff3d8', [[3.6, 7.6], [5, 7.6], [4.2, 4.4]]); p.poly('#fff3d8', [[8, 7.4], [9.4, 7.4], [8.9, 4.4]]); }); },
   anchor(p, o) { MASK.plain(p, o); p.clip(o.outline, true, () => { p.line(o.c2R[2], 1.5, [[6.6, -11], [6.4, 10]]); p.line(o.c2R[2], 1.4, [[2, -8], [10.4, -8]]); p.line(o.c2R[2], 1.6, [[-1, 5], [2, 9], [6.4, 10.4], [10, 8.6]]); }); },
+  // 고동 before the reveal: white, the blue-black back of a whale over the brow, gold trim, the pleats of its throat
+  whale(p, o) {
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => {
+      p.blob(o.c2R[2], [[-12, -14], [12, -14], [11, -4.6], [4, -6.4], [-3, -5], [-12, -2]]);
+      p.blob(o.c2R[3], [[-6, -12], [4, -12.6], [6, -9.6], [-2, -9]]);
+      p.line(o.c3R[2], 1, [[-11.4, -2.4], [-3, -5.4], [4, -6.8], [11, -5]]);
+      for (let i = 0; i < 4; i++) p.line(o.c1R[1], .6, [[0, 5 + i * 1.9], [11, 4.4 + i * 1.9]]);
+    });
+    p.poly(o.c3R[3], [[1.6, -10.8], [3.4, -12.8], [5.2, -10.8], [3.4, -9]]);
+  },
+  // 묵해: a squid's mantle sweeping back off the skull to a diamond fin; feeding tentacles hang from the chin
+  squid(p, o) {
+    p.blob(o.c1R[1], [[-9, -4], [-11, -12], [-14, -17], [-17.4, -19.4], [-16.4, -14], [-15, -8], [-12.6, -1]]);
+    p.poly(o.c1R[2], [[-18, -20], [-14, -20.4], [-15.6, -16.6]]); p.poly(o.c1R[0], [[-17.6, -15.2], [-14.6, -13.6], [-16.8, -11.6]]);
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => { p.line(o.c2R[2], .8, [[-1, -12], [-4, -6], [-9, -3]]); p.line(o.c2R[2], .8, [[4, -11.6], [2, -6]]); p.blob(o.c1R[3], [[-6, -12], [2, -12.6], [5, -10], [-2, -9]]); });
+    p.clip(o.outline, true, () => { p.blob(o.c2R[1], [[-12, 4], [0, 2], [11, 3], [11, 14], [-12, 14]]); });
+    for (const x of [0, 2.6, 5.2, 7.8]) p.blob(o.c1R[1], [[x, 9], [x + 2.4, 9], [x + 1.8, 16 + (x % 3)], [x + .6, 16]]);
+  },
+  // 흑익: a black hood, the white underside of a manta on the jaw, and its two cephalic lobes curling forward
+  // beside the mouth like horns
+  manta(p, o) {
+    MASK.plain(p, o);
+    p.clip(o.outline, true, () => { p.blob(o.c2R[2], [[1, 6], [5, 5], [11, 5.4], [11, 14], [2, 14]]); p.line(o.c1R[0], .7, [[2, 8.4], [10.6, 8]]); p.blob(o.c1R[3], [[-8, -12], [2, -12.6], [7, -10], [-3, -8.6]]); });
+    for (const [y, k] of [[3.4, 1], [8.6, -1]]) { p.blob(o.c1R[1], [[8.4, y - 1.6], [13, y - 2.4 * k], [17, y - .4 * k], [15.6, y + 1.4 * k], [12, y + .6], [9, y + 1.8]]); p.line(o.c1R[3], .5, [[10, y - .6], [15.6, y - .8 * k]]); }
+  },
   visor(p, o) { p.blob(o.c1R[1], [[-10, -9], [0, -14.4], [8, -13], [11.4, -7], [12, 5], [10, 12], [2, 13], [-4, 9], [-9, 2]]); p.blob(o.c1R[2], [[-7, -9], [0, -13], [7.6, -11.6], [10.4, -6], [10.8, 4], [8, 10], [2, 10]]); p.poly('#1a1030', [[.4, -4.4], [11.4, -5.2], [11.6, .8], [.6, 1.4]]); p.poly(o.c2R[3], [[1.4, -3.4], [10.4, -4.2], [10.6, -.4], [1.6, .4]]); p.poly('#ffffff', [[2.4, -2.8], [5, -3.2], [4, -.6], [2.6, -.4]]); for (const [x, y] of [[-6, -6], [-6, 4], [3, 10]]) p.ell(o.c1R[4], x, y, .9); p.line(o.c1R[3], .9, [[1, 4], [10, 3.4]]); p.line(o.c1R[3], .9, [[1.4, 6.4], [9.6, 5.8]]); },
 };
 
@@ -170,7 +197,18 @@ const HAT = {
   bandana(p, h) { const R = rampHex(h.hatCol || '#d23b5a'); p.blob(R[1], [[-11.6, -2], [-11.8, -10], [-6, -14.6], [2, -15], [8.6, -12], [10.4, -6.6], [0, -8]]); p.blob(R[2], [[-8.6, -9], [-5, -13.4], [2, -13.8], [8, -11], [9, -8], [0, -9.4]]); p.poly(R[2], [[-11, -4], [-17, -1], [-14, 3], [-10.4, -1]]); for (const [x, y] of [[-5, -11], [1, -12], [5, -10]]) p.ell(R[4], x, y, .9); },
   headset(p) { p.line('#1a2148', 1.8, [[-5, -12.4], [-6.6, -6], [-5, -1]]); p.line('#1a2148', 1.6, [[-5.4, -12], [0, -14.4], [4, -13.6]]); p.ell('#1a2148', -4.8, .4, 3, 3.6); p.ell('#49d6ff', -4.8, .4, 1.4, 1.8); p.line('#1a2148', 1, [[-4, 3], [1, 8], [5.6, 8.4]]); p.ell('#1a2148', 6, 8.2, 1.2); },
   nurse(p) { p.poly('#f5f7ff', [[-6, -12], [-5, -18], [5, -18.6], [6.4, -12.6]]); p.rect('#ff4f6d', -.9, -17.4, 1.6, 4.4); p.rect('#ff4f6d', -2.3, -16, 4.4, 1.6); },
+  // 적갑: a red crab-shell helmet, spines along the crown, a dark brow ridge
+  helm(p, h) { const R = rampHex(h.hatCol || '#b8322a'); p.blob(R[1], [[-12.6, 1], [-13, -9], [-7, -16.4], [2, -17], [9.6, -12.6], [11.6, -6], [10.4, -4.4], [1, -6.4], [-5, -4], [-7, 2]]); p.blob(R[2], [[-10, -8], [-6, -14.6], [2, -15.2], [8.6, -11.4], [9.6, -7.6], [1, -8.6], [-6, -6]]); for (const [x, y] of [[-9, -13], [-4, -16.4], [1.6, -16.8], [6.6, -14]]) p.poly(R[3], [[x - 1.6, y + 1], [x, y - 3.6], [x + 1.6, y + 1]]); p.poly(R[0], [[0, -6.6], [11.8, -6.4], [11.2, -4.6], [1, -5]]); p.ell('#f0d8b0', -8, -6, 1, 1); },
+  // 해무: a jellyfish bell over the head, frilled at the rim, a glow inside it
+  bell(p, h) { const R = rampHex(h.hatCol || '#c9b6ff'), g2 = h.glowCol || '#7fe8ff'; p.blob(R[2], [[-13, -3], [-13.4, -12], [-7, -19.4], [1, -20.6], [9, -17], [12.4, -9], [12, -4]]); p.blob(R[3], [[-9, -10], [-5, -17], [1.4, -18.6], [7, -15.6], [4, -13], [-4, -11.6]]); for (let x = -12; x < 12; x += 3) p.ell(R[1], x + 1.5, -3.6, 1.7, 1.2); p.ell('#eafcff', -2, -15, 1.4, .9); p.ell(g2, 3, -9, 1.1, 1.1); p.ell(g2, -5, -8, .9, .9); p.ell(g2, 7, -12, .8, .8); },
   crown(p) { p.poly('#e0a32e', [[-8, -10], [-9.6, -18], [-5, -14], [-1, -20], [2.6, -14.4], [7.6, -18.6], [7.6, -10.6]]); p.poly('#ffe07a', [[-6.6, -11.4], [-7.4, -15.4], [-4.4, -12.8], [-1, -17.4], [2, -13], [5.8, -15.8], [6, -11.6]]); p.ell('#ff4f6d', -1, -12.4, 1.3); },
+};
+// face paint and marks beyond the old four (stripe, lines, star, wave)
+const PAINT = {
+  orca(p, h) { p.blob(h.paintCol || '#f4f6fa', [[-3.8, -3.2], [-1.6, -6.6], [3, -7], [5, -5.6], [2.6, -4.2], [-.6, -2.6]]); },   // 백안: an orca's white patch behind and above the eye
+  gills(p, h) { for (let i = 0; i < 3; i++) p.line(h.paintCol || '#4a5868', .9, [[-2.4 + i * 1.7, 3.4], [-1.2 + i * 1.7, 8.4]]); },   // 쇄파: three gill slits
+  spots(p, h) { for (const [x, y] of [[0, 3], [2.4, 6], [-2, 7], [5, 8.6], [1, 9.8], [-3, 3.6]]) p.ell(h.paintCol || '#c9c24a', x, y, .8, .8); },   // 흑린: a moray's speckles
+  sucker(p, h) { p.g.strokeStyle = h.paintCol || '#e8c8a8'; p.g.lineWidth = .7; for (const [x, y, r] of [[-1, 4, 1.6], [2.4, 7.4, 1.2], [-3.4, 8, 1]]) { p.g.beginPath(); p.g.ellipse(x, y, r, r, 0, 0, 7); p.g.stroke(); } },   // 심연: round scars of a squid's suckers
 };
 const GLASS = {
   shades(p) { p.poly('#140a22', [[-.4, -3.4], [6.2, -3.4], [5.4, 1.2], [1, 1.2]]); p.poly('#140a22', [[6.8, -3.4], [11.2, -3.2], [10.6, 1], [7.4, 1]]); p.line('#140a22', 1.1, [[-5, -2], [1, -2.8]]); p.poly('#4b5a9c', [[1, -2.6], [3.6, -2.6], [2.4, -.4], [1.4, -.4]]); p.poly('#4b5a9c', [[7.6, -2.6], [9, -2.6], [8.4, -.6]]); },
@@ -195,10 +233,16 @@ export function headTexture(look, expr = 'neutral') {
     if (h.maskHair && hairFn) hairFn(p, h, H, S);
     (MASK[m.kind] || MASK.plain)(p, o);
     if (m.kind !== 'visor' && m.kind !== 'fog') {
-      const rim = o.c3R[2];
+      const rim = m.rim ? rampHex(m.rim)[2] : o.c3R[2];
       p.ell(rim, 3.5, -1.1, 3.6, 3); p.ell(rim, 8.5, -1.1, 2.7, 2.8);
-      p.ell(S[2], 3.5, -1.1, 2.7, 2.2); p.ell(S[2], 8.5, -1.1, 1.9, 2.1);
-      paintEyes(p, h, expr, S);
+      if (m.glow) {   // dark eye holes with a small light in them, no whites: the officers' masks
+        p.ell('#05060c', 3.5, -1.1, 2.7, 2.2); p.ell('#05060c', 8.5, -1.1, 1.9, 2.1);
+        const gc = expr === 'ko' || expr === 'blink' ? '#2a2f45' : m.glow, sq = expr === 'fierce' || expr === 'shout' ? .55 : 1;
+        p.ell(gc, 4, -1, 1.1, .9 * sq); p.ell(gc, 8.9, -1, .9, .8 * sq);
+      } else {
+        p.ell(S[2], 3.5, -1.1, 2.7, 2.2); p.ell(S[2], 8.5, -1.1, 1.9, 2.1);
+        paintEyes(p, h, expr, S);
+      }
       if (!m.noMouth) { p.blob(rim, [[2, 4.6], [6, 3.8], [10, 4.6], [10, 9], [6.4, 10.4], [2.4, 8.8]]); p.blob(S[2], [[3, 5.2], [6, 4.6], [9.4, 5.2], [9.4, 8.4], [6.4, 9.4], [3.2, 8.2]]); paintMouth(p, h, expr, S); }
     }
     if (m.kind === 'fog') { const col = expr === 'fierce' || expr === 'shout' ? '#ff5fa2' : expr === 'ko' ? '#5a5f7a' : '#49d6ff'; p.poly(col, [[.8, -1.9], [5.2, -.6], [4.8, .2], [1.2, -.8]]); p.poly(col, [[8, -.6], [10.4, -1.7], [10.2, -.8], [8.2, .2]]); }
@@ -215,7 +259,7 @@ export function headTexture(look, expr = 'neutral') {
     if (!h.noEar) { p.ell(S[0], -5.2, .4, 3, 3.9); p.ell(S[2], -5, .3, 2.2, 3.1); p.ell(S[1], -4.7, .8, 1.1, 1.8); }
     if (h.earring) p.ell(h.earring, -5, 4.2, 1.1);
     if (h.beard && BEARD[h.beard]) BEARD[h.beard](p, h, H, S);
-    if (h.paint) h.paint === 'stripe' ? p.poly(h.paintCol, [[-1, -3.6], [10.4, -3.6], [10.2, .8], [-1, .8]]) : h.paint === 'lines' ? (p.line(h.paintCol, 1.1, [[1.6, 2.4], [1.2, 6]]), p.line(h.paintCol, 1.1, [[3.6, 2.8], [3.4, 6.4]]), p.line(h.paintCol, 1.1, [[9.6, 2.6], [9.6, 5.4]])) : h.paint === 'star' ? p.poly(h.paintCol, [[3.4, -6], [4.6, -2.6], [8, -1.4], [4.6, 0], [3.4, 4], [2.2, 0], [-1.4, -1.4], [2.2, -2.6]]) : h.paint === 'wave' ? p.line(h.paintCol, 1.6, [[-3, 4], [0, 2], [2, 4], [4.4, 2.2], [6.4, 4], [9.6, 2.2]]) : 0;
+    if (h.paint) h.paint === 'stripe' ? p.poly(h.paintCol, [[-1, -3.6], [10.4, -3.6], [10.2, .8], [-1, .8]]) : h.paint === 'lines' ? (p.line(h.paintCol, 1.1, [[1.6, 2.4], [1.2, 6]]), p.line(h.paintCol, 1.1, [[3.6, 2.8], [3.4, 6.4]]), p.line(h.paintCol, 1.1, [[9.6, 2.6], [9.6, 5.4]])) : h.paint === 'star' ? p.poly(h.paintCol, [[3.4, -6], [4.6, -2.6], [8, -1.4], [4.6, 0], [3.4, 4], [2.2, 0], [-1.4, -1.4], [2.2, -2.6]]) : h.paint === 'wave' ? p.line(h.paintCol, 1.6, [[-3, 4], [0, 2], [2, 4], [4.4, 2.2], [6.4, 4], [9.6, 2.2]]) : PAINT[h.paint] ? PAINT[h.paint](p, h) : 0;
     paintEyes(p, h, expr, S);
     // nose
     p.blob(S[3], [[6.6, -.6], [8.4, -.4], [11.6, 2.6], [10.6, 4], [7.4, 3.8]]);
@@ -230,6 +274,7 @@ export function headTexture(look, expr = 'neutral') {
       const R = rampHex(h.mask.c1);
       p.blob(R[2], [[-10, -5.6], [0, -6.4], [10.6, -5.8], [11, -.6], [9, 2.2], [7, 1], [5, 2.6], [0, 2], [-9, -1]]); p.line(R[3], .9, [[-8, -4.6], [0, -5.4], [10, -4.8]]);
       p.ell(S[2], 3.5, -1.2, 2.5, 2); p.ell(S[2], 8.5, -1.2, 1.8, 1.9); paintEyes(p, h, expr, S);
+      if (h.mask.bill) { const Bl = rampHex(h.mask.bill); p.poly(Bl[2], [[9.6, -2.8], [19.4, -.8], [9.8, .4]]); p.line(Bl[4], .6, [[10, -2], [18.6, -.8]]); }   // 청창: a sailfish's spear of a bill
     }
     if (h.tear && (expr === 'hurt' || expr === 'sad')) p.ell('#7fd8ff', 1.6, 2, 1, 1.4);
   }

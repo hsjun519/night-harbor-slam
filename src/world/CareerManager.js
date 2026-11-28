@@ -114,7 +114,7 @@ export const GANG = [
 ];
 // 선항 레슬링: a promotion from across the sea. d.ow.state:
 //   LOCKED (no belt yet) → SIGNS (the first belt; the invasion exactly OW.delay days later, a foghorn the day after)
-//   → INVADED (흰상아 at the pier; the dome is wrecked, title matches move to the basement)
+//   → INVADED (쇄파 at the pier; the dome is wrecked, title matches move to the basement)
 //   → SECOND_WAVE (OW.gap days on: they come back, 서도현 teams up with you) → REGROUP
 //   → CAPTAIN (OW.gap days on: 선장 고동, a boss in three phases; lose and he waits for you the next day)
 //   → REBUILD (they sail away; the dome is rebuilt in OW.rebuild days) → INTERNATIONAL_ROUTE_OPEN (the dome reopens)

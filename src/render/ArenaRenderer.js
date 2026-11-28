@@ -38,6 +38,15 @@ function screenIcon(g, kind, x, y, col, t) {
   else if (kind === 'fog') { for (let i = 0; i < 3; i++) px((i * 4 + Math.round(t * 6)) % 10, 4 + i * 4, 7, 2, '#9aa3c2'); }
   else if (kind === 'wave') { for (let i = 0; i < 12; i++) px(i, 8 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#e6f2ff'); px(1, 14, 11, 1, '#9fd6ff'); }
   else if (kind === 'whale') { px(0, 6, 14, 6, '#9fd6ff'); px(2, 4, 8, 2, '#9fd6ff'); px(14, 4, 2, 4, '#9fd6ff'); px(16, 2, 2, 3, '#9fd6ff'); px(3, 8, 1, 1, '#05060c'); px(5, 12, 7, 1, '#e6f2ff'); if (Math.floor(t * 2) % 2) px(6, 0, 1, 3, '#e6f2ff'); }
+  else if (kind === 'jelly') { px(3, 1, 9, 5, '#c9b6ff'); px(4, 0, 7, 1, '#c9b6ff'); for (let i = 0; i < 4; i++) px(4 + i * 2, 6 + (Math.floor(t * 4 + i) % 2), 1, 7, '#7fe8ff'); }
+  else if (kind === 'moray') { for (let i = 0; i < 14; i++) px(i, 7 + Math.round(Math.sin(i * .7 + t * 4) * 2), 1, 3, '#3a6a4a'); px(13, 5, 4, 4, '#3a6a4a'); px(15, 6, 1, 1, '#ffd65a'); }
+  else if (kind === 'crab') { px(3, 6, 10, 5, '#ff5a3a'); px(0, 3, 3, 3, '#ff5a3a'); px(13, 3, 3, 3, '#ff5a3a'); px(5, 4, 1, 2, '#ffffff'); px(10, 4, 1, 2, '#ffffff'); for (let i = 0; i < 3; i++) { px(2 + i * 2, 11, 1, 2, '#c23a2e'); px(9 + i * 2, 11, 1, 2, '#c23a2e'); } }
+  else if (kind === 'sail') { px(0, 9, 16, 3, '#7fc8ff'); px(16, 10, 4, 1, '#cfd8e6'); px(3, 2, 2, 7, '#1f4fa8'); px(5, 1, 3, 8, '#1f4fa8'); px(8, 3, 3, 6, '#1f4fa8'); }
+  else if (kind === 'shark') { px(0, 8, 16, 4, '#8a96a6'); px(6, 3, 3, 5, '#8a96a6'); px(5, 5, 1, 3, '#8a96a6'); px(15, 6, 3, 2, '#8a96a6'); px(15, 11, 3, 2, '#8a96a6'); px(2, 10, 9, 2, '#e6f2ff'); px(13, 9, 1, 1, '#05060c'); }
+  else if (kind === 'manta') { px(5, 5, 8, 5, '#e8ecf4'); px(0, 8, 5, 2, '#e8ecf4'); px(13, 8, 5, 2, '#e8ecf4'); px(1, 7, 4, 1, '#e8ecf4'); px(13, 7, 4, 1, '#e8ecf4'); px(7, 3, 1, 2, '#e8ecf4'); px(10, 3, 1, 2, '#e8ecf4'); px(8, 10, 2, 4, '#e8ecf4'); }
+  else if (kind === 'orca') { px(0, 6, 16, 6, '#f4f6fa'); px(6, 1, 3, 5, '#f4f6fa'); px(16, 4, 2, 3, '#f4f6fa'); px(16, 10, 2, 3, '#f4f6fa'); px(2, 7, 3, 2, '#05060c'); px(4, 10, 8, 2, '#05060c'); }
+  else if (kind === 'squid') { px(5, 0, 6, 8, '#ff4a5a'); px(4, 1, 1, 3, '#ff4a5a'); px(11, 1, 1, 3, '#ff4a5a'); for (let i = 0; i < 4; i++) px(5 + i * 2 - (i > 1 ? 1 : 0), 8, 1, 5 + (Math.floor(t * 3 + i) % 2) * 2, '#ff4a5a'); px(7, 4, 1, 1, '#ffffff'); }
+  else if (kind === 'sperm') { px(0, 4, 8, 8, '#c9d4e6'); px(8, 6, 8, 5, '#c9d4e6'); px(16, 5, 2, 3, '#c9d4e6'); px(16, 10, 2, 3, '#c9d4e6'); px(2, 6, 1, 1, '#05060c'); px(1, 11, 6, 1, '#9aa3b2'); }
   else if (kind === 'belt') { px(0, 6, 16, 4, '#8a6a2a'); px(5, 4, 6, 8, '#ffd65a'); px(7, 6, 2, 4, '#fff3b0'); }
   else if (kind === 'star') { px(5, 0, 2, 12); px(0, 5, 12, 2); px(2, 2, 8, 8, col); px(4, 4, 4, 4, '#ffffff'); }
 }

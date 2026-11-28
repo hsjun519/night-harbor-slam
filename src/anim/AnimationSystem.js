@@ -236,6 +236,7 @@ export function updateTails(f, dt, groundY) {
   const H = jt.H * DEG, S = jt.S * DEG, fc = jt.face;
   const anchor = t => {
     if (t.at === 'waist') return [jt.x(0) - Math.cos(S) * fc * 8, jt.y(0) - Math.sin(S) * fc * 8 - 3];
+    if (t.at === 'back') return [jt.x(J.chest) - Math.cos(S) * fc * 9 * (f.look.scale || 1), jt.y(J.chest) - Math.sin(S) * fc * 9 - 2];   // between the shoulder blades
     const hx = jt.x(J.head), hy = jt.y(J.head);
     return [hx - Math.cos(H) * fc * 9.5 * (f.look.scale || 1), hy - Math.sin(H) * fc * 9.5 - 2];
   };

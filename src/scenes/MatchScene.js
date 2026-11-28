@@ -196,7 +196,10 @@ export class MatchScene {
       const E = e.E, f = e.f;
       this.ent = { f, E, t: 0, k: 0, out: false, fog: 0, flameT: -1, titles: [], walk: false, queue: [] };
       if (E.fadeOut) { this.game.audio.music(null); this.ent.musicAt = 1.6; } else A.music(E.theme);
-      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0), fn: () => A.sfx('horn') });
+      const beats = E.fx === 'heartbeat' ? 3 : 0;   // 고동: 쿵. 쿵. 쿵. before the horn
+      for (let i = 0; i < beats; i++) this.ent.queue.push({ at: .5 + i * .85, fn: () => { A.sfx('thud', { p: 1, pitch: .35 }); S.shake(.3); hud.push('쿵.', { col: '#9fd6ff', scale: 3, y: 120, life: .7 }); } });
+      for (let i = 0; i < (E.horn || 0); i++) this.ent.queue.push({ at: i * 1.3 + (E.fadeOut ? .6 : 0) + beats * .85, fn: () => A.sfx('horn') });
+      if (E.fx === 'bass') for (let i = 0; i < 4; i++) this.ent.queue.push({ at: .4 + i * .7, fn: () => { A.sfx('thud', { p: .9, pitch: .3 }); S.shake(.18); } });
       this.ar.setScreen(f.name, E.screen.en || (f.ctrl === 'human' && E.label ? E.label : f.char.nick), E.screen.col || f.char.color, true, E.screen.icon);
       if (E.crowd === 'hush') A.cheer(0); else if (E.crowd === 'boo') A.sfx('boo'); else if (E.crowd === 'mixed') { A.sfx('boo'); A.cheer(.8); } else A.cheer(E.tier === 'normal' ? .4 : .9);
     });
@@ -450,11 +453,25 @@ export class MatchScene {
     const e = this.ent, E = e.E, f = e.f, k = e.k;
     if (k <= 0) return;
     w.globalAlpha = Math.min(.92, E.light.dim * k); rect(w, '#03040a', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1;
+    this.drawEntranceFx(w, cam, k);
     if (f.hidden) return;
     const sx = Math.round(f.x - cam), top = 0, bot = f.y + 6, wTop = 26, wBot = 64;
     w.save(); w.globalCompositeOperation = 'lighter'; w.globalAlpha = .22 * k; w.fillStyle = E.light.col;
     w.beginPath(); w.moveTo(sx - wTop / 2, top); w.lineTo(sx + wTop / 2, top); w.lineTo(sx + wBot / 2, bot); w.lineTo(sx - wBot / 2, bot); w.closePath(); w.fill();
     w.globalAlpha = .18 * k; w.beginPath(); w.ellipse(sx, bot - 2, wBot / 2 + 6, 7, 0, 0, Math.PI * 2); w.fill();
+    w.restore();
+  }
+  // the big shapes of an officer's entrance, drawn over the dimmed hall: blue beams sweeping (청창), a shark's fin
+  // cutting along the floor (쇄파), a giant wing passing over (흑익), white beams in the dark (백안), a whale (고동)
+  drawEntranceFx(w, cam, k) {
+    const e = this.ent, E = e.E, t = e.t, ar = this.m.arena;
+    if (!E.fx) return;
+    w.save();
+    if (E.fx === 'sweep') { w.globalCompositeOperation = 'lighter'; w.globalAlpha = .16 * k; w.fillStyle = '#49a6ff'; for (let i = 0; i < 3; i++) { const x = ((t * 260 + i * 260) % (VIEW_W + 240)) - 120; w.beginPath(); w.moveTo(x - 8, 0); w.lineTo(x + 8, 0); w.lineTo(x + 46, VIEW_H); w.lineTo(x - 30, VIEW_H); w.closePath(); w.fill(); } }
+    if (E.fx === 'mono') { w.globalCompositeOperation = 'lighter'; w.globalAlpha = .12 * k; w.fillStyle = '#ffffff'; for (const x of [70, VIEW_W - 70]) { w.beginPath(); w.moveTo(x - 6, 0); w.lineTo(x + 6, 0); w.lineTo(x + 40, VIEW_H); w.lineTo(x - 40, VIEW_H); w.closePath(); w.fill(); } }
+    if (E.fx === 'shark') { const x = ((t * 150) % (VIEW_W + 120)) - 60, y = ar.floorY - cam * 0 + 2; w.globalAlpha = .85 * k; w.fillStyle = '#1a2230'; w.beginPath(); w.moveTo(x, y); w.lineTo(x + 10, y - 22); w.lineTo(x + 24, y); w.closePath(); w.fill(); w.fillStyle = '#e6f2ff'; for (let i = 0; i < 6; i++) w.fillRect(Math.round(x - 6 - i * 7), y - 1 + (i % 2), 5, 1); }
+    if (E.fx === 'wing' && t > .4 && t < 3.4) { const q = (t - .4) / 3, x = -260 + q * (VIEW_W + 520), y = 40 + Math.sin(q * 3) * 10; w.globalAlpha = .55 * k; w.fillStyle = '#05060c'; w.beginPath(); w.moveTo(x - 220, y + 46); w.quadraticCurveTo(x - 90, y - 10, x, y); w.quadraticCurveTo(x + 90, y - 10, x + 220, y + 46); w.quadraticCurveTo(x + 60, y + 30, x + 14, y + 70); w.lineTo(x - 14, y + 70); w.quadraticCurveTo(x - 60, y + 30, x - 220, y + 46); w.closePath(); w.fill(); }
+    if (E.fx === 'heartbeat' && t > 3 && t < 7.5) { const q = (t - 3) / 4.5, x = VIEW_W + 120 - q * (VIEW_W + 360), y = 150 + Math.sin(q * 6) * 4; w.globalAlpha = .22 * k * Math.sin(q * Math.PI); w.fillStyle = '#9fd6ff'; w.beginPath(); w.ellipse(x, y, 120, 22, 0, 0, Math.PI * 2); w.fill(); w.beginPath(); w.moveTo(x + 110, y); w.lineTo(x + 170, y - 22); w.lineTo(x + 160, y + 2); w.lineTo(x + 172, y + 24); w.closePath(); w.fill(); }
     w.restore();
   }
   // mist along the floor, pyro at the aisle, the hall's light coming up and down
@@ -464,12 +481,21 @@ export class MatchScene {
     e.k = Math.min(1, e.k + dt * 1.6);
     if (e.musicAt && e.t >= e.musicAt) { e.musicAt = 0; A.music(E.theme); }
     for (const q of e.queue) if (!q.done && e.t >= q.at) { q.done = true; q.fn(); }
-    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, '#8a84b8', 2); } }
+    if (E.fog && e.fog >= 0 && e.t > .2) { e.fog += dt; if (e.fog > .07) { e.fog = 0; const x = (f.hidden ? (f.x > ar.mid ? ar.x1 - 30 : ar.x0 + 30) : f.x) + (Math.random() - .5) * 120; fx.smoke(x, ar.floorY - 4, E.fogCol || '#8a84b8', 2); } }
+    // each officer's own particles while they walk
+    if (E.fx && !f.hidden && e.walk) {
+      e.fxT = (e.fxT || 0) + dt;
+      if (E.fx === 'jelly' && e.fxT > .09) { e.fxT = 0; fx.spark(f.x + (Math.random() - .5) * 70, f.y - Math.random() * 80, .25, Math.random() < .5 ? '#c9b6ff' : '#7fe8ff', -Math.PI / 2); }
+      if (E.fx === 'green' && e.fxT > .12) { e.fxT = 0; fx.smoke(f.x + (Math.random() - .5) * 60, ar.floorY - 2, '#1f3a2a', 2); }
+      if (E.fx === 'metal' && e.fxT > .55) { e.fxT = 0; A.sfx('clang', { p: .35, pitch: .7 }); fx.spark(f.x, ar.floorY - 6, .6, '#ffb08a', -Math.PI / 2); }
+      if (E.fx === 'shark' && e.fxT > .1) { e.fxT = 0; fx.spark(f.x - f.face * 20, ar.floorY - 4, .4, '#e6f2ff', -Math.PI / 2 - f.face * .6); }
+      if (E.fx === 'ink' && e.fxT > .08) { e.fxT = 0; fx.smoke(f.x + (Math.random() - .5) * 90, ar.floorY - 6, '#14102a', 2); }
+    }
     if (e.flameT >= 0 && e.flameT < (E.flames > 1 ? 2.4 : 1.4)) {
       e.flameT += dt;
       if (Math.floor(e.flameT * 8) !== Math.floor((e.flameT - dt) * 8)) {
         const right = f.x > ar.mid, x0 = right ? ar.x1 - 24 : ar.x0 + 24, x1 = right ? ar.ropeR + ar.apron + 30 : ar.ropeL - ar.apron - 30;
-        const col = E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
+        const FC = E.flameCol, col = FC ? (Array.isArray(FC) ? FC[(e.flameN = (e.flameN || 0) + 1) % FC.length] : FC) : E.tier === 'king' || E.tier === 'officer' ? '#bfe6ff' : '#ffb347';
         for (const x of E.flames > 1 ? [x0, (x0 + x1) / 2, x1] : [x0, x1]) { fx.spark(x, ar.floorY - 10, E.flames > 1 ? 1.6 : 1, col, -Math.PI / 2); fx.spark(x, ar.floorY - 40, .8, '#ffffff', -Math.PI / 2); }
       }
     }
@@ -490,7 +516,7 @@ export class MatchScene {
       tmp.copy(a.joints); for (let i = 0; i < JN; i++) tmp.p[i * 2] -= cam;
       w.globalAlpha = .35; rect(w, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); w.globalAlpha = 1;
       bc.begin(tmp.x(0), tmp.y(0) - 4);
-      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: false });
+      drawBody(bc, tmp, a.dims, a.look, { expr: c.act === 'windup' || c.act === 'distract' || c.act === 'cheer' ? 'shout' : a.faceExpr, hand: 'open', tails: null, cape: !!a.look.capeAlways });
       bc.finish(); bc.drawTo(w);
       if (c.act === 'windup') drawChairAt(w, tmp.x(J.hN), tmp.y(J.hN) - 30, -.4 * c.face, c.face, 0);
     }

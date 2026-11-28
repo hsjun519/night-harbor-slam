@@ -18,6 +18,7 @@ export const EMBLEMS = {
   eye: ['..###..', '.#...#.', '#..#..#', '#.###.#', '#..#..#', '.#...#.', '..###..'],
   fist: ['.####..', '######.', '#.#.##.', '#######', '######.', '.####..', '.####..'],
   drop: ['...#...', '..###..', '..###..', '.#####.', '.####.#', '.#####.', '..###..'],
+  whale: ['#......###.', '##..#######', '.##########', '##..######.', '#.....##...'],
 };
 function emblemAt(name, x, y) { // x,y in pixels around the emblem centre
   const b = EMBLEMS[name];
@@ -100,6 +101,8 @@ function torsoShader(look, dims) {
       case 'hoodie': cloth = c1; if (Math.abs(c) < .05 && v > .2) cloth = c2; if (v > .86) cloth = c3; if (v < .34 && v > .16 && Math.abs(c) < .5 && v > .16 + Math.abs(c) * .2) o.dt -= .4; break;
       case 'track': cloth = c1; if (Math.abs(c) < .05) cloth = c2; if (v > .9) cloth = c2; if (Math.abs(v - .74) < .03) cloth = c2; break;
       case 'suit': { cloth = c1; const w = (v - .42) * .62; if (v > .42 && Math.abs(c) < w) { cloth = c2; if (Math.abs(c) < .07) cloth = c3; } else if (v > .42 && Math.abs(c) < w + .12) o.dt -= .8; if (Math.abs(c) < .05 && (Math.abs(v - .32) < .015 || Math.abs(v - .22) < .015)) o.dt -= 2; break; }
+      case 'opencoat': { const w = .22 + Math.max(0, v - .3) * .32; if (Math.abs(c + .04) > w || v > .93) cloth = Math.abs(Math.abs(c + .04) - w) < .05 && v <= .93 ? c2 : c1; break; }   // a coat worn open over the bare chest, trimmed
+      case 'orca': cloth = c1; if (c > -.12 && c < .5 && v > .2 && v < .74 && v - .2 > Math.abs(c - .19) * .45) cloth = c2; if (v > .9 && Math.abs(c) < .22) cloth = c2; break;   // black with an orca's white belly
       case 'coat': { cloth = c1; const w = (v - .3) * .5; if (v > .3 && Math.abs(c) < w) { cloth = c2; if (Math.abs(c) < .06 && t.c3) cloth = c3; } else if (Math.abs(Math.abs(c) - w) < .05) o.dt -= 1; break; }
       case 'shirt': cloth = c1; if (Math.abs(c) < .035) o.dt -= .9; if (v > .92 && Math.abs(c) < .3) cloth = skin; if (t.c2 && v < .2) cloth = c2; break;
       case 'apron': cloth = c1; if (v < .74 && Math.abs(c) < .62) cloth = c2; if (v >= .74 && Math.abs(Math.abs(c) - .36) < .06) cloth = c2; break;
@@ -200,6 +203,15 @@ export function drawBody(bc, jt, dims, look, o = {}) {
     bc.capsule(X(li + 1), Y(li + 1), dims.shR[0] + loose * .5, X(li + 2), Y(li + 2), dims.shR[1] + loose, seg.sh, g + 1, dims.shR[2], dims.shR[0] * 1.3, dk);
     bc.capsule(X(li + 2), Y(li + 2), dims.ftR, X(li + 3), Y(li + 3), dims.ftR * .78, seg.foot, g + 2, 0, dims.ftR * 1.5, dk);
   };
+  // epaulettes: a pad on the shoulder with gold fringe, or a spined pauldron (armor)
+  const epa = (si, g) => {
+    const E = look.epaulet; if (!E) return;
+    const er = EPA.get(E) || EPA.set(E, { c: ramp(E.c), fr: E.fr ? ramp(E.fr) : null }).get(E), r = (E.armor ? 1.3 : 1) * dims.uaR[0] * .62;
+    const x = X(si) + upx * dims.uaR[0] * .45, y = Y(si) + upy * dims.uaR[0] * .45;
+    bc.capsule(x - fxv * r, y - fyv * r, r * .66, x + fxv * r, y + fyv * r, r * .66, [{ t: 1, ramp: er.c }], g, 0, 0, 0);
+    if (E.armor) for (let k = -1; k <= 1; k++) { const bx = x + fxv * k * r * .7, by = y + fyv * k * r * .7; bc.poly([[bx - 1.6, by + upy * r * .4], [bx + upx * (r * .5 + 4.5), by + upy * (r * .5 + 4.5)], [bx + 1.6, by + upy * r * .4]], er.c, g); }
+    if (er.fr) for (let k = -1; k <= 1; k++) { const bx = x + fxv * k * r * .72, by = y + fyv * k * r * .72; bc.capsule(bx - upx * r * .45, by - upy * r * .45, .8, bx - upx * (r * .45 + 4), by - upy * (r * .45 + 4), .7, [{ t: 1, ramp: er.fr }], g, 0, 0, 0); }
+  };
   const tail = (T, g) => {
     for (let i = 0; i < T.pts.length - 2; i += 2) { const k = i / (T.pts.length - 2); bc.capsule(T.pts[i], T.pts[i + 1], T.w * (1 - k * .55), T.pts[i + 2], T.pts[i + 3], T.w * (1 - (k + .1) * .55), [{ t: 1, ramp: ramp(T.c) }], g, 0, 0, k * .1); }
   };
@@ -207,14 +219,15 @@ export function drawBody(bc, jt, dims, look, o = {}) {
     if (o.tails) for (const T of o.tails) if (!T.front) tail(T, 40);
     if (look.cape && o.cape !== false) {
       const a = 3 + (o.sway || 0), c = look.cape, x = X(J.neck), y = Y(J.neck), w = dims.prof[4][1] * .9, hem = (c.len || 1) * (dims.spine + dims.th);
-      bc.poly([[x - fxv * 2 - 1, y + 2], [x - fxv * (w + 2), y + 6], [x - fxv * (w + 7 + a) , y + hem], [x - fxv * (w * .1 - 3 + a * .5), y + hem + 2]], ramp(c.c1), 41, { folds: 2, phase: (o.sway || 0) * .4 });
+      if (c.wing) bc.poly([[x - fxv * 2, y + 1], [x - fxv * (w + 26 + a), y + 8], [x - fxv * (w + 18), y + hem * .75], [x + fxv * (w * .4), y + hem * .55], [x + fxv * (w + 20 + a * .5), y + hem * .35], [x + fxv * (w + 12), y + 4]], ramp(c.c1), 41, { folds: 3, phase: (o.sway || 0) * .4 });   // 흑익: a manta's wings
+      else bc.poly([[x - fxv * 2 - 1, y + 2], [x - fxv * (w + 2), y + 6], [x - fxv * (w + 7 + a) , y + hem], [x - fxv * (w * .1 - 3 + a * .5), y + hem + 2]], ramp(c.c1), 41, { folds: 2, phase: (o.sway || 0) * .4 });
     }
-    arm(7, true, 1); leg(14, true, 4);
+    arm(7, true, 1); epa(7, 2); leg(14, true, 4);
     const bx = X(0) - upx * dims.thR[0] * .55, by = Y(0) - upy * dims.thR[0] * .55, tx = X(1) + upx * (dims.nk * .7 + 2), ty = Y(1) + upy * (dims.nk * .7 + 2);
     if (look.skirtBack || look.coat) skirt(bc, P, dims, look.coat || look.skirtBack, fxv, fyv, upx, upy, 9, true, o);
     bc.torso(bx, by, tx, ty, fxv, fyv, dims.prof, torsoShader(look, dims), 10, 0);
     leg(10, false, 11);
-    if (look.titleBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy);
+    if (look.titleBelt || look.wearBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy, look.titleBelt ? 'gold' : look.wearBelt);
     if (look.coat || look.skirt) skirt(bc, P, dims, look.coat || look.skirt, fxv, fyv, upx, upy, 19, false, o);
     if (look.sash) { const x = X(J.pN), y = Y(J.pN) - 4; bc.poly([[x - 3, y], [x + 3, y], [x + 3.5 + (o.sway || 0), y + 14], [x - 2 + (o.sway || 0), y + 15]], ramp(look.sash), 21, { folds: 1 }); }
     bc.capsule(X(1) + upx * 1, Y(1) + upy * 1, dims.nkR, X(2) + upx * 3, Y(2) + upy * 3, dims.nkR * .92, [{ t: 1, ramp: look.neckCol ? ramp(look.neckCol) : seg.skin }], 14, 0, dims.nkR * 1.6, .12);
@@ -226,14 +239,18 @@ export function drawBody(bc, jt, dims, look, o = {}) {
   if (layer !== 'back') {
     if (o.prop && o.prop.draw) o.prop.draw(bc, jt, dims);
     arm(4, false, 24);
+    epa(4, 27);
   }
 }
 // The championship belt, worn: drawn after the near leg (the thighs would cover a belt painted on the torso) and
 // before the near arm, as a band round the waist on the body's own axes, so it turns, leans and shades with the body:
 // leather strap with gold edges, a side plate toward the back, the big bevelled plate with a red stone on the front.
 let TBR = null;
-function titleBelt(bc, P, dims, fx, fy, ux, uy) {
-  const R = TBR || (TBR = { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') });
+const EPA = new WeakMap();
+// style: 'gold' (the championship belt) or 'captain' (고동's own: navy leather, the gold plate holds a blue stone, the sea)
+function titleBelt(bc, P, dims, fx, fy, ux, uy, style = 'gold') {
+  const all = TBR || (TBR = { gold: { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') }, captain: { gold: ramp('#c9a22e'), deep: ramp('#8a6a1a'), strap: ramp('#16213e'), gem: ramp('#3f78c0') } });
+  const R = all[style] || all.gold;
   const back = dims.prof[1][1] + 1.2, front = dims.prof[1][2] + 1.4, cx = P[0] + ux * 5, cy = P[1] + uy * 5;
   const at = (a, b) => [cx + fx * a + ux * b, cy + fy * a + uy * b];   // a: toward the front, b: up
   const band = (a0, a1, b0, b1, r, g, o) => bc.poly([at(a0, b1), at(a1, b1), at(a1, b0), at(a0, b0)], r, g, o);

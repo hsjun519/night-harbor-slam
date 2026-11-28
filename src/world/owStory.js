@@ -1,5 +1,5 @@
 // 선항 레슬링, chapter one: the champion's ceremony, a foghorn the day after, the invasion exactly three days after the
-// first belt (흰상아 and her deckhands walk into the lobby), the match at the pier and the wrecked dome. Each
+// first belt (쇄파 and her deckhands walk into the lobby), the match at the pier and the wrecked dome. Each
 // function returns a Cutscene script (see Cutscene.js) for WorldScene.playCine.
 import { josa } from '../core/util.js';
 
@@ -55,7 +55,7 @@ export function invasionCine(W, onFight) {
       { who: 'owsailor', text: '선항 레슬링이다! 이 항구의 챔피언은 앞으로 나와라!' },
       { who: 'whiteivory', text: `…네가 ${d.name}인가. 사흘 전에 벨트를 감았다던.` },
       { who: 'me', text: '당신들은 누구지?' },
-      { who: 'whiteivory', text: '흰상아. 선항 레슬링의 칼날이다. 오늘부터 이 항구는 우리 배의 닻을 받는다.' },
+      { who: 'whiteivory', text: '쇄파. 선항 레슬링 제6갑판장이다. 오늘부터 이 항구는 우리 배의 닻을 받는다.' },
       { who: 'whiteivory', text: '부둣가 특설 링으로 와라. 그 벨트가 진짜인지 보자.', expr: 'fierce' },
     ] },
     { caption: '선원들이 등대 돔 쪽으로 몰려간다. 멀리서 무언가 부서지는 소리가 울렸다.', dur: 2.6 }, { shake: .9, with: 1 },
@@ -66,7 +66,7 @@ export function invasionCine(W, onFight) {
 export function aftermathCine(W, won) {
   return [
     { bars: 1 }, { at: 'street', x: 1940 }, { cam: 1660, dur: 1.4 },
-    { caption: won ? '흰상아는 물러갔다. 하지만 선원들이 휩쓸고 간 등대 돔은…' : '흰상아에게 졌다. 선원들이 휩쓸고 간 등대 돔은…', dur: 2.8 },
+    { caption: won ? '쇄파는 물러갔다. 하지만 선원들이 휩쓸고 간 등대 돔은…' : '쇄파에게 졌다. 선원들이 휩쓸고 간 등대 돔은…', dur: 2.8 },
     { spawn: 'boss', x: 2060, face: -1 },
     { say: [
       { who: 'boss', text: '돔 지붕이 내려앉았어. 링도 엉망이고… 수리하는 데 한참 걸리겠어.' },
@@ -97,7 +97,7 @@ export function secondWaveCine(W, onFight) {
       { who: 'me', text: '…서도현. 너랑 같은 편이 될 줄은 몰랐다.' },
       { who: 'dohyun', text: '착각하지 마. 벨트는 나중에 너한테서 뺏을 거다. 그 전에 바다 건너 놈들한테 뺏기면 곤란하거든.' },
     ] },
-    { title: '태그 매치', sub: '챔피언 · 서도현 vs 흰상아 · 선항 선원', dur: 2 },
+    { title: '태그 매치', sub: '챔피언 · 서도현 vs 쇄파 · 선항 선원', dur: 2 },
     { bars: 0 }, { act: onFight },
   ];
 }
@@ -131,7 +131,7 @@ export function captainCine(W, onFight, again) {
     { walk: 'owsailor', to: 1980, speed: 80 }, { walk: 'godong', to: 1900, speed: 55, with: 1 },
     { face: 'me', dir: 'godong' },
     { say: [
-      { who: 'godong', text: '네가 흰상아를 돌려보낸 항구의 챔피언인가.' },
+      { who: 'godong', text: '네가 쇄파를 돌려보낸 항구의 챔피언인가.' },
       { who: 'godong', text: '나는 항구를 하나씩 집어삼켰다. 열두 개째에서 처음으로 배가 멈췄지. 여기서.' },
       { who: 'me', text: '이 항구는 당신 배의 닻을 받지 않는다.' },
       { who: 'godong', text: '좋다. 그럼 링에서 증명해라. 내가 지면 뱃머리를 돌리지.', expr: 'fierce' },
