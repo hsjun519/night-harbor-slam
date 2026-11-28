@@ -1,6 +1,7 @@
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
 // both only write an Intent.
 import { clamp, approach, sgn } from '../core/util.js';
+import { mashJ } from './Mash.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { FINISHERS } from '../data/moves.js';
 import { dimsFor, Joints } from '../anim/skeleton.js';
@@ -215,7 +216,7 @@ export function tryBurst(f) {
   return true;
 }
 function burstInput(f, I) { return I.down && f.has('dodge'); }
-function mashInput(f) { let n = 0; for (const k of ['atk', 'grab', 'dodge', 'jump']) if (f.buf[k] >= B.inputBuffer - 1e-6) n++; return n; }
+function mashInput(f) { return mashJ(f) * (f.ctrl === 'human' ? B.mashHuman : 1); }   // J only
 
 // ---- state control table -------------------------------------------------------------------------------
 export const CONTROL = {

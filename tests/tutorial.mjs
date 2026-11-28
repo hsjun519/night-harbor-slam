@@ -44,7 +44,7 @@ function grabFoe(S) {
 {
   const S = at('연타로 조르기 풀기');
   let holds = 0; S.m.on('moveStart', e => { if (e.a === S.v && e.mv.sub) holds++; });
-  for (let k = 0; k < 600 && !S.done(); k++) S.step(1, { press: [['atk'], ['grab'], ['dodge'], ['jump']][k % 4] });
+  for (let k = 0; k < 600 && !S.done(); k++) S.step(1, { press: k % 3 === 0 ? ['atk'] : [] });   // J only now
   check(holds >= 1 && S.done(), 'escape step: 도현 puts a hold on, mashing breaks it', JSON.stringify({ holds, i: S.T.i, n: S.T.n }));
 }
 {

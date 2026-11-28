@@ -1,5 +1,6 @@
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 import { clamp, sgn } from '../core/util.js';
+import { mash, holdStrength, holdGrip } from './Mash.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES, HOLDS } from '../data/moves.js';
 import { startAttack, tryBurst } from './CharacterController.js';
@@ -152,9 +153,9 @@ export class GrappleSystem {
     if (!L) { v.set('IDLE', { force: true }); return; }
     if (L.kind === 'move') return; // WrestlingMoveSystem reads the reversal input
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? 1.3 : 1);
+    // J, or the key it has jumped to: harder against a bigger foe, a boss, and up on the shoulders (electric chair)
+    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? B.carryEscape : 1) * holdGrip(S);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }
   breakLink(L, why) {

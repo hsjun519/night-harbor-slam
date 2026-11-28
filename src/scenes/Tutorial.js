@@ -40,7 +40,7 @@ export const TUTORIAL = [
   { say: '{y}조르기{/}는 누운 상대를 꺾어 체력과 기절 저항을 깎는 기술이다. 잡고 {y}K{/}로 백브레이커, 끝나는 순간 {y}K{/}를 한 번 더 누르면 {y}등 꺾기 조르기{/}! 오늘만 백브레이커를 빌려주지.', goal: '백브레이커 뒤 K로 조르기 걸기', need: 1,
     setup: (m, h, v, T) => { m.practice.stunLock = true; fresh(v); T.moves0 = h.moves; h.moves = JSON.parse(JSON.stringify(h.moves)); h.moves.front.n = 'backbreaker'; },
     on: { moveStart: (e, h) => e.a === h && !!e.mv.sub } },
-  { say: '거꾸로 조르기에 걸리면 {y}J{/}·{y}K{/}·{y}L{/}·{y}W{/}를 마구 연타해서 빠져나와야 한다. 체력이 많이 남았을수록 빨리 풀린다. 도현아, 걸어 봐라!', goal: '연타로 조르기 풀기', need: 1,
+  { say: '거꾸로 조르기에 걸리면 {y}J{/}를 연타해서 빠져나와야 한다. 체력이 많이 남았을수록 빨리 풀린다. 센 놈한테 잡히면 눌러야 할 키가 {y}K{/}·{y}L{/}로 갑자기 바뀌니, 머리 위 키를 잘 봐라! 도현아, 걸어 봐라!', goal: '연타로 조르기 풀기', need: 1,
     setup: (m, h, v, T) => { if (T.moves0) { h.moves = T.moves0; T.moves0 = null; } m.practice.stunLock = false; fresh(h); fresh(v); T.subT = .8; },
     check: (m, h, v, T, dt) => {   // 도현 puts the hold on again until the player breaks out
       if (h.link || v.link || !h.alive || !v.alive) return 0;

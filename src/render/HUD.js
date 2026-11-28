@@ -161,14 +161,12 @@ export class HUD {
       const x = Math.round(f.x - camX), y = f.y - 118;
       if (L.kind === 'hold') {
         const k = Math.floor(this.t * 10) % 3;
-        drawText(g, '연타해서 벗어나기!', x, y - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
-        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, y - (i === k ? 2 : 0)));
+        void k; this.mashKey(g, f, x, y, '연타해서 벗어나기!');
         gauge(g, x - 30, y + 14, 60, 4, f.escape / B.grabEscape, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
         if (f.burstCd <= 0 && f.fin >= B.burstCost) prompt(g, [inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출', x, y + 22, { align: 'c' });
       } else if (L.kind === 'move' && L.subOn) {
         const k = Math.floor(this.t * 10) % 3, yy = Math.round(f.y - 70);
-        drawText(g, '연타해서 버티기!', x, yy - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
-        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, yy - (i === k ? 2 : 0)));
+        void k; this.mashKey(g, f, x, yy, '연타해서 버티기!');
         gauge(g, x - 30, yy + 14, 60, 4, (L.esc || 0) / 100, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
       } else if (L.kind === 'move' && L.rev && L.rev.open && !L.rev.tried) {
         const mv = L.move, roll = !!mv.roll, cost = mv.revMove ? mv.revCost || 0 : 0, can = !cost || f.fin >= cost;
@@ -179,7 +177,7 @@ export class HUD {
       }
       return;
     }
-    if (m.pin && m.pin.v === f) { const x = Math.round(f.x - camX); drawText(g, '연타! 어깨를 들어라!', x, f.y - 70, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' }); gauge(g, x - 34, f.y - 56, 68, 5, m.pin.kick / m.pin.need, 'stun', { col: '#6be38a' }); return; }
+    if (m.pin && m.pin.v === f) { const x = Math.round(f.x - camX); this.mashKey(g, f, x, f.y - 84, '연타! 어깨를 들어라!'); gauge(g, x - 34, f.y - 56, 68, 5, m.pin.kick / m.pin.need, 'stun', { col: '#6be38a' }); return; }
     if (m.pin && m.pin.a === f) { prompt(g, [inp.label('dodge')], '핀 풀기', 320, 336, { align: 'c', bg: 1 }); return; }
     // contextual prompts
     const P = [];
@@ -254,6 +252,14 @@ export class HUD {
     if (f.exhausted) parts.push('지침');
     if (f.fin >= COUNTERS.heavy.cost && f.counterCd <= 0) parts.push('카운터 준비 (L)');
     drawText(g, parts.join(' · '), 8, PL.length ? 324 : 344, { size: 11, color: UI.dim, outline: '#05060f' });   // above the prompts when there are some
+  }
+  // the one key to mash (J, or where it has jumped to), big, shaking when it has just changed
+  mashKey(g, f, x, y, text) {
+    const M = f.mash, key = M ? M.key : 'atk', fl = M && M.flash > 0, lab = this.input.label(key), w = Math.max(18, textWidth(lab, 11) + 10);
+    drawText(g, fl ? '키가 바뀌었다!' : text, x, y - 16, { size: 11, align: 'c', color: fl ? '#ff5b5b' : '#ffd65a', outline: '#05060f' });
+    const jx = fl ? Math.round(Math.sin(this.t * 60) * 2) : 0, jy = Math.floor(this.t * 12) % 2;
+    rect(g, '#05060f', x - w / 2 - 1 + jx, y - 2 - jy, w + 2, 17); rect(g, fl ? '#ff5b5b' : key === 'atk' ? '#ffd65a' : '#49d6ff', x - w / 2 + jx, y - 1 - jy, w, 15);
+    drawText(g, lab, x + jx, y - jy, { size: 11, align: 'c', color: '#05060f', bold: true });
   }
   grappleMenu(g, m, f, L, camX) {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);

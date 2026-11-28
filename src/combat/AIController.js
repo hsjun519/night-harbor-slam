@@ -150,7 +150,7 @@ export class AIController {
   }
   mash(dt, k) {
     this.mashT -= dt;
-    if (this.mashT <= 0) { this.mashT = 1 / (this.D.mash * k * (.8 + this.rng.next() * .4)); this.tap(this.rng.pick(['atk', 'grab', 'jump'])); }
+    if (this.mashT <= 0) { const M = this.f.mash, want = M ? M.key : 'atk', slip = this.D.err * .5 + (M && M.flash > 0 ? .35 : 0); this.mashT = 1 / (this.D.mash * k * (.8 + this.rng.next() * .4)); this.tap(this.rng.chance(slip) ? this.rng.pick(['atk', 'grab', 'dodge'].filter(x => x !== want)) : want); }
   }
   grabbed(dt) {
     const f = this.f, L = f.link;

@@ -1,5 +1,6 @@
 // Plays two-person moves: timing, position lock, timed damage, reversals, release into ragdoll. Data driven.
 import { clamp, clamp01, sgn } from '../core/util.js';
+import { mash, holdStrength, holdGrip, aiMashK } from './Mash.js';
 import { BALANCE as B } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 import { STATES } from './StateMachine.js';
@@ -174,9 +175,10 @@ export class WrestlingMoveSystem {
     const v = L.v, mv = L.move;
     if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
     L.subOn = true;
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8) ? 1 : 0;
+    const S = holdStrength(L.a, v, { big: !!L.fin || mv.hp >= 14 });
+    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8 * aiMashK(v)) ? 1 : 0;
+    n *= holdGrip(S);
     const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);
     L.esc = Math.max(0, (L.esc || 0) + n * 8.5 * power - dt * 9);
     if (L.esc >= 100) this.subEscape(L);

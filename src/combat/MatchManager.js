@@ -1,5 +1,6 @@
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
 import { EntranceDirector } from './Entrance.js';
+import { mash, holdStrength, holdGrip, aiMashK } from './Mash.js';
 import { Emitter, RNG, clamp, sgn } from '../core/util.js';
 import { BALANCE as B } from '../data/balance.js';
 import { CHARACTERS } from '../data/characters.js';
@@ -201,9 +202,10 @@ export class MatchManager extends Emitter {
     const p = this.pin, { a, v } = p;
     p.t += dt;
     if (!a.alive || !v.alive || a.st !== 'PIN' || v.st !== 'PINNED') { this.breakPin('state'); return; }
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    if (v.ai) n += v.ai.pinMash(p, dt);
+    const S = holdStrength(a, v, { big: p.bonus >= 1.3 || p.big });
+    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    if (v.ai) n += v.ai.pinMash(p, dt) * aiMashK(v);
+    n *= holdGrip(S);
     p.kick += n * B.pinMash * (.7 + .3 * v.stats.down) - dt * 6;
     p.kick = Math.max(0, p.kick);
     p.struggle = Math.max(0, p.struggle - dt * 4) + n * .35;

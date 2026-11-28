@@ -2836,7 +2836,7 @@ const BALANCE = {
   guardHp: .18, guardStun: .44, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
-  grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
+  grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, carryEscape: .7, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // special matches. These balance going for the prize against stopping the other one.
   // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
@@ -2863,6 +2863,9 @@ const BALANCE = {
   // ring
   ringOutDamage: 4, countStep: 1.15, countMax: 10, hangTime: 2.2, perchTime: 2.6, wallDamage: 3,
   // pin
+  // mashing (combat/Mash.js): J only, each press worth mashHuman for a person (it used to take J K L at once);
+  // strength from mashShiftFrom up makes the key jump to K or L every mashShiftSlow..mashShiftFast s; a wrong key costs mashWrong
+  mashHuman: 2.2, mashWrong: .5, mashFirst: 1.1, mashShiftFrom: .3, mashShiftSlow: 1.7, mashShiftFast: .5, mashBoss: .35, mashBig: .3, mashCarry: .62, mashHard: .55,
   pinStep: .92, pinBase: 34, pinPerHp: 92, pinPerTry: 9, pinMash: 8.5,
   // tag
   tagHeal: 3.2, tagStun: 14, tagRange: 46, tagMaxHeal: .5,
@@ -3122,6 +3125,51 @@ class EntranceDirector {
 const entranceName = f => (CHARACTERS[f.charId] ? CHARACTERS[f.charId].name : f.name);
 
 return { EntranceDirector, entranceName };
+})();
+// ---- combat/Mash.js
+__m["combat/Mash.js"] = (function () {
+// Mashing to get free: out of a tie-up, off the shoulders, out of a hold on the mat, out of a pin. One key, J. Against
+// a stronger foe, a boss, or after a big move, the key to press jumps to K or L now and then without warning, and a
+// wrong key costs a little: being up on somebody's shoulders for an electric chair is the hardest of all.
+// Getting up, getting down off a corner and the like count J only, with no surprises.
+const { BALANCE: B } = __m["data/balance.js"];
+const { clamp } = __m["core/util.js"];
+const MASH_KEYS = ['atk', 'grab', 'dodge'];   // J K L
+// how hard a hold is to read, 0 (J the whole way) .. 1 (the key jumps about every half second)
+//   o.carry: up on the shoulders · o.big: a big move or a finisher behind it (the pin after it, its hold)
+function holdStrength(a, v, o = {}) {
+  if (!a || !v) return 0;
+  const size = clamp(a.maxHp / Math.max(1, v.maxHp) - .95, 0, .6);
+  return clamp(size + (a.boss ? B.mashBoss : 0) + (o.big ? B.mashBig : 0) + (o.carry ? B.mashCarry : 0) + (a.char && a.char.champion ? .15 : 0), 0, 1);
+}
+// one frame of mashing for f: the presses that count (the right key +1, a wrong one -B.mashWrong)
+function mash(f, dt, strength = 0) {
+  const m = f.match, now = m.time;
+  let M = f.mash;
+  if (!M || now - M.last > .5) M = f.mash = { key: 'atk', t: B.mashFirst * (1 - .6 * strength), n: 0, flash: 0, last: now, strength };
+  M.last = now; M.strength = strength; M.flash = Math.max(0, M.flash - dt);
+  if (strength >= B.mashShiftFrom) {
+    M.t -= dt;
+    if (M.t <= 0) {
+      M.t = (B.mashShiftSlow + (B.mashShiftFast - B.mashShiftSlow) * strength) * (.7 + m.rng.next() * .6);
+      const others = MASH_KEYS.filter(k => k !== M.key);
+      M.key = others[Math.floor(m.rng.next() * others.length) % others.length]; M.flash = .4; M.n++;
+      m.emit('mashKey', { f, key: M.key });
+    }
+  } else if (M.key !== 'atk') { M.key = 'atk'; M.t = B.mashFirst; }
+  let n = 0;
+  const wrong = f.ctrl === 'human' ? B.mashWrong : 0;   // the computer's slips just do not count
+  for (const k of MASH_KEYS) if (f.buf[k] >= B.inputBuffer - 1e-6) n += k === M.key ? 1 : -wrong;
+  return n;
+}
+// a strong hold also takes longer to break, whoever is mashing
+const holdGrip = s => 1 - B.mashHard * s;
+// what the computer manages against the same hold (it reads the key a beat late after it changes)
+const aiMashK = f => (f.mash && f.mash.flash > 0 ? .35 : 1) * (1 - .25 * (f.mash ? f.mash.strength || 0 : 0));
+// J only: getting up, off a corner, off the ropes
+const mashJ = f => (f.buf.atk >= B.inputBuffer - 1e-6 ? 1 : 0);
+
+return { holdStrength, mash, MASH_KEYS, holdGrip, aiMashK, mashJ };
 })();
 // ---- combat/arena.js
 __m["combat/arena.js"] = (function () {
@@ -4669,6 +4717,7 @@ __m["combat/CharacterController.js"] = (function () {
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
 // both only write an Intent.
 const { clamp, approach, sgn } = __m["core/util.js"];
+const { mashJ } = __m["combat/Mash.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { FINISHERS } = __m["data/moves.js"];
 const { dimsFor, Joints } = __m["anim/skeleton.js"];
@@ -4882,7 +4931,7 @@ function tryBurst(f) {
   return true;
 }
 function burstInput(f, I) { return I.down && f.has('dodge'); }
-function mashInput(f) { let n = 0; for (const k of ['atk', 'grab', 'dodge', 'jump']) if (f.buf[k] >= B.inputBuffer - 1e-6) n++; return n; }
+function mashInput(f) { return mashJ(f) * (f.ctrl === 'human' ? B.mashHuman : 1); }   // J only
 
 // ---- state control table -------------------------------------------------------------------------------
 const CONTROL = {
@@ -5559,6 +5608,7 @@ return { StunSystem };
 __m["combat/GrappleSystem.js"] = (function () {
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 const { clamp, sgn } = __m["core/util.js"];
+const { mash, holdStrength, holdGrip } = __m["combat/Mash.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES, HOLDS } = __m["data/moves.js"];
 const { startAttack, tryBurst } = __m["combat/CharacterController.js"];
@@ -5710,9 +5760,9 @@ class GrappleSystem {
     if (!L) { v.set('IDLE', { force: true }); return; }
     if (L.kind === 'move') return; // WrestlingMoveSystem reads the reversal input
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? 1.3 : 1);
+    // J, or the key it has jumped to: harder against a bigger foe, a boss, and up on the shoulders (electric chair)
+    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? B.carryEscape : 1) * holdGrip(S);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }
   breakLink(L, why) {
@@ -5877,6 +5927,7 @@ return { compileMove, yawAt, evalPaired, pairBuffers, moveExtent };
 __m["combat/WrestlingMoveSystem.js"] = (function () {
 // Plays two-person moves: timing, position lock, timed damage, reversals, release into ragdoll. Data driven.
 const { clamp, clamp01, sgn } = __m["core/util.js"];
+const { mash, holdStrength, holdGrip, aiMashK } = __m["combat/Mash.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { STATES } = __m["combat/StateMachine.js"];
@@ -6050,9 +6101,10 @@ class WrestlingMoveSystem {
     const v = L.v, mv = L.move;
     if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
     L.subOn = true;
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8) ? 1 : 0;
+    const S = holdStrength(L.a, v, { big: !!L.fin || mv.hp >= 14 });
+    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8 * aiMashK(v)) ? 1 : 0;
+    n *= holdGrip(S);
     const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);
     L.esc = Math.max(0, (L.esc || 0) + n * 8.5 * power - dt * 9);
     if (L.esc >= 100) this.subEscape(L);
@@ -6712,7 +6764,7 @@ class AIController {
   }
   mash(dt, k) {
     this.mashT -= dt;
-    if (this.mashT <= 0) { this.mashT = 1 / (this.D.mash * k * (.8 + this.rng.next() * .4)); this.tap(this.rng.pick(['atk', 'grab', 'jump'])); }
+    if (this.mashT <= 0) { const M = this.f.mash, want = M ? M.key : 'atk', slip = this.D.err * .5 + (M && M.flash > 0 ? .35 : 0); this.mashT = 1 / (this.D.mash * k * (.8 + this.rng.next() * .4)); this.tap(this.rng.chance(slip) ? this.rng.pick(['atk', 'grab', 'dodge'].filter(x => x !== want)) : want); }
   }
   grabbed(dt) {
     const f = this.f, L = f.link;
@@ -7712,6 +7764,7 @@ return { MatchEvents };
 __m["combat/MatchManager.js"] = (function () {
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
 const { EntranceDirector } = __m["combat/Entrance.js"];
+const { mash, holdStrength, holdGrip, aiMashK } = __m["combat/Mash.js"];
 const { Emitter, RNG, clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { CHARACTERS } = __m["data/characters.js"];
@@ -7912,9 +7965,10 @@ class MatchManager extends Emitter {
     const p = this.pin, { a, v } = p;
     p.t += dt;
     if (!a.alive || !v.alive || a.st !== 'PIN' || v.st !== 'PINNED') { this.breakPin('state'); return; }
-    let n = 0;
-    for (const k of ['atk', 'grab', 'dodge', 'jump']) if (v.buf[k] >= B.inputBuffer - 1e-6) n++;
-    if (v.ai) n += v.ai.pinMash(p, dt);
+    const S = holdStrength(a, v, { big: p.bonus >= 1.3 || p.big });
+    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    if (v.ai) n += v.ai.pinMash(p, dt) * aiMashK(v);
+    n *= holdGrip(S);
     p.kick += n * B.pinMash * (.7 + .3 * v.stats.down) - dt * 6;
     p.kick = Math.max(0, p.kick);
     p.struggle = Math.max(0, p.struggle - dt * 4) + n * .35;
@@ -9017,14 +9071,12 @@ class HUD {
       const x = Math.round(f.x - camX), y = f.y - 118;
       if (L.kind === 'hold') {
         const k = Math.floor(this.t * 10) % 3;
-        drawText(g, '연타해서 벗어나기!', x, y - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
-        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, y - (i === k ? 2 : 0)));
+        void k; this.mashKey(g, f, x, y, '연타해서 벗어나기!');
         gauge(g, x - 30, y + 14, 60, 4, f.escape / B.grabEscape, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
         if (f.burstCd <= 0 && f.fin >= B.burstCost) prompt(g, [inp.label('down') + '+' + inp.label('dodge')], '긴급 탈출', x, y + 22, { align: 'c' });
       } else if (L.kind === 'move' && L.subOn) {
         const k = Math.floor(this.t * 10) % 3, yy = Math.round(f.y - 70);
-        drawText(g, '연타해서 버티기!', x, yy - 14, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' });
-        ['atk', 'grab', 'dodge'].forEach((a, i) => keycap(g, inp.label(a), x - 22 + i * 16, yy - (i === k ? 2 : 0)));
+        void k; this.mashKey(g, f, x, yy, '연타해서 버티기!');
         gauge(g, x - 30, yy + 14, 60, 4, (L.esc || 0) / 100, 'stun', { col: '#6be38a', colD: '#1f6a3a' });
       } else if (L.kind === 'move' && L.rev && L.rev.open && !L.rev.tried) {
         const mv = L.move, roll = !!mv.roll, cost = mv.revMove ? mv.revCost || 0 : 0, can = !cost || f.fin >= cost;
@@ -9035,7 +9087,7 @@ class HUD {
       }
       return;
     }
-    if (m.pin && m.pin.v === f) { const x = Math.round(f.x - camX); drawText(g, '연타! 어깨를 들어라!', x, f.y - 70, { size: 11, align: 'c', color: '#ffd65a', outline: '#05060f' }); gauge(g, x - 34, f.y - 56, 68, 5, m.pin.kick / m.pin.need, 'stun', { col: '#6be38a' }); return; }
+    if (m.pin && m.pin.v === f) { const x = Math.round(f.x - camX); this.mashKey(g, f, x, f.y - 84, '연타! 어깨를 들어라!'); gauge(g, x - 34, f.y - 56, 68, 5, m.pin.kick / m.pin.need, 'stun', { col: '#6be38a' }); return; }
     if (m.pin && m.pin.a === f) { prompt(g, [inp.label('dodge')], '핀 풀기', 320, 336, { align: 'c', bg: 1 }); return; }
     // contextual prompts
     const P = [];
@@ -9110,6 +9162,14 @@ class HUD {
     if (f.exhausted) parts.push('지침');
     if (f.fin >= COUNTERS.heavy.cost && f.counterCd <= 0) parts.push('카운터 준비 (L)');
     drawText(g, parts.join(' · '), 8, PL.length ? 324 : 344, { size: 11, color: UI.dim, outline: '#05060f' });   // above the prompts when there are some
+  }
+  // the one key to mash (J, or where it has jumped to), big, shaking when it has just changed
+  mashKey(g, f, x, y, text) {
+    const M = f.mash, key = M ? M.key : 'atk', fl = M && M.flash > 0, lab = this.input.label(key), w = Math.max(18, textWidth(lab, 11) + 10);
+    drawText(g, fl ? '키가 바뀌었다!' : text, x, y - 16, { size: 11, align: 'c', color: fl ? '#ff5b5b' : '#ffd65a', outline: '#05060f' });
+    const jx = fl ? Math.round(Math.sin(this.t * 60) * 2) : 0, jy = Math.floor(this.t * 12) % 2;
+    rect(g, '#05060f', x - w / 2 - 1 + jx, y - 2 - jy, w + 2, 17); rect(g, fl ? '#ff5b5b' : key === 'atk' ? '#ffd65a' : '#49d6ff', x - w / 2 + jx, y - 1 - jy, w, 15);
+    drawText(g, lab, x + jx, y - jy, { size: 11, align: 'c', color: '#05060f', bold: true });
   }
   grappleMenu(g, m, f, L, camX) {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
@@ -11437,7 +11497,7 @@ const TUTORIAL = [
   { say: '{y}조르기{/}는 누운 상대를 꺾어 체력과 기절 저항을 깎는 기술이다. 잡고 {y}K{/}로 백브레이커, 끝나는 순간 {y}K{/}를 한 번 더 누르면 {y}등 꺾기 조르기{/}! 오늘만 백브레이커를 빌려주지.', goal: '백브레이커 뒤 K로 조르기 걸기', need: 1,
     setup: (m, h, v, T) => { m.practice.stunLock = true; fresh(v); T.moves0 = h.moves; h.moves = JSON.parse(JSON.stringify(h.moves)); h.moves.front.n = 'backbreaker'; },
     on: { moveStart: (e, h) => e.a === h && !!e.mv.sub } },
-  { say: '거꾸로 조르기에 걸리면 {y}J{/}·{y}K{/}·{y}L{/}·{y}W{/}를 마구 연타해서 빠져나와야 한다. 체력이 많이 남았을수록 빨리 풀린다. 도현아, 걸어 봐라!', goal: '연타로 조르기 풀기', need: 1,
+  { say: '거꾸로 조르기에 걸리면 {y}J{/}를 연타해서 빠져나와야 한다. 체력이 많이 남았을수록 빨리 풀린다. 센 놈한테 잡히면 눌러야 할 키가 {y}K{/}·{y}L{/}로 갑자기 바뀌니, 머리 위 키를 잘 봐라! 도현아, 걸어 봐라!', goal: '연타로 조르기 풀기', need: 1,
     setup: (m, h, v, T) => { if (T.moves0) { h.moves = T.moves0; T.moves0 = null; } m.practice.stunLock = false; fresh(h); fresh(v); T.subT = .8; },
     check: (m, h, v, T, dt) => {   // 도현 puts the hold on again until the player breaks out
       if (h.link || v.link || !h.alive || !v.alive) return 0;

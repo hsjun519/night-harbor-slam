@@ -27,7 +27,7 @@ export const BALANCE = {
   guardHp: .18, guardStun: .44, guardPush: .75, perfectGuard: .13, guardBreakStagger: .9, chipMin: 1,
   dodgeTime: .42, dodgeInv: [.03, .27], dodgeSpeed: 250, dodgeCd: .62, backstepTime: .34, counterWindow: .15, counterCd: 1.1,
   // grapple
-  grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
+  grabRange: 50, grabHold: 2.7, grabEscape: 100, mashValue: 7.5, mashDecay: 11, carryEscape: .7, grabStrikeMax: 3, pickup: .32, switchTime: .22, reversalLead: .16, reversalWindow: .17, staggerTime: 1.0, shoveReach: 40,
   grabWalk: 46, carryHold: 4.8, carryWalk: 1.6,
   // special matches. These balance going for the prize against stopping the other one.
   // ladder: height, half spread of its feet, climb time, time to stand it up, wait between two folds
@@ -54,6 +54,9 @@ export const BALANCE = {
   // ring
   ringOutDamage: 4, countStep: 1.15, countMax: 10, hangTime: 2.2, perchTime: 2.6, wallDamage: 3,
   // pin
+  // mashing (combat/Mash.js): J only, each press worth mashHuman for a person (it used to take J K L at once);
+  // strength from mashShiftFrom up makes the key jump to K or L every mashShiftSlow..mashShiftFast s; a wrong key costs mashWrong
+  mashHuman: 2.2, mashWrong: .5, mashFirst: 1.1, mashShiftFrom: .3, mashShiftSlow: 1.7, mashShiftFast: .5, mashBoss: .35, mashBig: .3, mashCarry: .62, mashHard: .55,
   pinStep: .92, pinBase: 34, pinPerHp: 92, pinPerTry: 9, pinMash: 8.5,
   // tag
   tagHeal: 3.2, tagStun: 14, tagRange: 46, tagMaxHeal: .5,
