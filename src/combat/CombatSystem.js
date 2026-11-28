@@ -106,7 +106,9 @@ export class CombatSystem {
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
     const finArmor = v.st === 'FINISHER' && v.finPhase && v.finPhase.armor && d.lv < 4;
-    this.damage(v, armored || finArmor ? hp * .8 : hp, st * (armored ? .7 : 1), a, { def: d });
+    const crit = this.rollCrit(a);
+    this.damage(v, (armored || finArmor ? hp * .8 : hp) * (crit ? B.critMul : 1), st * (armored ? .7 : 1) * (crit ? B.critStun : 1) + (crit ? v.maxStun * B.critStunFlat : 0), a, { def: d });
+    if (crit) m.emit('crit', { a, v, x: v.x, y: v.y - 64, hit: d });
     this.addFin(a, B.finHit + d.hp * .35);
     if (counterHit) this.addFin(a, 2);
     m.addHype((d.lv >= 3 ? 1.6 : .5) * stale);
@@ -141,9 +143,10 @@ export class CombatSystem {
       if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 90, -180); P.x = hx; P.y = hy - 10; } }
       return 'block';
     }
-    const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
+    const crit = this.rollCrit(a), hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1) * (crit ? B.critMul : 1);
     a.hitsLanded++;
-    this.damage(v, hp, 0, a, { def: d });
+    this.damage(v, hp, crit ? v.maxStun * B.critStunFlat : 0, a, { def: d });
+    if (crit) m.emit('crit', { a, v, x: v.x, y: v.y - 30, hit: d });
     this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
     m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
     m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
@@ -211,6 +214,8 @@ export class CombatSystem {
     if (a.staleList.length > B.staleMemory) a.staleList.shift();
     return Math.max(B.staleMin, 1 - Math.max(0, n - 1) * B.staleStep);
   }
+  // a critical hit: the attacker's chance (stats.crit, else B.critBase), drawn from the match's random stream
+  rollCrit(a) { if (!a || !a.alive) return false; const p = a.stats.crit != null ? a.stats.crit : B.critBase; return p > 0 && this.m.rng.next() < p; }
   damage(v, hp, stun, a, o = {}) {
     if (!v.alive) return;
     const real = Math.min(v.hp, hp);

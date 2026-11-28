@@ -235,7 +235,7 @@ export const CHARACTERS = {
 for (const id in CHARACTERS) CHARACTERS[id].id = id;
 export const ROSTER_IDS = Object.keys(CHARACTERS).filter(i => i !== 'rookie');
 export const STAT_INFO = [
-  ['hp', '최대 체력'], ['stun', '최대 기절 저항'], ['atk', '기본 공격력'], ['grp', '잡기 기술'], ['spd', '이동 속도'], ['jump', '점프력'], ['rec', '기술 회복'], ['down', '다운 회복'], ['fin', '피니셔 충전'], ['weight', '무게'],
+  ['hp', '최대 체력'], ['stun', '최대 기절 저항'], ['atk', '기본 공격력'], ['grp', '스킬 공격력'], ['spd', '이동 속도'], ['jump', '점프력'], ['rec', '기술 회복'], ['down', '다운 회복'], ['fin', '피니셔 충전'], ['weight', '무게'],
 ];
 export function statBar(c, key) { // 0..1 for UI bars
   const s = c.stats;

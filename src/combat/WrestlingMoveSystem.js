@@ -31,6 +31,7 @@ export class WrestlingMoveSystem {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
       power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
+    L.crit = !o.noCrit && m.combat.rollCrit(a);   // one roll for the whole move
     a.link = v.link = L;
     m.links.push(L);
     a.vx = a.vy = v.vx = v.vy = 0; v.y = a.y; v.side = a.side; v.ground = true; a.ground = true;
@@ -216,7 +217,11 @@ export class WrestlingMoveSystem {
       if (k === 'impact' && !L.chairK) { const ch = m.props.under(v); if (ch) { L.chairK = L.fin ? B.chairSlamFin : B.chairSlam; m.emit('chairSlam', { a, v, x: ch.x, y: ch.y, k: L.chairK }); m.props.breakProp(ch, 'slam'); } }
       // career mastery: a little more damage per level; each landed move (a finisher once) counts as one use
       const key = L.fin ? 'fin:' + L.fin.id : move.id, tag = L.fin ? 'fin' : L.part;
-      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)) * (L.chairK || 1), st = move.stun * o.d * (L.chairK ? 1.3 : 1);
+      // slammed onto the mat in the ring: a bonus that grows with how big the foe is next to you
+      const ring = k === 'impact' && v.side === 'in' && m.arena.hasRing ? B.slamBonus + B.slamBonusStrong * clamp(v.maxHp / Math.max(1, a.maxHp) - .8, 0, 1) : 0;
+      if (ring && !L.slamSaid) { L.slamSaid = 1; if (ring >= .2) m.emit('slamBonus', { a, v, k: ring }); }
+      if (L.crit && k === 'impact' && !L.critSaid) { L.critSaid = 1; m.emit('crit', { a, v, x: v.x, y: v.y - 40, move }); }
+      const ck = L.crit ? B.critMul : 1, hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)) * (L.chairK || 1) * (1 + ring) * ck, st = move.stun * o.d * (L.chairK ? 1.3 : 1) * (L.crit ? B.critStun : 1) + (L.crit && k === 'impact' ? v.maxStun * B.critStunFlat * o.d : 0);
       if (L.usedTag !== tag) { L.usedTag = tag; a.moveUses[key] = (a.moveUses[key] || 0) + 1; }
       m.combat.damage(v, hp, st, a, { move });
       if (!L.fin) m.combat.addFin(a, move.gain * o.d); else if (v) v.finishersTaken += o.d > .4 ? 1 : 0;

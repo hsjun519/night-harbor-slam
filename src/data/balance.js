@@ -44,6 +44,10 @@ export const BALANCE = {
   ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
   // emergency escape
   burstCost: 46,
+  // critical hits: a chance on every hit and every move (once per move); damage x critMul, stun x critStun + critStunFlat of the gauge
+  critBase: .05, critMul: 2, critStun: 2.4, critStunFlat: .1,
+  // a move that slams the foe onto the mat in the ring hits a little harder, more so against a bigger, stronger foe
+  slamBonus: .1, slamBonusStrong: .25,
   chairSlam: 2, chairSlamFin: 1.5,   // a move that slams the foe onto a chair lying on the mat: the chair breaks, damage x2 (finishers x1.5) burstCd: 18, burstRange: 92,   // 2026-11-27: +30% (was 35)
   // finisher
   finMax: 100, finHit: 2.6, finTaken: .34, finCounter: 10, finPerfect: 6, finTaunt: 9, finMissKeep: .45, tauntTime: 1.0, hypeBonus: .28,

@@ -8,7 +8,7 @@ import { STAT_GROWTH } from './CareerManager.js';
 
 const GAMES = {
   bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}(또는 Space·E·Enter). 8번 들어 올리자. 세 번 놓치면 끝.' },
-  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
+  rope: { name: '줄넘기', kind: '리듬', stats: ['agi'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
   mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec', 'brk'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
   bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },

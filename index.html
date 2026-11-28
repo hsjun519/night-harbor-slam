@@ -2791,7 +2791,7 @@ const CHARACTERS = {
 for (const id in CHARACTERS) CHARACTERS[id].id = id;
 const ROSTER_IDS = Object.keys(CHARACTERS).filter(i => i !== 'rookie');
 const STAT_INFO = [
-  ['hp', '최대 체력'], ['stun', '최대 기절 저항'], ['atk', '기본 공격력'], ['grp', '잡기 기술'], ['spd', '이동 속도'], ['jump', '점프력'], ['rec', '기술 회복'], ['down', '다운 회복'], ['fin', '피니셔 충전'], ['weight', '무게'],
+  ['hp', '최대 체력'], ['stun', '최대 기절 저항'], ['atk', '기본 공격력'], ['grp', '스킬 공격력'], ['spd', '이동 속도'], ['jump', '점프력'], ['rec', '기술 회복'], ['down', '다운 회복'], ['fin', '피니셔 충전'], ['weight', '무게'],
 ];
 function statBar(c, key) { // 0..1 for UI bars
   const s = c.stats;
@@ -2853,6 +2853,10 @@ const BALANCE = {
   ddaWin: .04, ddaWinStreak: .06, ddaLose: .07, ddaMin: -.3, ddaMax: .35,
   // emergency escape
   burstCost: 46,
+  // critical hits: a chance on every hit and every move (once per move); damage x critMul, stun x critStun + critStunFlat of the gauge
+  critBase: .05, critMul: 2, critStun: 2.4, critStunFlat: .1,
+  // a move that slams the foe onto the mat in the ring hits a little harder, more so against a bigger, stronger foe
+  slamBonus: .1, slamBonusStrong: .25,
   chairSlam: 2, chairSlamFin: 1.5,   // a move that slams the foe onto a chair lying on the mat: the chair breaks, damage x2 (finishers x1.5) burstCd: 18, burstRange: 92,   // 2026-11-27: +30% (was 35)
   // finisher
   finMax: 100, finHit: 2.6, finTaken: .34, finCounter: 10, finPerfect: 6, finTaunt: 9, finMissKeep: .45, tauntTime: 1.0, hypeBonus: .28,
@@ -5385,7 +5389,9 @@ class CombatSystem {
     // super armour
     const armored = v.atk && v.atk.def.armor && v.atk.t < v.atk.def.startup + v.atk.def.active && d.lv <= v.atk.def.armor * 2 && !d.run && !d.air;
     const finArmor = v.st === 'FINISHER' && v.finPhase && v.finPhase.armor && d.lv < 4;
-    this.damage(v, armored || finArmor ? hp * .8 : hp, st * (armored ? .7 : 1), a, { def: d });
+    const crit = this.rollCrit(a);
+    this.damage(v, (armored || finArmor ? hp * .8 : hp) * (crit ? B.critMul : 1), st * (armored ? .7 : 1) * (crit ? B.critStun : 1) + (crit ? v.maxStun * B.critStunFlat : 0), a, { def: d });
+    if (crit) m.emit('crit', { a, v, x: v.x, y: v.y - 64, hit: d });
     this.addFin(a, B.finHit + d.hp * .35);
     if (counterHit) this.addFin(a, 2);
     m.addHype((d.lv >= 3 ? 1.6 : .5) * stale);
@@ -5420,9 +5426,10 @@ class CombatSystem {
       if (P) { P.swung = false; if (P.uses <= 0) m.props.breakProp(P); else { m.props.release(P, -dir * 90, -180); P.x = hx; P.y = hy - 10; } }
       return 'block';
     }
-    const hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1);
+    const crit = this.rollCrit(a), hp = d.hp * a.stats.atk * (v.st === 'DOWN' ? .7 : 1) * (crit ? B.critMul : 1);
     a.hitsLanded++;
-    this.damage(v, hp, 0, a, { def: d });
+    this.damage(v, hp, crit ? v.maxStun * B.critStunFlat : 0, a, { def: d });
+    if (crit) m.emit('crit', { a, v, x: v.x, y: v.y - 30, hit: d });
     this.addFin(a, 8); m.addHype(9); m.hitstop(d.stop);
     m.emit('hit', { a, v, d, x: hx, y: hy, dir, counterHit: false, hp, combo: 1 });
     m.emit('chairHit', { a, v, p: P, x: hx, y: hy });
@@ -5490,6 +5497,8 @@ class CombatSystem {
     if (a.staleList.length > B.staleMemory) a.staleList.shift();
     return Math.max(B.staleMin, 1 - Math.max(0, n - 1) * B.staleStep);
   }
+  // a critical hit: the attacker's chance (stats.crit, else B.critBase), drawn from the match's random stream
+  rollCrit(a) { if (!a || !a.alive) return false; const p = a.stats.crit != null ? a.stats.crit : B.critBase; return p > 0 && this.m.rng.next() < p; }
   damage(v, hp, stun, a, o = {}) {
     if (!v.alive) return;
     const real = Math.min(v.hp, hp);
@@ -5898,6 +5907,7 @@ class WrestlingMoveSystem {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
       power: a.stats.grp * stale * (o.power || 1) * (o.fin ? 1 : Math.pow(B.moveChainScale, v.moveChain || 0)), stunAlive: v.stun > 0, released: false, x0: a.x, shift: 0, rev: { tried: false, done: false }, swept: new Set(), front: false, mirror: o.mirror, follow: !!o.follow,
     };
+    L.crit = !o.noCrit && m.combat.rollCrit(a);   // one roll for the whole move
     a.link = v.link = L;
     m.links.push(L);
     a.vx = a.vy = v.vx = v.vy = 0; v.y = a.y; v.side = a.side; v.ground = true; a.ground = true;
@@ -6083,7 +6093,11 @@ class WrestlingMoveSystem {
       if (k === 'impact' && !L.chairK) { const ch = m.props.under(v); if (ch) { L.chairK = L.fin ? B.chairSlamFin : B.chairSlam; m.emit('chairSlam', { a, v, x: ch.x, y: ch.y, k: L.chairK }); m.props.breakProp(ch, 'slam'); } }
       // career mastery: a little more damage per level; each landed move (a finisher once) counts as one use
       const key = L.fin ? 'fin:' + L.fin.id : move.id, tag = L.fin ? 'fin' : L.part;
-      const hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)) * (L.chairK || 1), st = move.stun * o.d * (L.chairK ? 1.3 : 1);
+      // slammed onto the mat in the ring: a bonus that grows with how big the foe is next to you
+      const ring = k === 'impact' && v.side === 'in' && m.arena.hasRing ? B.slamBonus + B.slamBonusStrong * clamp(v.maxHp / Math.max(1, a.maxHp) - .8, 0, 1) : 0;
+      if (ring && !L.slamSaid) { L.slamSaid = 1; if (ring >= .2) m.emit('slamBonus', { a, v, k: ring }); }
+      if (L.crit && k === 'impact' && !L.critSaid) { L.critSaid = 1; m.emit('crit', { a, v, x: v.x, y: v.y - 40, move }); }
+      const ck = L.crit ? B.critMul : 1, hp = move.hp * L.power * o.d * (1 + (a.mastery && a.mastery[key] || 0)) * (L.chairK || 1) * (1 + ring) * ck, st = move.stun * o.d * (L.chairK ? 1.3 : 1) * (L.crit ? B.critStun : 1) + (L.crit && k === 'impact' ? v.maxStun * B.critStunFlat * o.d : 0);
       if (L.usedTag !== tag) { L.usedTag = tag; a.moveUses[key] = (a.moveUses[key] || 0) + 1; }
       m.combat.damage(v, hp, st, a, { move });
       if (!L.fin) m.combat.addFin(a, move.gain * o.d); else if (v) v.finishersTaken += o.d > .4 ? 1 : 0;
@@ -9703,7 +9717,10 @@ const { harborBegin, harborAdd, harborBroken, leagueShare, morningGifts } = __m[
 const SLOT_NAMES = ['오전', '오후', '저녁'];
 const SEASON_DAYS = 28;
 // Growth per trained level (levels go 0..20).
-const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '레슬링 기술'], spd: [.012, '이동 속도'], jump: [.016, '점프력'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'], brk: [.03, '스턴 브레이커'] };
+// 기본 공격력: J strings, running strikes, dives, punches in a hold. 스킬 공격력: every move and finisher (and the grip in a
+// tie-up). 민첩성: one stat for speed and the jump (AGI). 크리티컬 확률: a chance on every hit and move (B.crit*).
+const STAT_GROWTH = { hp: [2.6, '최대 체력'], stun: [2.3, '최대 기절 저항'], atk: [.022, '기본 공격력'], grp: [.022, '스킬 공격력'], agi: [.012, '민첩성'], crit: [.0075, '크리티컬 확률'], rec: [.02, '기술 회복'], down: [.02, '기절·다운 회복'], kbr: [.022, '넉백 저항'], fin: [.025, '피니셔 충전'], brk: [.03, '스턴 브레이커'] };
+const AGI = { spd: .012, jump: .016 };   // one level of 민첩성: +1.2% speed and +1.6% jump
 const STYLE_BASE = {
   all: { label: '올라운더', stats: { hp: 100, stun: 100, atk: 1, grp: 1, spd: 1, jump: 1, rec: 1, down: 1, fin: 1, weight: 94, lift: 1.3, kbr: 1 }, chain: ['jab', 'cross', 'hook'], run: 'lariat', air: 'dropkick', dive: 'diveElbow', stance: 'std', finisher: 'dawn', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'suplex', u: 'powerbomb', d: 'ddt' }, rear: { n: 'german', f: 'ringOut', b: 'backdropDriver', u: 'atomic', d: 'bulldog' }, catch: 'backBody', counter: 'hipToss' }, build: 'athletic' },
   power: { label: '파워하우스', stats: { hp: 112, stun: 104, atk: 1.06, grp: 1.08, spd: .92, jump: .9, rec: .96, down: .96, fin: .96, weight: 116, lift: 1.9, kbr: 1.15 }, chain: ['palm', 'elbow', 'overhand'], run: 'shoulder', air: 'flyingElbow', dive: 'diveSplash', stance: 'power', finisher: 'container', moves: { front: { n: 'bodySlam', f: 'irishWhip', b: 'backbreaker', u: 'powerbomb', d: 'chokeslam' }, rear: { n: 'german', f: 'ringOut', b: 'giantSwing', u: 'atomic', d: 'backdropDriver' }, catch: 'spinebuster', counter: 'hipToss' }, build: 'power' },
@@ -9831,7 +9848,7 @@ class Career {
     const S = STYLE_BASE[setup.style] || STYLE_BASE.all;
     Object.assign(c.d, {
       saveSlot: n, name: setup.name || '신인', style: setup.style || 'all', look: setup.look, created: Date.now(),
-      lv: { hp: 0, stun: 0, atk: 0, grp: 0, spd: 0, jump: 0, rec: 0, down: 0, kbr: 0, fin: 0, brk: 0 },
+      lv: { hp: 0, stun: 0, atk: 0, grp: 0, agi: 0, crit: 0, rec: 0, down: 0, kbr: 0, fin: 0, brk: 0 },
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
     c.d.league = c.newLeague(1);
@@ -9849,7 +9866,8 @@ class Career {
       dda: 0, mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' },
     };
   }
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
+  // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
   storyFromHistory() { const d = this.d, h = d.history || [], n = (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0); if (!n) return {}; if (n > h.length) return { lost: 1 }; return { firstMatch: h[0], firstWin: h.find(x => x.won) || null, firstLoss: h.find(x => !x.won && !x.draw) || null }; }
   markStory(e) { const st = this.d.story || (this.d.story = {}); if (st.lost) return; if (!st.firstMatch) st.firstMatch = e; if (e.won && !st.firstWin) st.firstWin = e; if (!e.won && !e.draw && !st.firstLoss) st.firstLoss = e; }
@@ -9893,7 +9911,9 @@ class Career {
   get stats() {
     const S = STYLE_BASE[this.d.style] || STYLE_BASE.all, b = Object.assign({}, S.stats), L = this.d.lv;
     b.hp += L.hp * STAT_GROWTH.hp[0]; b.stun += L.stun * STAT_GROWTH.stun[0];
-    for (const k of ['atk', 'grp', 'spd', 'jump', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + L[k] * STAT_GROWTH[k][0];
+    for (const k of ['atk', 'grp', 'rec', 'down', 'kbr', 'fin']) b[k] *= 1 + (L[k] || 0) * STAT_GROWTH[k][0];
+    b.spd *= 1 + (L.agi || 0) * AGI.spd; b.jump *= 1 + (L.agi || 0) * AGI.jump;
+    b.crit = B.critBase + (L.crit || 0) * STAT_GROWTH.crit[0];
     b.brk = 1 + (L.brk || 0) * STAT_GROWTH.brk[0];
     for (const slot in this.d.gear) { const it = SHOP_ITEMS.find(i => i.id === this.d.gear[slot]); if (it && it.mod) for (const k in it.mod) { if (k === 'stun' || k === 'hp') b[k] += it.mod[k]; else b[k] *= 1 + it.mod[k]; } }
     b.lift *= 1 + L.grp * .015 + L.hp * .008;
@@ -10178,7 +10198,7 @@ class Career {
   swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
 }
 
-return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, moveSlotName, learnedText, moveLabel };
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, AGI, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, moveSlotName, learnedText, moveLabel };
 })();
 // ---- world/liveDecor.js
 __m["world/liveDecor.js"] = (function () {
@@ -11599,6 +11619,8 @@ class MatchScene {
       if (d.lv >= 3) cheer(.4);
     });
     m.on('block', e => { fx.spark(e.x, e.y, .5, '#9fd6ff', sgn(e.v.x - e.a.x)); A.sfx('block'); });
+    m.on('crit', e => { fx.word('크리티컬!', e.x, e.y - 24, '#ffd65a', 2); fx.spark(e.x, e.y, 1.6, '#ffd65a'); S.flash(1, .85, .3, .3); S.shake(.22); A.sfx('counter'); cheer(.7); });
+    m.on('slamBonus', e => { fx.word('링 충격!', e.v.x, e.v.y - 60, '#ff9a3a', 1); });
     m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
     m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
     m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
@@ -13309,7 +13331,7 @@ class InfoMenu extends Menu {
     const T = this.tab;
     if (T === 0) {
       drawText(u, `능력치 포인트: ${d.points}  (Enter로 1 올리기, 레벨업마다 +2 · 훈련으로도 오른다)`, 44, 136, { size: 11, color: d.points ? '#6be38a' : UI.dim });
-      this.rows().forEach((k, i) => { const y = 152 + i * 16, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
+      this.rows().forEach((k, i) => { const y = 152 + i * 16, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : k === 'agi' ? `속도 ${Math.round(s.spd * 100)}% · 점프 ${Math.round(s.jump * 100)}%` : k === 'crit' ? `${(s.crit * 100).toFixed(1)}%` : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
     } else if (T === 1) {
       const inj = d.injury, lvl = c.injuryLevel, col = lvl === 'danger' ? '#ff5b5b' : lvl === 'warn' ? '#ffb347' : UI.inj;
       const L = [[`전적`, `${d.record.w}승 ${d.record.l}패 ${d.record.d}무 (KO ${d.record.ko} · 핀 ${d.record.pin})`], ['랭킹', d.flags.champion ? '챔피언' : `${c.rank}위 / ${c.rankList().length}명`], ['명성', String(d.fame)], ['소지금', c.money()], ['날짜', c.timeText], ['계약', d.contract ? `${d.contract.oppName} (${d.contract.day}일까지)` : '없음'], ['연승', d.record.streak > 0 ? d.record.streak + '연승' : d.record.streak < 0 ? -d.record.streak + '연패' : '-'], ['타이틀', d.titles.length ? d.titles.map(t => t.name).join(', ') : '없음']];
@@ -13546,7 +13568,7 @@ const { panel, gauge, keycap, prompt, fade } = __m["render/ui.js"];
 const { STAT_GROWTH } = __m["world/CareerManager.js"];
 const GAMES = {
   bench: { name: '벤치프레스', kind: '타이밍', stats: ['atk', 'hp'], pose: 'bench', x: 420, desc: '바늘이 초록 칸에 들어왔을 때 {y}J{/}(또는 Space·E·Enter). 8번 들어 올리자. 세 번 놓치면 끝.' },
-  rope: { name: '줄넘기', kind: '리듬', stats: ['spd', 'jump'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
+  rope: { name: '줄넘기', kind: '리듬', stats: ['agi'], pose: 'rope', x: 546, desc: '원이 줄어들어 고리에 닿는 순간 {y}W{/}(또는 J·Space). 박자를 타자.' },
   mitt: { name: '미트 치기', kind: '순서 기억', stats: ['grp', 'rec', 'brk'], pose: 'mitt', x: 668, desc: '관장님이 보여 주는 방향 순서를 기억했다가 {y}W A S D{/}(또는 방향키)로 똑같이.' },
   bridge: { name: '목 브릿지', kind: '균형', stats: ['stun', 'kbr'], pose: 'bridge', x: 790, desc: '흔들리는 바늘을 {y}A D{/}(또는 ←→)로 가운데에 붙잡아 두자. 10초.' },
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
