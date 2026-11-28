@@ -345,7 +345,7 @@ try {
   r = await st(); check(r.wov.includes('VendingMenu'), 'the vending machine has a menu', JSON.stringify(r));
   for (let i = 0; i < 4; i++) { await tap('Enter'); await step(3); }
   const vend = await ev(`const d=__NHS.game.scene.c.d, P=__m['world/market.js'].price(d, 'vending', '이온 음료', 3000); return JSON.stringify({ f: d.fatigue, m: d.money, n: d.flags.vend && d.flags.vend.n, p: P })`).then(JSON.parse);
-  check(vend.f === 60 - 36 && vend.m === 60000 - 3 * vend.p && vend.n === 3, 'three drinks a day (at the day's price), the fourth is refused', JSON.stringify(vend));
+  check(vend.f === 60 - 36 && vend.m === 60000 - 3 * vend.p && vend.n === 3, 'three drinks a day at that day price, the fourth is refused', JSON.stringify(vend));
   await tap('Escape'); await step(3);
   // ---- the travelling merchant
   await ev(`const W=__NHS.game.scene, d=W.c.d; for (let k=0;k<10;k++){ if ((d.day + d.season) % 5 === 2) break; d.day++; } d.money=90000; d.flags.newsDay=0; return d.day`);
