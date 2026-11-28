@@ -15,7 +15,8 @@ const c = Career.create(2, { name: '파도', style: 'all', look }), d = c.d;
 const here = ['janitor', 'taesan', 'reporter', 'neon'];
 {
   let asked = 0, kinds = {};
-  for (let day = 1; day <= 40; day++) { d.day = day; d.quest = null; const id = questDue(d, here); if (id) { asked++; const q = makeQuest(d, id, Object.values(d.moves.front).filter(Boolean)); kinds[q.kind] = (kinds[q.kind] || 0) + 1; check.quiet = 1; if (!CHARACTERS[id]) check(false, 'only wrestlers ask', id); } }
+  check(questDue(Object.assign({}, d, { day: 1, quest: null }), here) === null && questDue(Object.assign({}, d, { day: 2, quest: null }), here) === null, 'nobody asks in the first two days');
+  for (let day = 3; day <= 42; day++) { d.day = day; d.quest = null; const id = questDue(d, here); if (id) { asked++; const q = makeQuest(d, id, Object.values(d.moves.front).filter(Boolean)); kinds[q.kind] = (kinds[q.kind] || 0) + 1; check.quiet = 1; if (!CHARACTERS[id]) check(false, 'only wrestlers ask', id); } }
   check(asked > 5 && asked < 30, `wrestlers ask for favours on some days (${asked} of 40)`);
   check(kinds.item && kinds.spar && kinds.teach, `three kinds: ${JSON.stringify(kinds)}`);
   d.day = 50; d.quest = null; let id = null; for (; d.day < 90 && !id; d.day++) id = questDue(d, here);

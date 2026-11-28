@@ -6,7 +6,7 @@
 import { CHARACTERS } from '../data/characters.js';
 import { MOVES } from '../data/moves.js';
 
-export const QUEST = { chance: .35, days: 3, gain: { item: 18, spar: 22, teach: 20 }, sparWin: 8, fish: 6, bigFish: 14, steps: [30, 60, 90] };
+export const QUEST = { from: 3, chance: .35, days: 3, gain: { item: 18, spar: 22, teach: 20 }, sparWin: 8, fish: 6, bigFish: 14, steps: [30, 60, 90] };
 export const QUEST_ITEMS = [{ id: 'bandage', name: '붕대', where: '돛대 상회' }, { id: 'drink', name: '이온 음료', where: '돛대 상회' }];
 export const affOf = (d, id) => (d.aff && d.aff[id]) || 0;
 export function addAff(d, id, n) {
@@ -18,6 +18,8 @@ const hash = (...a) => { let h = 2166136261; for (const x of a) { const s = Stri
 // one of the wrestlers in the lobby today asks for something (one quest at a time)
 export function questDue(d, here) {
   const q = d.quest;
+  if ((d.season || 1) === 1 && d.day < QUEST.from) return null;   // not in the first days of a career
+  if (d.contract && d.contract.day === d.day) return null;          // nor on the day of a contract match
   if (q && !q.done && d.day <= q.until) return null;
   if (q && q.day === d.day) return null;
   const ids = here.filter(id => CHARACTERS[id] && !CHARACTERS[id].thug && !CHARACTERS[id].boss);
