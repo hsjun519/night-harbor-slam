@@ -623,8 +623,9 @@ export class MapMenu extends Menu {
     // street
     rect(u, '#2a2a3a', 60, 214, 520, 18); drawText(u, '부둣길', 320, 217, { size: 11, align: 'c', color: UI.dim });
     { const H = W.c.d.harbor, ok = H && H.stage === 'REPAIRED'; rect(u, ok ? '#1f6a8a' : '#3a3046', 586, 214, 40, 18); drawText(u, '부두', 606, 217, { size: 11, align: 'c', color: ok ? '#bff3ff' : '#8a8aa0' }); }
-    node('street', 200, 222, '정문');
-    node('clinic', 150, 258, '항구의원'); node('shop', 230, 258, '돛대 상회');
+    node('street', 300, 222, '정문');
+    node('clinic', 90, 258, '항구의원'); node('shop', 160, 258, '돛대 상회');
+    rect(u, '#14405a', 200, 250, 56, 16); drawText(u, '웨이브', 228, 252, { size: 11, align: 'c', color: '#bff3ff' });
     rect(u, '#5a2a3a', 300, 250, 50, 16); drawText(u, '포차', 325, 252, { size: 11, align: 'c', color: '#ffd0d8' });
     rect(u, '#2a3a5a', 360, 250, 50, 16); drawText(u, '광장', 385, 252, { size: 11, align: 'c', color: '#c9d4ff' });
     node('rivalgym', 448, 258, '철썩 짐', !W.unlocked('rivalgym'));

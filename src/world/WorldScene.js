@@ -774,7 +774,7 @@ export class WorldScene {
     else if (this.loc === 'gym') for (const x of [420, 700, 980]) glow(w, x - cam, 62, 70, '#ffe0b0', .16);
     else if (this.loc === 'office') glow(w, 400 - cam, 70, 90, '#ffcf7a', .2);
     else if (this.loc === 'arena') { glow(w, 724 - cam, 110, 70, '#ff5fa2', .2); glow(w, 300 - cam, 64, 60, '#ffcf7a', .16); }
-    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
+    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 705 - cam, 110, 90, '#ff5fa2', .15); }
   }
   hud(u) {
     const c = this.c, d = c.d, t = this.t;

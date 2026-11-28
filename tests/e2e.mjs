@@ -202,7 +202,7 @@ try {
   r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1800); await tap('KeyF'); await step(50);
   r = await walk('KeyA', q => q.prompt && q.prompt.includes('건물 밖'), 3000); await tap('KeyF'); await step(50);
   r = await st(); check(r.loc === 'street', 'lobby -> street', JSON.stringify(r));
-  r = await walk('KeyD', q => q.prompt && q.prompt.includes('항구의원'), 1800); await tap('KeyF'); await step(50);
+  r = await walk('KeyA', q => q.prompt && q.prompt.includes('항구의원'), 1800); await tap('KeyF'); await step(50);   // out of the front door, the clinic is on the left
   r = await st(); check(r.loc === 'clinic', 'street -> clinic', JSON.stringify(r));
   r = await walk('KeyD', q => q.prompt && q.prompt.startsWith('npc:한 선생'), 1200);
   await tap('KeyE'); await step(3);
@@ -215,7 +215,7 @@ try {
 
   // ---- gym training by keys: street -> lobby -> gym -> bench
   r = await walk('KeyA', q => q.prompt && q.prompt.startsWith('door:'), 1200); await tap('KeyF'); await step(50);
-  r = await walk('KeyA', q => q.prompt && q.prompt.includes('체육관'), 2400); await tap('KeyF'); await step(50);
+  r = await walk('KeyD', q => q.prompt && q.prompt.includes('체육관'), 2400); await tap('KeyF'); await step(50);
   r = await walk('KeyD', q => q.prompt && q.prompt.includes('훈련장'), 2400); await tap('KeyF'); await step(50);
   r = await st(); check(r.loc === 'gym', 'lobby -> gym', JSON.stringify(r));
   r = await walk('KeyD', q => q.prompt && q.prompt.includes('벤치'), 1800);

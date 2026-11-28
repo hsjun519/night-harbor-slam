@@ -10995,12 +10995,17 @@ function paintStreet(g, L) {
     for (let wy = FLOOR - h + 14; wy < FLOOR - 70; wy += 26) for (let wx = x + 10; wx < x + w - 20; wx += 30) { rect(g, '#120c1e', wx - 1, wy - 1, 18, 14); rect(g, o.lit !== false && ((wx + wy) % 3) ? '#ffd27a' : '#2a3150', wx, wy, 16, 12); }
     if (sign) neon(g, sign, x + w / 2, FLOOR - h + (o.signY || 8), sc, { scale: o.big ? 2 : 1, align: 'c' });
   };
-  bld(60, 300, 200, '#2f3a5e', '야항 체육관', '#ff5fa2', { big: 1, signY: 10 });
-  door(g, 192, 196, 36, 104, '#3a4a6a', { glass: 1 });
-  bld(400, 180, 150, '#cfd9df', '항구의원', '#2a8a8a', { lit: false }); rect(g, '#ff4f6d', 480, FLOOR - 120, 6, 18); rect(g, '#ff4f6d', 474, FLOOR - 114, 18, 6);
-  door(g, 470, 210, 34, 90, '#5a7a8a', { glass: 1 });
-  bld(640, 190, 160, '#6a4a2a', '돛대 상회', '#ffb347', { brick: 1 });
-  door(g, 720, 210, 34, 90, '#6a4a2a', {});
+  // out of the gym's front door the shops are on the left: the clinic, the shop, 웨이브 상회
+  bld(40, 180, 150, '#cfd9df', '항구의원', '#2a8a8a', { lit: false }); rect(g, '#ff4f6d', 120, FLOOR - 120, 6, 18); rect(g, '#ff4f6d', 114, FLOOR - 114, 18, 6);
+  door(g, 110, 210, 34, 90, '#5a7a8a', { glass: 1 });
+  bld(240, 190, 160, '#6a4a2a', '돛대 상회', '#ffb347', { brick: 1 });
+  door(g, 320, 210, 34, 90, '#6a4a2a', {});
+  bld(450, 110, 150, '#14405a', '웨이브', '#49d6ff', { lit: false, signY: 10 });
+  for (let i = 0; i < 110; i++) rect(g, '#bff3ff', 450 + i, FLOOR - 96 + Math.round(Math.sin(i / 110 * Math.PI * 3) * 4), 1, 2);
+  rect(g, '#0e2a3a', 462, FLOOR - 70, 86, 44); rect(g, '#49d6ff', 464, FLOOR - 68, 82, 2); drawText(g, '상회', 505, FLOOR - 64, { size: 11, align: 'c', color: '#bff3ff' });
+  door(g, 488, 230, 34, 70, '#1f6a8a', { glass: 1 });
+  bld(580, 250, 200, '#2f3a5e', '야항 체육관', '#ff5fa2', { big: 1, signY: 10 });
+  door(g, 686, 196, 36, 104, '#3a4a6a', { glass: 1 });
   // the narrow alley between the shop and the tent: at its end, the old gym
   rect(g, '#05060f', 834, FLOOR - 172, 50, 172); bands(g, 836, FLOOR - 170, 46, 170, ['#0b0a16', '#0e0c1c', '#120f22', '#161226']);
   for (let y = FLOOR - 160; y < FLOOR - 8; y += 24) rect(g, '#1c1830', 836, y, 46, 1);
@@ -11030,7 +11035,8 @@ function paintStreet(g, L) {
   { const ax = 1898; rect(g, '#05060f', ax - 1, FLOOR - 117, 62, 117); rect(g, '#4a5a8a', ax, FLOOR - 116, 60, 116); for (let y = FLOOR - 112; y < FLOOR; y += 6) rect(g, '#3a4a78', ax, y, 60, 2); rect(g, '#2a3a5a', ax, FLOOR - 60, 60, 3);
     rect(g, '#05060f', ax + 4, FLOOR - 112, 52, 22); rect(g, '#1f3a2a', ax + 5, FLOOR - 111, 50, 20); drawText(g, '파식대', ax + 30, FLOOR - 110, { size: 11, align: 'c', color: '#e6f2dc' }); rect(g, '#e6f2dc', ax + 12, FLOOR - 95, 36, 1);
     rect(g, '#ffd27a', ax + 8, FLOOR - 52, 14, 12); rect(g, '#ffd27a', ax + 38, FLOOR - 52, 14, 12); rect(g, '#05060f', ax + 23, FLOOR - 36, 14, 36); rect(g, '#6a4a2e', ax + 24, FLOOR - 35, 12, 35); drawText(g, '학원', ax + 30, FLOOR - 76, { size: 11, align: 'c', color: '#ffd65a' }); }
-  // 웨이브 상회: a teal shipping container with a wave on its doors
+  // (웨이브 상회 used to be a container here; it is a shop left of the gym now)
+  if (false)
   { const wx = 1972; rect(g, '#05060f', wx - 1, FLOOR - 79, 76, 79); rect(g, '#1f8fa6', wx, FLOOR - 78, 74, 78); for (let x = wx + 4; x < wx + 74; x += 7) rect(g, '#177a8e', x, FLOOR - 76, 2, 74); rect(g, '#0e5a6a', wx, FLOOR - 78, 74, 4);
     for (let i = 0; i < 74; i++) rect(g, '#e6f6ff', wx + i, FLOOR - 50 + Math.round(Math.sin(i / 74 * Math.PI * 3) * 4), 1, 2);
     rect(g, '#05060f', wx + 8, FLOOR - 100, 58, 20); rect(g, '#0e3a4a', wx + 9, FLOOR - 99, 56, 18); drawText(g, '웨이브', wx + 37, FLOOR - 98, { size: 11, align: 'c', color: '#7fe0ff' }); rect(g, '#3a3a52', wx + 20, FLOOR - 80, 2, 2); rect(g, '#3a3a52', wx + 52, FLOOR - 80, 2, 2); }
@@ -11061,7 +11067,7 @@ function streetFar(L, slot) {
 /* Location data. npcs(c) returns who is here today; objects have an action key handled by WorldScene. */
 const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
-    doors: [{ x: 82, to: 'street', at: 210, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장', lock: 'gymOpen' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
+    doors: [{ x: 82, to: 'street', at: 704, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장', lock: 'gymOpen' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
     objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 175, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 458, w: 150, act: 'poster', label: '선수 포스터' }], live: lobbyLive },
   basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, live: basementLive, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
@@ -11070,11 +11076,11 @@ const LOCATIONS = {
   arena: { name: '경기장 대기실', w: 820, music: 'gym', rim: '#49d6ff', light: 0, doors: [{ x: 57, to: 'lobby', at: 1112, label: '로비' }],
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
-    doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 1736, w: 30, act: 'fishSpot', label: '낚시터' }, { x: 2008, w: 56, act: 'wave', label: '웨이브 상회' },
+    doors: [{ x: 704, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 127, to: 'clinic', at: 60, label: '항구의원' }, { x: 337, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 1736, w: 30, act: 'fishSpot', label: '낚시터' }, { x: 505, w: 40, act: 'wave', label: '웨이브 상회' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
-  clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
-  shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
+  clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 127, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
+  shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 337, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
   rivalgym: { name: '철썩 짐', w: 700, music: 'gym', rim: '#3fd46b', light: 0, doors: [{ x: 47, to: 'street', at: 1563, label: '부둣길' }], objects: [{ x: 360, w: 200, act: 'dojo', label: '도장 깨기 링' }] },
   hideout: { name: '골목 끝 도장', w: 700, music: 'office', rim: '#d8a62e', light: -.06, doors: [{ x: 48, to: 'street', at: 859, label: '부둣길' }], objects: [{ x: 430, w: 200, act: 'oldRing', label: '낡은 링' }, { x: 160, w: 70, act: 'oldPoster', label: '빛바랜 포스터' }, { x: 640, w: 60, act: 'oldBelt', label: '먼지 쌓인 벨트' }] },
   dome: { name: '등대 돔', w: 640, music: 'boss', rim: '#ffd65a', light: .03, doors: [{ x: 47, to: 'street', at: 2170, label: '부둣길' }], objects: [{ x: 480, w: 120, act: 'domeGate', label: '챔피언십 입장구' }, { x: 180, w: 120, act: 'trophy', label: '역대 챔피언' }] },
@@ -13997,8 +14003,9 @@ class MapMenu extends Menu {
     // street
     rect(u, '#2a2a3a', 60, 214, 520, 18); drawText(u, '부둣길', 320, 217, { size: 11, align: 'c', color: UI.dim });
     { const H = W.c.d.harbor, ok = H && H.stage === 'REPAIRED'; rect(u, ok ? '#1f6a8a' : '#3a3046', 586, 214, 40, 18); drawText(u, '부두', 606, 217, { size: 11, align: 'c', color: ok ? '#bff3ff' : '#8a8aa0' }); }
-    node('street', 200, 222, '정문');
-    node('clinic', 150, 258, '항구의원'); node('shop', 230, 258, '돛대 상회');
+    node('street', 300, 222, '정문');
+    node('clinic', 90, 258, '항구의원'); node('shop', 160, 258, '돛대 상회');
+    rect(u, '#14405a', 200, 250, 56, 16); drawText(u, '웨이브', 228, 252, { size: 11, align: 'c', color: '#bff3ff' });
     rect(u, '#5a2a3a', 300, 250, 50, 16); drawText(u, '포차', 325, 252, { size: 11, align: 'c', color: '#ffd0d8' });
     rect(u, '#2a3a5a', 360, 250, 50, 16); drawText(u, '광장', 385, 252, { size: 11, align: 'c', color: '#c9d4ff' });
     node('rivalgym', 448, 258, '철썩 짐', !W.unlocked('rivalgym'));
@@ -15404,7 +15411,7 @@ class WorldScene {
     else if (this.loc === 'gym') for (const x of [420, 700, 980]) glow(w, x - cam, 62, 70, '#ffe0b0', .16);
     else if (this.loc === 'office') glow(w, 400 - cam, 70, 90, '#ffcf7a', .2);
     else if (this.loc === 'arena') { glow(w, 724 - cam, 110, 70, '#ff5fa2', .2); glow(w, 300 - cam, 64, 60, '#ffcf7a', .16); }
-    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 210 - cam, 110, 90, '#ff5fa2', .15); }
+    else if (L.street) { if ((this.skyOver != null ? this.skyOver : d.slot) === 2) for (let x = 30; x < 2266; x += 260) glow(w, x - cam, FLOOR - 118, 50, '#ffe0a0', .3); glow(w, 705 - cam, 110, 90, '#ff5fa2', .15); }
   }
   hud(u) {
     const c = this.c, d = c.d, t = this.t;
