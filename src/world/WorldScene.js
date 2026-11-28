@@ -1,5 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
+import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
 import { SYNERGY, SYN_KIND, synName, needMoves } from '../data/synergy.js';
 import { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } from './blackRope.js';
@@ -224,7 +225,7 @@ export class WorldScene {
   startTraining(game) {
     const c = this.c, d = c.d;
     if (game !== 'job' && d.slot === 2 && false) return;
-    const cost = game === 'job' || game === 'scrap' || game === 'cleanup' ? 0 : 6000 + d.season * 2000;
+    const cost = game === 'job' || game === 'scrap' || game === 'cleanup' ? 0 : Math.round((6000 + d.season * 2000) * feeK(d, game) / 1000) * 1000;
     if (!c.canPay(cost)) { this.toast(`훈련비 ${fmtMoney(cost)}이(가) 부족하다`, '#ff8a8a'); this.game.audio.sfx('deny'); return; }
     this.open(new Training(this, game, cost));
   }
@@ -544,6 +545,23 @@ export class WorldScene {
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- training equipment: 백 관장 says when a station has been outgrown; the list of what can be bought ----
+  gearPitch(id) {
+    const c = this.c, d = c.d, next = gearNext(d, id), now = gearNow(d, id);
+    if (!next) return;
+    gymOf(d).pitched[id] = tierOf(d, id) + 1;
+    this.say([
+      { who: 'trainer', text: `강해진 만큼 더 강한 훈련기구를 사야하지 않겠어? ${josa(now.name, '은/는')} 이제 너한테 장난감이다.` },
+      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 더 어렵고 더 지치지만, 그만큼 훨씬 많이 남는다.` },
+      { choice: [{ label: `${next.name} 사기 (${fmtMoney(next.price)})`, act: () => this.buyGearNow(id) }, { label: '나중에', go: [{ who: 'trainer', text: '그래, 돈 모이면 말해라. 기구는 어디 안 간다.' }] }] },
+    ]);
+  }
+  buyGearNow(id) { const c = this.c, next = gearNext(c.d, id); if (!next) return; if (!buyGear(c, id)) { this.game.audio.sfx('deny'); this.toast('돈이 모자란다', '#ff8a8a'); return; } c.save(); this.game.audio.sfx('buy'); this.toast(`새 훈련기구: ${next.name} — 더 어렵고 더 지치고, 효과는 더 크다`, '#49d6ff'); }
+  gearList() {
+    const d = this.c.d, rows = Object.keys(GEAR).map(id => ({ id, next: gearNext(d, id), now: gearNow(d, id) })).filter(r => r.next);
+    if (!rows.length) { this.say([{ who: 'trainer', text: '더 살 기구가 없다. 이제 기구가 아니라 링이 널 키울 거다.' }]); return; }
+    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
   }
   // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
   synergyTalk() {

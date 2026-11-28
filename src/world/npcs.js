@@ -148,6 +148,7 @@ export function talk(id, c, W) {
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
           { label: '시너지 (사전·수업)', act: () => W.synergyTalk() },
+          { label: '훈련기구 바꾸기', act: () => W.gearList() },
           { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },

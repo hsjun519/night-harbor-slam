@@ -11428,6 +11428,7 @@ function talk(id, c, W) {
         { choice: [
           { label: '새 기술 배우기', act: () => W.openLearn('trainer') },
           { label: '시너지 (사전·수업)', act: () => W.synergyTalk() },
+          { label: '훈련기구 바꾸기', act: () => W.gearList() },
           { label: c.d.flags.tutored ? '기초 훈련 다시 받기' : '기초 훈련 받기 (튜토리얼)', act: () => W.startMatch('tutorial') },
           { label: '기술 장착 바꾸기', act: () => W.openInfo(2) },
           { label: '능력치 포인트 쓰기', act: () => W.openInfo(0) },
@@ -12621,6 +12622,69 @@ function allianceCine(W, o, onFight) {
 }
 
 return { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine };
+})();
+// ---- world/gymGear.js
+__m["world/gymGear.js"] = (function () {
+// Training equipment. Every station in the gym has four grades: the one it came with, and three that 백 관장 talks
+// you into buying once you have outgrown the last ("강해진 만큼 더 강한 훈련기구를 사야하지 않겠어?"). Each grade
+// costs more, plays harder (faster, or a new game: typing for the bench, a rhythm game for the rope, snake for the
+// mitts), tires you more, and trains more. d.gym = { tier: { station: n }, runs: { station: n }, pitched: { station: n } }
+const GEAR = {
+  bench: [
+    { name: '낡은 벤치', price: 0 },
+    { name: '올림픽 바벨', price: 90000, speed: 1.4, zone: .8 },
+    { name: '파워 랙', price: 220000, mech: 'typing', target: 16, time: 12 },
+    { name: '크레인 바벨', price: 480000, mech: 'typing', target: 22, time: 11, len: 6 },
+  ],
+  rope: [
+    { name: '줄넘기', price: 0 },
+    { name: '쇠 손잡이 줄', price: 80000, gap: .38 },
+    { name: '박자 발판', price: 200000, mech: 'rhythm', lanes: 3, notes: 22, speed: 1 },
+    { name: '번개 발판', price: 450000, mech: 'rhythm', lanes: 4, notes: 30, speed: 1.35 },
+  ],
+  mitt: [
+    { name: '미트', price: 0 },
+    { name: '스파링 미트', price: 85000, len: 4 },
+    { name: '스텝 매트', price: 210000, mech: 'snake', step: .15, target: 8 },
+    { name: '번개 스텝 매트', price: 460000, mech: 'snake', step: .1, target: 10 },
+  ],
+  bridge: [
+    { name: '목 브릿지', price: 0 },
+    { name: '무게 조끼', price: 80000, force: 1.35 },
+    { name: '흔들 발판', price: 190000, force: 1.7, time: 12 },
+    { name: '파도 발판', price: 420000, force: 2.1, time: 14 },
+  ],
+  breath: [
+    { name: '호흡 훈련', price: 0 },
+    { name: '고지대 마스크', price: 75000, fill: 1.35, band: .8 },
+    { name: '잠수 수조', price: 180000, fill: 1.7, band: .65 },
+    { name: '심해 수조', price: 400000, fill: 2.1, band: .55 },
+  ],
+};
+const GEAR_GAIN = .4, GEAR_TIRE = .5, GEAR_COST = .5;   // per grade: training effect, fatigue, session fee
+const gymOf = d => d.gym || (d.gym = { tier: {}, runs: {}, pitched: {} });
+const tierOf = (d, id) => (GEAR[id] ? gymOf(d).tier[id] || 0 : 0);
+const gearNow = (d, id) => (GEAR[id] ? GEAR[id][tierOf(d, id)] : null);
+const gearNext = (d, id) => (GEAR[id] ? GEAR[id][tierOf(d, id) + 1] || null : null);
+// what one session gives and costs at this grade
+const gainK = (d, id) => 1 + GEAR_GAIN * tierOf(d, id);
+const tireOf = (d, id) => Math.round(14 * (1 + GEAR_TIRE * tierOf(d, id)));
+const feeK = (d, id) => 1 + GEAR_COST * tierOf(d, id);
+// has this station been outgrown? enough sessions on it, and the stats it trains caught up with the grade
+function outgrown(d, id, stats) {
+  const G = gymOf(d), t = tierOf(d, id), next = gearNext(d, id);
+  if (!next) return false;
+  const runs = G.runs[id] || 0, lv = stats.length ? stats.reduce((s, k) => s + ((d.lv && d.lv[k]) || 0), 0) / stats.length : 0;
+  return runs >= 3 * (t + 1) && lv >= 3 * (t + 1) && (G.pitched[id] || 0) <= t;
+}
+function buyGear(c, id) {
+  const d = c.d, next = gearNext(d, id);
+  if (!next || !c.pay(next.price)) return false;
+  gymOf(d).tier[id] = tierOf(d, id) + 1;
+  return true;
+}
+
+return { outgrown, buyGear, GEAR, GEAR_GAIN, GEAR_TIRE, GEAR_COST, gymOf, tierOf, gearNow, gearNext, gainK, tireOf, feeK };
 })();
 // ---- world/Cutscene.js
 __m["world/Cutscene.js"] = (function () {
@@ -13936,6 +14000,7 @@ return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, Wav
 __m["world/Training.js"] = (function () {
 // Training mini-games (timing, rhythm, memory, balance, breathing) and the dock part-time job.
 const { clamp, fmtMoney, RNG } = __m["core/util.js"];
+const { GEAR, gearNow, tierOf, gainK, tireOf, gymOf, outgrown } = __m["world/gymGear.js"];
 const { drawText } = __m["render/pixelfont.js"];
 const { UI, mixHex } = __m["render/palette.js"];
 const { rect, ellipse } = __m["render/painter.js"];
@@ -13954,7 +14019,7 @@ const GAMES = {
 
 class Training {
   constructor(W, id, cost) {
-    this.W = W; this.game = W.game; this.c = W.c; this.id = id; this.G = GAMES[id]; this.mech = GAMES[id].mech || id; this.cost = cost; this.phase = 'intro'; this.t = 0; this.score = 0; this.rng = new RNG(Date.now() & 0xffff); this.fx = [];
+    this.W = W; this.game = W.game; this.c = W.c; this.id = id; this.G = GAMES[id]; this.tier = GEAR[id] ? tierOf(W.c.d, id) : 0; this.T = (GEAR[id] && gearNow(W.c.d, id)) || {}; this.mech = this.T.mech || GAMES[id].mech || id; this.cost = cost; this.phase = 'intro'; this.t = 0; this.score = 0; this.rng = new RNG(Date.now() & 0xffff); this.fx = [];
     this.savedStance = W.player.stance; this.savedX = W.player.x;
     W.player.x = this.G.x + (id === 'bench' ? 0 : 0);
     if (id === 'mitt') { W.player.x = this.G.x - 30; W.player.face = 1; }
@@ -13967,15 +14032,22 @@ class Training {
     const r = this.rng;
     switch (this.mech) {
       case 'bench': this.s = { needle: 0, dir: 1, speed: .9, zone: [.4, .62], reps: 0, miss: 0, hits: 0, perfect: 0, lift: 0 }; this.newZone(); break;
-      case 'rope': this.s = { beats: Array.from({ length: 20 }, (_, i) => 1.4 + i * .5 + (i > 9 ? -(i - 9) * .03 : 0)), idx: 0, good: 0, perfect: 0, hit: [] }; break;
-      case 'mitt': this.s = { round: 0, len: 3, seq: [], show: 0, input: [], ok: 0, phase: 'show', st: 0 }; this.newSeq(); break;
-      case 'bridge': this.s = { pos: 0, vel: 0, inZone: 0, drift: 0 }; break;
-      case 'breath': this.s = { fill: 0, round: 0, good: 0, band: [.72, .86], holding: false, done: [], armed: false }; break;
+      case 'rope': { const gp = this.T.gap || .5; this.s = { beats: Array.from({ length: 20 }, (_, i) => 1.4 + i * gp + (i > 9 ? -(i - 9) * .03 : 0)), idx: 0, good: 0, perfect: 0, hit: [] }; break; }
+      case 'mitt': this.s = { round: 0, len: this.T.len || 3, seq: [], show: 0, input: [], ok: 0, phase: 'show', st: 0 }; this.newSeq(); break;
+      case 'bridge': this.s = { pos: 0, vel: 0, inZone: 0, drift: 0, force: this.T.force || 1, time: this.T.time || 10 }; break;
+      case 'breath': this.s = { fill: 0, round: 0, good: 0, band: [.72, .86], holding: false, done: [], armed: false, k: this.T.fill || 1 }; break;
+      case 'typing': this.s = { word: this.newWord(), pos: 0, typed: 0, miss: 0, left: this.T.time || 12, target: this.T.target || 16 }; break;
+      case 'rhythm': { const n = this.T.notes || 22, gp = .58 / (this.T.speed || 1), lanes = this.T.lanes || 3; this.s = { lanes, keys: lanes === 4 ? ['left', 'down', 'atk', 'grab'] : ['atk', 'grab', 'dodge'], notes: Array.from({ length: n }, (_, i) => ({ t: 1.8 + i * gp + (r.next() < .2 ? gp * .5 : 0), lane: r.int(0, lanes - 1), done: 0 })), fall: 1.3 / (this.T.speed || 1), good: 0, perfect: 0, miss: 0 }; break; }
+      case 'snake': { this.s = { w: 22, h: 9, body: [[5, 4], [4, 4], [3, 4]], dir: [1, 0], want: [1, 0], step: this.T.step || .15, st: 0, eaten: 0, target: this.T.target || 8, left: 30, dead: 0 }; this.newFood(); break; }
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
     }
     void r;
   }
-  newZone() { const s = this.s, w = .22 - s.reps * .015, c = .2 + this.rng.next() * .6; s.zone = [clamp(c - w / 2, 0, 1 - w), clamp(c + w / 2, w, 1)]; s.speed = .9 + s.reps * .14; }
+  newZone() { const s = this.s, w = (.22 - s.reps * .015) * (this.T.zone || 1), c = .2 + this.rng.next() * .6; s.zone = [clamp(c - w / 2, 0, 1 - w), clamp(c + w / 2, w, 1)]; s.speed = (.9 + s.reps * .14) * (this.T.speed || 1); }
+  // typing: a word of letters to type, as many letters as you can before the time runs out
+  newWord() { const A = 'ABCDFGHIJKLNORSTUVXYZ', n = this.T.len || 4 + Math.floor(this.rng.next() * 2); return Array.from({ length: n }, () => A[Math.floor(this.rng.next() * A.length)]).join(''); }
+  // snake: a mitt somewhere off the body
+  newFood() { const s = this.s; for (let k = 0; k < 50; k++) { const f = [1 + Math.floor(this.rng.next() * (s.w - 2)), 1 + Math.floor(this.rng.next() * (s.h - 2))]; if (!s.body.some(b => b[0] === f[0] && b[1] === f[1])) { s.food = f; return; } } s.food = [1, 1]; }
   newSeq() { const s = this.s; s.seq = Array.from({ length: s.len }, () => this.rng.pick(['up', 'left', 'down', 'right'])); s.show = 0; s.input = []; s.phase = 'show'; s.st = 0; }
   pop(text, col, x = 320, y = 150) { this.fx.push({ text, col, x, y, t: 0 }); }
   finish(score) {
@@ -13992,10 +14064,11 @@ class Training {
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
     } else {
       const tb = d.buffs && d.buffs.train || 1;
-      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK * tb;
+      const g = { S: 1, A: .7, B: .45, C: .25 }[grade] * fatK * tb * gainK(d, this.id);
+      const G2 = gymOf(d); G2.runs[this.id] = (G2.runs[this.id] || 0) + 1;
       if (d.buffs && d.buffs.train) { delete d.buffs.train; this.boosted = 1; }
       for (const k of this.G.stats) { const before = d.lv[k]; d.lv[k] = Math.min(20, d.lv[k] + g); this.gains.push([k, d.lv[k] - before]); }
-      d.fatigue = Math.min(100, d.fatigue + 14);
+      d.fatigue = Math.min(100, d.fatigue + tireOf(d, this.id));
       this.fatK = fatK;
     }
     this.msgs = c.spendSlot(1);
@@ -14008,7 +14081,7 @@ class Training {
     for (const f of this.fx) f.t += dt;
     this.fx = this.fx.filter(f => f.t < .8);
     if (this.phase === 'intro') { if (inp.menuPressed('confirm')) { A.sfx('ok'); this.start(); } else if (inp.menuPressed('cancel')) { A.sfx('back'); this.close(); } return; }
-    if (this.phase === 'result') { if (this.t > .5 && (inp.menuPressed('confirm') || inp.menuPressed('cancel'))) { (this.msgs || []).forEach(m => this.W.toast(m, '#ffb347')); this.close(); if (this.id === 'scrap') this.W.beggarHelped(this.helpPts || 1); if (this.id === 'cleanup') this.W.brLobbyFixed(); } return; }
+    if (this.phase === 'result') { if (this.t > .5 && (inp.menuPressed('confirm') || inp.menuPressed('cancel'))) { (this.msgs || []).forEach(m => this.W.toast(m, '#ffb347')); this.close(); if (GEAR[this.id] && outgrown(this.c.d, this.id, this.G.stats)) this.W.gearPitch(this.id); if (this.id === 'scrap') this.W.beggarHelped(this.helpPts || 1); if (this.id === 'cleanup') this.W.brLobbyFixed(); } return; }
     const s = this.s;
     switch (this.mech) {
       case 'bench': {
@@ -14057,7 +14130,7 @@ class Training {
         break;
       }
       case 'bridge': {
-        const T = this.t;
+        const T = this.t * s.force;
         s.drift += (this.rng.next() - .5) * dt * 6;
         s.drift = clamp(s.drift, -1.4, 1.4);
         const force = s.drift + Math.sin(T * 1.7) * .9 + Math.sin(T * 3.1 + 1) * .4 + (T / 10) * Math.sign(s.pos || 1) * .6;
@@ -14065,23 +14138,56 @@ class Training {
         s.vel += (force * .9 + ctl * 2.6 - s.vel * 1.2) * dt;
         s.pos = clamp(s.pos + s.vel * dt, -1, 1);
         if (Math.abs(s.pos) < .25) s.inZone += dt;
-        if (Math.abs(s.pos) >= 1) { this.pop('무너졌다!', '#ff8a8a'); this.finish(s.inZone / 10 * .8); break; }
-        if (T >= 10) this.finish(s.inZone / 10);
+        if (Math.abs(s.pos) >= 1) { this.pop('무너졌다!', '#ff8a8a'); this.finish(s.inZone / s.time * .8); break; }
+        if (this.t >= s.time) this.finish(s.inZone / s.time);
         break;
       }
       case 'breath': {
         if (!s.armed) { if (!inp.actDown()) s.armed = true; break; }   // ignore the press that started the game
         const hold = inp.actDown();
-        if (hold) { s.holding = true; s.fill = Math.min(1.05, s.fill + dt * (.55 + s.round * .08)); }
+        if (hold) { s.holding = true; s.fill = Math.min(1.05, s.fill + dt * (.55 + s.round * .08) * s.k); }
         else if (s.holding) {
           s.holding = false;
           const [a, b] = s.band, ok = s.fill >= a && s.fill <= b;
           if (ok) { s.good++; this.pop('깊은 호흡!', '#6be38a'); A.sfx('good'); } else { this.pop(s.fill < a ? '얕다' : '너무 참았다', '#ff8a8a'); A.sfx('miss'); }
           s.done.push(ok); s.round++; s.fill = 0;
-          const w = .14 - s.round * .012, c = .62 + this.rng.next() * .22; s.band = [c - w / 2, c + w / 2];
+          const w = (.14 - s.round * .012) * (this.T.band || 1), c = .62 + this.rng.next() * .22; s.band = [c - w / 2, c + w / 2];
           if (s.round >= 5) this.finish(s.good / 5);
         }
         if (s.fill >= 1.05) { s.holding = false; s.done.push(false); s.round++; s.fill = 0; this.pop('숨이 막힌다!', '#ff8a8a'); A.sfx('miss'); if (s.round >= 5) this.finish(s.good / 5); }
+        break;
+      }
+      case 'typing': {
+        s.left -= dt;
+        for (let i = 0; i < 26; i++) { const ch = String.fromCharCode(65 + i); if (!inp.rawPressed('Key' + ch)) continue;
+          if (ch === s.word[s.pos]) { s.pos++; s.typed++; A.sfx('type'); this.W.player.vy = -60; if (s.pos >= s.word.length) { this.pop('들어 올렸다!', '#6be38a', 320, 132); A.sfx('stat'); s.word = this.newWord(); s.pos = 0; } }
+          else { s.miss++; s.pos = 0; this.pop('삐끗!', '#ff8a8a', 320, 132); A.sfx('miss'); } }
+        if (s.left <= 0) this.finish(s.typed / s.target - s.miss * .02);
+        break;
+      }
+      case 'rhythm': {
+        const T = this.t;
+        s.keys.forEach((k, lane) => { if (!inp.pressed(k)) return; const n = s.notes.filter(o => !o.done && o.lane === lane).sort((a, b) => Math.abs(a.t - T) - Math.abs(b.t - T))[0]; const e = n ? Math.abs(n.t - T) : 9;
+          if (e < .07) { n.done = 2; s.perfect++; s.good++; this.pop('완벽!', '#ffd65a', 232 + lane * 176 / (s.lanes - 1), 150); A.sfx('good'); this.W.player.vy = -150; this.W.player.ground = false; }
+          else if (e < .15) { n.done = 1; s.good++; this.pop('좋아', '#6be38a', 232 + lane * 176 / (s.lanes - 1), 150); A.sfx('tick'); }
+          else { s.miss++; A.sfx('miss'); } });
+        for (const n of s.notes) if (!n.done && T > n.t + .15) { n.done = -1; s.miss++; }
+        if (s.notes.every(n => n.done)) this.finish((s.good + s.perfect * .3) / s.notes.length - s.miss * .01);
+        break;
+      }
+      case 'snake': {
+        s.left -= dt;
+        const turn = inp.pressed('up') ? [0, -1] : inp.pressed('down') ? [0, 1] : inp.pressed('left') ? [-1, 0] : inp.pressed('right') ? [1, 0] : null;
+        if (turn && !(turn[0] === -s.dir[0] && turn[1] === -s.dir[1])) s.want = turn;
+        s.st += dt;
+        while (s.st >= s.step && !s.dead) {
+          s.st -= s.step; s.dir = s.want;
+          const h = [s.body[0][0] + s.dir[0], s.body[0][1] + s.dir[1]];
+          if (h[0] < 0 || h[1] < 0 || h[0] >= s.w || h[1] >= s.h || s.body.some(b => b[0] === h[0] && b[1] === h[1])) { s.dead = 1; this.pop('발이 꼬였다!', '#ff8a8a'); A.sfx('miss'); break; }
+          s.body.unshift(h);
+          if (h[0] === s.food[0] && h[1] === s.food[1]) { s.eaten++; this.pop('퍽!', '#ffd65a', 160 + h[0] * 15, 70 + h[1] * 15); A.sfx('punch1'); this.newFood(); } else s.body.pop();
+        }
+        if (s.dead || s.left <= 0 || s.eaten >= s.target) this.finish(s.eaten / s.target);
         break;
       }
       case 'job': {
@@ -14106,13 +14212,15 @@ class Training {
   draw(u) {
     const G = this.G, s = this.s;
     fade(u, this.phase === 'play' ? .25 : .5);
-    panel(u, 120, 40, 400, this.phase === 'play' ? 120 : 200, { accent: '#ffd65a', alpha: .94 });
-    drawText(u, `${G.name} · ${G.kind}`, 320, 48, { align: 'c', color: '#ffd65a', bold: true });
+    const big = this.phase === 'play' && (this.mech === 'rhythm' || this.mech === 'snake');
+    panel(u, 120, 40, 400, this.phase === 'play' ? (big ? 210 : 120) : 200, { accent: this.tier ? '#49d6ff' : '#ffd65a', alpha: .94 });
+    drawText(u, `${G.name} · ${this.T.name && this.tier ? this.T.name + ' · ' : ''}${{ typing: '타자', rhythm: '리듬', snake: '스텝' }[this.mech] || G.kind}`, 320, 48, { align: 'c', color: this.tier ? '#49d6ff' : '#ffd65a', bold: true });
     if (this.phase === 'intro') {
       drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
+      if (this.mech === 'typing' || this.mech === 'rhythm' || this.mech === 'snake') drawText(u, { typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.', rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.', snake: 'W A S D로 방향을 바꿔 미트를 쳐라. 벽이나 내 발에 걸리면 끝.' }[this.mech], 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else drawText(u, this.id === 'cleanup' ? '돈은 안 되지만 로비와 훈련장이 다시 열린다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
-      drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +14` : this.id === 'scrap' || this.id === 'cleanup' ? '시간 1칸 · 피로 +8' : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
+      drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +${tireOf(this.c.d, this.id)}${this.tier ? ` · 효과 ×${gainK(this.c.d, this.id).toFixed(1)}` : ''}` : this.id === 'scrap' || this.id === 'cleanup' ? '시간 1칸 · 피로 +8' : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
       if (this.c.d.fatigue > 40) drawText(u, `피로 ${Math.round(this.c.d.fatigue)}: 훈련 효과 ${this.c.d.fatigue > 70 ? '50%' : '80%'}`, 320, 134, { size: 11, align: 'c', color: '#ff8a8a' });
       prompt(u, ['Enter'], '시작', 270, 210, {}); prompt(u, ['Esc'], '그만두기', 350, 210, {});
       return;
@@ -14164,6 +14272,29 @@ class Training {
         rect(u, '#1a1d33', x, y, 40, h); rect(u, '#2a8a4a', x, y + h * (1 - s.band[1]), 40, h * (s.band[1] - s.band[0]));
         rect(u, '#49d6ff', x + 4, y + h * (1 - Math.min(1, s.fill)), 32, h * Math.min(1, s.fill));
         drawText(u, `${s.round}/5 · 성공 ${s.good}`, 400, 100, { size: 11, color: UI.dim }); keycap(u, 'J', 250, 100);
+        break;
+      }
+      case 'typing': {
+        const w = s.word, cw = 26, x0 = 320 - (w.length - 1) * cw / 2;
+        for (let i = 0; i < w.length; i++) { const done = i < s.pos; rect(u, '#05060f', x0 + i * cw - 12, 70, 24, 26); rect(u, done ? '#2a6a3a' : i === s.pos ? '#3a4a8a' : '#1a1d33', x0 + i * cw - 11, 71, 22, 24); drawText(u, w[i], x0 + i * cw, 76, { align: 'c', color: done ? '#9be36b' : '#ffffff', bold: true }); }
+        gauge(u, 200, 104, 240, 5, Math.max(0, s.left) / (this.T.time || 12), 'fin', {});
+        drawText(u, `${s.typed}/${s.target}자 · 틀림 ${s.miss} · 남은 ${Math.max(0, s.left).toFixed(1)}초`, 320, 116, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'rhythm': {
+        const L = s.lanes, x0 = 232, gapX = 176 / (L - 1), line = 214, top = 68, T = this.t;
+        for (let i = 0; i < L; i++) { const x = x0 + i * gapX; rect(u, '#141a36', x - 18, top, 36, line - top + 12); rect(u, '#2a3150', x - 18, line - 1, 36, 3); keycap(u, this.game.input.label(s.keys[i]), x - 6, line + 8); }
+        for (const n of s.notes) { if (n.done) continue; const k = (n.t - T) / s.fall; if (k < 0 || k > 1) continue; const x = x0 + n.lane * gapX, y = line - k * (line - top); rect(u, '#05060f', x - 15, y - 5, 30, 10); rect(u, ['#ffd65a', '#49d6ff', '#ff8fc4', '#6be38a'][n.lane], x - 14, y - 4, 28, 8); }
+        drawText(u, `성공 ${s.good} · 놓침 ${s.miss}`, 320, 238, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'snake': {
+        const c = 15, x0 = 320 - s.w * c / 2, y0 = 66;
+        rect(u, '#05060f', x0 - 2, y0 - 2, s.w * c + 4, s.h * c + 4); rect(u, '#141a36', x0, y0, s.w * c, s.h * c);
+        for (let x = 0; x < s.w; x++) for (let y = 0; y < s.h; y++) if ((x + y) % 2) rect(u, '#171e3e', x0 + x * c, y0 + y * c, c, c);
+        rect(u, '#c2333f', x0 + s.food[0] * c + 2, y0 + s.food[1] * c + 2, c - 4, c - 4); rect(u, '#ffd65a', x0 + s.food[0] * c + 5, y0 + s.food[1] * c + 5, c - 10, c - 10);
+        s.body.forEach((b, i) => rect(u, i ? '#3fb0c0' : '#9be3ff', x0 + b[0] * c + 1, y0 + b[1] * c + 1, c - 2, c - 2));
+        drawText(u, `미트 ${s.eaten}/${s.target} · 남은 ${Math.max(0, s.left).toFixed(0)}초 · W A S D로 방향`, 320, y0 + s.h * c + 6, { size: 11, align: 'c', color: UI.dim });
         break;
       }
       case 'job': {
@@ -14345,6 +14476,7 @@ return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retire
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
+const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } = __m["world/gymGear.js"];
 const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
 const { SYNERGY, SYN_KIND, synName, needMoves } = __m["data/synergy.js"];
 const { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } = __m["world/blackRope.js"];
@@ -14568,7 +14700,7 @@ class WorldScene {
   startTraining(game) {
     const c = this.c, d = c.d;
     if (game !== 'job' && d.slot === 2 && false) return;
-    const cost = game === 'job' || game === 'scrap' || game === 'cleanup' ? 0 : 6000 + d.season * 2000;
+    const cost = game === 'job' || game === 'scrap' || game === 'cleanup' ? 0 : Math.round((6000 + d.season * 2000) * feeK(d, game) / 1000) * 1000;
     if (!c.canPay(cost)) { this.toast(`훈련비 ${fmtMoney(cost)}이(가) 부족하다`, '#ff8a8a'); this.game.audio.sfx('deny'); return; }
     this.open(new Training(this, game, cost));
   }
@@ -14888,6 +15020,23 @@ class WorldScene {
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
+  }
+  // ---- training equipment: 백 관장 says when a station has been outgrown; the list of what can be bought ----
+  gearPitch(id) {
+    const c = this.c, d = c.d, next = gearNext(d, id), now = gearNow(d, id);
+    if (!next) return;
+    gymOf(d).pitched[id] = tierOf(d, id) + 1;
+    this.say([
+      { who: 'trainer', text: `강해진 만큼 더 강한 훈련기구를 사야하지 않겠어? ${josa(now.name, '은/는')} 이제 너한테 장난감이다.` },
+      { who: 'trainer', text: `${next.name}. ${fmtMoney(next.price)}. 더 어렵고 더 지치지만, 그만큼 훨씬 많이 남는다.` },
+      { choice: [{ label: `${next.name} 사기 (${fmtMoney(next.price)})`, act: () => this.buyGearNow(id) }, { label: '나중에', go: [{ who: 'trainer', text: '그래, 돈 모이면 말해라. 기구는 어디 안 간다.' }] }] },
+    ]);
+  }
+  buyGearNow(id) { const c = this.c, next = gearNext(c.d, id); if (!next) return; if (!buyGear(c, id)) { this.game.audio.sfx('deny'); this.toast('돈이 모자란다', '#ff8a8a'); return; } c.save(); this.game.audio.sfx('buy'); this.toast(`새 훈련기구: ${next.name} — 더 어렵고 더 지치고, 효과는 더 크다`, '#49d6ff'); }
+  gearList() {
+    const d = this.c.d, rows = Object.keys(GEAR).map(id => ({ id, next: gearNext(d, id), now: gearNow(d, id) })).filter(r => r.next);
+    if (!rows.length) { this.say([{ who: 'trainer', text: '더 살 기구가 없다. 이제 기구가 아니라 링이 널 키울 거다.' }]); return; }
+    this.say([{ who: 'trainer', text: '어느 걸 바꿀래? 비쌀수록 어렵고 지치지만 그만큼 남는다.' }, { choice: rows.slice(0, 5).map(r => ({ label: `${r.now.name} → ${r.next.name} ${fmtMoney(r.next.price)}`, act: () => this.buyGearNow(r.id) })).concat([{ label: '그만두기', go: [] }]) }]);
   }
   // ---- 시너지: 백 관장's dictionary and lessons, 파식대 학원's books ----
   synergyTalk() {
