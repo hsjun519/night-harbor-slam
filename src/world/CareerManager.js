@@ -1,5 +1,6 @@
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
 import { playerStage } from '../data/entrances.js';
+import { marketMorning } from './market.js';
 import { SYNERGY, needMoves, synReady } from '../data/synergy.js';
 import { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } from './blackRope.js';
 import { RNG, clamp, deepClone, fmtMoney } from '../core/util.js';
@@ -36,7 +37,7 @@ export const SHOP_ITEMS = [
   { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
   // books: learn a grapple move, or change the move used from the top of the corner
   { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
-  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
+  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '정면 잡기에서 상대를 돌려세워 던진다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
   { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
   { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
   { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
@@ -274,7 +275,9 @@ export class Career {
     // the champion's royalties: shirts, posters, a milk advert
     if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
     msgs.push(...morningGifts(d));   // the harbour's people and the sponsor, for the pier
+    const before = ((d.season || 1) - 1) * 28 + (d.day || 1) - 1;
     d.day++;
+    msgs.push(...marketMorning(d, before));   // the prices creep up, a regular's seller may come by
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
     if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }

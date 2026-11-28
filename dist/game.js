@@ -9596,6 +9596,88 @@ class Lockstep {
 
 return { pack, unpack, Lockstep };
 })();
+// ---- world/market.js
+__m["world/market.js"] = (function () {
+// 상인: every seller in town (돛대 상회, 항구의원, 자판기, 순덕 포차, 떠돌이 상인 보부, 웨이브 상회). Prices move a
+// little every day (MARKET.swing), everything creeps up every three days (MARKET.rise), some goods sell out or
+// come in short for the day, a regular (MARKET.loyal buys) gets a discount now and then, and a good customer
+// (MARKET.visit buys) has the seller come by the lobby with something for the next match. 웨이브 상회 docks from
+// day 10: the expensive, better versions of things, the F+K grab slot and books of finishers.
+const { FINISHERS } = __m["data/moves.js"];
+const MARKET = { swing: .12, rise: .02, every: 3, soldOut: .1, short: .25, loyal: 5, loyalChance: .3, loyalCut: .15, visit: 12, visitGap: 4, visitChance: .4, waveDay: 10 };
+const SELLERS = {
+  shop: { name: '돛대 상회', npc: 'shop', who: '리키', gift: { buff: 'atk', v: 1.12, text: '황금 너클 (다음 경기 공격력 +12%)' } },
+  clinic: { name: '항구의원', npc: 'nurse', who: '간호사 미소', gift: { buff: 'guard', v: .7, text: '보호대 (다음 경기 부상 -30%)' } },
+  vending: { name: '자판기' },
+  food: { name: '순덕 포차', npc: 'auntie', who: '순덕 이모', gift: { buff: 'finStart', v: 30, text: '든든한 도시락 (피니셔 게이지 30으로 시작)' } },
+  merchant: { name: '떠돌이 상인', npc: 'merchant', who: '보부', gift: { buff: 'chair', v: 1, text: '행운의 의자 (경기 시작 때 옆에 의자)' } },
+  wave: { name: '웨이브 상회' },
+};
+// a small deterministic hash: the same day gives the same prices and stock on every reload
+function hash(...a) { let h = 2166136261; for (const x of a) { const s = String(x); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } } return ((h >>> 0) % 100003) / 100003; }
+const marketOf = d => d.market || (d.market = { buys: {}, sold: {}, visit: null, gifts: {} });
+const dayKey = d => `${d.season || 1}-${d.day || 1}`;
+const dayIndex = d => ((d.season || 1) - 1) * 28 + (d.day || 1) - 1;
+const inflation = d => 1 + MARKET.rise * Math.floor(dayIndex(d) / MARKET.every);
+const swing = (d, shop, key) => 1 + (hash(dayKey(d), shop, key) * 2 - 1) * MARKET.swing;
+const loyalToday = (d, shop) => (marketOf(d).buys[shop] || 0) >= MARKET.loyal && hash(dayKey(d), shop, 'loyal') < MARKET.loyalChance;
+// today's price of something that costs base
+function price(d, shop, key, base) {
+  if (!base) return 0;
+  const p = base * inflation(d) * swing(d, shop, key) * (loyalToday(d, shop) ? 1 - MARKET.loyalCut : 1);
+  return Math.max(100, Math.round(p / 100) * 100);
+}
+// up or down from the usual (the creeping rise is not counted)
+const trend = (d, shop, key) => { const s = swing(d, shop, key); return s > 1.04 ? 'up' : s < .96 ? 'down' : ''; };
+// today's stock: null (plenty), 0 (sold out) or how many are left
+function stock(d, shop, key) {
+  const r = hash(dayKey(d), shop, key, 'stock'), M = marketOf(d), sold = M.sold[shop + ':' + key] || 0;
+  if (r < MARKET.soldOut) return 0;
+  if (r < MARKET.soldOut + MARKET.short) return Math.max(0, 1 + Math.floor(hash(dayKey(d), key, shop) * 3) - sold);
+  return null;
+}
+function bought(d, shop, key) { const M = marketOf(d); M.buys[shop] = (M.buys[shop] || 0) + 1; M.sold[shop + ':' + key] = (M.sold[shop + ':' + key] || 0) + 1; }
+// a line for the top of a shop: today's market
+function marketNote(d, shop) {
+  const up = Math.round((inflation(d) - 1) * 100), parts = [];
+  if (up > 0) parts.push(`물가 +${up}% (3일마다 오른다)`);
+  if (loyalToday(d, shop)) parts.push(`단골 할인 -${Math.round(MARKET.loyalCut * 100)}%!`);
+  else if ((marketOf(d).buys[shop] || 0) >= MARKET.loyal) parts.push('단골 손님');
+  return parts.join(' · ');
+}
+// the morning: yesterday's counts go; a good customer's seller may come by the lobby; the rise is announced
+function marketMorning(d, dayBefore) {
+  const M = marketOf(d), msgs = [];
+  M.sold = {}; M.visit = null;
+  for (const s in SELLERS) {
+    const S = SELLERS[s];
+    if (!S.gift || (M.buys[s] || 0) < MARKET.visit || dayIndex(d) - (M.gifts[s] != null ? M.gifts[s] : -99) < MARKET.visitGap) continue;
+    if (hash(dayKey(d), s, 'visit') < MARKET.visitChance) { M.visit = s; break; }
+  }
+  if (dayBefore != null && Math.floor(dayIndex(d) / MARKET.every) > Math.floor(dayBefore / MARKET.every)) msgs.push(`물가가 조금 올랐다 (평소보다 +${Math.round((inflation(d) - 1) * 100)}%)`);
+  return msgs;
+}
+const visitor = d => { const M = marketOf(d); return M.visit && M.visit !== 'done' && SELLERS[M.visit] ? Object.assign({ id: M.visit }, SELLERS[M.visit]) : null; };
+function takeGift(d) { const M = marketOf(d), V = visitor(d); if (!V) return null; d.buffs = d.buffs || {}; d.buffs[V.gift.buff] = V.gift.v; M.gifts[V.id] = dayIndex(d); M.visit = 'done'; return V; }
+// ---- 웨이브 상회 (from day 10): the better, dearer versions, the F+K slot, finishers
+const waveOpen = d => (d.season || 1) > 1 || (d.day || 1) >= MARKET.waveDay;
+const WAVE_ITEMS = [
+  { id: 'slotF', name: 'F+K 잡기 칸', price: 450000, desc: '정면 잡기에 F+K 칸이 생긴다. Tab → 기술에서 기술을 넣자.', once: 1 },
+  { id: 'champBandage', name: '챔피언의 붕대', price: 46000, desc: '부상 -40. 소지품에 넣어 둔다. (붕대의 상위 호환)', give: 'champBandage', many: 1 },
+  { id: 'waveKnuckle', name: '웨이브 너클', price: 62000, desc: '다음 경기 공격력 +35%. (황금 너클의 상위 호환)', buff: { atk: 1.35 } },
+  { id: 'titanGuard', name: '티타늄 보호대', price: 58000, desc: '다음 경기에서 쌓이는 부상 -70%. (강철 보호대의 상위 호환)', buff: { guard: .3 } },
+  { id: 'stormCharm', name: '폭풍 부적', price: 54000, desc: '다음 경기를 피니셔 게이지 80으로 시작. (파도 부적의 상위 호환)', buff: { finStart: 80 } },
+  { id: 'eelGold', name: '황금 장어즙', price: 42000, desc: '피로 0, 부상 -12. 바로 마신다. (장어즙의 상위 호환)', now: { fat: 100, inj: 12 } },
+];
+// two books of finishers a day, from the ones the career does not know yet
+function waveBooks(d, known) {
+  const pool = ['dawn', 'container', 'typhoon', 'anchor', 'weld', 'tsunami', 'swallow', 'quarry', 'encore', 'stitch'].filter(id => FINISHERS[id] && !known.includes(id));
+  pool.sort((a, b) => hash(dayKey(d), a) - hash(dayKey(d), b));
+  return pool.slice(0, 2).map(id => ({ id: 'fin_' + id, name: `필살기의 서: ${FINISHERS[id].name}`, price: 380000, desc: '피니셔를 하나 더 배운다. Tab → 기술에서 F로 바꾼다.', fin: id, once: 1 }));
+}
+
+return { price, stock, bought, marketNote, marketMorning, takeGift, waveBooks, MARKET, SELLERS, marketOf, dayIndex, inflation, swing, loyalToday, trend, visitor, waveOpen, WAVE_ITEMS };
+})();
 // ---- world/blackRope.js
 __m["world/blackRope.js"] = (function () {
 // BLACK ROPE (a working name: change BR.name and the five characters to rename them): a rival crew of five who
@@ -9849,6 +9931,7 @@ return { harborBegin, harborAdd, donate, morningGifts, harborRebuild, signReport
 __m["world/CareerManager.js"] = (function () {
 // Career state and rules: stats, money, fame, ranking, season calendar, contracts, injuries, saving.
 const { playerStage } = __m["data/entrances.js"];
+const { marketMorning } = __m["world/market.js"];
 const { SYNERGY, needMoves, synReady } = __m["data/synergy.js"];
 const { BR, isBR, brState, brAfterMatch, brOffer, brLobbyFix } = __m["world/blackRope.js"];
 const { RNG, clamp, deepClone, fmtMoney } = __m["core/util.js"];
@@ -9884,7 +9967,7 @@ const SHOP_ITEMS = [
   { id: 'bigBandage', name: '고급 압박 붕대', price: 24000, desc: '부상 게이지 -23.', kind: 'item', inj: 23 },
   // books: learn a grapple move, or change the move used from the top of the corner
   { id: 'bookDDT', name: '기술의 서: DDT', price: 22000, desc: '정면 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'ddt' },
-  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '뒤 잡기 기술을 배운다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
+  { id: 'bookGerman', name: '기술의 서: 저먼 수플렉스', price: 30000, desc: '정면 잡기에서 상대를 돌려세워 던진다. Tab → 기술에서 장착.', kind: 'book', learn: 'german' },
   { id: 'bookPowerbomb', name: '기술의 서: 파워밤', price: 38000, desc: '정면 잡기 기술을 배운다. 들어 올릴 힘이 필요하다.', kind: 'book', learn: 'powerbomb' },
   { id: 'bookMissile', name: '기술의 서: 미사일 드롭킥', price: 0, desc: '코너 위에서 서 있는 상대에게: 미사일 드롭킥 (기본).', kind: 'book', top: 'stand', move: 'missileDropkick', free: 1 },
   { id: 'bookCrossbody', name: '기술의 서: 플라잉 크로스바디', price: 26000, desc: '코너 위에서 서 있는 상대에게: 온몸으로 덮친다.', kind: 'book', top: 'stand', move: 'topCrossbody' },
@@ -10122,7 +10205,9 @@ class Career {
     // the champion's royalties: shirts, posters, a milk advert
     if (d.flags.champion) { const roy = Math.round((8000 + d.fame * 60) / 1000) * 1000; this.earn(roy); msgs.push(`챔피언 굿즈 로열티 +${fmtMoney(roy)}`); }
     msgs.push(...morningGifts(d));   // the harbour's people and the sponsor, for the pier
+    const before = ((d.season || 1) - 1) * 28 + (d.day || 1) - 1;
     d.day++;
+    msgs.push(...marketMorning(d, before));   // the prices creep up, a regular's seller may come by
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
     if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
@@ -10873,6 +10958,10 @@ function paintStreet(g, L) {
   { const ax = 1898; rect(g, '#05060f', ax - 1, FLOOR - 117, 62, 117); rect(g, '#4a5a8a', ax, FLOOR - 116, 60, 116); for (let y = FLOOR - 112; y < FLOOR; y += 6) rect(g, '#3a4a78', ax, y, 60, 2); rect(g, '#2a3a5a', ax, FLOOR - 60, 60, 3);
     rect(g, '#05060f', ax + 4, FLOOR - 112, 52, 22); rect(g, '#1f3a2a', ax + 5, FLOOR - 111, 50, 20); drawText(g, '파식대', ax + 30, FLOOR - 110, { size: 11, align: 'c', color: '#e6f2dc' }); rect(g, '#e6f2dc', ax + 12, FLOOR - 95, 36, 1);
     rect(g, '#ffd27a', ax + 8, FLOOR - 52, 14, 12); rect(g, '#ffd27a', ax + 38, FLOOR - 52, 14, 12); rect(g, '#05060f', ax + 23, FLOOR - 36, 14, 36); rect(g, '#6a4a2e', ax + 24, FLOOR - 35, 12, 35); drawText(g, '학원', ax + 30, FLOOR - 76, { size: 11, align: 'c', color: '#ffd65a' }); }
+  // 웨이브 상회: a teal shipping container with a wave on its doors
+  { const wx = 1972; rect(g, '#05060f', wx - 1, FLOOR - 79, 76, 79); rect(g, '#1f8fa6', wx, FLOOR - 78, 74, 78); for (let x = wx + 4; x < wx + 74; x += 7) rect(g, '#177a8e', x, FLOOR - 76, 2, 74); rect(g, '#0e5a6a', wx, FLOOR - 78, 74, 4);
+    for (let i = 0; i < 74; i++) rect(g, '#e6f6ff', wx + i, FLOOR - 50 + Math.round(Math.sin(i / 74 * Math.PI * 3) * 4), 1, 2);
+    rect(g, '#05060f', wx + 8, FLOOR - 100, 58, 20); rect(g, '#0e3a4a', wx + 9, FLOOR - 99, 56, 18); drawText(g, '웨이브', wx + 37, FLOOR - 98, { size: 11, align: 'c', color: '#7fe0ff' }); rect(g, '#3a3a52', wx + 20, FLOOR - 80, 2, 2); rect(g, '#3a3a52', wx + 52, FLOOR - 80, 2, 2); }
   bld(2060, 220, 220, '#2a2246', '등대 돔', '#ffd65a', { big: 1 });
   door(g, 2150, 196, 40, 104, '#4a3d70', {});
   // the old passenger pier past the dome: open water under it (the deck itself follows the career: liveDecor.js)
@@ -10910,7 +10999,7 @@ const LOCATIONS = {
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' },
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 2008, w: 56, act: 'wave', label: '웨이브 상회' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
@@ -11232,6 +11321,7 @@ function peopleAt(loc, c) {
       if (day % 3 !== 1) add(roster[(day * 3 + 4) % roster.length], 1000, -1, { stance: 'sit', y: -10 });
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
+      { const M = d.market, V = M && M.visit && M.visit !== 'done' ? M.visit : null, npc = V && { shop: 'shop', clinic: 'nurse', food: 'auntie', merchant: 'merchant' }[V]; if (npc) add(npc, 150, 1, { visitor: 1 }); }   // a regular's seller drops by
       if (day % 4 === 0) add('dohyun', 620, 1);
       if (d.flags.champion) { add('fankid', 232, 1, { stance: 'cheer' }); if (day % 2) add('reporter', 900, -1); }   // the champion's lobby: fans and the press
       // a wrestler beaten earlier waits by the stairs to the basement
@@ -11252,7 +11342,7 @@ function peopleAt(loc, c) {
       add('fankid', 1330, -1);
       add('busker', 1190, 1);
       add('foreman', 1790, 1);   // by the crane, clear of 파식대 학원's door
-      add('oldman', harborRepaired(d) ? 2590 : 2040, 1);   // once the pier is rebuilt the lighthouse keeper fishes off it
+      add('oldman', harborRepaired(d) ? 2590 : 2250, -1);   // once the pier is rebuilt the lighthouse keeper fishes off it
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
       if (!d.flags.hideout && day >= 2) add('beggar', 812, 1, { stance: 'elder' });   // by the alley, until he takes you in
@@ -13086,6 +13176,7 @@ return { EndingScene, FB };
 __m["world/menus.js"] = (function () {
 // Windows opened in the world: contracts, matches, shop, clinic, food, moves, info (Tab), map, ranking, results.
 const { BR } = __m["world/blackRope.js"];
+const { price: mPrice, stock: mStock, bought: mBought, trend: mTrend, marketNote, WAVE_ITEMS, waveBooks } = __m["world/market.js"];
 const { SYNERGY, SYN_KIND, synMoves, needMoves, synName, comboOnly } = __m["data/synergy.js"];
 const { clamp, fmtMoney, fmtTime, josa, RNG } = __m["core/util.js"];
 const { drawText, textWidth, wrapText } = __m["render/pixelfont.js"];
@@ -13227,7 +13318,7 @@ class ArenaMenu extends Menu {
 class ShopMenu extends Menu {
   constructor(W) { super(W); this.tab = 0; }
   list() { const k = ['item', 'gear', 'outfit', 'book'][this.tab]; return SHOP_ITEMS.filter(i => i.kind === k && !i.rare); }
-  price(it) { return it.kind === 'item' ? salePrice(this.c.d, it.price) : it.price; }
+  price(it) { const d = this.c.d; return mPrice(d, 'shop', it.id, it.kind === 'item' ? salePrice(d, it.price) : it.price); }
   update(dt) {
     super.update(dt);
     const inp = this.game.input, A = this.game.audio, c = this.c, d = c.d, L = this.list();
@@ -13238,8 +13329,9 @@ class ShopMenu extends Menu {
       const it = L[this.sel];
       if (it.kind === 'book') { this.book(it); return; }
       if (it.kind !== 'item' && d.owned.includes(it.id)) { this.equip(it); return; }
+      if (it.kind === 'item' && mStock(d, 'shop', it.id) === 0) { A.sfx('deny'); this.W.toast('오늘은 다 팔렸다. 내일 다시 들어온다.', '#ff8a8a'); return; }
       if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
-      A.sfx('buy');
+      A.sfx('buy'); mBought(d, 'shop', it.id);
       if (it.kind === 'item') { d.items[it.id] = (d.items[it.id] || 0) + 1; this.W.toast(`${it.name} 구입 (소지 ${d.items[it.id]})`, '#9be36b'); }
       else { d.owned.push(it.id); this.equip(it); }
       c.save();
@@ -13250,7 +13342,7 @@ class ShopMenu extends Menu {
   book(it) {
     const c = this.c, d = c.d, A = this.game.audio;
     if (it.learn && d.known.includes(it.learn)) { A.sfx('deny'); this.W.toast('이미 배운 기술이다. Tab → 기술에서 장착하자.'); return; }
-    if (!this.bookOwned(it)) { if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; } A.sfx('buy'); if (!it.learn) d.owned.push(it.id); }
+    if (!this.bookOwned(it)) { if (!c.pay(this.price(it))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; } A.sfx('buy'); mBought(d, 'shop', it.id); if (!it.learn) d.owned.push(it.id); }
     if (it.learn) { c.learn(it.learn); this.W.toast(learnedText(it.learn), '#6be38a'); }
     else { if (it.top === 'stand') d.moves.topStand = it.move; else d.moves.topDown = it.move; A.sfx('good'); this.W.toast(`코너 기술 변경: ${ATTACKS[it.move].name} (${it.top === 'stand' ? '서 있는 상대' : '누운 상대'})`, '#6be38a'); }
     c.save();
@@ -13265,17 +13357,19 @@ class ShopMenu extends Menu {
     const d = this.c.d, L = this.list();
     this.frame(u, '돛대 상회', 60, 30, 520, 296, '#ffb347');
     ['소모품', '장비', '의상', '기술의 서'].forEach((t, i) => { const x = 140 + i * 100, on = i === this.tab; rect(u, on ? '#5a3a1a' : '#1a1a2a', x - 40, 50, 80, 16); drawText(u, t, x, 52, { size: 11, align: 'c', color: on ? '#ffd65a' : UI.dim }); });
-    drawText(u, '소지금 ' + this.c.money(), 568, 52, { size: 11, align: 'r', color: UI.money });
+    drawText(u, '소지금 ' + this.c.money(), 568, 282, { size: 11, align: 'r', color: UI.money });
     L.forEach((it, i) => {
       const y = 74 + i * 30, on = i === this.sel, own = d.owned.includes(it.id), worn = (d.gear[it.slot] === it.id) || (d.outfit || []).includes(it.id);
       rect(u, on ? '#3a2a1a' : '#141a36', 72, y, 496, 27); if (on) rect(u, '#ffb347', 72, y, 2, 27);
       const bk = it.kind === 'book', bOwn = bk && this.bookOwned(it), bUse = bk && this.bookInUse(it);
       drawText(u, it.name + (it.kind === 'item' ? ` (보유 ${d.items[it.id] || 0})` : bk ? (bUse ? ' [사용 중]' : bOwn ? (it.learn ? ' [습득]' : ' [보유]') : '') : worn ? ' [착용 중]' : own ? ' [보유]' : ''), 80, y + 2, { color: on ? '#ffffff' : '#e6d8c0' });
       drawText(u, it.desc, 80, y + 15, { size: 11, color: UI.dim });
-      if (bk) drawText(u, bOwn ? (it.learn ? '' : bUse ? '' : '바꾸기') : fmtMoney(it.price), 560, y + 6, { align: 'r', color: bOwn ? '#6be38a' : UI.money });
+      if (bk) drawText(u, bOwn ? (it.learn ? '' : bUse ? '' : '바꾸기') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: bOwn ? '#6be38a' : UI.money });
       else drawText(u, it.kind !== 'item' && own ? (worn ? '해제' : '착용') : fmtMoney(this.price(it)), 560, y + 6, { align: 'r', color: it.kind !== 'item' && own ? '#6be38a' : this.price(it) < it.price ? '#ff8fc4' : UI.money });
+      if (it.kind === 'item') { const s = mStock(d, 'shop', it.id), tr = mTrend(d, 'shop', it.id); if (s != null) drawText(u, s ? `남은 ${s}개` : '품절', 486, y + 6, { size: 11, align: 'r', color: s ? '#ffb347' : '#ff5b5b' }); if (tr) drawText(u, tr === 'up' ? '▲' : '▼', 566, y + 15, { size: 11, align: 'r', color: tr === 'up' ? '#ff8a8a' : '#6be38a' }); }
     });
     if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 소모품 30% 할인', 320, 296, { size: 11, align: 'c', color: '#ff8fc4' });
+    else { const n = marketNote(d, 'shop'); if (n) drawText(u, n, 320, 296, { size: 11, align: 'c', color: '#ffd65a' }); }
     this.foot(u, this.tab === 3 ? '←→ 분류 · Enter 사기/바꾸기 · 배운 잡기 기술은 Tab → 기술에서 장착' : '←→ 분류 · Enter 구입/착용 · Esc 나가기', 312);
   }
 }
@@ -13284,7 +13378,7 @@ class ShopMenu extends Menu {
 class ClinicMenu extends Menu {
   opts() {
     const d = this.c.d, inj = d.injury, k = saleOn(d) ? .7 : 1;
-    const full = Math.round(Math.max(7000, inj * 1050) * k / 1000) * 1000, part = Math.round(17600 * k / 100) * 100, stay = Math.round(Math.max(13000, inj * 900 + 7500) * k / 1000) * 1000;
+    const full = mPrice(d, 'clinic', 'full', Math.round(Math.max(7000, inj * 1050) * k / 1000) * 1000), part = mPrice(d, 'clinic', 'part', Math.round(17600 * k / 100) * 100), stay = mPrice(d, 'clinic', 'stay', Math.round(Math.max(13000, inj * 900 + 7500) * k / 1000) * 1000);
     return [
       { label: '응급 처치', sub: `부상 -16 · ${fmtMoney(part)}`, price: part, act: () => this.treat(16, part, 0) },
       { label: '정밀 치료', sub: `부상 전부 · ${fmtMoney(full)} · 시간 1칸`, price: full, act: () => this.treat(100, full, 1) },
@@ -13296,6 +13390,7 @@ class ClinicMenu extends Menu {
     const c = this.c, A = this.game.audio;
     if (c.d.injury <= 0) { this.W.toast('치료할 부상이 없다'); return; }
     if (!c.pay(price)) { A.sfx('deny'); this.W.toast('치료비가 모자란다. 하역장 아르바이트로 벌 수 있다.', '#ff8a8a'); return; }
+    mBought(c.d, 'clinic', slots ? 'full' : 'part');
     const healed = c.healInjury(pts);
     if (slots) c.spendSlot(slots).forEach(m => this.W.toast(m, '#ffb347'));
     A.sfx('heal'); this.W.toast(`부상 -${Math.round(healed)}% (남은 부상 ${Math.round(c.d.injury)}%)`, '#c86bff'); c.save();
@@ -13303,6 +13398,7 @@ class ClinicMenu extends Menu {
   hospital(price) {
     const c = this.c, A = this.game.audio;
     if (!c.pay(price)) { A.sfx('deny'); this.W.toast('입원비가 모자란다', '#ff8a8a'); return; }
+    mBought(c.d, 'clinic', 'stay');
     c.healInjury(100); c.d.fatigue = 0;
     this.W.closeTop(); this.W.doSleep(); A.sfx('heal'); this.W.toast('입원 치료를 받았다. 몸이 가볍다!', '#c86bff');
   }
@@ -13321,6 +13417,7 @@ class ClinicMenu extends Menu {
     o.forEach((it, i) => { const y = 140 + i * 36, on = i === this.sel; rect(u, on ? '#1f4a4a' : '#141a36', 100, y, 440, 32); if (on) rect(u, '#6be3c8', 100, y, 2, 32); drawText(u, it.label, 110, y + 3, { color: on ? '#ffffff' : '#c9e8e0' }); if (it.sub) drawText(u, it.sub, 110, y + 18, { size: 11, color: UI.dim }); });
     drawText(u, '소지금 ' + this.c.money() + `  ·  붕대 ${d.items.bandage || 0} / 고급 붕대 ${d.items.bigBandage || 0} (Tab→소지품)`, 320, 290, { size: 11, align: 'c', color: UI.dim });
     if (saleOn(d)) drawText(u, '오늘은 항구 대세일! 치료비 30% 할인', 320, 126, { size: 11, align: 'c', color: '#ff8fc4' });
+    else { const n = marketNote(d, 'clinic'); if (n) drawText(u, n, 320, 128, { size: 11, align: 'c', color: '#ffd65a' }); }
     this.foot(u, '↑↓ 고르기 · Enter/E 치료 · Esc 나가기', 306);
   }
 }
@@ -13336,7 +13433,8 @@ class MerchantMenu extends Menu {
       if (this.sel === L.length) { this.W.closeTop(); return; }
       const it = L[this.sel], bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
       if (!it.many && bought.includes(it.id)) { A.sfx('deny'); this.W.toast('이건 오늘 한 개뿐이었어!', '#ff8a8a'); return; }
-      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      if (!c.pay(mPrice(d, 'merchant', it.id, it.price))) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
+      mBought(d, 'merchant', it.id);
       d.flags.merchant = { day: d.day, ids: [...bought, it.id] };
       if (it.buff) Object.assign(d.buffs, it.buff);
       if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
@@ -13348,17 +13446,50 @@ class MerchantMenu extends Menu {
   draw(u) {
     const d = this.c.d, L = this.stock(), bought = d.flags.merchant && d.flags.merchant.day === d.day ? d.flags.merchant.ids : [];
     this.frame(u, '떠돌이 상인 보부의 보따리', 60, 30, 520, 300, '#c98aff');
-    drawText(u, '오늘만 파는 물건. 내일이면 다음 항구로 떠난다.', 320, 50, { size: 11, align: 'c', color: '#e0c8ff' });
-    L.forEach((it, i) => { const y = 70 + i * 36, on = i === this.sel, sold = !it.many && bought.includes(it.id); rect(u, on ? '#3a2a5a' : '#141a36', 72, y, 496, 32); if (on) rect(u, '#c98aff', 72, y, 2, 32); drawText(u, it.name + (sold ? ' [품절]' : ''), 80, y + 3, { color: sold ? UI.faint : on ? '#ffffff' : '#e6d8ff' }); drawText(u, it.desc, 80, y + 18, { size: 11, color: UI.dim }); drawText(u, fmtMoney(it.price), 560, y + 9, { align: 'r', color: UI.money }); });
+    drawText(u, '오늘만 파는 물건. 내일이면 다음 항구로 떠난다.' + (marketNote(d, 'merchant') ? ' · ' + marketNote(d, 'merchant') : ''), 320, 50, { size: 11, align: 'c', color: '#e0c8ff' });
+    L.forEach((it, i) => { const y = 70 + i * 36, on = i === this.sel, sold = !it.many && bought.includes(it.id); rect(u, on ? '#3a2a5a' : '#141a36', 72, y, 496, 32); if (on) rect(u, '#c98aff', 72, y, 2, 32); drawText(u, it.name + (sold ? ' [품절]' : ''), 80, y + 3, { color: sold ? UI.faint : on ? '#ffffff' : '#e6d8ff' }); drawText(u, it.desc, 80, y + 18, { size: 11, color: UI.dim }); drawText(u, fmtMoney(mPrice(d, 'merchant', it.id, it.price)), 560, y + 9, { align: 'r', color: UI.money }); });
     const y = 70 + L.length * 36; rect(u, this.sel === L.length ? '#3a2a5a' : '#141a36', 72, y, 496, 18); drawText(u, '나가기', 320, y + 2, { size: 11, align: 'c', color: this.sel === L.length ? '#ffffff' : UI.dim });
     drawText(u, '소지금 ' + this.c.money(), 320, 296, { size: 11, align: 'c', color: UI.money });
     this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 312);
   }
 }
 
+// ---- 웨이브 상회: the dear, better versions; the F+K slot; two books of finishers a day ----
+class WaveMenu extends Menu {
+  list() { const c = this.c, d = c.d, got = d.flags.waveBought || []; return WAVE_ITEMS.concat(waveBooks(d, c.finKnown())).filter(it => !(it.once && got.includes(it.id)) && !(it.id === 'slotF' && d.flags.slotF)); }
+  update(dt) {
+    super.update(dt); const L = this.list(), c = this.c, d = c.d, A = this.game.audio;
+    this.nav(L.length + 1);
+    if (this.back()) return;
+    if (!this.ok()) return;
+    if (this.sel === L.length) { this.W.closeTop(); return; }
+    const it = L[this.sel], p = mPrice(d, 'wave', it.id, it.price);
+    if (it.many && mStock(d, 'wave', it.id) === 0) { A.sfx('deny'); this.W.toast('오늘 물량은 다 나갔습니다. 다음 배로 들어옵니다.', '#ff8a8a'); return; }
+    if (!c.pay(p)) { A.sfx('deny'); this.W.toast('돈이 모자란다. 웨이브 상회는 비싸다.', '#ff8a8a'); return; }
+    mBought(d, 'wave', it.id);
+    if (it.once) d.flags.waveBought = (d.flags.waveBought || []).concat([it.id]);
+    if (it.id === 'slotF') d.flags.slotF = 1;
+    if (it.give) d.items[it.give] = (d.items[it.give] || 0) + 1;
+    if (it.buff) Object.assign(d.buffs, it.buff);
+    if (it.now) { if (it.now.fat) d.fatigue = Math.max(0, d.fatigue - it.now.fat); if (it.now.inj) c.healInjury(it.now.inj); }
+    if (it.fin) { c.learnFinisher(it.fin); }
+    A.sfx('buy'); this.W.toast(`${it.name}: ${it.desc}`, '#49d6ff'); c.save(); this.sel = Math.min(this.sel, this.list().length);
+  }
+  draw(u) {
+    const d = this.c.d, L = this.list();
+    this.frame(u, '웨이브 상회 — 부두 입고품', 60, 26, 520, 306, '#49d6ff');
+    drawText(u, '비싼 것만 판다. 대신 확실하다.' + (marketNote(d, 'wave') ? ' · ' + marketNote(d, 'wave') : ''), 320, 46, { size: 11, align: 'c', color: '#bff3ff' });
+    L.forEach((it, i) => { const y = 62 + i * 27, on = i === this.sel; rect(u, on ? '#14405a' : '#141a36', 72, y, 496, 25); if (on) rect(u, '#49d6ff', 72, y, 2, 25); drawText(u, it.name, 80, y + 2, { size: 11, color: on ? '#ffffff' : '#d8f4ff', bold: true }); drawText(u, it.desc, 80, y + 13, { size: 11, color: UI.dim }); drawText(u, fmtMoney(mPrice(d, 'wave', it.id, it.price)), 560, y + 6, { align: 'r', color: UI.money }); if (it.many) { const s = mStock(d, 'wave', it.id); if (s != null) drawText(u, s ? `남은 ${s}` : '품절', 470, y + 6, { size: 11, align: 'r', color: s ? '#ffb347' : '#ff5b5b' }); } });
+    const y = 62 + L.length * 27; rect(u, this.sel === L.length ? '#14405a' : '#141a36', 72, y, 496, 18); drawText(u, '나가기', 320, y + 2, { size: 11, align: 'c', color: this.sel === L.length ? '#ffffff' : UI.dim });
+    drawText(u, '소지금 ' + this.c.money(), 320, 300, { size: 11, align: 'c', color: UI.money });
+    this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 316);
+  }
+}
+
 // ---- vending machine: small, cheap, three a day ----
 class VendingMenu extends Menu {
-  opts() {
+  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'vending', it.label, it.price), stock: mStock(d, 'vending', it.label) }) : it)); }
+  baseOpts() {
     return [
       { label: '이온 음료', price: 3000, sub: '피로 -12', fn: d => { d.fatigue = Math.max(0, d.fatigue - 12); } },
       { label: '단백질 셰이크', price: 6000, sub: '피로 -6 · 다음 훈련 효과 +15%', fn: d => { d.fatigue = Math.max(0, d.fatigue - 6); d.buffs.train = 1.15; } },
@@ -13375,13 +13506,16 @@ class VendingMenu extends Menu {
     const it = o[this.sel];
     if (it.close) { this.W.closeTop(); return; }
     if (this.left() <= 0) { A.sfx('deny'); this.W.toast('오늘은 더 마시면 배탈 난다. (하루 3잔)', '#ff8a8a'); return; }
+    if (it.stock === 0) { A.sfx('deny'); this.W.toast('오늘은 다 떨어졌다. 내일 다시!', '#ff8a8a'); return; }
     if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자란다', '#ff8a8a'); return; }
     it.fn(d); const v = d.flags.vend; d.flags.vend = { day: d.day, n: (v && v.day === d.day ? v.n : 0) + 1 };
-    A.sfx('coin'); this.W.toast(`${it.label}: ${it.sub}`, '#9be36b'); c.save();
+    A.sfx('coin'); mBought(d, 'vending', it.label); this.W.toast(`${it.label}: ${it.sub}`, '#9be36b'); c.save();
   }
   draw(u) {
     this.frame(u, '자판기', 150, 70, 340, 210, '#49d6ff');
     this.opts().forEach((it, i) => { const y = 96 + i * 34, on = i === this.sel; rect(u, on ? '#1f3a5a' : '#141a36', 162, y, 316, 30); drawText(u, it.label, 172, y + 3, { color: on ? '#ffffff' : '#c9e8ff' }); drawText(u, it.sub || '', 172, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 470, y + 8, { align: 'r', color: UI.money }); });
+    this.opts().forEach((it, i) => { if (it.stock != null) drawText(u, it.stock ? `남은 ${it.stock}` : '품절', 404, 96 + i * 34 + 9, { size: 11, align: 'r', color: it.stock ? '#ffb347' : '#ff5b5b' }); });
+    { const n = marketNote(this.c.d, 'vending'); if (n) drawText(u, n, 320, 222, { size: 11, align: 'c', color: '#ffd65a' }); }
     drawText(u, `오늘 남은 횟수 ${this.left()}/3`, 320, 236, { size: 11, align: 'c', color: this.left() ? '#9be36b' : '#ff8a8a' });
     this.foot(u, '↑↓ 고르기 · Enter/E 사기 · Esc 나가기', 258);
   }
@@ -13389,7 +13523,8 @@ class VendingMenu extends Menu {
 
 // ---- food stall ----
 class FoodMenu extends Menu {
-  opts() {
+  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'food', it.label, it.price), stock: mStock(d, 'food', it.label) }) : it)); }
+  baseOpts() {
     return [
       { label: '어묵탕', price: 4000, sub: '피로 -15', fn: d => { d.fatigue = Math.max(0, d.fatigue - 15); } },
       { label: '해물파전', price: 9000, sub: '다음 경기: 피니셔 게이지 20으로 시작', fn: d => { d.flags.pajeon = 1; } },
@@ -13406,8 +13541,9 @@ class FoodMenu extends Menu {
       const it = o[this.sel];
       if (it.close) { this.W.closeTop(); return; }
       if (it.gossip) { this.W.closeTop(); this.W.say([{ who: 'auntie', text: this.gossip() }]); return; }
-      if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자라', '#ff8a8a'); return; }
-      it.fn(d, c); A.sfx('coin'); this.W.toast(`${it.label} 맛있게 먹었다! ${it.sub}`, '#9be36b'); c.save();
+      if (it.stock === 0) { A.sfx('deny'); this.W.toast('오늘은 다 떨어졌다. 내일 다시!', '#ff8a8a'); return; }
+    if (!c.pay(it.price)) { A.sfx('deny'); this.W.toast('돈이 모자라', '#ff8a8a'); return; }
+      it.fn(d, c); A.sfx('coin'); mBought(d, 'food', it.label); this.W.toast(`${it.label} 맛있게 먹었다! ${it.sub}`, '#9be36b'); c.save();
     }
   }
   gossip() {
@@ -13418,6 +13554,8 @@ class FoodMenu extends Menu {
   draw(u) {
     this.frame(u, '순덕 포차', 120, 60, 400, 230, '#ff8a9a');
     this.opts().forEach((it, i) => { const y = 88 + i * 34, on = i === this.sel; rect(u, on ? '#4a1a2a' : '#141a36', 134, y, 372, 30); drawText(u, it.label, 144, y + 3, { color: on ? '#ffffff' : '#f0d0d8' }); drawText(u, it.sub || '', 144, y + 17, { size: 11, color: UI.dim }); if (it.price) drawText(u, fmtMoney(it.price), 498, y + 8, { align: 'r', color: UI.money }); });
+    this.opts().forEach((it, i) => { if (it.stock != null) drawText(u, it.stock ? `남은 ${it.stock}` : '품절', 420, 88 + i * 34 + 9, { size: 11, align: 'r', color: it.stock ? '#ffb347' : '#ff5b5b' }); });
+    { const n = marketNote(this.c.d, 'food'); if (n) drawText(u, n, 320, 248, { size: 11, align: 'c', color: '#ffd65a' }); }
     drawText(u, '피로가 높으면 훈련 효과가 떨어지고 경기에서 부상이 더 쌓인다.', 320, 262, { size: 11, align: 'c', color: UI.faint });
     this.foot(u, '↑↓ 고르기 · Enter/E 주문 · Esc 나가기', 276);
   }
@@ -13792,7 +13930,7 @@ const menuTime = fmtTime;
 const menuTW = textWidth;
 const menuMix = mixHex;
 
-return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, VendingMenu, FoodMenu, LearnMenu, synRows, synStatus, SynergyMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
+return { Confirm, OffersMenu, ArenaMenu, ShopMenu, ClinicMenu, MerchantMenu, WaveMenu, VendingMenu, FoodMenu, LearnMenu, synRows, synStatus, SynergyMenu, InfoMenu, MapMenu, RankMenu, PauseMenu, ResultMenu, SeasonEndMenu, GameOverScene, menuSlots, menuDays, menuTime, menuTW, menuMix };
 })();
 // ---- world/Training.js
 __m["world/Training.js"] = (function () {
@@ -14207,6 +14345,7 @@ return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retire
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
+const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
 const { SYNERGY, SYN_KIND, synName, needMoves } = __m["data/synergy.js"];
 const { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } = __m["world/blackRope.js"];
 const { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG, pick } = __m["core/util.js"];
@@ -14325,6 +14464,8 @@ class WorldScene {
       if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
       if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
+    // a good customer's seller comes by the lobby with something for the next match
+    if (id === 'lobby' && !instant) { const V = visitor(d), a = V && this.npcs.find(n => n.id === V.npc); if (a) { this.approach(a, () => this.say([{ who: V.npc, text: `단골손님! 다음 경기에 쓰라고 이거 가져왔어요. ${V.gift.text}.`, expr: 'happy' }, { act: () => { takeGift(d); c.save(); this.toast(`${V.who}의 선물: ${V.gift.text}`, '#9be36b'); } }]), { range: 420, speed: 95 }); return; } }
     // the next opponent comes over in the waiting room, once per contract
     if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
       const key = d.contract.opp + d.contract.day, a = this.npcs.find(n => n.id === d.contract.opp);
@@ -14743,6 +14884,7 @@ class WorldScene {
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
       case 'academy': this.academyTalk(); break;
+      case 'wave': if (waveOpen(d)) { A.sfx('ui'); this.open(new Menus.WaveMenu(this)); } else this.say([{ who: null, name: '웨이브 상회', text: `"${MARKET.waveDay}일차 입고 예정". 컨테이너 문에 큼지막한 파도 그림. 안에서 포장 뜯는 소리가 난다.` }]); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }

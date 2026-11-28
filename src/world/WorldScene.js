@@ -1,5 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
+import { waveOpen, visitor, takeGift, MARKET } from './market.js';
 import { SYNERGY, SYN_KIND, synName, needMoves } from '../data/synergy.js';
 import { BR, isBR, brState, brRival, brMeetDue, brRaidDue, brRaidLineup, brRaidResult, brLobbyFix, brRunInDue, brRunInMark, brMods, brAfterLine } from './blackRope.js';
 import { VIEW_W, VIEW_H, clamp, damp, sgn, fmtMoney, josa, RNG, pick } from '../core/util.js';
@@ -119,6 +120,8 @@ export class WorldScene {
       if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
       if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
+    // a good customer's seller comes by the lobby with something for the next match
+    if (id === 'lobby' && !instant) { const V = visitor(d), a = V && this.npcs.find(n => n.id === V.npc); if (a) { this.approach(a, () => this.say([{ who: V.npc, text: `단골손님! 다음 경기에 쓰라고 이거 가져왔어요. ${V.gift.text}.`, expr: 'happy' }, { act: () => { takeGift(d); c.save(); this.toast(`${V.who}의 선물: ${V.gift.text}`, '#9be36b'); } }]), { range: 420, speed: 95 }); return; } }
     // the next opponent comes over in the waiting room, once per contract
     if (id === 'arena' && d.contract && CHARACTERS[d.contract.opp]) {
       const key = d.contract.opp + d.contract.day, a = this.npcs.find(n => n.id === d.contract.opp);
@@ -537,6 +540,7 @@ export class WorldScene {
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
       case 'academy': this.academyTalk(); break;
+      case 'wave': if (waveOpen(d)) { A.sfx('ui'); this.open(new Menus.WaveMenu(this)); } else this.say([{ who: null, name: '웨이브 상회', text: `"${MARKET.waveDay}일차 입고 예정". 컨테이너 문에 큼지막한 파도 그림. 안에서 포장 뜯는 소리가 난다.` }]); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }

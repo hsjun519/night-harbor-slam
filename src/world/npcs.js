@@ -41,6 +41,7 @@ export function peopleAt(loc, c) {
       if (day % 3 !== 1) add(roster[(day * 3 + 4) % roster.length], 1000, -1, { stance: 'sit', y: -10 });
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
+      { const M = d.market, V = M && M.visit && M.visit !== 'done' ? M.visit : null, npc = V && { shop: 'shop', clinic: 'nurse', food: 'auntie', merchant: 'merchant' }[V]; if (npc) add(npc, 150, 1, { visitor: 1 }); }   // a regular's seller drops by
       if (day % 4 === 0) add('dohyun', 620, 1);
       if (d.flags.champion) { add('fankid', 232, 1, { stance: 'cheer' }); if (day % 2) add('reporter', 900, -1); }   // the champion's lobby: fans and the press
       // a wrestler beaten earlier waits by the stairs to the basement
@@ -61,7 +62,7 @@ export function peopleAt(loc, c) {
       add('fankid', 1330, -1);
       add('busker', 1190, 1);
       add('foreman', 1790, 1);   // by the crane, clear of 파식대 학원's door
-      add('oldman', harborRepaired(d) ? 2590 : 2040, 1);   // once the pier is rebuilt the lighthouse keeper fishes off it
+      add('oldman', harborRepaired(d) ? 2590 : 2250, -1);   // once the pier is rebuilt the lighthouse keeper fishes off it
       if (day % 3 === 0) add('reporter', 1240, 1);
       if (merchantOn(d)) add('merchant', 1470, -1);
       if (!d.flags.hideout && day >= 2) add('beggar', 812, 1, { stance: 'elder' });   // by the alley, until he takes you in
