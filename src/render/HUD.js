@@ -265,7 +265,7 @@ export class HUD {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
     const slots = [['u', 0, -26], ['b', -f.face * 70, 0], ['n', 0, 0], ['f', f.face * 70, 0], ['d', 0, 26]];
     panel(g, x - 104, y - 40, 208, 92, { alpha: .82, cut: 3, accent: f.char.color });
-    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
+    drawText(g, '잡기' + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
     gauge(g, x + 6, y - 35, 90, 3, L.hold / (B.grabHold * (.8 + .2 * f.stats.grp)), 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
     gauge(g, x + 6, y - 29, 90, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
     for (const [s, dx, dy] of slots) {
@@ -283,7 +283,10 @@ export class HUD {
       if (!c.ok && denied) drawText(g, c.why, cx, cy + 24, { size: 11, align: 'c', color: '#ff8a8a', outline: '#05060f' });
     }
     // the other keys, along the bottom like every other prompt
-    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`], [[inp.label('dodge')], '위치 바꾸기']];
+    // Q/E/R/F + K: the extra slots, in a row under the panel
+    const extra = ['q', 'e', 'r', 'fk'].filter(s => f.moves.front && MOVES[f.moves.front[s]]);
+    extra.forEach((s, i) => { const mv = MOVES[f.moves.front[s]], c = m.grapple.check(f, v, mv), key = ({ q: inp.label('mq'), e: inp.label('me'), r: inp.label('mr'), fk: inp.label('mf') })[s] + '+' + inp.label('grab'), cx = x - (extra.length - 1) * 52 + i * 104, cy = y + 56, ww = Math.max(textWidth(mv.name, 11), textWidth(key, 11) + 6) + 8; rect(g, c.ok ? '#1b2450' : '#14172a', cx - ww / 2, cy - 1, ww, 24); keycap(g, key, cx - (textWidth(key, 11) + 6) / 2, cy, { bg: c.ok ? '#49d6ff' : '#5f6ca6' }); drawText(g, mv.name, cx, cy + 12, { size: 11, align: 'c', color: c.ok ? '#ffffff' : UI.faint }); });
+    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`]];
     if (f.fin >= B.finMax) P.push([[inp.label('fin')], '피니셔']);
     else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
     this.bottomPrompts(g, P);

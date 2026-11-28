@@ -1,6 +1,6 @@
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 import { clamp, sgn } from '../core/util.js';
-import { mash, holdStrength, holdGrip } from './Mash.js';
+import { mash, holdStrength, holdGrip, pressK } from './Mash.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { MOVES, HOLDS } from '../data/moves.js';
 import { startAttack, tryBurst } from './CharacterController.js';
@@ -64,7 +64,8 @@ export class GrappleSystem {
     const m = this.m;
     if (!f.set('GRAB')) return false;
     f.face = sgn(v.x - f.x) || f.face;
-    const rear = pos ? pos === 'rear' : v.st === 'STAGGER' && v.face === f.face;
+    const rear = pos === 'rear';   // only scripted: every hold is from the front now (a foe facing away is turned round)
+    if (!rear && v.face === f.face) v.face = -f.face;
     const down = v.st === 'DOWN';
     v.dropRag();
     v.set('GRABBED', { force: true });
@@ -109,7 +110,7 @@ export class GrappleSystem {
   }
   holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : L.pos === 'carry' ? HOLDS.carry : HOLDS.rear; }
   // Which move would this direction give, and is it usable right now?
-  slotFor(f, I) { if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
+  slotFor(f, I) { if (I.slot) return I.slot; if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
   moveInSlot(f, L, slot) { return f.moves[L.pos] && f.moves[L.pos][slot]; }
   liftNeed(mv, v) { return mv.lift * v.stats.weight / 100; }
   liftPower(a, v) { return a.stats.lift * (1 + (1 - v.hp / v.maxHp) * .55); }
@@ -141,7 +142,7 @@ export class GrappleSystem {
       m.emit('deny', { f, why: c.why, mv });
       L.deny = { slot, t: m.time, why: c.why };
     }
-    if (f.has('dodge') && !I.down) { f.consume('dodge'); if (L.switches < 2) { L.switches++; L.pos = L.pos === 'front' ? 'rear' : 'front'; L.switchT = B.switchTime; L.hold -= .2; m.anim.freezeBlend(f, .18); m.anim.freezeBlend(L.v, .18); m.emit('switch', { a: f, v: L.v }); } }
+    if (f.has('dodge') && !I.down) f.consume('dodge');   // no more switching to a rear hold
     if (f.has('atk')) {
       f.consume('atk');
       if (L.strikes < B.grabStrikeMax) { L.strikes++; L.strikeT = .26; L.strikeAt = L.t; m.combat.damage(L.v, 1.5 * f.stats.atk, 0, f, {}); m.combat.addFin(f, 2.4); L.v.escape = Math.max(0, L.v.escape - 8); L.v.hitShake = .16; L.v.flash = .08; m.hitstop(.06); m.emit('grabStrike', { a: f, v: L.v }); }
@@ -154,7 +155,7 @@ export class GrappleSystem {
     if (L.kind === 'move') return; // WrestlingMoveSystem reads the reversal input
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
     // J, or the key it has jumped to: harder against a bigger foe, a boss, and up on the shoulders (electric chair)
-    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * pressK(v);
     const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? B.carryEscape : 1) * holdGrip(S);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }

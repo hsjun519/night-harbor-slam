@@ -1,7 +1,7 @@
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
 // both only write an Intent.
 import { clamp, approach, sgn } from '../core/util.js';
-import { mashJ } from './Mash.js';
+import { mashJ, pressK } from './Mash.js';
 import { BALANCE as B, ATTACKS } from '../data/balance.js';
 import { FINISHERS } from '../data/moves.js';
 import { dimsFor, Joints } from '../anim/skeleton.js';
@@ -10,7 +10,16 @@ import { StateMachine, STATES } from './StateMachine.js';
 import { keepsProp } from './Props.js';
 import { springboard } from './ComboSystem.js';
 
-export function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
+// one hold from the front: K and four directions, plus Q/E/R/F + K. A move list from before keeps its rear moves on
+// Q E R when those are empty (the career fills them itself, as they unlock).
+export const EXTRA_SLOTS = ['q', 'e', 'r', 'fk'];
+export function frontSlots(mv) {
+  if (!mv || !mv.front) return mv;
+  const out = Object.assign({}, mv, { front: Object.assign({}, mv.front) }), R = mv.rear || {}, F = out.front;
+  if (!mv.career) for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) if (!F[s] && R[r]) F[s] = R[r];
+  return out;
+}
+export function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false, slot: null }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
 
 export class Fighter {
@@ -20,7 +29,7 @@ export class Fighter {
     this.dims = dimsFor(this.look.build, this.look.scale || 1);
     const s = this.stats = Object.assign({}, char.stats, o.stats || {});
     this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
-    this.moves = o.moves || char.moves; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
+    this.moves = frontSlots(o.moves || char.moves); this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
     this.moveUses = {}; this.mastery = o.mastery || null;   // career move mastery: landed uses this match, damage bonus per move
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
@@ -216,7 +225,7 @@ export function tryBurst(f) {
   return true;
 }
 function burstInput(f, I) { return I.down && f.has('dodge'); }
-function mashInput(f) { return mashJ(f) * (f.ctrl === 'human' ? B.mashHuman : 1); }   // J only
+function mashInput(f) { return mashJ(f) * pressK(f); }   // J only
 
 // ---- state control table -------------------------------------------------------------------------------
 export const CONTROL = {

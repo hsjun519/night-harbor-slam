@@ -1,10 +1,12 @@
 // Keyboard and gamepad mapped to actions. Bindings are data and can be changed in the settings screen.
 export const ACTIONS = {
   left: '왼쪽', right: '오른쪽', up: '점프 / 위', down: '방어 / 아래', atk: '공격', grab: '잡기', dodge: '회피 / 반격', fin: '피니셔', interact: '대화 / 조사', door: '문 / 이동', info: '선수 정보', map: '지도', pause: '일시정지',
+  mq: '잡기 칸 Q', me: '잡기 칸 E', mr: '잡기 칸 R', mf: '잡기 칸 F',
 };
 export const DEFAULT_KEYS = {
   left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'],
   atk: ['KeyJ'], grab: ['KeyK'], dodge: ['KeyL'], fin: ['Space'], interact: ['KeyE'], door: ['KeyF'], info: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'],
+  mq: ['KeyQ'], me: ['KeyE'], mr: ['KeyR'], mf: ['KeyF'],
 };
 // Menus also accept these.
 const MENU = { confirm: ['Enter', 'Space', 'KeyJ', 'KeyE'], cancel: ['Escape', 'Backspace', 'KeyL'] };
@@ -70,6 +72,7 @@ export class InputManager {
     I.mx = (this.down('right') ? 1 : 0) - (this.down('left') ? 1 : 0);
     I.up = this.down('up'); I.down = this.down('down'); I.downEdge = this.pressed('down');
     I.jump = this.pressed('up'); I.atk = this.pressed('atk'); I.grab = this.pressed('grab'); I.dodge = this.pressed('dodge'); I.fin = this.pressed('fin');
+    I.slot = this.down('mq') ? 'q' : this.down('me') ? 'e' : this.down('mr') ? 'r' : this.down('mf') ? 'fk' : null;   // Q/E/R/F + K: the extra grab slots
   }
   label(a) {
     if (this.device === 'pad') { const n = { atk: 'X', grab: 'Y', dodge: 'B', fin: 'RB', up: 'A', down: 'LB', interact: 'A', door: 'Y', pause: 'Start', info: 'Back', map: 'Back', left: '◀', right: '▶', confirm: 'A', cancel: 'B' }; return n[a] || a; }

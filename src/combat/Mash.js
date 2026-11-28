@@ -6,6 +6,9 @@ import { BALANCE as B } from '../data/balance.js';
 import { clamp } from '../core/util.js';
 
 export const MASH_KEYS = ['atk', 'grab', 'dodge'];   // J K L
+// a person at a keyboard, here or across the net (both screens must agree, so 'remote' counts too)
+export const person = f => f.ctrl === 'human' || f.ctrl === 'remote';
+export const pressK = f => (person(f) ? B.mashHuman : 1);
 // how hard a hold is to read, 0 (J the whole way) .. 1 (the key jumps about every half second)
 //   o.carry: up on the shoulders · o.big: a big move or a finisher behind it (the pin after it, its hold)
 export function holdStrength(a, v, o = {}) {
@@ -29,7 +32,7 @@ export function mash(f, dt, strength = 0) {
     }
   } else if (M.key !== 'atk') { M.key = 'atk'; M.t = B.mashFirst; }
   let n = 0;
-  const wrong = f.ctrl === 'human' ? B.mashWrong : 0;   // the computer's slips just do not count
+  const wrong = person(f) ? B.mashWrong : 0;   // the computer's slips just do not count
   for (const k of MASH_KEYS) if (f.buf[k] >= B.inputBuffer - 1e-6) n += k === M.key ? 1 : -wrong;
   return n;
 }

@@ -3,8 +3,9 @@
 // One input is one number: eight buttons and the stick (-1, 0, 1). A checksum every two seconds spots a split.
 const KEYS = ['up', 'down', 'downEdge', 'jump', 'atk', 'grab', 'dodge', 'fin'];
 const EDGES = ['downEdge', 'jump', 'atk', 'grab', 'dodge', 'fin'];
-export function pack(I) { let b = 0; KEYS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); const mx = I.mx > .3 ? 2 : I.mx < -.3 ? 0 : 1; return b | (mx << 8); }
-export function unpack(b, I) { KEYS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); I.mx = ((b >> 8) & 3) - 1; return I; }
+const SLOTS = [null, 'q', 'e', 'r', 'fk'];   // Q/E/R/F held with K
+export function pack(I) { let b = 0; KEYS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); const mx = I.mx > .3 ? 2 : I.mx < -.3 ? 0 : 1; return b | (mx << 8) | (Math.max(0, SLOTS.indexOf(I.slot || null)) << 10); }
+export function unpack(b, I) { KEYS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); I.mx = ((b >> 8) & 3) - 1; I.slot = SLOTS[(b >> 10) & 7] || null; return I; }
 const IDLE = 1 << 8;
 
 export class Lockstep {
@@ -22,7 +23,7 @@ export class Lockstep {
   // This real frame's input. Presses are kept until they go out, so a press during a stall is never lost.
   input(I) {
     const P = this.pend;
-    P.mx = I.mx; P.up = I.up; P.down = I.down;
+    P.mx = I.mx; P.up = I.up; P.down = I.down; P.slot = I.slot || null;
     for (const k of EDGES) if (I[k]) P[k] = true;
   }
   // Send the input for the frame `delay` ahead of the one about to run (once per frame).

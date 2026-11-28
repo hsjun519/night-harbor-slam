@@ -1,6 +1,6 @@
 // Plays two-person moves: timing, position lock, timed damage, reversals, release into ragdoll. Data driven.
 import { clamp, clamp01, sgn } from '../core/util.js';
-import { mash, holdStrength, holdGrip, aiMashK } from './Mash.js';
+import { mash, holdStrength, holdGrip, aiMashK, pressK } from './Mash.js';
 import { BALANCE as B } from '../data/balance.js';
 import { MOVES } from '../data/moves.js';
 import { STATES } from './StateMachine.js';
@@ -18,6 +18,8 @@ export class WrestlingMoveSystem {
     return this.begin(a, v, [id], {});
   }
   start(a, v, id, o = {}) { return this.begin(a, v, [id], o); }
+  // a move made from behind, out of a front hold: spin the foe round first
+  faceFor(a, v, mv) { if (mv && mv.pos === 'rear' && v.face !== a.face) { v.face = a.face; this.m.emit('spinRound', { a, v }); } }
   // parts: move ids run back to back without letting go.
   begin(a, v, parts, o = {}) {
     const m = this.m, mv = MOVES[parts[0]];
@@ -27,6 +29,7 @@ export class WrestlingMoveSystem {
     v.dropRag(); v.atk = null;
     v.set('GRABBED', { force: true });
     if (mv.need === 'rope' || mv.toRope) { const nr = m.arena.nearRope(a.x); a.face = nr.dir; }
+    this.faceFor(a, v, mv);
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
@@ -176,7 +179,7 @@ export class WrestlingMoveSystem {
     if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
     L.subOn = true;
     const S = holdStrength(L.a, v, { big: !!L.fin || mv.hp >= 14 });
-    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    let n = mash(v, dt, S) * pressK(v);
     if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8 * aiMashK(v)) ? 1 : 0;
     n *= holdGrip(S);
     const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);

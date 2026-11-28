@@ -120,7 +120,11 @@ export const SLOTS = 3;
 export const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
 // a mastery key: a move id, or 'fin:' + finisher id
 // the Tab → 기술 list a move shows up in
-export const SLOT_OF = { front: '정면 잡기', rear: '뒤 잡기', any: '정면·뒤 잡기', catch: '받아치기', counter: '반격' };
+export const SLOT_OF = { front: '정면 잡기', rear: '정면 잡기(돌려세워)', any: '정면 잡기', catch: '받아치기', counter: '반격' };
+// the extra front-grab slots: Q/E/R + K open with the level, F + K is bought at 웨이브 상회 (d.flags.slotF)
+export const SLOT_UNLOCK = { q: 4, e: 8, r: 12 };
+export const SLOT_KEY = { n: 'K', f: '→+K', b: '←+K', u: 'W+K', d: 'S+K', q: 'Q+K', e: 'E+K', r: 'R+K', fk: 'F+K' };
+export const slotOpen = (d, s) => (s === 'fk' ? !!(d.flags && d.flags.slotF) : SLOT_UNLOCK[s] ? (d.level || 1) >= SLOT_UNLOCK[s] : true);
 export const moveSlotName = id => (MOVES[id] && SLOT_OF[MOVES[id].pos]) || '기술';
 export const learnedText = id => `${MOVES[id].name} 습득! Tab → 기술 → ${moveSlotName(id)}에서 장착`;
 export const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
@@ -147,6 +151,7 @@ export class Career {
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
     c.d.league = c.newLeague(1);
+    c.frontOnly();
     c.save(true);
     return c;
   }
@@ -162,7 +167,9 @@ export class Career {
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); }
+  // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
+  frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
   storyFromHistory() { const d = this.d, h = d.history || [], n = (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0); if (!n) return {}; if (n > h.length) return { lost: 1 }; return { firstMatch: h[0], firstWin: h.find(x => x.won) || null, firstLoss: h.find(x => !x.won && !x.draw) || null }; }
   markStory(e) { const st = this.d.story || (this.d.story = {}); if (st.lost) return; if (!st.firstMatch) st.firstMatch = e; if (e.won && !st.firstWin) st.firstWin = e; if (!e.won && !e.draw && !st.firstLoss) st.firstLoss = e; }
@@ -395,7 +402,9 @@ export class Career {
     out.money = money; out.fame = fame; out.xp = xp;
     // 부두 복구 기금: the league adds a tenth of every prize while the pier is down
     if (money > 0 && kind !== 'practice' && harborBroken(d)) { const g = harborAdd(d, 'league', leagueShare(money)); if (g) out.lines.push(`연맹이 상금의 10%를 부두 복구 기금에 보탰다 +${fmtMoney(g)}`); }
+    const lv0 = d.level;
     out.ups = this.addXp(xp);
+    for (const s in SLOT_UNLOCK) if (lv0 < SLOT_UNLOCK[s] && d.level >= SLOT_UNLOCK[s]) out.lines.push(`정면 잡기 칸 ${SLOT_KEY[s]} 열림! Tab → 기술에서 기술을 넣자`);
     out.rankAfter = this.rank;
     d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null, season: d.season };
     d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
@@ -465,7 +474,7 @@ export class Career {
     const gang = G.who.map(id => { const S = CHARACTERS[id].stats, k = G.k * (id === 'myeolchi' ? .92 : 1), p = .55 + .45 * k; return { char: id, ctrl: 'ai', difficulty: d.season >= 2 ? up[G.ai] : G.ai, team: 1, waitTurn: G.wait, armed: G.armed.includes(id) ? 1 : 0, late: G.late && G.late[id] || 0, stats: { hp: S.hp * k, stun: S.stun * Math.min(1, k + .06), atk: S.atk * p, grp: S.grp * p } }; });
     return { G, gang, events: [] };
   }
-  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id) && (pos !== 'front' || slotOpen(this.d, slot))) this.d.moves[pos][slot] = id; }
   equipSpecial(kind, id) { if (MOVES[id] && this.d.known.includes(id) && MOVES[id].pos === kind) this.d.moves[kind] = id; }
   // finishers you can switch between (Tab → 기술 → F)
   finKnown() { const d = this.d; if (!d.finKnown) d.finKnown = [d.finisher]; if (!d.finKnown.includes(d.finisher)) d.finKnown.unshift(d.finisher); return d.finKnown; }

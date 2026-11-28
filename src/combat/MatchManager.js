@@ -1,6 +1,6 @@
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
 import { EntranceDirector } from './Entrance.js';
-import { mash, holdStrength, holdGrip, aiMashK } from './Mash.js';
+import { mash, holdStrength, holdGrip, aiMashK, pressK } from './Mash.js';
 import { Emitter, RNG, clamp, sgn } from '../core/util.js';
 import { BALANCE as B } from '../data/balance.js';
 import { CHARACTERS } from '../data/characters.js';
@@ -148,7 +148,7 @@ export class MatchManager extends Emitter {
       if (bad) { this.emit('fault', { f, why: 'joints', info: { st: f.st, prev: f.fsm.prev, rag: !!f.rag, link: f.link && f.link.kind, move: f.link && f.link.move && f.link.move.id, clip: f.clipName, hs: f.hsKind, x: f.x, y: f.y } }); f.rag = null; f.blend = null; if (!f.link) { f.x = Number.isFinite(f.x) ? f.x : this.arena.mid; f.y = this.arena.ground(f.x, f.y, f.side); this.anim.solo(f, 0); } }
     }
   }
-  blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
+  blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; I.slot = null; }
   introTick(dt) {
     if (this.entrance && !this.entrance.done) { if (this.phase === 'intro') this.entrance.update(dt); else this.entrance.skipAll(); }   // the bell never rings on somebody still in the aisle
     this.introT += dt;
@@ -203,7 +203,7 @@ export class MatchManager extends Emitter {
     p.t += dt;
     if (!a.alive || !v.alive || a.st !== 'PIN' || v.st !== 'PINNED') { this.breakPin('state'); return; }
     const S = holdStrength(a, v, { big: p.bonus >= 1.3 || p.big });
-    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    let n = mash(v, dt, S) * pressK(v);
     if (v.ai) n += v.ai.pinMash(p, dt) * aiMashK(v);
     n *= holdGrip(S);
     p.kick += n * B.pinMash * (.7 + .3 * v.stats.down) - dt * 6;

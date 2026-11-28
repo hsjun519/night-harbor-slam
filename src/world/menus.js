@@ -36,7 +36,7 @@ const evolveTalk = list => list.flatMap(e => [
   { who: null, name: '기술 진화', text: `'${e.fromName}' → '${e.toName}'. 같은 입력 칸에 바로 장착했다. 원래 기술도 남아 있어 Tab → 기술에서 되돌릴 수 있다.` },
 ]);
 const matchName = o => (o.special && SPECIAL[o.special] ? SPECIAL[o.special].name : MODES[o.mode].name) + (o.falls ? ' · 3판 2선승' : o.iron ? ` · 아이언맨 ${Math.round(o.iron / 60)}분` : '');
-import { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES, learnedText, moveSlotName } from './CareerManager.js';
+import { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES, learnedText, moveSlotName, SLOT_KEY, SLOT_UNLOCK, slotOpen } from './CareerManager.js';
 
 class Menu {
   constructor(W) { this.W = W; this.game = W.game; this.c = W.c; this.sel = 0; this.t = 0; }
@@ -363,13 +363,13 @@ export class LearnMenu extends Menu {
 }
 
 // ---- Tab: player info ----
-const POS_NAMES = { front: '정면 잡기', rear: '뒤 잡기' }, SLOT_KEYS = { n: 'K', f: '→+K', b: '←+K', u: 'W+K', d: 'S+K' };
+const POS_NAMES = { front: '정면 잡기', rear: '정면 잡기' }, SLOT_KEYS = SLOT_KEY;
 export class InfoMenu extends Menu {
   constructor(W, tab = 1) { super(W); this.tab = tab; this.pick = null; this.closeOnPause = true; }
   rows() {
     const d = this.c.d;
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
-    if (this.tab === 2) { const r = []; for (const pos of ['front', 'rear']) for (const s of ['n', 'f', 'b', 'u', 'd']) r.push({ pos, s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
+    if (this.tab === 2) { const r = []; for (const s of ['n', 'f', 'b', 'u', 'd', 'q', 'e', 'r', 'fk']) r.push({ pos: 'front', s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
     if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
     return [];
   }
@@ -386,7 +386,8 @@ export class InfoMenu extends Menu {
     if (this.ok() && R.length) {
       if (this.tab === 0) { const k = R[this.sel]; if (d.points <= 0) { A.sfx('deny'); this.W.toast('능력치 포인트가 없다. 경기로 경험치를 모으자.'); return; } if (d.lv[k] >= 20) { A.sfx('deny'); return; } d.points--; d.lv[k] = Math.min(20, d.lv[k] + 1); A.sfx('stat'); c.save(); }
       if (this.tab === 2) {
-        const r = R[this.sel], sp = !r.s, list = d.known.filter(id => MOVES[id] && (MOVES[id].pos === r.pos || (!sp && MOVES[id].pos === 'any')));
+        const r = R[this.sel], sp = !r.s, list = d.known.filter(id => MOVES[id] && (MOVES[id].pos === r.pos || (!sp && (MOVES[id].pos === 'any' || MOVES[id].pos === 'rear'))));
+        if (!sp && !slotOpen(d, r.s)) { A.sfx('deny'); this.W.toast(r.s === 'fk' ? 'F+K 칸은 웨이브 상회에서 살 수 있다' : `레벨 ${SLOT_UNLOCK[r.s]}에 열리는 칸이다`); return; }
         if (!list.length) { A.sfx('deny'); this.W.toast('이 칸에 쓸 수 있는 기술을 아직 모른다'); return; }
         this.pick = { pos: r.pos, s: r.s, i: Math.max(0, list.indexOf(sp ? d.moves[r.pos] : d.moves[r.pos][r.s])), list }; A.sfx('ok');
       }
@@ -421,7 +422,7 @@ export class InfoMenu extends Menu {
     const T = this.tab;
     if (T === 0) {
       drawText(u, `능력치 포인트: ${d.points}  (Enter로 1 올리기, 레벨업마다 +2 · 훈련으로도 오른다)`, 44, 136, { size: 11, color: d.points ? '#6be38a' : UI.dim });
-      this.rows().forEach((k, i) => { const y = 152 + i * 16, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : k === 'agi' ? `속도 ${Math.round(s.spd * 100)}% · 점프 ${Math.round(s.jump * 100)}%` : k === 'crit' ? `${(s.crit * 100).toFixed(1)}%` : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
+      this.rows().forEach((k, i) => { const y = 150 + i * 15, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : k === 'agi' ? `속도 ${Math.round(s.spd * 100)}% · 점프 ${Math.round(s.jump * 100)}%` : k === 'crit' ? `${(s.crit * 100).toFixed(1)}%` : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
     } else if (T === 1) {
       const inj = d.injury, lvl = c.injuryLevel, col = lvl === 'danger' ? '#ff5b5b' : lvl === 'warn' ? '#ffb347' : UI.inj;
       const L = [[`전적`, `${d.record.w}승 ${d.record.l}패 ${d.record.d}무 (KO ${d.record.ko} · 핀 ${d.record.pin})`], ['랭킹', d.flags.champion ? '챔피언' : `${c.rank}위 / ${c.rankList().length}명`], ['명성', String(d.fame)], ['소지금', c.money()], ['날짜', c.timeText], ['계약', d.contract ? `${d.contract.oppName} (${d.contract.day}일까지)` : '없음'], ['연승', d.record.streak > 0 ? d.record.streak + '연승' : d.record.streak < 0 ? -d.record.streak + '연패' : '-'], ['타이틀', d.titles.length ? d.titles.map(t => t.name).join(', ') : '없음']];
@@ -450,11 +451,13 @@ export class InfoMenu extends Menu {
           if (m) masteryTag(u, c.masteryOf(id), x + 262, y + 3, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
           return;
         }
-        const x = r.pos === 'front' ? 44 : 330, y = 158 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 22;
-        if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 144, { size: 11, color: '#ffd65a' });
+        const col2 = ['q', 'e', 'r', 'fk'].includes(r.s), x = col2 ? 330 : 44, y = 158 + (col2 ? ['q', 'e', 'r', 'fk'] : ['n', 'f', 'b', 'u', 'd']).indexOf(r.s) * 22, open = slotOpen(d, r.s);
+        if (r.s === 'n') drawText(u, '정면 잡기', x, 144, { size: 11, color: '#ffd65a' });
+        if (r.s === 'q') drawText(u, '추가 칸 (Q·E·R·F + K)', x, 144, { size: 11, color: '#49d6ff' });
         rect(u, on ? '#26315f' : '#141a36', x, y, 268, 20); keycap(u, SLOT_KEYS[r.s], x + 4, y + 3);
         const id = d.moves[r.pos][r.s], m = MOVES[id];
-        drawText(u, m ? m.name : '-', x + 60, y + 3, { size: 11, color: on ? '#ffffff' : m && m.evo ? '#ffd65a' : '#c9d4ff' });
+        if (!open) { drawText(u, r.s === 'fk' ? '웨이브 상회에서 살 수 있다' : `레벨 ${SLOT_UNLOCK[r.s]}에 열림`, x + 60, y + 3, { size: 11, color: UI.faint }); return; }
+        drawText(u, m ? m.name + (m.pos === 'rear' ? ' (돌려세워)' : '') : '-', x + 60, y + 3, { size: 11, color: on ? '#ffffff' : m && m.evo ? '#ffd65a' : '#c9d4ff' });
         if (m) masteryTag(u, c.masteryOf(id), x + 262, y + 3, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
       });
       const sr = R[this.sel], sid = sr && (sr.s ? d.moves[sr.pos][sr.s] : d.moves[sr.pos]);

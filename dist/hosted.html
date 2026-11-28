@@ -280,10 +280,12 @@ __m["core/InputManager.js"] = (function () {
 // Keyboard and gamepad mapped to actions. Bindings are data and can be changed in the settings screen.
 const ACTIONS = {
   left: '왼쪽', right: '오른쪽', up: '점프 / 위', down: '방어 / 아래', atk: '공격', grab: '잡기', dodge: '회피 / 반격', fin: '피니셔', interact: '대화 / 조사', door: '문 / 이동', info: '선수 정보', map: '지도', pause: '일시정지',
+  mq: '잡기 칸 Q', me: '잡기 칸 E', mr: '잡기 칸 R', mf: '잡기 칸 F',
 };
 const DEFAULT_KEYS = {
   left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'],
   atk: ['KeyJ'], grab: ['KeyK'], dodge: ['KeyL'], fin: ['Space'], interact: ['KeyE'], door: ['KeyF'], info: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'],
+  mq: ['KeyQ'], me: ['KeyE'], mr: ['KeyR'], mf: ['KeyF'],
 };
 // Menus also accept these.
 const MENU = { confirm: ['Enter', 'Space', 'KeyJ', 'KeyE'], cancel: ['Escape', 'Backspace', 'KeyL'] };
@@ -349,6 +351,7 @@ class InputManager {
     I.mx = (this.down('right') ? 1 : 0) - (this.down('left') ? 1 : 0);
     I.up = this.down('up'); I.down = this.down('down'); I.downEdge = this.pressed('down');
     I.jump = this.pressed('up'); I.atk = this.pressed('atk'); I.grab = this.pressed('grab'); I.dodge = this.pressed('dodge'); I.fin = this.pressed('fin');
+    I.slot = this.down('mq') ? 'q' : this.down('me') ? 'e' : this.down('mr') ? 'r' : this.down('mf') ? 'fk' : null;   // Q/E/R/F + K: the extra grab slots
   }
   label(a) {
     if (this.device === 'pad') { const n = { atk: 'X', grab: 'Y', dodge: 'B', fin: 'RB', up: 'A', down: 'LB', interact: 'A', door: 'Y', pause: 'Start', info: 'Back', map: 'Back', left: '◀', right: '▶', confirm: 'A', cancel: 'B' }; return n[a] || a; }
@@ -1427,7 +1430,7 @@ class ControlsOverlay {
       [['left', 'right'], '이동 · 같은 방향 두 번 빠르게: 달리기'], [['up'], '점프'], [['interact'], 'NPC 대화 · 물건 조사 (Enter도 가능)'], [['door'], '문으로 이동'], [['info'], '선수 · 커리어 정보 (부상 게이지)'], [['map'], '지도'], [['pause'], '일시정지 · 저장'],
     ] : [
       [['left', 'right'], '이동 (두 번 누르거나 계속 누르면 달리기)'], [['up'], '점프 · 로프 앞에서 코너 오르기 · 링 밖에서 링으로'], [['down'], '방어 (막 누른 순간 = 패리) · 핀폴 · 태그'], [['atk'], '공격 (연타 3단) · 공중에서 드롭킥 · 쓰러진 상대 짓밟기'],
-      [['grab'], '쓰러지거나 비틀거리는 상대 잡기 · 서 있는 상대 밀치기(가드 깨기)'], [['grab'], '잡은 뒤: 방향 + K = 기술 선택, J 무릎치기, L 뒤로 돌기'], [['dodge'], '회피 · 공격 직전에 누르면 반격 던지기'], [['dodge'], '기술에 걸린 순간 L! 표시에 맞춰 누르면 역전'], [['down', 'dodge'], '긴급 탈출 (피니셔 게이지 46 소모, 18초 대기)'], [['fin'], '피니셔 (게이지 가득) · 게이지가 덜 찼으면 도발'], [['fin'], '잡은 뒤 Space: 로프 근처면 로프 회전 킥, 아니면 어깨 메기 (게이지 소모)'], [['atk', 'grab', 'down'], '기술 직후 "연계" 표시 키: 이어지는 기술 · L 타이밍 + 게이지: 기술별 카운터'], [['atk', 'grab'], '조르기에 걸리면 J·K·L·W 연타로 빠져나오기 (체력이 많을수록 쉽다)'], [['down'], '로프 앞에서 S를 누른 채 로프 쪽: 링 밖으로 · 밖에서 링 옆 W: 복귀'], [['grab'], '의자 들고 비틀거리는 상대에게 K: 등 뒤에 의자 두고 잡기 → 뒤로 넘기면 피해 2배'],
+      [['grab'], '쓰러지거나 비틀거리는 상대 잡기 · 서 있는 상대 밀치기(가드 깨기)'], [['grab'], '잡은 뒤: 방향 + K 또는 Q/E/R/F + K = 기술, J 무릎치기'], [['dodge'], '회피 · 공격 직전에 누르면 반격 던지기'], [['dodge'], '기술에 걸린 순간 L! 표시에 맞춰 누르면 역전'], [['down', 'dodge'], '긴급 탈출 (피니셔 게이지 46 소모, 18초 대기)'], [['fin'], '피니셔 (게이지 가득) · 게이지가 덜 찼으면 도발'], [['fin'], '잡은 뒤 Space: 로프 근처면 로프 회전 킥, 아니면 어깨 메기 (게이지 소모)'], [['atk', 'grab', 'down'], '기술 직후 "연계" 표시 키: 이어지는 기술 · L 타이밍 + 게이지: 기술별 카운터'], [['atk', 'grab'], '조르기에 걸리면 J·K·L·W 연타로 빠져나오기 (체력이 많을수록 쉽다)'], [['down'], '로프 앞에서 S를 누른 채 로프 쪽: 링 밖으로 · 밖에서 링 옆 W: 복귀'], [['grab'], '의자 들고 비틀거리는 상대에게 K: 등 뒤에 의자 두고 잡기 → 뒤로 넘기면 피해 2배'],
     ];
     L.forEach(([acts, text], k) => {
       let x = 84; const y = 58 + k * (L.length > 13 ? 17.5 : L.length > 10 ? 22 : 25);
@@ -3129,6 +3132,9 @@ __m["combat/Mash.js"] = (function () {
 const { BALANCE: B } = __m["data/balance.js"];
 const { clamp } = __m["core/util.js"];
 const MASH_KEYS = ['atk', 'grab', 'dodge'];   // J K L
+// a person at a keyboard, here or across the net (both screens must agree, so 'remote' counts too)
+const person = f => f.ctrl === 'human' || f.ctrl === 'remote';
+const pressK = f => (person(f) ? B.mashHuman : 1);
 // how hard a hold is to read, 0 (J the whole way) .. 1 (the key jumps about every half second)
 //   o.carry: up on the shoulders · o.big: a big move or a finisher behind it (the pin after it, its hold)
 function holdStrength(a, v, o = {}) {
@@ -3152,7 +3158,7 @@ function mash(f, dt, strength = 0) {
     }
   } else if (M.key !== 'atk') { M.key = 'atk'; M.t = B.mashFirst; }
   let n = 0;
-  const wrong = f.ctrl === 'human' ? B.mashWrong : 0;   // the computer's slips just do not count
+  const wrong = person(f) ? B.mashWrong : 0;   // the computer's slips just do not count
   for (const k of MASH_KEYS) if (f.buf[k] >= B.inputBuffer - 1e-6) n += k === M.key ? 1 : -wrong;
   return n;
 }
@@ -3163,7 +3169,7 @@ const aiMashK = f => (f.mash && f.mash.flash > 0 ? .35 : 1) * (1 - .25 * (f.mash
 // J only: getting up, off a corner, off the ropes
 const mashJ = f => (f.buf.atk >= B.inputBuffer - 1e-6 ? 1 : 0);
 
-return { holdStrength, mash, MASH_KEYS, holdGrip, aiMashK, mashJ };
+return { holdStrength, mash, MASH_KEYS, person, pressK, holdGrip, aiMashK, mashJ };
 })();
 // ---- combat/arena.js
 __m["combat/arena.js"] = (function () {
@@ -4711,7 +4717,7 @@ __m["combat/CharacterController.js"] = (function () {
 // One wrestler: stats, gauges, input buffer and the per-state control code. The same code drives humans and AI;
 // both only write an Intent.
 const { clamp, approach, sgn } = __m["core/util.js"];
-const { mashJ } = __m["combat/Mash.js"];
+const { mashJ, pressK } = __m["combat/Mash.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { FINISHERS } = __m["data/moves.js"];
 const { dimsFor, Joints } = __m["anim/skeleton.js"];
@@ -4719,7 +4725,16 @@ const { Ragdoll } = __m["anim/ragdoll.js"];
 const { StateMachine, STATES } = __m["combat/StateMachine.js"];
 const { keepsProp } = __m["combat/Props.js"];
 const { springboard } = __m["combat/ComboSystem.js"];
-function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false }; }
+// one hold from the front: K and four directions, plus Q/E/R/F + K. A move list from before keeps its rear moves on
+// Q E R when those are empty (the career fills them itself, as they unlock).
+const EXTRA_SLOTS = ['q', 'e', 'r', 'fk'];
+function frontSlots(mv) {
+  if (!mv || !mv.front) return mv;
+  const out = Object.assign({}, mv, { front: Object.assign({}, mv.front) }), R = mv.rear || {}, F = out.front;
+  if (!mv.career) for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) if (!F[s] && R[r]) F[s] = R[r];
+  return out;
+}
+function newIntent() { return { mx: 0, up: false, down: false, downEdge: false, jump: false, atk: false, grab: false, dodge: false, fin: false, slot: null }; }
 const BUF_KEYS = ['jump', 'atk', 'grab', 'dodge', 'fin', 'downEdge'];
 
 class Fighter {
@@ -4729,7 +4744,7 @@ class Fighter {
     this.dims = dimsFor(this.look.build, this.look.scale || 1);
     const s = this.stats = Object.assign({}, char.stats, o.stats || {});
     this.maxHp = s.hp * (B.hpScale || 1); this.maxStun = s.stun; this.hp = this.maxHp * (o.hpStart != null ? o.hpStart : 1); this.stun = this.maxStun; this.fin = o.fin || 0;
-    this.moves = o.moves || char.moves; this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
+    this.moves = frontSlots(o.moves || char.moves); this.chain = o.chain || char.chain; this.finisherId = o.finisher || char.finisher; this.equip = o.equip || null;
     this.downs = 0; this.falls = 0; this.dmgTaken = 0; this.dmgDealt = 0; this.finishersTaken = 0; this.ringOuts = 0; this.kills = 0; this.hitsLanded = 0; this.movesDone = new Set(); this.counters = 0;
     this.moveUses = {}; this.mastery = o.mastery || null;   // career move mastery: landed uses this match, damage bonus per move
     this.x = o.x || 450; this.y = o.y || 0; this.vx = 0; this.vy = 0; this.face = o.face || 1; this.side = o.side || 'in'; this.ground = true; this.lane = o.lane || 0;
@@ -4925,7 +4940,7 @@ function tryBurst(f) {
   return true;
 }
 function burstInput(f, I) { return I.down && f.has('dodge'); }
-function mashInput(f) { return mashJ(f) * (f.ctrl === 'human' ? B.mashHuman : 1); }   // J only
+function mashInput(f) { return mashJ(f) * pressK(f); }   // J only
 
 // ---- state control table -------------------------------------------------------------------------------
 const CONTROL = {
@@ -5225,7 +5240,7 @@ function standUp(f, wait = 0, lie) {
   if (wasDown) { f.stun = Math.max(f.stun, f.maxStun * Math.max(B.stunAfterDownMin, B.stunAfterDown - B.stunAfterDownLoss * (f.downs - 1))); f.grabImm = 0; f.combo.n = 0; f.grabCount = 0; f.postMove = false; f.moveChain = 0; }
 }
 
-return { newIntent, Fighter, startAttack, beginEnter, tryBurst, topPick, settle, standUp, CONTROL };
+return { frontSlots, newIntent, Fighter, startAttack, beginEnter, tryBurst, topPick, settle, standUp, EXTRA_SLOTS, CONTROL };
 })();
 // ---- combat/PhysicsSystem.js
 __m["combat/PhysicsSystem.js"] = (function () {
@@ -5602,7 +5617,7 @@ return { StunSystem };
 __m["combat/GrappleSystem.js"] = (function () {
 // Grapple tie-up: pick-up, holding, direction choice, switching sides, escapes, shoves and counter throws.
 const { clamp, sgn } = __m["core/util.js"];
-const { mash, holdStrength, holdGrip } = __m["combat/Mash.js"];
+const { mash, holdStrength, holdGrip, pressK } = __m["combat/Mash.js"];
 const { BALANCE: B, ATTACKS } = __m["data/balance.js"];
 const { MOVES, HOLDS } = __m["data/moves.js"];
 const { startAttack, tryBurst } = __m["combat/CharacterController.js"];
@@ -5665,7 +5680,8 @@ class GrappleSystem {
     const m = this.m;
     if (!f.set('GRAB')) return false;
     f.face = sgn(v.x - f.x) || f.face;
-    const rear = pos ? pos === 'rear' : v.st === 'STAGGER' && v.face === f.face;
+    const rear = pos === 'rear';   // only scripted: every hold is from the front now (a foe facing away is turned round)
+    if (!rear && v.face === f.face) v.face = -f.face;
     const down = v.st === 'DOWN';
     v.dropRag();
     v.set('GRABBED', { force: true });
@@ -5710,7 +5726,7 @@ class GrappleSystem {
   }
   holdDef(L) { return L.phase === 'pickup' && L.fromDown ? HOLDS.pickup : L.pos === 'front' ? HOLDS.front : L.pos === 'carry' ? HOLDS.carry : HOLDS.rear; }
   // Which move would this direction give, and is it usable right now?
-  slotFor(f, I) { if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
+  slotFor(f, I) { if (I.slot) return I.slot; if (I.up) return 'u'; if (I.down) return 'd'; if (Math.abs(I.mx) > .3) return sgn(I.mx) === f.face ? 'f' : 'b'; return 'n'; }
   moveInSlot(f, L, slot) { return f.moves[L.pos] && f.moves[L.pos][slot]; }
   liftNeed(mv, v) { return mv.lift * v.stats.weight / 100; }
   liftPower(a, v) { return a.stats.lift * (1 + (1 - v.hp / v.maxHp) * .55); }
@@ -5742,7 +5758,7 @@ class GrappleSystem {
       m.emit('deny', { f, why: c.why, mv });
       L.deny = { slot, t: m.time, why: c.why };
     }
-    if (f.has('dodge') && !I.down) { f.consume('dodge'); if (L.switches < 2) { L.switches++; L.pos = L.pos === 'front' ? 'rear' : 'front'; L.switchT = B.switchTime; L.hold -= .2; m.anim.freezeBlend(f, .18); m.anim.freezeBlend(L.v, .18); m.emit('switch', { a: f, v: L.v }); } }
+    if (f.has('dodge') && !I.down) f.consume('dodge');   // no more switching to a rear hold
     if (f.has('atk')) {
       f.consume('atk');
       if (L.strikes < B.grabStrikeMax) { L.strikes++; L.strikeT = .26; L.strikeAt = L.t; m.combat.damage(L.v, 1.5 * f.stats.atk, 0, f, {}); m.combat.addFin(f, 2.4); L.v.escape = Math.max(0, L.v.escape - 8); L.v.hitShake = .16; L.v.flash = .08; m.hitstop(.06); m.emit('grabStrike', { a: f, v: L.v }); }
@@ -5755,7 +5771,7 @@ class GrappleSystem {
     if (L.kind === 'move') return; // WrestlingMoveSystem reads the reversal input
     if (I.down && v.has('dodge')) { if (tryBurst(v)) { v.clearBuf(); return; } }
     // J, or the key it has jumped to: harder against a bigger foe, a boss, and up on the shoulders (electric chair)
-    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    const S = holdStrength(L.a, v, { carry: L.pos === 'carry' }), n = mash(v, dt, S) * pressK(v);
     const power = v.stats.grp / L.a.stats.grp * (.62 + .38 * v.hp / v.maxHp) * (L.pos === 'carry' ? B.carryEscape : 1) * holdGrip(S);
     v.escape = Math.max(0, v.escape + n * B.mashValue * power - B.mashDecay * dt * (L.phase === 'pickup' ? 0 : .6));
   }
@@ -5921,7 +5937,7 @@ return { compileMove, yawAt, evalPaired, pairBuffers, moveExtent };
 __m["combat/WrestlingMoveSystem.js"] = (function () {
 // Plays two-person moves: timing, position lock, timed damage, reversals, release into ragdoll. Data driven.
 const { clamp, clamp01, sgn } = __m["core/util.js"];
-const { mash, holdStrength, holdGrip, aiMashK } = __m["combat/Mash.js"];
+const { mash, holdStrength, holdGrip, aiMashK, pressK } = __m["combat/Mash.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { MOVES } = __m["data/moves.js"];
 const { STATES } = __m["combat/StateMachine.js"];
@@ -5938,6 +5954,8 @@ class WrestlingMoveSystem {
     return this.begin(a, v, [id], {});
   }
   start(a, v, id, o = {}) { return this.begin(a, v, [id], o); }
+  // a move made from behind, out of a front hold: spin the foe round first
+  faceFor(a, v, mv) { if (mv && mv.pos === 'rear' && v.face !== a.face) { v.face = a.face; this.m.emit('spinRound', { a, v }); } }
   // parts: move ids run back to back without letting go.
   begin(a, v, parts, o = {}) {
     const m = this.m, mv = MOVES[parts[0]];
@@ -5947,6 +5965,7 @@ class WrestlingMoveSystem {
     v.dropRag(); v.atk = null;
     v.set('GRABBED', { force: true });
     if (mv.need === 'rope' || mv.toRope) { const nr = m.arena.nearRope(a.x); a.face = nr.dir; }
+    this.faceFor(a, v, mv);
     const stale = this.stale(a, parts[parts.length - 1], o.fin);
     const L = {
       kind: 'move', a, v, dV: v.dims, vName: v.name, move: mv, parts: parts.slice(), part: 0, t: 0, evI: 0, committed: !!o.noReverse, noReverse: !!o.noReverse, fin: o.fin || null, counter: !!o.counter,
@@ -6096,7 +6115,7 @@ class WrestlingMoveSystem {
     if (L.t < mv.sub[0] || L.t > mv.sub[1]) { L.subOn = false; return; }
     L.subOn = true;
     const S = holdStrength(L.a, v, { big: !!L.fin || mv.hp >= 14 });
-    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    let n = mash(v, dt, S) * pressK(v);
     if (v.ai && v.ctrl === 'ai') n += v.ai.rng.chance(dt * v.ai.D.mash * .8 * aiMashK(v)) ? 1 : 0;
     n *= holdGrip(S);
     const power = (.5 + .5 * v.hp / v.maxHp) * Math.sqrt(v.stats.grp / L.a.stats.grp);
@@ -6644,7 +6663,7 @@ class AIController {
   seen(o) { const h = this.mem.get(o); if (!h || !h.length) return { t: 0, x: o.x, y: o.y, st: o.st, face: o.face, atk: null, vx: 0, side: o.side }; return h[0]; }
   update(dt) {
     const f = this.f, I = f.intent, m = f.match;
-    I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false;
+    I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; I.slot = null;
     this.observe();
     if (f.ctrl === 'dummy' || this.behavior) { this.dummy(dt); return; }
     if (f.st === 'INTRO') return;
@@ -7128,8 +7147,8 @@ class AIController {
       const v = L.v, ar = m.arena;
       const choices = [];
       if (f.fin >= B.finMax && this.rng.chance(D.pick)) { this.holdPlan = { fin: 1, at: .25 + this.rng.next() * .3 }; return; }
-      const slots = ['n', 'f', 'b', 'u', 'd'];
-      for (const pos of ['front', 'rear']) for (const s of slots) {
+      const slots = ['n', 'f', 'b', 'u', 'd', 'q', 'e', 'r', 'fk'];
+      for (const pos of ['front']) for (const s of slots) {
         const id = f.moves[pos] && f.moves[pos][s], mv = MOVES[id];
         if (!mv) continue;
         const ringOut = mv.tags && mv.tags.includes('ringout'), elim = m.rules.ringOut === 'elim';
@@ -7157,12 +7176,11 @@ class AIController {
     if (P.fin) { this.tap('fin'); this.holdPlan = null; return; }
     if (P.strikes > 0 && L.strikes < P.strikes) { this.tap('atk'); P.at = L.t + .3; return; }
     if (P.strike) { this.tap('atk'); this.holdPlan = null; return; }
-    if (P.pos !== L.pos) { if (L.switches < 2) this.tap('dodge'); else this.holdPlan = null; P.at = L.t + .28; return; }
     if (P.special) { this.tap('fin'); this.holdPlan = null; return; }
     // rope moves need the ropes: drag the foe there first
     if (MOVES[P.id] && MOVES[P.id].need === 'rope') { const nr = m.arena.nearRope(f.x); if (nr.dist > 100 && L.hold > .35) { f.intent.mx = nr.dir; return; } }
     const I = f.intent;
-    if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face;
+    if (P.s === 'u') I.up = true; else if (P.s === 'd') I.down = true; else if (P.s === 'f') I.mx = f.face; else if (P.s === 'b') I.mx = -f.face; else if (['q', 'e', 'r', 'fk'].includes(P.s)) I.slot = P.s;
     if (P.id === 'ringOut' || P.id === 'cornerSmash') { const nr = m.arena.nearRope(f.x); I.mx = P.s === 'f' ? f.face : P.s === 'b' ? -f.face : I.mx; void nr; }
     this.tap('grab');
     this.holdPlan = null;
@@ -7758,7 +7776,7 @@ return { MatchEvents };
 __m["combat/MatchManager.js"] = (function () {
 // One match: owns the fighters and systems, runs the rules of each mode, the referee and the win conditions.
 const { EntranceDirector } = __m["combat/Entrance.js"];
-const { mash, holdStrength, holdGrip, aiMashK } = __m["combat/Mash.js"];
+const { mash, holdStrength, holdGrip, aiMashK, pressK } = __m["combat/Mash.js"];
 const { Emitter, RNG, clamp, sgn } = __m["core/util.js"];
 const { BALANCE: B } = __m["data/balance.js"];
 const { CHARACTERS } = __m["data/characters.js"];
@@ -7905,7 +7923,7 @@ class MatchManager extends Emitter {
       if (bad) { this.emit('fault', { f, why: 'joints', info: { st: f.st, prev: f.fsm.prev, rag: !!f.rag, link: f.link && f.link.kind, move: f.link && f.link.move && f.link.move.id, clip: f.clipName, hs: f.hsKind, x: f.x, y: f.y } }); f.rag = null; f.blend = null; if (!f.link) { f.x = Number.isFinite(f.x) ? f.x : this.arena.mid; f.y = this.arena.ground(f.x, f.y, f.side); this.anim.solo(f, 0); } }
     }
   }
-  blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; }
+  blankIntent(f) { const I = f.intent; I.mx = 0; I.up = I.down = I.downEdge = I.jump = I.atk = I.grab = I.dodge = I.fin = false; I.slot = null; }
   introTick(dt) {
     if (this.entrance && !this.entrance.done) { if (this.phase === 'intro') this.entrance.update(dt); else this.entrance.skipAll(); }   // the bell never rings on somebody still in the aisle
     this.introT += dt;
@@ -7960,7 +7978,7 @@ class MatchManager extends Emitter {
     p.t += dt;
     if (!a.alive || !v.alive || a.st !== 'PIN' || v.st !== 'PINNED') { this.breakPin('state'); return; }
     const S = holdStrength(a, v, { big: p.bonus >= 1.3 || p.big });
-    let n = mash(v, dt, S) * (v.ctrl === 'human' ? B.mashHuman : 1);
+    let n = mash(v, dt, S) * pressK(v);
     if (v.ai) n += v.ai.pinMash(p, dt) * aiMashK(v);
     n *= holdGrip(S);
     p.kick += n * B.pinMash * (.7 + .3 * v.stats.down) - dt * 6;
@@ -9169,7 +9187,7 @@ class HUD {
     const inp = this.input, v = L.v, x = Math.round((f.x + v.x) / 2 - camX), y = Math.round(f.y - 150);
     const slots = [['u', 0, -26], ['b', -f.face * 70, 0], ['n', 0, 0], ['f', f.face * 70, 0], ['d', 0, 26]];
     panel(g, x - 104, y - 40, 208, 92, { alpha: .82, cut: 3, accent: f.char.color });
-    drawText(g, (L.pos === 'front' ? '정면 잡기' : '뒤 잡기') + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
+    drawText(g, '잡기' + (v.moveChain ? `  연속 ${v.moveChain + 1}/${chainAllow(v).n}` : ''), x - 98, y - 37, { size: 11, color: v.moveChain ? '#ff8fc4' : '#ffd65a' });
     gauge(g, x + 6, y - 35, 90, 3, L.hold / (B.grabHold * (.8 + .2 * f.stats.grp)), 'fin', { col: '#ffd65a', colD: '#7a5a1a' });
     gauge(g, x + 6, y - 29, 90, 3, v.escape / B.grabEscape, 'hp', { col: '#ff5b5b' });
     for (const [s, dx, dy] of slots) {
@@ -9187,7 +9205,10 @@ class HUD {
       if (!c.ok && denied) drawText(g, c.why, cx, cy + 24, { size: 11, align: 'c', color: '#ff8a8a', outline: '#05060f' });
     }
     // the other keys, along the bottom like every other prompt
-    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`], [[inp.label('dodge')], '위치 바꾸기']];
+    // Q/E/R/F + K: the extra slots, in a row under the panel
+    const extra = ['q', 'e', 'r', 'fk'].filter(s => f.moves.front && MOVES[f.moves.front[s]]);
+    extra.forEach((s, i) => { const mv = MOVES[f.moves.front[s]], c = m.grapple.check(f, v, mv), key = ({ q: inp.label('mq'), e: inp.label('me'), r: inp.label('mr'), fk: inp.label('mf') })[s] + '+' + inp.label('grab'), cx = x - (extra.length - 1) * 52 + i * 104, cy = y + 56, ww = Math.max(textWidth(mv.name, 11), textWidth(key, 11) + 6) + 8; rect(g, c.ok ? '#1b2450' : '#14172a', cx - ww / 2, cy - 1, ww, 24); keycap(g, key, cx - (textWidth(key, 11) + 6) / 2, cy, { bg: c.ok ? '#49d6ff' : '#5f6ca6' }); drawText(g, mv.name, cx, cy + 12, { size: 11, align: 'c', color: c.ok ? '#ffffff' : UI.faint }); });
+    const P = [[[inp.label('atk')], `무릎치기 ${B.grabStrikeMax - L.strikes}`]];
     if (f.fin >= B.finMax) P.push([[inp.label('fin')], '피니셔']);
     else if (L.pos === 'front') { const id = m.combo.holdSpecialId(f), c = SPECIALS[id]; P.push([[inp.label('fin')], f.fin >= c ? `${MOVES[id].name} (에너지 ${c})` : `${MOVES[id].name}: 에너지 ${c} 필요`]); }
     this.bottomPrompts(g, P);
@@ -9449,8 +9470,9 @@ __m["net/Lockstep.js"] = (function () {
 // One input is one number: eight buttons and the stick (-1, 0, 1). A checksum every two seconds spots a split.
 const KEYS = ['up', 'down', 'downEdge', 'jump', 'atk', 'grab', 'dodge', 'fin'];
 const EDGES = ['downEdge', 'jump', 'atk', 'grab', 'dodge', 'fin'];
-function pack(I) { let b = 0; KEYS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); const mx = I.mx > .3 ? 2 : I.mx < -.3 ? 0 : 1; return b | (mx << 8); }
-function unpack(b, I) { KEYS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); I.mx = ((b >> 8) & 3) - 1; return I; }
+const SLOTS = [null, 'q', 'e', 'r', 'fk'];   // Q/E/R/F held with K
+function pack(I) { let b = 0; KEYS.forEach((k, i) => { if (I[k]) b |= 1 << i; }); const mx = I.mx > .3 ? 2 : I.mx < -.3 ? 0 : 1; return b | (mx << 8) | (Math.max(0, SLOTS.indexOf(I.slot || null)) << 10); }
+function unpack(b, I) { KEYS.forEach((k, i) => { I[k] = !!(b & (1 << i)); }); I.mx = ((b >> 8) & 3) - 1; I.slot = SLOTS[(b >> 10) & 7] || null; return I; }
 const IDLE = 1 << 8;
 
 class Lockstep {
@@ -9468,7 +9490,7 @@ class Lockstep {
   // This real frame's input. Presses are kept until they go out, so a press during a stall is never lost.
   input(I) {
     const P = this.pend;
-    P.mx = I.mx; P.up = I.up; P.down = I.down;
+    P.mx = I.mx; P.up = I.up; P.down = I.down; P.slot = I.slot || null;
     for (const k of EDGES) if (I[k]) P[k] = true;
   }
   // Send the input for the frame `delay` ahead of the one about to run (once per frame).
@@ -9879,7 +9901,11 @@ const SLOTS = 3;
 const weeklyOn = d => d.day >= 2 && [2, 4, 6].includes(d.day % 7);
 // a mastery key: a move id, or 'fin:' + finisher id
 // the Tab → 기술 list a move shows up in
-const SLOT_OF = { front: '정면 잡기', rear: '뒤 잡기', any: '정면·뒤 잡기', catch: '받아치기', counter: '반격' };
+const SLOT_OF = { front: '정면 잡기', rear: '정면 잡기(돌려세워)', any: '정면 잡기', catch: '받아치기', counter: '반격' };
+// the extra front-grab slots: Q/E/R + K open with the level, F + K is bought at 웨이브 상회 (d.flags.slotF)
+const SLOT_UNLOCK = { q: 4, e: 8, r: 12 };
+const SLOT_KEY = { n: 'K', f: '→+K', b: '←+K', u: 'W+K', d: 'S+K', q: 'Q+K', e: 'E+K', r: 'R+K', fk: 'F+K' };
+const slotOpen = (d, s) => (s === 'fk' ? !!(d.flags && d.flags.slotF) : SLOT_UNLOCK[s] ? (d.level || 1) >= SLOT_UNLOCK[s] : true);
 const moveSlotName = id => (MOVES[id] && SLOT_OF[MOVES[id].pos]) || '기술';
 const learnedText = id => `${MOVES[id].name} 습득! Tab → 기술 → ${moveSlotName(id)}에서 장착`;
 const moveLabel = k => (k.startsWith('fin:') ? (FINISHERS[k.slice(4)] || {}).name : (MOVES[k] || {}).name);
@@ -9906,6 +9932,7 @@ class Career {
       moves: deepClone(S.moves), known: Array.from(new Set(Object.values(S.moves.front).concat(Object.values(S.moves.rear), [S.moves.catch, S.moves.counter]))), finisher: S.finisher,
     });
     c.d.league = c.newLeague(1);
+    c.frontOnly();
     c.save(true);
     return c;
   }
@@ -9921,7 +9948,9 @@ class Career {
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); }
+  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); }
+  // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
+  frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
   storyFromHistory() { const d = this.d, h = d.history || [], n = (d.record.w || 0) + (d.record.l || 0) + (d.record.d || 0); if (!n) return {}; if (n > h.length) return { lost: 1 }; return { firstMatch: h[0], firstWin: h.find(x => x.won) || null, firstLoss: h.find(x => !x.won && !x.draw) || null }; }
   markStory(e) { const st = this.d.story || (this.d.story = {}); if (st.lost) return; if (!st.firstMatch) st.firstMatch = e; if (e.won && !st.firstWin) st.firstWin = e; if (!e.won && !e.draw && !st.firstLoss) st.firstLoss = e; }
@@ -10154,7 +10183,9 @@ class Career {
     out.money = money; out.fame = fame; out.xp = xp;
     // 부두 복구 기금: the league adds a tenth of every prize while the pier is down
     if (money > 0 && kind !== 'practice' && harborBroken(d)) { const g = harborAdd(d, 'league', leagueShare(money)); if (g) out.lines.push(`연맹이 상금의 10%를 부두 복구 기금에 보탰다 +${fmtMoney(g)}`); }
+    const lv0 = d.level;
     out.ups = this.addXp(xp);
+    for (const s in SLOT_UNLOCK) if (lv0 < SLOT_UNLOCK[s] && d.level >= SLOT_UNLOCK[s]) out.lines.push(`정면 잡기 칸 ${SLOT_KEY[s]} 열림! Tab → 기술에서 기술을 넣자`);
     out.rankAfter = this.rank;
     d.lastResult = { won, draw, opp: c ? c.oppName : '', kind, how: res.result.how, day: d.day, inj: out.injury, rank: out.rankAfter, oppId: c ? c.opp : null, season: d.season };
     d.history.push(d.lastResult); if (d.history.length > 40) d.history.shift();
@@ -10224,7 +10255,7 @@ class Career {
     const gang = G.who.map(id => { const S = CHARACTERS[id].stats, k = G.k * (id === 'myeolchi' ? .92 : 1), p = .55 + .45 * k; return { char: id, ctrl: 'ai', difficulty: d.season >= 2 ? up[G.ai] : G.ai, team: 1, waitTurn: G.wait, armed: G.armed.includes(id) ? 1 : 0, late: G.late && G.late[id] || 0, stats: { hp: S.hp * k, stun: S.stun * Math.min(1, k + .06), atk: S.atk * p, grp: S.grp * p } }; });
     return { G, gang, events: [] };
   }
-  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id)) this.d.moves[pos][slot] = id; }
+  equipMove(pos, slot, id) { if (MOVES[id] && this.d.known.includes(id) && (pos !== 'front' || slotOpen(this.d, slot))) this.d.moves[pos][slot] = id; }
   equipSpecial(kind, id) { if (MOVES[id] && this.d.known.includes(id) && MOVES[id].pos === kind) this.d.moves[kind] = id; }
   // finishers you can switch between (Tab → 기술 → F)
   finKnown() { const d = this.d; if (!d.finKnown) d.finKnown = [d.finisher]; if (!d.finKnown.includes(d.finisher)) d.finKnown.unshift(d.finisher); return d.finKnown; }
@@ -10252,7 +10283,7 @@ class Career {
   swapMove(from, to) { const mv = this.d.moves; for (const pos of ['front', 'rear']) for (const s in mv[pos]) if (mv[pos][s] === from) mv[pos][s] = to; }
 }
 
-return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, AGI, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, moveSlotName, learnedText, moveLabel };
+return { hasCareer, anyCareer, slotInfo, latestSlot, deleteCareer, Career, SLOT_NAMES, SEASON_DAYS, STAT_GROWTH, AGI, STYLE_BASE, LEARNABLE, SHOP_ITEMS, saleOn, merchantOn, salePrice, RARE_ITEMS, BUFF_NAMES, GANG, OW, SLOTS, weeklyOn, SLOT_OF, SLOT_UNLOCK, SLOT_KEY, slotOpen, moveSlotName, learnedText, moveLabel };
 })();
 // ---- world/liveDecor.js
 __m["world/liveDecor.js"] = (function () {
@@ -13001,7 +13032,7 @@ const evolveTalk = list => list.flatMap(e => [
   { who: null, name: '기술 진화', text: `'${e.fromName}' → '${e.toName}'. 같은 입력 칸에 바로 장착했다. 원래 기술도 남아 있어 Tab → 기술에서 되돌릴 수 있다.` },
 ]);
 const matchName = o => (o.special && SPECIAL[o.special] ? SPECIAL[o.special].name : MODES[o.mode].name) + (o.falls ? ' · 3판 2선승' : o.iron ? ` · 아이언맨 ${Math.round(o.iron / 60)}분` : '');
-const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES, learnedText, moveSlotName } = __m["world/CareerManager.js"];
+const { SHOP_ITEMS, STAT_GROWTH, LEARNABLE, SLOT_NAMES, SEASON_DAYS, RARE_ITEMS, saleOn, salePrice, BUFF_NAMES, learnedText, moveSlotName, SLOT_KEY, SLOT_UNLOCK, slotOpen } = __m["world/CareerManager.js"];
 class Menu {
   constructor(W) { this.W = W; this.game = W.game; this.c = W.c; this.sel = 0; this.t = 0; }
   nav(n, opts = {}) {
@@ -13327,13 +13358,13 @@ class LearnMenu extends Menu {
 }
 
 // ---- Tab: player info ----
-const POS_NAMES = { front: '정면 잡기', rear: '뒤 잡기' }, SLOT_KEYS = { n: 'K', f: '→+K', b: '←+K', u: 'W+K', d: 'S+K' };
+const POS_NAMES = { front: '정면 잡기', rear: '정면 잡기' }, SLOT_KEYS = SLOT_KEY;
 class InfoMenu extends Menu {
   constructor(W, tab = 1) { super(W); this.tab = tab; this.pick = null; this.closeOnPause = true; }
   rows() {
     const d = this.c.d;
     if (this.tab === 0) return Object.keys(STAT_GROWTH);
-    if (this.tab === 2) { const r = []; for (const pos of ['front', 'rear']) for (const s of ['n', 'f', 'b', 'u', 'd']) r.push({ pos, s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
+    if (this.tab === 2) { const r = []; for (const s of ['n', 'f', 'b', 'u', 'd', 'q', 'e', 'r', 'fk']) r.push({ pos: 'front', s }); r.push({ pos: 'catch' }, { pos: 'counter' }); return r; }
     if (this.tab === 3) return ['bandage', 'bigBandage', 'champBandage', 'drink'].filter(k => (d.items[k] || 0) > 0);
     return [];
   }
@@ -13350,7 +13381,8 @@ class InfoMenu extends Menu {
     if (this.ok() && R.length) {
       if (this.tab === 0) { const k = R[this.sel]; if (d.points <= 0) { A.sfx('deny'); this.W.toast('능력치 포인트가 없다. 경기로 경험치를 모으자.'); return; } if (d.lv[k] >= 20) { A.sfx('deny'); return; } d.points--; d.lv[k] = Math.min(20, d.lv[k] + 1); A.sfx('stat'); c.save(); }
       if (this.tab === 2) {
-        const r = R[this.sel], sp = !r.s, list = d.known.filter(id => MOVES[id] && (MOVES[id].pos === r.pos || (!sp && MOVES[id].pos === 'any')));
+        const r = R[this.sel], sp = !r.s, list = d.known.filter(id => MOVES[id] && (MOVES[id].pos === r.pos || (!sp && (MOVES[id].pos === 'any' || MOVES[id].pos === 'rear'))));
+        if (!sp && !slotOpen(d, r.s)) { A.sfx('deny'); this.W.toast(r.s === 'fk' ? 'F+K 칸은 웨이브 상회에서 살 수 있다' : `레벨 ${SLOT_UNLOCK[r.s]}에 열리는 칸이다`); return; }
         if (!list.length) { A.sfx('deny'); this.W.toast('이 칸에 쓸 수 있는 기술을 아직 모른다'); return; }
         this.pick = { pos: r.pos, s: r.s, i: Math.max(0, list.indexOf(sp ? d.moves[r.pos] : d.moves[r.pos][r.s])), list }; A.sfx('ok');
       }
@@ -13385,7 +13417,7 @@ class InfoMenu extends Menu {
     const T = this.tab;
     if (T === 0) {
       drawText(u, `능력치 포인트: ${d.points}  (Enter로 1 올리기, 레벨업마다 +2 · 훈련으로도 오른다)`, 44, 136, { size: 11, color: d.points ? '#6be38a' : UI.dim });
-      this.rows().forEach((k, i) => { const y = 152 + i * 16, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : k === 'agi' ? `속도 ${Math.round(s.spd * 100)}% · 점프 ${Math.round(s.jump * 100)}%` : k === 'crit' ? `${(s.crit * 100).toFixed(1)}%` : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
+      this.rows().forEach((k, i) => { const y = 150 + i * 15, on = i === this.sel; if (on) rect(u, '#26315f', 40, y - 2, 560, 15); drawText(u, STAT_GROWTH[k][1], 50, y, { size: 11, color: on ? '#ffffff' : '#c9d4ff' }); gauge(u, 170, y + 3, 200, 6, d.lv[k] / 20, 'fin', { col: '#49d6ff' }); drawText(u, `Lv ${d.lv[k].toFixed(1)}`, 380, y, { size: 11, color: UI.dim }); const s = c.stats; const v = k === 'hp' || k === 'stun' ? Math.round(s[k]) : k === 'agi' ? `속도 ${Math.round(s.spd * 100)}% · 점프 ${Math.round(s.jump * 100)}%` : k === 'crit' ? `${(s.crit * 100).toFixed(1)}%` : Math.round(s[k] * 100) + '%'; drawText(u, String(v), 590, y, { size: 11, align: 'r', color: '#ffffff' }); });
     } else if (T === 1) {
       const inj = d.injury, lvl = c.injuryLevel, col = lvl === 'danger' ? '#ff5b5b' : lvl === 'warn' ? '#ffb347' : UI.inj;
       const L = [[`전적`, `${d.record.w}승 ${d.record.l}패 ${d.record.d}무 (KO ${d.record.ko} · 핀 ${d.record.pin})`], ['랭킹', d.flags.champion ? '챔피언' : `${c.rank}위 / ${c.rankList().length}명`], ['명성', String(d.fame)], ['소지금', c.money()], ['날짜', c.timeText], ['계약', d.contract ? `${d.contract.oppName} (${d.contract.day}일까지)` : '없음'], ['연승', d.record.streak > 0 ? d.record.streak + '연승' : d.record.streak < 0 ? -d.record.streak + '연패' : '-'], ['타이틀', d.titles.length ? d.titles.map(t => t.name).join(', ') : '없음']];
@@ -13414,11 +13446,13 @@ class InfoMenu extends Menu {
           if (m) masteryTag(u, c.masteryOf(id), x + 262, y + 3, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
           return;
         }
-        const x = r.pos === 'front' ? 44 : 330, y = 158 + ['n', 'f', 'b', 'u', 'd'].indexOf(r.s) * 22;
-        if (r.s === 'n') drawText(u, POS_NAMES[r.pos], x, 144, { size: 11, color: '#ffd65a' });
+        const col2 = ['q', 'e', 'r', 'fk'].includes(r.s), x = col2 ? 330 : 44, y = 158 + (col2 ? ['q', 'e', 'r', 'fk'] : ['n', 'f', 'b', 'u', 'd']).indexOf(r.s) * 22, open = slotOpen(d, r.s);
+        if (r.s === 'n') drawText(u, '정면 잡기', x, 144, { size: 11, color: '#ffd65a' });
+        if (r.s === 'q') drawText(u, '추가 칸 (Q·E·R·F + K)', x, 144, { size: 11, color: '#49d6ff' });
         rect(u, on ? '#26315f' : '#141a36', x, y, 268, 20); keycap(u, SLOT_KEYS[r.s], x + 4, y + 3);
         const id = d.moves[r.pos][r.s], m = MOVES[id];
-        drawText(u, m ? m.name : '-', x + 60, y + 3, { size: 11, color: on ? '#ffffff' : m && m.evo ? '#ffd65a' : '#c9d4ff' });
+        if (!open) { drawText(u, r.s === 'fk' ? '웨이브 상회에서 살 수 있다' : `레벨 ${SLOT_UNLOCK[r.s]}에 열림`, x + 60, y + 3, { size: 11, color: UI.faint }); return; }
+        drawText(u, m ? m.name + (m.pos === 'rear' ? ' (돌려세워)' : '') : '-', x + 60, y + 3, { size: 11, color: on ? '#ffffff' : m && m.evo ? '#ffd65a' : '#c9d4ff' });
         if (m) masteryTag(u, c.masteryOf(id), x + 262, y + 3, !!EVOLVE[id] && !d.known.includes(EVOLVE[id]));
       });
       const sr = R[this.sel], sid = sr && (sr.s ? d.moves[sr.pos][sr.s] : d.moves[sr.pos]);
