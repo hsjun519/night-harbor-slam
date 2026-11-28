@@ -95,7 +95,7 @@ export function stayCine(W, fromShip) {
     { spawn: 'staff', x: 660, face: -1 },
     { say: [{ who: 'staff', text: `챔피언, 입장 준비됐습니다. 오늘도 매진이에요.` }, { who: 'me', text: '…가자.' }] },
     { sfx: 'crowdBoom' }, { walk: 'me', to: 760, speed: 70 }, { cam: 180, dur: 3, with: 1 },
-    { caption: `"야항의 챔피언— ${d.name}!" 함성이 벽을 흔든다.`, dur: 3 }, { sfx: 'crowdBoom', with: 1 },
+    { caption: `"항구의 챔피언— ${d.name}!" 함성이 벽을 흔든다.`, dur: 3 }, { sfx: 'crowdBoom', with: 1 },
     { hide: 'me' }, { wait: 1.2 }, { sfx: 'bell3' }, { dark: 1 }, { wait: 1.4 },
     { title: ENDINGS.stay.en, sub: ENDINGS.stay.name, dur: 3.4 }, { wait: 1 },
   ];

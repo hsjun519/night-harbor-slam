@@ -862,7 +862,7 @@ export class MapMenu extends Menu {
     const W = this.W, here = W.loc;
     this.frame(u, '지도', 40, 30, 560, 300, '#49d6ff');
     // facility box
-    rect(u, '#1b2450', 70, 70, 260, 120); drawText(u, '야항 체육관', 200, 74, { size: 11, align: 'c', color: '#ff8fc4' });
+    rect(u, '#1b2450', 70, 70, 260, 120); drawText(u, '항구 체육관', 200, 74, { size: 11, align: 'c', color: '#ff8fc4' });
     const node = (id, x, y, name, lock) => { const on = id === here; rect(u, '#05060f', x - 31, y - 9, 62, 20); rect(u, on ? '#ffd65a' : lock ? '#2a2a3a' : '#26315f', x - 30, y - 8, 60, 18); drawText(u, name, x, y - 5, { size: 11, align: 'c', color: on ? '#141a36' : lock ? UI.faint : '#ffffff' }); };
     node('office', 110, 110, '사장실'); node('gym', 200, 110, '훈련장'); node('arena', 290, 110, '대기실'); node('lobby', 200, 156, '로비');
     rect(u, '#3a4688', 196, 166, 8, 44);

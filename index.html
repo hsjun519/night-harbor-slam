@@ -2600,6 +2600,8 @@ const LOOKS = {
   mandeok: { build: 'heavy', scale: 1.06, skin: 'tan', head: { face: 'fat', hair: 'topknot', hairCol: '#1e1a28', beard: 'sideburn', bandCol: '#2aa7b8' }, top: { kind: 'none' }, bottom: { kind: 'trunks', c1: '#1f8fa6', c2: '#f3ead2' }, boots: { c1: '#f3ead2', c2: '#1f8fa6', h: .35, plain: 1 }, wrist: { c: '#f3ead2', len: .24 }, belt: '#1f6f8c', tattoo: 'belly', sash: '#f3ead2' },
   neon: { build: 'femPower', scale: .99, skin: 'brown', head: { face: 'slim', hair: 'curly', hairCol: '#ff4fa3', lashes: 1, eye: '#3a1a30', lips: '#c22e62', earring: '#ffd65a', browCol: '#7a1f52' }, top: { kind: 'bra', c1: '#23d5c8', c2: '#ff4fa3' }, bottom: { kind: 'tights', c1: '#2b1a52', c2: '#ff4fa3', pat: 'spots' }, boots: { c1: '#23d5c8', c2: '#ff4fa3', h: .55 }, wrist: { c: '#ff4fa3', c2: '#23d5c8', len: .3 }, sash: '#23d5c8' },
   fogking: { build: 'giant', scale: 1.03, skin: 'ash', head: { face: 'long', hair: 'bald', hairCol: '#c9cbd8', mask: { full: 1, kind: 'fog', c1: '#dfe3ee', c2: '#30364f' } }, top: { kind: 'none' }, bottom: { kind: 'tights', c1: '#23263a', c2: '#7f89b0', pat: 'side' }, boots: { c1: '#14162a', c2: '#7f89b0', h: .8 }, wrist: { c: '#c6ccdf', len: .55 }, belt: '#e0b23c', tails: [{ at: 'head', n: 7, len: 6, w: 2.8, c: '#c6ccdf' }, { at: 'head', n: 6, len: 6, w: 2.2, c: '#9aa3c2' }], cape: { c1: '#4a5078', len: 1 } },
+  // 등화: 안개왕 with the mask off. A former champion in his late forties, grey swept-back hair, lamp-coloured eyes
+  donghwa: { build: 'giant', scale: 1.03, skin: 'light', head: { face: 'long', hair: 'slick', hairCol: '#c9cbd8', beard: 'stubble', wrinkle: 1, scar: 1, eye: '#c98a2e', browTilt: .45, browCol: '#d8dae4' }, top: { kind: 'none' }, bottom: { kind: 'tights', c1: '#23263a', c2: '#7f89b0', pat: 'side' }, boots: { c1: '#14162a', c2: '#7f89b0', h: .8 }, wrist: { c: '#c6ccdf', len: .55 }, belt: '#e0b23c', cape: { c1: '#4a5078', len: 1 } },
   bokja: { build: 'femPower', scale: .98, skin: 'tan', head: { face: 'round', hair: 'curly', hairCol: '#3a2030', lashes: 0, blush: 1, hat: 'bandana', hatCol: '#e0405a', lips: '#c23a4a' }, top: { kind: 'apron', c1: '#5c7fc2', c2: '#f0e9d8' }, bottom: { kind: 'pants', c1: '#b04a8c', c2: '#e49acb', pat: 'spots' }, boots: { c1: '#e0405a', c2: '#ffd65a', h: .5, plain: 1 }, sleeve: { c: '#5c7fc2', len: .6 }, glove: '#ff7aa8', wrist: { c: '#ff7aa8', len: .5 } },
   dueok: { build: 'power', scale: 1, skin: 'brown', head: { face: 'jaw', hair: 'spiky', hairCol: '#1c1424', mask: { full: 1, kind: 'oni', c1: '#c2332f', c2: '#1c1424', c3: '#f0c24a' }, maskHair: 1 }, top: { kind: 'fur', c1: '#6b4a2c' }, bottom: { kind: 'shorts', c1: '#c98a2e', c2: '#2c1c12', pat: 'spots' }, boots: { c1: '#3a2418', c2: '#f0c24a', h: .45 }, wrist: { c: '#6b4a2c', len: .4 }, tattoo: 'chest' },
   palcho: { build: 'lean', scale: .99, skin: 'pale', head: { face: 'slim', hair: 'bald', mask: { full: 1, kind: 'octo', c1: '#8b3fb8', c2: '#f7a8d8', c3: '#f7d154' } }, top: { kind: 'strap', c1: '#8b3fb8', c2: '#f7a8d8' }, bottom: { kind: 'tights', c1: '#5b2a86', c2: '#f7a8d8', pat: 'spots' }, boots: { c1: '#f7a8d8', c2: '#5b2a86', h: .5 }, wrist: { c: '#f7a8d8', len: .3 }, tails: [{ at: 'waist', n: 4, len: 5, w: 2.4, c: '#8b3fb8' }, { at: 'waist', n: 5, len: 5, w: 2.2, c: '#b066d8' }] },
@@ -3454,7 +3456,7 @@ class Arena {
   get mid() { return (this.ropeL + this.ropeR) / 2; }
 }
 const ARENAS = {
-  hall: { id: 'hall', name: '야항 체육관', desc: '옛 어시장을 고친 연맹의 본거지', crowd: 1, rim: '#4fd6ff', light: 0, tint: [1, 1, 1] },
+  hall: { id: 'hall', name: '항구 체육관', desc: '옛 어시장을 고친 연맹의 본거지', crowd: 1, rim: '#4fd6ff', light: 0, tint: [1, 1, 1] },
   gym: { id: 'gym', name: '훈련장 링', desc: '땀 냄새 밴 연습용 링', crowd: 0, rim: '#ffcf8a', light: .04, tint: [1.02, 1, .96] },
   pier: { id: 'pier', name: '부두 특설 링', desc: '네온과 파도가 관객인 야외 링', crowd: .7, rim: '#ff5fa2', light: -.02, tint: [.98, 1, 1.05] },
   dome: { id: 'dome', name: '등대 돔', desc: '챔피언십이 열리는 거대한 돔', crowd: 1.3, rim: '#ffd65a', light: .03, tint: [1.03, 1.01, .98] },
@@ -8256,6 +8258,7 @@ class MatchManager extends Emitter {
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
     // the belt: worn by the champion until the bell, held by the referee during the match, the winner's after a title match
     if (this.cfg.beltHolder) { const h = this.cfg.beltHolder === 'player' ? this.fighters.find(f => f.ctrl === 'human') : this.fighters.find(f => f.charId === this.cfg.beltHolder); if (h) this.belt = { on: h, owner: h, title: !!this.cfg.title }; }
+    if (!this.belt && this.cfg.beltVacant) this.belt = { on: 'ref', owner: null, title: true };   // a vacant title: the referee holds it from the start
     if (this.cfg.skipIntro) this.beginFight(true);
     // entrances: singles in a ring (a cage match starts with both already inside)
     else if (this.cfg.entrances && this.arena.hasRing && this.fighters.length === 2 && !['cage', 'cell'].includes(this.cfg.special)) this.entrance = new EntranceDirector(this, this.cfg.entrances);
@@ -8881,7 +8884,7 @@ class ArenaRenderer {
     const ban = [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['백파', '#5a6688'], ['비에른', '#8a6a3c']];
     ban.forEach(([name, col], i) => { const x = [20, 112, 286, 516, 690, 776][i], R = rampHex(col); rect(g, '#0a0716', x - 1, 44, 30, 66); bands(g, x, 45, 28, 60, [R[2], R[1], R[0]]); poly(g, R[1], [[x, 105], [x + 28, 105], [x + 14, 112]]); ellipse(g, R[0], x + 14, 66, 7, 8); rect(g, R[0], x + 6, 74, 16, 16); drawText(g, name.slice(0, 3), x + 14, 92, { size: 11, align: 'c', color: R[4] }); });
     // neon sign
-    neon(g, dome ? '등대 돔' : '야항', 196, 64, dome ? '#ffd65a' : '#ff5fa2', { align: 'c', scale: 2 });
+    neon(g, dome ? '등대 돔' : '항구', 196, 64, dome ? '#ffd65a' : '#ff5fa2', { align: 'c', scale: 2 });
     neon(g, dome ? '챔피언십' : '레슬링', 626, 64, dome ? '#ffd65a' : '#49d6ff', { align: 'c', scale: 2 });
     drawText(g, 'NIGHT HARBOR WRESTLING', 410, 106, { size: 11, align: 'c', color: dome ? '#ffe9a8' : '#49d6ff' });
     // stands
@@ -8943,7 +8946,7 @@ class ArenaRenderer {
     rect(g, '#2f3a5e', 0, 40, 820, 190); dither(g, 0, 40, 820, 190, '#26304f', .12, 820); rect(g, '#3a4a78', 0, 40, 820, 3);
     for (let x = 0; x < 820; x += 150) truss(g, x, 14, 150, '#2a3256');
     windowPane(g, 70, 64, 60, 64, { city: 1, seed: 3 }); windowPane(g, 690, 64, 60, 64, { city: 1, seed: 9 });
-    neon(g, '야항 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
+    neon(g, '항구 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
     [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['비에른', '#8a6a3c']].forEach(([nm, c], i) => poster(g, 300 + i * 46, 86, 36, 50, c, nm.slice(0, 3), { figure: 1, top: i === 0 ? '챔피언' : '' }));
     rect(g, '#5a3a3a', 0, 176, 820, 54); rect(g, '#6e4848', 0, 176, 820, 2); for (let x = 0; x < 820; x += 40) rect(g, '#4a2e2e', x, 178, 1, 50);
     tiles(n, 0, 226, W, 134, '#3a3046', '#2e2638', 12);
@@ -8979,7 +8982,7 @@ class ArenaRenderer {
     bands(g, L - a.apron, front + 1, R - L + a.apron * 2, a.floorY - front - 1, [skirt, shade(skirt, .08), skirt, shade(skirt, -.2)]);
     rect(g, dome ? '#ffd65a' : '#ff5fa2', L - a.apron, front + 4, R - L + a.apron * 2, 2);
     rect(g, dome ? '#e0a32e' : '#49d6ff', L - a.apron, a.floorY - 6, R - L + a.apron * 2, 1);
-    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '지하 격투장' : '야항 레슬링 연맹';
+    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '야항 레슬링 · 지하 격투장' : '항구 레슬링 연맹';
     drawText(g, title, (L + R) / 2, front + 12, { scale: 2, align: 'c', color: dome ? '#ffe9a8' : '#eef2ff', bold: true, outline: '#06070e' });
     for (const x of [L + 30, R - 30]) { ellipse(g, dome ? '#e0a32e' : '#49d6ff', x, front + 21, 7, 7); ellipse(g, skirt, x, front + 21, 4, 4); }
     // mat surface (trapezoid)
@@ -10491,11 +10494,12 @@ class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, ddaBoss: 0, ddaLog: [], ddaLogBoss: [], mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
+      dda: 0, ddaBoss: 0, ddaLog: [], ddaLogBoss: [], mitb: null, champ: null, motive: null, yahang: { wins: 0, king: 0, met: 0 }, mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
+  migrate() { if (!this.d.flags.champion && this.d.champ === 'fogking') this.d.champ = null;   // 안개왕 is 야항's king now: the harbour title stands empty
+    this.d.yahang = this.d.yahang || { wins: 0, king: 0, met: 0 }; this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (this.d.champ === undefined) this.d.champ = null; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
   // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
   frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
@@ -10517,7 +10521,10 @@ class Career {
     if (this.d && this.d.br && this.d.br.stage !== 'NONE') BR.ids.forEach((id, i) => L.push({ id, pts: 60 + (id === 'brLeader' ? 14 : 8 - i * 2), w: 0, l: 0 }));
     return L;
   }
-  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
+  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || null); }   // null: the harbour title is vacant
+  // the harbour championship: the other finalist (서도현 if he is near the top), and the one the qualifier is against
+  finalist() { const L = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug); if (!L.length) return 'dohyun'; const r = L.slice(0, 3).find(e => e.id === 'dohyun'); return (r || L[0]).id; }
+  qualifierFoe() { const fin = this.finalist(), L = this.rankList().filter(e => e.id !== 'player' && e.id !== fin && CHARACTERS[e.id] && !CHARACTERS[e.id].thug); return L.length ? L[0].id : null; }
   // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
   // strong foes have their own band: title matches, 선항 레슬링, bosses, the underground revenge
   static strongKind(kind, o) { return ['title', 'invasion', 'invasion2', 'invasion3', 'revenge'].includes(kind) || !!(o && (o.bossPhases || o.title)) || !!(o && CHARACTERS[o.opp] && CHARACTERS[o.opp].boss); }
@@ -10596,7 +10603,7 @@ class Career {
       if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
       else if (!d.flags.champion && CHARACTERS[M.holder]) {
         const rr = new RNG(d.season * 77 + d.day);
-        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
+        if (d.champ && rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
         else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
       }
     }
@@ -10681,7 +10688,13 @@ class Career {
     if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) { const foe = this.mitbFoe(); out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'single', special: 'ladder', arena: this.titleVenue.arena, reward: 240000 + (d.season - 1) * 40000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: `1:1 래더 매치 · 상대 ${CHARACTERS[foe].name}. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 지면 상대가 가방을 들고 네가 챔피언일 때 노린다.`, event: 'mitb' + d.season, mitb: 1, mitbFoe: foe }); }
     if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: this.titleVenue.arena, fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
     if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: this.titleVenue.arena, reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
+    // the harbour championship while the belt has no owner: the league's qualifier (2nd or better, fame 45) or 야항's
+    // ticket (안개왕), then the final in the dome
+    if (!d.flags.champion && !d.champ) {
+      const fin = this.finalist();
+      if (d.flags.ticket && fin) out.unshift({ opp: fin, oppName: CHARACTERS[fin].name, mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `항구 챔피언십 결승 · 3판 2선승. ${d.flags.ticket === 'yahang' ? '야항 대표' : '공식 리그 대표'}로 나선다. 이기면 항구 헤비급 챔피언.`, title: 1, final: 1, falls: 2, bossPhases: 1 });
+      else if (!d.flags.ticket && me <= 2 && d.fame >= 45) { const q = this.qualifierFoe(); if (q) out.unshift({ opp: q, oppName: CHARACTERS[q].name, mode: 'single', arena: 'hall', reward: 90000, fame: 12, kind: 'official', qualifier: 1, day: d.day + 1, difficulty: 'hard', rank: this.rankOf(q), desc: '항구 챔피언십 예선. 이기면 공식 리그 대표 출전권을 얻는다.' }); }
+    }
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
@@ -10735,7 +10748,9 @@ class Career {
         if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        if (c.qualifier && won && !d.flags.ticket) { d.flags.ticket = 'league'; out.lines.push('항구 챔피언십 출전권을 얻었다! (공식 리그 대표)'); }
+        if (c.title && c.final && !won && !draw && !d.flags.champion) { d.champ = c.opp; d.flags.ticket = null; out.lines.push(`${c.oppName}이(가) 항구 헤비급 챔피언이 됐다… 다시 1위에 오르면 벨트에 도전할 수 있다.`); }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.flags.ticket = null; this.owBegin(); d.titles.push({ name: '항구 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
         else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; d.flags.defenses = (d.flags.defenses || 0) + 1; }
         else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; if (d.ow && d.ow.state === 'SIGNS') d.ow = { state: 'LOCKED' };   // 선항 레슬링 only sails for the harbour's champion
           out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
@@ -10885,7 +10900,16 @@ const { HARBOR, pierStage, harborRatio, worldReady } = __m["world/harbor.js"];
 // the old passenger pier (broken, then cleared, rebuilt step by step as the fund grows, then lit and flagged, and a
 // ship at its end once the world calls). W: the town scene, for the cutscene effects (sunset, belt, waves, ships).
 function streetLive(g, c, cam, W) {
-  const d = c.d, ox = -Math.round(cam);
+  const d = c.d, ox = -Math.round(cam), cfx = (W && W.cineFx) || {};
+  if (cfx.tv) {   // the prologue: a champion raising a belt on the television in 돛대 상회's window
+    const x = 254 + ox, y = 198, t = W.t, k = Math.floor(t * 6) % 2;
+    rect(g, '#14121c', x - 2, y - 2, 46, 32); rect(g, '#2a2a3a', x - 1, y - 1, 44, 30); rect(g, '#0e1a3a', x, y, 42, 28);
+    rect(g, '#3a6ad8', x, y + 18, 42, 4); rect(g, '#f2efe4', x + 4, y + 17, 34, 1);
+    rect(g, '#ffd65a', x + 18, y + 8, 6, 9); rect(g, '#ffd65a', x + 16 - k, y + 3, 3, 6); rect(g, '#ffd65a', x + 24 + k, y + 3, 3, 6); rect(g, '#fff3b0', x + 17, y + 1 - k, 8, 3);
+    for (let i = 0; i < 5; i++) if ((Math.floor(t * 8) + i * 3) % 5 === 0) rect(g, '#ffffff', x + 3 + i * 8, y + 3 + (i % 2) * 4, 1, 1);
+    rect(g, '#0a0a12', x + 18, y + 30, 6, 4);
+  }
+  if (cfx.flyer) { const x = 306 + ox, y = 202; rect(g, '#05060f', x - 1, y - 1, 18, 24); rect(g, '#f2efe4', x, y, 16, 22); rect(g, '#c2333f', x + 2, y + 2, 12, 3); for (let i = 0; i < 4; i++) rect(g, '#5a5a6a', x + 2, y + 8 + i * 3, 12, 1); }
   if (d.ow && OW.damaged.includes(d.ow.state)) {
     const x = 2140 + ox;
     if (x > -200 && x < 900) {
@@ -11051,7 +11075,7 @@ function banner(c) {
   if (d.mitb && d.mitb.holder === 'player') return [`가방의 주인 ${d.name} — 언제든 노린다`, '#9be36b', '#1f3a2a'];
   if (d.record.streak >= 5) return [`${d.name} ${d.record.streak}연승 중!`, '#ff8fc4', '#3a1f4a'];
   if (d.titles.length) return [`전 챔피언 ${d.name}, 다시 정상으로!`, '#c9d4ff', '#26315f'];
-  if (d.season >= 2) return [`시즌 ${d.season} 개막 — 야항 레슬링 연맹`, '#49d6ff', '#1a2a4a'];
+  if (d.season >= 2) return [`시즌 ${d.season} 개막 — 항구 레슬링 연맹`, '#49d6ff', '#1a2a4a'];
   return null;
 }
 function lobbyLive(g, c, cam) {
@@ -11161,7 +11185,7 @@ const PAINT = {
     for (let x = 0; x < W; x += 150) truss(g, x, 14, 150, '#2a3256');
     L.windows = [[150, 70, 60, 70], [960, 70, 60, 70]];
     for (const [x, y, w, h] of L.windows) { rect(g, '#120c1e', x - 3, y - 3, w + 6, h + 6); g.clearRect(x, y, w, h); }
-    neon(g, '야항 체육관', 560, 50, '#ff5fa2', { scale: 2, align: 'c' });
+    neon(g, '항구 체육관', 560, 50, '#ff5fa2', { scale: 2, align: 'c' });
     drawText(g, '로비 · 휴게실', 560, 82, { size: 11, align: 'c', color: '#49d6ff' });
     // posters of the roster
     // the poster wall (the posters on it follow the ranking and the belt: liveDecor.js)
@@ -11172,7 +11196,7 @@ const PAINT = {
     box(g, 630, 196, 34, 104, '#c2333f'); rect(g, '#120c1e', 634, 202, 20, 54); for (let i = 0; i < 3; i++) for (let k = 0; k < 2; k++) rect(g, ['#49d6ff', '#ffd65a', '#6be38a'][i], 637 + k * 9, 206 + i * 16, 6, 10); rect(g, '#ffd65a', 656, 240, 5, 8); drawText(g, '음료', 647, 262, { size: 11, align: 'c', color: '#ffe6e6' });
     // boards
     board(g, 690, 150, 88, 74, '경기 일정', ['오늘의 대진', '계약 확인', '이벤트 공지']);
-    board(g, 790, 150, 88, 74, '선수 랭킹', ['1~13위', '챔피언', '안개왕'], { bg: '#22304a' });
+    board(g, 790, 150, 88, 74, '선수 랭킹', ['1~13위', '항구 챔피언', '공석'], { bg: '#22304a' });
     // sofa and lounge
     rect(g, '#3a2a40', 880, 290, 170, 10);
     sofa(g, 900, 300, 92, '#3a6a8c'); plant(g, 1010, 300, {}); plant(g, 870, 300, { leaf: '#5aa06a' });
@@ -11219,7 +11243,7 @@ const PAINT = {
     // trophy shelf
     shelf(g, 40, 150, 70, 3, '#5a3a2a', ['#ffd65a', '#e6e9f2', '#c98a2e']);
     // rank and schedule boards
-    board(g, 214, 150, 66, 60, '랭킹', ['안개왕', '1. 백파', '2. 비에른']);
+    board(g, 214, 150, 66, 60, '랭킹', ['챔피언 공석', '1. 백파', '2. 비에른']);
     board(g, 520, 150, 80, 60, '이번 주', ['계약 경기', '럼블 14일', '태그 21일'], { bg: '#22304a' });
     // desk and model ship
     rect(g, '#120c1e', 330, 236, 140, 66); rect(g, '#7a4a2a', 332, 238, 136, 62); rect(g, '#9a6a3a', 332, 238, 136, 5); rect(g, '#5a3420', 340, 250, 120, 44);
@@ -11369,7 +11393,7 @@ function paintStreet(g, L) {
   for (let i = 0; i < 110; i++) rect(g, '#bff3ff', 450 + i, FLOOR - 96 + Math.round(Math.sin(i / 110 * Math.PI * 3) * 4), 1, 2);
   rect(g, '#0e2a3a', 462, FLOOR - 70, 86, 44); rect(g, '#49d6ff', 464, FLOOR - 68, 82, 2); drawText(g, '상회', 505, FLOOR - 64, { size: 11, align: 'c', color: '#bff3ff' });
   door(g, 488, 230, 34, 70, '#1f6a8a', { glass: 1 });
-  bld(580, 250, 200, '#2f3a5e', '야항 체육관', '#ff5fa2', { big: 1, signY: 10 });
+  bld(580, 250, 200, '#2f3a5e', '항구 체육관', '#ff5fa2', { big: 1, signY: 10 });
   door(g, 686, 196, 36, 104, '#3a4a6a', { glass: 1 });
   // the narrow alley between the shop and the tent: at its end, the old gym
   rect(g, '#05060f', 834, FLOOR - 172, 50, 172); bands(g, 836, FLOOR - 170, 46, 170, ['#0b0a16', '#0e0c1c', '#120f22', '#161226']);
@@ -11434,14 +11458,14 @@ const LOCATIONS = {
   lobby: { name: '로비 · 휴게실', w: 1180, music: 'lobby', rim: '#ffcf8a', light: .02,
     doors: [{ x: 82, to: 'street', at: 704, label: '건물 밖으로' }, { x: 337, to: 'office', at: 60, label: '사장실' }, { x: 582, to: 'gym', at: 80, label: '훈련장', lock: 'gymOpen' }, { x: 1050, to: 'basement', at: 80, label: '지하 계단', lock: 'basement' }, { x: 1112, to: 'arena', at: 70, label: '경기장 대기실' }],
     objects: [{ x: 647, w: 30, act: 'vending', label: '자판기' }, { x: 734, w: 80, act: 'schedule', label: '경기 일정판' }, { x: 834, w: 80, act: 'ranking', label: '랭킹 보드' }, { x: 946, w: 90, act: 'rest', label: '소파에서 쉬기' }, { x: 175, w: 60, act: 'trophy', label: '트로피 진열장' }, { x: 458, w: 150, act: 'poster', label: '선수 포스터' }], live: lobbyLive },
-  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, live: basementLive, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }] },
+  basement: { name: '지하 격투장', w: 760, music: 'boss', rim: '#ff8a2b', light: -.04, live: basementLive, doors: [{ x: 60, to: 'lobby', at: 1050, label: '로비' }], objects: [{ x: 540, w: 200, act: 'undergroundRing', label: '지하 링' }, { x: 270, w: 60, act: 'crates', label: '나무 상자' }, { x: 380, w: 60, act: 'yahangBoard', label: '야항 레슬링 게시판' }] },
   office: { name: '사장실', w: 640, music: 'office', rim: '#ffcf8a', light: .03, doors: [{ x: 20, to: 'lobby', at: 337, label: '로비', edge: 1 }], objects: [{ x: 75, w: 60, act: 'trophy', label: '트로피 선반' }, { x: 247, w: 60, act: 'ranking', label: '랭킹 보드' }, { x: 560, w: 70, act: 'schedule', label: '이번 주 일정' }, { x: 588, w: 50, act: 'fish', label: '수족관' }] },
   gym: { name: '훈련장', w: 1100, music: 'gym', rim: '#ffcf8a', light: .04, doors: [{ x: 63, to: 'lobby', at: 582, label: '로비' }],
     objects: [{ x: 420, w: 70, act: 'train', game: 'bench', label: '벤치프레스' }, { x: 546, w: 70, act: 'train', game: 'rope', label: '줄넘기' }, { x: 668, w: 50, act: 'train', game: 'mitt', label: '미트 치기' }, { x: 790, w: 60, act: 'train', game: 'bridge', label: '목 브릿지' }, { x: 980, w: 180, act: 'spar', label: '연습 링 (연습 경기)' }, { x: 390, w: 110, act: 'train', game: 'breath', label: '거울 앞 호흡 훈련' }] },
   arena: { name: '경기장 대기실', w: 820, music: 'gym', rim: '#49d6ff', light: 0, doors: [{ x: 57, to: 'lobby', at: 1112, label: '로비' }],
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
-    doors: [{ x: 704, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 127, to: 'clinic', at: 60, label: '항구의원' }, { x: 337, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
+    doors: [{ x: 704, to: 'lobby', at: 82, label: '항구 체육관' }, { x: 127, to: 'clinic', at: 60, label: '항구의원' }, { x: 337, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
     objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 1736, w: 30, act: 'fishSpot', label: '낚시터' }, { x: 505, w: 40, act: 'wave', label: '웨이브 상회' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 127, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
@@ -11644,7 +11668,7 @@ const res = e => (e.won ? '승리' : e.draw ? '무승부' : '패배');
 function highlights(d, id) {
   const H = [], me = d.name || '신인', st = d.story || {};
   const add = (k, title, sub, o = {}) => H.push(Object.assign({ k, title, sub, when: stamp(o.s, o.day), tone: 'story' }, o));
-  add('start', '첫 발걸음', `신인 ${josa(me, '이/가')} 야항 체육관의 문을 열었다`, { s: 1, day: 1, other: 'boss', expr: 'neutral' });
+  add('start', '첫 발걸음', `신인 ${josa(me, '이/가')} 항구 체육관의 문을 열었다`, { s: 1, day: 1, other: 'boss', expr: 'neutral' });
   const fm = st.firstMatch;
   if (fm) add('first', '첫 경기', `${fm.opp || '상대'} — ${res(fm)}`, { s: fm.season, day: fm.day, other: fm.oppId, opp: fm.opp || '상대', tone: fm.won ? 'win' : fm.draw ? 'story' : 'loss', expr: fm.won ? 'happy' : 'hurt' });
   const fw = st.firstWin;
@@ -11720,6 +11744,77 @@ function credits(d, npcName) {
 
 return { finishOptions, highlights, scriptLines, credits, ENDINGS, ENDING_IDS, careerMatches, FINISH, canFinish, somebody, mentorOk, stayOk, retireKind, FINAL_LINES, FINAL_QUESTIONS };
 })();
+// ---- world/prologue.js
+__m["world/prologue.js"] = (function () {
+// THE BIRTH OF A NEW WRESTLER: a bell and a roaring crowd in the dark; a champion raising a belt in a great hall turns
+// out to be on the television in 돛대 상회's window; a flyer on the glass; the walk down the harbour street to the gym;
+// the boss asks why. The answer is kept (d.motive) for his lines, the ceremony and the ending, and changes nothing else.
+// Also the boss's own story, told when asked.
+const { josa } = __m["core/util.js"];
+const MOTIVES = [
+  { id: 'fame', label: '유명한 레슬러가 되고 싶습니다.', boss: '이름을 알리고 싶다라… 좋아. 이 항구가 자네 이름을 외치게 만들어 보자고.', echo: '유명해지고 싶다던' },
+  { id: 'money', label: '돈을 많이 벌고 싶습니다.', boss: '하하, 솔직해서 좋군! 링은 정직하네. 이기면 벌고, 지면 배우지.', echo: '돈을 벌고 싶다던' },
+  { id: 'strong', label: '누구보다 강해지고 싶습니다.', boss: '강해지고 싶다… 그 말은 매일 아침 다시 해야 하는 말이야. 각오는 됐겠지?', echo: '누구보다 강해지고 싶다던' },
+  { id: 'love', label: '그냥 레슬링이 좋습니다.', boss: '…그거면 충분하네. 레슬링을 좋아하는 놈이 결국 끝까지 남더군.', echo: '그냥 레슬링이 좋다던' },
+  { id: 'unsure', label: '아직 잘 모르겠습니다.', boss: '모르는 게 당연하지. 답은 링 위에서 찾는 거야. 나도 아직 찾는 중이라네.', echo: '아직 모르겠다던' },
+];
+const motiveOf = d => MOTIVES.find(m => m.id === d.motive) || null;
+const CATCHPHRASE = '자, 오늘도 멋진 경기 한 번 만들어 보자고!';
+function prologueCine(W) {
+  const d = W.c.d;
+  return [
+    { bars: 1 }, { dark: 1 }, { music: 'title' },
+    { sfx: 'crowdBoom' }, { caption: '…와아아아아!', dur: 1.6 }, { sfx: 'bell3' }, { wait: .5 },
+    { title: 'THE BIRTH OF A NEW WRESTLER', sub: '새로운 레슬러의 탄생', dur: 2.8 },
+    { at: 'street', x: 196 }, { fx: { tv: 1 } }, { cam: 150, dur: .01 }, { dark: 0 },
+    { caption: '거대한 경기장, 쏟아지는 조명. 챔피언이 벨트를 높이 들어 올린다.', dur: 2.6 },
+    { caption: '…돛대 상회 진열장 안, 작은 텔레비전 속 이야기였다.', dur: 2.6 },
+    { fx: { flyer: 1 } },
+    { caption: '유리창에 붙은 전단지 한 장. 「신인 레슬러 모집 — 경력 무관. 신인 환영.」', dur: 3 },
+    { caption: '「누구에게나 첫 번째 경기는 있다.」', dur: 2.6 },
+    { fx: { tv: 0, flyer: 0 } }, { music: 'street' }, { cam: null },
+    { walk: 'me', to: 700, speed: 72 },
+    { caption: '작은 가방 하나를 메고, 항구 끝 체육관으로.', dur: 2.4, with: 1 },
+    { at: 'lobby', x: 170 },
+    { spawn: 'boss', x: 262, face: -1 },
+    { face: 'me', dir: 'boss' },
+    { say: [
+      { who: 'boss', text: '전단지 보고 왔나? 반갑네. 이 체육관 사장, 구만석일세.', expr: 'happy' },
+      { who: 'boss', text: '그래, 자네는 왜 레슬러가 되고 싶은 건가?' },
+      { prompt: '왜 레슬러가 되고 싶은가', choice: MOTIVES.map(M => ({ label: M.label, go: [{ act: () => { d.motive = M.id; W.c.save(); } }, { who: 'boss', text: M.boss }] })) },
+      { who: 'boss', text: '좋아! 그럼 일단 링에 올라가 보라고!', expr: 'happy' },
+    ] },
+    { bars: 0 }, { act: () => { d.flags.prologue = 1; W.c.save(); } },
+  ];
+}
+// "사장님 이야기": why the gym exists, the empty seats, the bills, 등화
+function bossStory(c) {
+  const d = c.d, Y = d.yahang || {}, M = motiveOf(d);
+  const S = text => ({ who: 'boss', text });
+  return [
+    S('나? 이 항구가 레슬링으로 북적이던 시절부터 경기를 잡아 왔지. 그땐 세계 각지에서 선수들이 배를 타고 왔어. 부두가 관중으로 꽉 찼지.'),
+    S('재능은 있는데 이름이 없어서 링에 못 서는 녀석들을 많이 봤네. 그래서 이 체육관을 열었어. 누구든 실력만 있으면 증명할 수 있게.'),
+    S('요즘은… 관중석이 좀 비었지. 사장실엔 운영비 서류만 쌓여 가고. 하지만 챔피언이 하나 나오면 사람들은 다시 올 거야.'),
+    S(Y.king ? '등화 녀석, 결국 자네가 가면을 벗겼다며? 고집은 여전하더군. …고맙네.' : '등화라는 챔피언이 있었네. 내가 경기를 잡아 주던 녀석이지. 12년 전 벨트를 돌려주고 사라졌어. 어딘가에서 아직 레슬링을 하고 있을 거야.'),
+    ...(M ? [S(`처음 왔을 때 ${M.echo} 자네 대답, 아직 기억하네. 그 마음 잊지 말게.`)] : []),
+    S(CATCHPHRASE),
+  ];
+}
+// the boss explains the harbour championship and its two tickets (and opens the cellar stairs)
+function championshipTalk(c) {
+  const d = c.d;
+  return [
+    { who: 'boss', text: '항구 챔피언 벨트는 12년째 주인이 없어. 등화라는 챔피언이 반납한 뒤로 말이야. 그래서 다시 {y}항구 챔피언십{/}을 열기로 했네.' },
+    { who: 'boss', text: '출전권을 얻는 길은 둘이야. 공식 리그에서 {y}2위 안에 들고 명성 45{/}를 넘기면 내가 예선을 잡아 주지. 이기면 출전권이야.' },
+    { who: 'boss', text: '아니면 로비 끝 {y}지하 계단{/} 아래, {v}야항 레슬링{/}에서 이름을 알리는 방법도 있네. 거기 왕, {v}안개왕{/}을 꺾으면 야항 대표로 나갈 수 있어.' },
+    { who: 'boss', text: '야항은 공식 무대가 외면한 레슬러들이 세운 곳이야. 우리 연맹 소속도, 누구 밑도 아니지. 거기선 거기 규칙을 따르게.' },
+    { act: () => { d.flags.basementKnown = 1; d.flags.champTalk = 1; c.save(); } },
+  ];
+}
+void josa;
+
+return { prologueCine, bossStory, championshipTalk, MOTIVES, motiveOf, CATCHPHRASE };
+})();
 // ---- world/npcs.js
 __m["world/npcs.js"] = (function () {
 // Townspeople and what they say. Lines change with progress, results, rank, injuries and past talks.
@@ -11731,6 +11826,7 @@ const { merchantOn } = __m["world/CareerManager.js"];
 const { beggarTalk } = __m["world/beggar.js"];
 const { HARBOR, harborBroken, harborRepaired, harborRatio, worldReady } = __m["world/harbor.js"];
 const { canFinish } = __m["world/endings.js"];
+const { CATCHPHRASE, bossStory, championshipTalk } = __m["world/prologue.js"];
 const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
   trainer: { name: '백 관장', look: LOOKS.trainer, stance: 'hips', voice: 1.1 },
@@ -11748,6 +11844,7 @@ const NPCS = {
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
   merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
   beggar: { name: '골목 영감', look: LOOKS.beggar, stance: 'elder', voice: .62 },
+  donghwa: { name: '등화', look: LOOKS.donghwa, stance: 'calm', voice: .55, wrestler: 1 },
   newbie: { name: '새 신인', look: LOOKS.newbie, stance: 'calm', voice: 1.3 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
@@ -11829,8 +11926,9 @@ function talk(id, c, W) {
       const out = [];
       if (!d.flags.metBoss) {
         d.flags.metBoss = 1;
-        return [S(`오, 자네가 ${josa(me, '이/가')}군! 반갑네. 내가 이 야항 레슬링 연맹의 선장… 아니, 사장 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 챔피언은 {v}안개왕{/}. 3년째 아무도 그 벨트에 손가락 하나 못 댔어.'),
-          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위. 걱정 말게, 꼴찌는 올라갈 일만 남은 자리니까! 이기면 오르고, 1위에 명성까지 쌓이면 챔피언에게 도전하는 거야.`),
+        return [S(`오, 자네가 ${josa(me, '이/가')}군! 반갑네. 내가 이 항구 레슬링 연맹의 선장… 아니, 사장 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 그런데 {y}항구 챔피언 벨트{/}는 12년째 주인이 없어. 올해 다시 항구 챔피언십을 연다네.'),
+          ...championshipTalk(c),
+          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위. 걱정 말게, 꼴찌는 올라갈 일만 남은 자리니까! 이기면 오르고, 높이 오를수록 챔피언십이 가까워지지.`),
           S('경기는 내가 잡아 주지. 계약을 받고, 준비되면 {y}경기장 대기실{/}로 가게. 날짜 안에만 가면 돼. 늦으면… 내 잔소리가 길어지지.'),
           S('아, 그리고. 링에서 받은 충격은 몸에 남아. 그게 {v}부상{/}이야. 쌓이고 쌓이면 선수 생명 끝이지. 항구의원 한 선생한테 꼬박꼬박 진찰받게.', { expr: 'sad' }),
           S('자, 첫 계약서를 보여 주지. 잉크가 아직 안 말랐으니 조심하고!'), { act: () => W.openOffers() }];
@@ -11847,16 +11945,20 @@ function talk(id, c, W) {
       if (inj >= B.injuryDanger) out.push(S(`이봐, 자네 몸 상태… 부상이 ${Math.round(inj)}%야. 이대로 링에 오르면 정말 끝장날 수도 있어. 의원부터 가! 사장 명령이야!`, { expr: 'sad' }));
       else if (inj >= B.injuryWarn) out.push(S('표정이 안 좋군. 부상이 꽤 쌓였어. 경기 전에 의원에 들르게. 붕대 값은 아끼지 말고.'));
       if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대들이 사무실 앞에 줄을 섰다네. 번호표라도 나눠 줘야 할 판이야.', { expr: 'happy' }));
-      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
+      else if (!d.champ && d.flags.ticket) out.push(S(`출전권을 손에 넣었군! ${d.flags.ticket === 'yahang' ? '안개왕을 꺾다니… 야항 대표라.' : '공식 리그 대표라.'} 결승은 등대 돔이야. 계약서에 있네!`, { expr: 'happy' }));
+      else if (!d.champ && rank <= 2 && d.fame >= 45) out.push(S('여기까지 올라왔군. 항구 챔피언십 예선을 잡아 뒀네. 이기면 출전권이야!', { expr: 'happy' }));
+      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 챔피언에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
       if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게. 상대도 몸 풀고 있을 걸세.`));
       else if (d.contract && d.contract.kind === 'rival') out.push(S('서도현이 직접 와서 경기를 잡았다며? 둘이 붙으면 표가 동나지. 부둣가 특설 링, 기대하네!'));
       // the pier and the world stage
       if (worldReady(d)) out.push(S(d.harbor.called ? '배는 부두 끝에 있네. 준비가 되면 말없이 오게. 나는 벌써 짐을 쌌다네.' : '부두도 섰고, 자네 이름도 바다를 건넜어. 곧 좋은 소식을 들고 가겠네.', { expr: 'happy' }));
       else if (harborRepaired(d)) out.push(S(`부두는 섰는데, 세계는 아직 자네 이름을 몰라. 명성 ${HARBOR.fame}이면 내가 배를 띄우지. 지금은 ${d.fame}일세.`));
       else if (harborBroken(d) && d.flags.harborTalk !== d.day) { d.flags.harborTalk = d.day; out.push(S(`부두 복구 기금이 ${Math.floor(harborRatio(d) * 100)}% 찼다더군. 연맹 몫은 내가 꼬박꼬박 넣고 있네. 세계로 가는 길은 거기서 시작이야.`)); }
-      out.push(S(pick(['그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
+      out.push(S(pick([CATCHPHRASE, CATCHPHRASE, '그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
       out.push({ choice: [
         { label: '경기 제안 보기', act: () => W.openOffers() },
+        { label: '사장님 이야기', go: bossStory(c) },
+        { label: '항구 챔피언십에 대해', go: championshipTalk(c) },
         { label: '랭킹에 대해', go: [S(`지금 자네는 ${rank}위. 위 순위를 이기면 그 자리를 빼앗고, 지면 조금 미끄러지지. 다른 놈들도 매일 싸우니 순위는 파도처럼 출렁여.`), S('1위가 되고 명성이 55를 넘으면 타이틀전이야. 14일엔 {y}만선 럼블{/}, 21일엔 {y}태그 대전{/}. 달력에 동그라미 쳐 두게.')] },
         { label: '조언 듣기', go: [S(pick(['훈련만 하다 굶을 순 없지. 계약 경기는 보수가 커. 꼬박꼬박 잡게.', '도전 경기는 위험하지만 순위를 한 번에 뛰어넘을 수 있어. 인생도 레슬링도 한 방이야… 가끔은.', '돈이 모자라면 부두 하역장에 가 보게. 장 반장이 일당을 두둑이 쳐 줄 거야.', '돈 아끼다 몸 버리네. 붕대 값은 아끼지 말게. 내 경험담이야.', '관중은 의외성을 좋아해. 늘 하던 기술만 하지 말고 가끔 깜짝 놀라게 해 주게.']))] },
         ...(canFinish(d) ? [{ label: '커리어 마무리하기', act: () => W.finishTalk() }] : []),
@@ -11960,11 +12062,11 @@ function talk(id, c, W) {
         palcho: ['자네 관절 각도가 흥미롭군. 해부… 아니, 분석해 보고 싶어. 아주 조금만.', '기술은 여덟 개쯤 외워 둬야 레슬러지. 다리가 여덟 개면 더 좋고.'],
         baeksang: ['링 밖은 피 냄새가 더 진하지. …농담이야. 반만.', '물속에서 기다리는 상어처럼, 기회를 기다린다. 오래 기다리면 배고프지만.'],
         bjorn: ['한국 국밥, 최고. 북해엔 없어. 북해엔 바람만 있어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다. 그래서 국밥 먹는다.'],
-        baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔. 그땐 벨트도 지금보다 가벼웠어. 내가 젊었으니까.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야. 어깨는 거짓말을 못 하거든.'],
+        baekpa: ['나도 한때는 챔피언이었지. 등화가 나타나기 전엔. 그땐 벨트도 지금보다 가벼웠어. 내가 젊었으니까.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야. 어깨는 거짓말을 못 하거든.'],
         galchi: ['부둣가 악동단은 의리로 뭉쳤다! …회비도 걷고.', '오늘은 기분 좋으니까 봐준다! 내일은 몰라!'],
         myeolchi: ['형님이 저보고 내일부터 다이어트래요. 근데 저 이미 멸치인데요?', '저기요, 사인 좀… 아니 아니, 형님 몰래요.'],
         gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지. 나머지 반은… 말로 안 되더라.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~ 걸레는 저기 있어.'],
-        ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸. 지나가려면 밟혀야 하고.'],
+        ironma: ['여긴 항구 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸. 지나가려면 밟혀야 하고.'],
       }[id] || [ch.lines.intro];
       return [S(lastLine(c, id, gossip))];
     }
@@ -13101,6 +13203,74 @@ function allianceCine(W, o, onFight) {
 
 return { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine };
 })();
+// ---- world/yahang.js
+__m["world/yahang.js"] = (function () {
+// 야항 레슬링 (the night harbour): the independent night league 등화 founded in the cellar under the old fish market
+// after he gave the harbour belt back twelve years ago. Not a branch of anybody: its own records, its own rules, its
+// own king. Two wins over its regulars earn a night with 안개왕; beating him earns 야항's ticket to the harbour
+// championship (THE FOG CLEARS) and 등화 takes the mask off. Its story is complete there; you can keep fighting in it.
+//   d.yahang = { wins, king, met }
+const { CHARACTERS } = __m["data/characters.js"];
+const { LOOKS } = __m["data/looks.js"];
+const YAHANG = { pool: ['dueok', 'palcho', 'baeksang', 'bokja', 'ironma', 'gosu'], need: 2, reward: 30000, kingReward: 120000 };
+const yahangOf = d => d.yahang || (d.yahang = { wins: 0, king: 0, met: 0 });
+function yahangFoe(d) { const Y = yahangOf(d), P = YAHANG.pool.filter(id => CHARACTERS[id]); return P[(d.day * 7 + Y.wins * 3 + (d.season || 1)) % P.length]; }
+const Y_ = text => ({ who: null, name: '야항 레슬링', text });
+// the board by the cellar ring
+function yahangSteps(c, W) {
+  const d = c.d, Y = yahangOf(d), first = !Y.met;
+  Y.met = 1;
+  const foe = yahangFoe(d), name = CHARACTERS[foe].name, out = [];
+  if (first) out.push(Y_('"야항 레슬링 — 공식 무대가 외면한 레슬러들의 밤." 손때 묻은 게시판에 오늘 밤 대진이 붙어 있다.'), Y_('"여기서는 이름도 공식 랭킹도 소용없다. 이 링에서 보여 준 것만 남는다. 챔피언이었던 자도 여기서는 처음부터다." — 안개왕'));
+  out.push(Y_(Y.king ? `야항 전적 ${Y.wins}승. 안개왕을 꺾은 이름이 게시판 맨 위에 적혀 있다.` : `야항 전적 ${Y.wins}승. 야항 정규 선수를 ${YAHANG.need}번 이기면 안개왕이 링에 선다.`));
+  const ch = [{ label: `오늘 밤의 상대: ${name} (야항 정규전)`, act: () => W.startMatch('yahang', { opp: foe, oppName: name, kind: 'yahang', arena: 'basement', reward: YAHANG.reward + (d.season || 1) * 10000, fame: 5, difficulty: (d.season || 1) >= 2 ? 'hard' : 'normal' }) }];
+  if (!Y.king && Y.wins >= YAHANG.need) ch.unshift({ label: '안개왕에게 도전한다', act: () => W.startMatch('yahangKing', { opp: 'fogking', oppName: '안개왕', kind: 'yahangKing', arena: 'basement', reward: YAHANG.kingReward, fame: 18, difficulty: (d.season || 1) >= 2 ? 'expert' : 'hard' }) });
+  if (Y.king) ch.push({ label: '등화와 이야기한다', go: donghwaTalk(d) });
+  ch.push({ label: '그만두기', go: [] });
+  out.push({ prompt: '야항 레슬링', choice: ch });
+  return out;
+}
+const DH = (text, o = {}) => Object.assign({ who: 'donghwa', text }, o);
+// THE FOG CLEARS: 안개가 걷히다. He owns the defeat, hands over the ticket, takes off the mask.
+function fogClearsCine(W) {
+  const c = W.c, d = c.d, x = W.player.x, s = x < 380 ? 1 : -1;
+  return [
+    { bars: 1 }, { music: 'title' },
+    { title: 'THE FOG CLEARS', sub: '안개가 걷히다', dur: 2.8 },
+    { spawn: 'fogking', x: x + s * 70, face: -s },
+    { face: 'me', dir: 'fogking' },
+    { say: [
+      { who: 'fogking', text: '좋은 경기였다.' },
+      { who: 'fogking', text: '오랜만에 왕이 아니라 한 명의 레슬러로서 경기한 기분이군.' },
+      { who: 'fogking', text: '받아라. 야항의 문장이 새겨진 항구 챔피언십 출전권이다. 이 지하에서 보여 준 것을 그 위에서도 보여 줘라.' },
+      { act: () => { const Y = yahangOf(d); Y.king = 1; if (!d.flags.champion && !d.champ) d.flags.ticket = d.flags.ticket || 'yahang'; c.save(); W.toast('항구 챔피언십 출전권 — 야항 대표', '#c9b6ff'); W.game.audio.sfx('good'); } },
+    ] },
+    { act: () => { const a = W.npcs.find(n => n.id === 'fogking' && n.cine) || W.npcs.find(n => n.id === 'fogking'); if (a) { a.look = LOOKS.donghwa; a.faceExpr = 'neutral'; } }, with: 0 },
+    { flash: [1, 1, 1, .5] }, { sfx: 'whoosh' },
+    { caption: '가면이 벗겨지자, 안개 속에서 오래된 얼굴이 드러났다.', dur: 2.6 },
+    { say: [
+      DH('…이 얼굴을 기억하는 사람이 아직 있을까. 등화. 12년 전, 이 도시의 챔피언이었다.'),
+      DH('내 이름 때문에 신인들이 링에 오르지 못했다. 사람들은 내 경기가 아니라 내 이름과 벨트를 보러 왔지.'),
+      DH('그래서 벨트를 반납하고, 기회를 얻지 못한 녀석들과 이 지하에 야항을 세웠다. 가면은 이름을 내려놓기 위해서였고.'),
+      DH('구 사장은 처음부터 알고 있었을 거다. 그 사람이 내 경기를 잡아 주던 시절이 있었으니.'),
+      { prompt: '등화에게', choice: [
+        { label: '다른 데서 부른 적은 없었습니까?', go: [DH('예전에 바다를 돌아다니는 거대한 레슬링 단체에서 영입 제안을 받은 적이 있네.'), DH('좋은 조건이었지만 거절했지.'), DH('나는 또다시 누군가의 이름 아래에서 레슬링하고 싶지 않았으니까.')] },
+        { label: '(고개를 숙여 인사한다)', go: [DH('됐다. 인사는 결승이 끝나고 받지.')] },
+      ] },
+    ] },
+    { bars: 0 }, { act: () => { d.flags.fogCleared = 1; c.save(); } },
+  ];
+}
+// after the reveal, 등화 at the board
+function donghwaTalk(d) {
+  return [
+    DH(d.flags.champion ? '챔피언이 됐다더군. 벨트가 무겁지? 그 무게에 짓눌리지 마라. 경기가 먼저다.' : d.flags.ticket ? '결승이 남았다. 야항의 이름이 아니라 네 이름으로 싸워라.' : '야항은 계속된다. 기회를 못 얻은 녀석들이 있는 한.'),
+    DH('…바다 쪽에서 낮은 뱃고동이 들리는 밤이 있다. 그런 밤엔 마음이 편치 않아.'),
+  ];
+}
+
+return { yahangFoe, yahangSteps, fogClearsCine, YAHANG, yahangOf };
+})();
 // ---- world/quests.js
 __m["world/quests.js"] = (function () {
 // The wrestlers in the lobby ask for things now and then: bring them something from a shop ("이봐, 붕대 하나 사다 줄
@@ -13390,14 +13560,14 @@ function ceremonyCine(W) {
   const d = W.c.d, x = W.player.x;
   return [
     { bars: 1 }, { music: 'title' },
-    { title: '챔피언 탄생', sub: `야항 헤비급 챔피언 — ${d.name}`, dur: 2.8 },
+    { title: '챔피언 탄생', sub: `항구 헤비급 챔피언 — ${d.name}`, dur: 2.8 },
     { spawn: 'boss', x: x + 150, face: -1 }, { spawn: 'reporter', x: x - 140, face: 1, with: 1 }, { spawn: 'fankid', x: x - 180, face: 1, stance: 'cheer', with: 1 },
     { walk: 'boss', to: x + 46, speed: 80 },
     { face: 'me', dir: 'boss' },
     { say: [
       { who: 'boss', text: `${josa(d.name, '이/가')} 해냈다! 내가 처음 봤을 때부터 알아봤지. …아마도.`, expr: 'happy' },
       { who: 'boss', text: '이 벨트는 이제 네 거다. 항구 사람들 모두가 너를 본다. 부끄럽지 않게 들고 다녀.' },
-      { who: 'reporter', text: '야항 신문 민 기자입니다! 챔피언, 한마디만요!' },
+      { who: 'reporter', text: '항구 신문 민 기자입니다! 챔피언, 한마디만요!' },
       { prompt: '첫 인터뷰', choice: [
         { label: '"이 항구는 내가 지킨다."', go: [{ who: 'reporter', text: '멋진데요! 1면이에요!', expr: 'happy' }, { act: () => { d.fame += 3; } }] },
         { label: '"아직 시작일 뿐이다."', go: [{ who: 'reporter', text: '겸손한 챔피언이라… 독자들이 좋아하겠네요.' }, { act: () => { d.fame += 2; } }] },
@@ -15038,7 +15208,7 @@ class MapMenu extends Menu {
     const W = this.W, here = W.loc;
     this.frame(u, '지도', 40, 30, 560, 300, '#49d6ff');
     // facility box
-    rect(u, '#1b2450', 70, 70, 260, 120); drawText(u, '야항 체육관', 200, 74, { size: 11, align: 'c', color: '#ff8fc4' });
+    rect(u, '#1b2450', 70, 70, 260, 120); drawText(u, '항구 체육관', 200, 74, { size: 11, align: 'c', color: '#ff8fc4' });
     const node = (id, x, y, name, lock) => { const on = id === here; rect(u, '#05060f', x - 31, y - 9, 62, 20); rect(u, on ? '#ffd65a' : lock ? '#2a2a3a' : '#26315f', x - 30, y - 8, 60, 18); drawText(u, name, x, y - 5, { size: 11, align: 'c', color: on ? '#141a36' : lock ? UI.faint : '#ffffff' }); };
     node('office', 110, 110, '사장실'); node('gym', 200, 110, '훈련장'); node('arena', 290, 110, '대기실'); node('lobby', 200, 156, '로비');
     rect(u, '#3a4688', 196, 166, 8, 44);
@@ -15278,7 +15448,7 @@ function stayCine(W, fromShip) {
     { spawn: 'staff', x: 660, face: -1 },
     { say: [{ who: 'staff', text: `챔피언, 입장 준비됐습니다. 오늘도 매진이에요.` }, { who: 'me', text: '…가자.' }] },
     { sfx: 'crowdBoom' }, { walk: 'me', to: 760, speed: 70 }, { cam: 180, dur: 3, with: 1 },
-    { caption: `"야항의 챔피언— ${d.name}!" 함성이 벽을 흔든다.`, dur: 3 }, { sfx: 'crowdBoom', with: 1 },
+    { caption: `"항구의 챔피언— ${d.name}!" 함성이 벽을 흔든다.`, dur: 3 }, { sfx: 'crowdBoom', with: 1 },
     { hide: 'me' }, { wait: 1.2 }, { sfx: 'bell3' }, { dark: 1 }, { wait: 1.4 },
     { title: ENDINGS.stay.en, sub: ENDINGS.stay.name, dur: 3.4 }, { wait: 1 },
   ];
@@ -15340,6 +15510,8 @@ __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
 const { Career } = __m["world/CareerManager.js"];
+const { yahangSteps, yahangOf, fogClearsCine } = __m["world/yahang.js"];
+const { prologueCine, bossStory, championshipTalk, CATCHPHRASE } = __m["world/prologue.js"];
 const { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } = __m["world/quests.js"];
 const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf, MECH_NAME, mechOf } = __m["world/gymGear.js"];
 const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
@@ -15381,10 +15553,12 @@ class WorldScene {
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
     if (o.intro) {
       const K = a => game.input.label(a);
-      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
+      const janitor = [{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 항구 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
         { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
         { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
-        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
+        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }];
+      // a new career opens with THE BIRTH OF A NEW WRESTLER (Esc skips it); the janitor's welcome comes after
+      if (!career.d.flags.prologue) this.playCine(prologueCine(this), { onEnd: W => W.say(janitor) }); else this.say(janitor);
     }
     if (o.after) this.afterMatch(o.after);
     game.screen.resetFx();
@@ -15634,6 +15808,9 @@ class WorldScene {
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     // favours: a friendly match in the basement; showing a move on them in the gym ring
+    // 야항 레슬링, in the cellar: its regulars, and its king (안개왕 walks out of the fog)
+    if (kind === 'yahang') return { mode: 'single', arena: 'basement', entrances: c.entranceOpt(kind, o, this.game.settings), entrants: [me, foe(o.opp)], career: 1, title: '야항 레슬링', introTime: 3.2, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'yahangKing') return { mode: 'single', arena: 'basement', entrances: c.entranceOpt(kind, o, this.game.settings), entrants: [me, Object.assign(foe('fogking'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 2 }, title: '야항의 왕 — 안개왕', introTime: 4.2, music: 'boss', preTalk: this.preTalk('fogking', o) };
     if (kind === 'questSpar') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, title: '연습 상대', skipIntro: false, introTime: 2.4, music: 'gym' };
     if (kind === 'questTeach') return { mode: 'practice', arena: 'gym', entrants: [Object.assign(me, { fin: 100 }), { char: o.opp, ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { move: o.move, name: '기술 알려 주기', how: `${CHARACTERS[o.opp].name}에게 '${MOVES[o.move].name}'을(를) 걸어 주자 (잡고 그 칸의 키)` } };
     // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
@@ -15647,7 +15824,7 @@ class WorldScene {
     if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
     const runIn = brRunInDue(c, kind, o); if (runIn) brRunInMark(c, runIn);
     const beltHolder = d.flags.champion ? 'player' : o && o.opp && o.opp === c.champion ? o.opp : null;
-    return { beltHolder, entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    return { beltHolder, beltVacant: !!(o && o.final), entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;   // info.quiet: a cash-in follows at once (no result screen yet)
@@ -15657,6 +15834,8 @@ class WorldScene {
     if (kind === 'questTeach') { if (res.lesson) this.finishQuest('teach'); else this.toast('아직 기술을 보여 주지 못했다.', '#c9d4ff'); c.save(); return; }
     if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
+    if (kind === 'yahang' && res.won) { yahangOf(c.d).wins++; c.save(); }
+    if (kind === 'yahangKing' && res.won) this.playCine(fogClearsCine(this));
     if (offer && offer.kind === 'dojo' && res.won) {
       c.d.flags['dojo_' + offer.opp] = 1;
       // "이기면 우리 기술을 가르쳐 주지": one of the winner's own moves, else one of the gym's lessons for free
@@ -15906,7 +16085,7 @@ class WorldScene {
       case 'pojang': this.openFood(); break;
       case 'oldRing': this.say([{ who: null, name: '낡은 링', text: '로프가 늘어지고 매트는 꺼졌다. 그래도 누군가 매일 닦는지 먼지 한 톨 없다.' }]); break;
       case 'oldPoster': this.say([{ who: null, name: '빛바랜 포스터', text: '"검은 파도 마덕구 — 9차 방어 성공". 사진 속 얼굴은… 골목 영감이다.' }]); break;
-      case 'oldBelt': this.say([{ who: null, name: '먼지 쌓인 벨트', text: '"야항 헤비급 챔피언". 지금 벨트보다 한참 낡았지만, 금박만은 아직 빛난다.' }]); break;
+      case 'oldBelt': this.say([{ who: null, name: '먼지 쌓인 벨트', text: '"항구 헤비급 챔피언". 12년 전 한 챔피언이 반납한 벨트다. 사장이 지금껏 손수 닦아 왔는지 금박만은 아직 빛난다.' }]); break;
       case 'plaza': this.say(this.plazaLines()); break;
       case 'fountain': if (c.pay(500)) { A.sfx('coin'); this.say([{ who: 'me', text: '동전을 던졌다. "챔피언이 되게 해 주세요."' }]); d.flags.wish = (d.flags.wish || 0) + 1; } break;
       case 'job': this.say(talk('foreman', c, this)); break;
@@ -15915,6 +16094,7 @@ class WorldScene {
       case 'racks': this.openShop(); break;
       case 'sale': this.openShop(); break;
       case 'dojo': this.dojoMenu(); break;
+      case 'yahangBoard': this.say(yahangSteps(this.c, this)); break;
       case 'undergroundRing': if (d.contract && d.contract.title && this.c.titleVenue.loc === 'basement') this.startMatch('title', d.contract); else if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;

@@ -96,6 +96,7 @@ export class MatchManager extends Emitter {
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
     // the belt: worn by the champion until the bell, held by the referee during the match, the winner's after a title match
     if (this.cfg.beltHolder) { const h = this.cfg.beltHolder === 'player' ? this.fighters.find(f => f.ctrl === 'human') : this.fighters.find(f => f.charId === this.cfg.beltHolder); if (h) this.belt = { on: h, owner: h, title: !!this.cfg.title }; }
+    if (!this.belt && this.cfg.beltVacant) this.belt = { on: 'ref', owner: null, title: true };   // a vacant title: the referee holds it from the start
     if (this.cfg.skipIntro) this.beginFight(true);
     // entrances: singles in a ring (a cage match starts with both already inside)
     else if (this.cfg.entrances && this.arena.hasRing && this.fighters.length === 2 && !['cage', 'cell'].includes(this.cfg.special)) this.entrance = new EntranceDirector(this, this.cfg.entrances);

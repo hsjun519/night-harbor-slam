@@ -7,14 +7,14 @@ export function ceremonyCine(W) {
   const d = W.c.d, x = W.player.x;
   return [
     { bars: 1 }, { music: 'title' },
-    { title: '챔피언 탄생', sub: `야항 헤비급 챔피언 — ${d.name}`, dur: 2.8 },
+    { title: '챔피언 탄생', sub: `항구 헤비급 챔피언 — ${d.name}`, dur: 2.8 },
     { spawn: 'boss', x: x + 150, face: -1 }, { spawn: 'reporter', x: x - 140, face: 1, with: 1 }, { spawn: 'fankid', x: x - 180, face: 1, stance: 'cheer', with: 1 },
     { walk: 'boss', to: x + 46, speed: 80 },
     { face: 'me', dir: 'boss' },
     { say: [
       { who: 'boss', text: `${josa(d.name, '이/가')} 해냈다! 내가 처음 봤을 때부터 알아봤지. …아마도.`, expr: 'happy' },
       { who: 'boss', text: '이 벨트는 이제 네 거다. 항구 사람들 모두가 너를 본다. 부끄럽지 않게 들고 다녀.' },
-      { who: 'reporter', text: '야항 신문 민 기자입니다! 챔피언, 한마디만요!' },
+      { who: 'reporter', text: '항구 신문 민 기자입니다! 챔피언, 한마디만요!' },
       { prompt: '첫 인터뷰', choice: [
         { label: '"이 항구는 내가 지킨다."', go: [{ who: 'reporter', text: '멋진데요! 1면이에요!', expr: 'happy' }, { act: () => { d.fame += 3; } }] },
         { label: '"아직 시작일 뿐이다."', go: [{ who: 'reporter', text: '겸손한 챔피언이라… 독자들이 좋아하겠네요.' }, { act: () => { d.fame += 2; } }] },

@@ -7,6 +7,7 @@ import { merchantOn } from './CareerManager.js';
 import { beggarTalk } from './beggar.js';
 import { HARBOR, harborBroken, harborRepaired, harborRatio, worldReady } from './harbor.js';
 import { canFinish } from './endings.js';
+import { CATCHPHRASE, bossStory, championshipTalk } from './prologue.js';
 
 export const NPCS = {
   boss: { name: '구만석 사장', look: LOOKS.boss, stance: 'arms', voice: .7 },
@@ -25,6 +26,7 @@ export const NPCS = {
   oldman: { name: '등대지기 영감', look: LOOKS.oldman, stance: 'elder', voice: .7 },
   merchant: { name: '떠돌이 상인 보부', look: LOOKS.merchant, stance: 'lean', voice: .9 },
   beggar: { name: '골목 영감', look: LOOKS.beggar, stance: 'elder', voice: .62 },
+  donghwa: { name: '등화', look: LOOKS.donghwa, stance: 'calm', voice: .55, wrestler: 1 },
   newbie: { name: '새 신인', look: LOOKS.newbie, stance: 'calm', voice: 1.3 },
 };
 for (const id in CHARACTERS) if (id !== 'rookie') NPCS[id] = { name: CHARACTERS[id].name, look: CHARACTERS[id].look, stance: CHARACTERS[id].stance === 'fog' ? 'fog' : 'calm', wrestler: 1, voice: CHARACTERS[id].voice };
@@ -106,8 +108,9 @@ export function talk(id, c, W) {
       const out = [];
       if (!d.flags.metBoss) {
         d.flags.metBoss = 1;
-        return [S(`오, 자네가 ${josa(me, '이/가')}군! 반갑네. 내가 이 야항 레슬링 연맹의 선장… 아니, 사장 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 챔피언은 {v}안개왕{/}. 3년째 아무도 그 벨트에 손가락 하나 못 댔어.'),
-          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위. 걱정 말게, 꼴찌는 올라갈 일만 남은 자리니까! 이기면 오르고, 1위에 명성까지 쌓이면 챔피언에게 도전하는 거야.`),
+        return [S(`오, 자네가 ${josa(me, '이/가')}군! 반갑네. 내가 이 항구 레슬링 연맹의 선장… 아니, 사장 구만석일세.`, { expr: 'happy' }), S('이 항구에선 매주 밤마다 링이 서지. 그런데 {y}항구 챔피언 벨트{/}는 12년째 주인이 없어. 올해 다시 항구 챔피언십을 연다네.'),
+          ...championshipTalk(c),
+          S(`자네는 지금 이름도 없는 신인이야. 랭킹도 꼴찌, ${c.rank}위. 걱정 말게, 꼴찌는 올라갈 일만 남은 자리니까! 이기면 오르고, 높이 오를수록 챔피언십이 가까워지지.`),
           S('경기는 내가 잡아 주지. 계약을 받고, 준비되면 {y}경기장 대기실{/}로 가게. 날짜 안에만 가면 돼. 늦으면… 내 잔소리가 길어지지.'),
           S('아, 그리고. 링에서 받은 충격은 몸에 남아. 그게 {v}부상{/}이야. 쌓이고 쌓이면 선수 생명 끝이지. 항구의원 한 선생한테 꼬박꼬박 진찰받게.', { expr: 'sad' }),
           S('자, 첫 계약서를 보여 주지. 잉크가 아직 안 말랐으니 조심하고!'), { act: () => W.openOffers() }];
@@ -124,16 +127,20 @@ export function talk(id, c, W) {
       if (inj >= B.injuryDanger) out.push(S(`이봐, 자네 몸 상태… 부상이 ${Math.round(inj)}%야. 이대로 링에 오르면 정말 끝장날 수도 있어. 의원부터 가! 사장 명령이야!`, { expr: 'sad' }));
       else if (inj >= B.injuryWarn) out.push(S('표정이 안 좋군. 부상이 꽤 쌓였어. 경기 전에 의원에 들르게. 붕대 값은 아끼지 말고.'));
       if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대들이 사무실 앞에 줄을 섰다네. 번호표라도 나눠 줘야 할 판이야.', { expr: 'happy' }));
-      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
+      else if (!d.champ && d.flags.ticket) out.push(S(`출전권을 손에 넣었군! ${d.flags.ticket === 'yahang' ? '안개왕을 꺾다니… 야항 대표라.' : '공식 리그 대표라.'} 결승은 등대 돔이야. 계약서에 있네!`, { expr: 'happy' }));
+      else if (!d.champ && rank <= 2 && d.fame >= 45) out.push(S('여기까지 올라왔군. 항구 챔피언십 예선을 잡아 뒀네. 이기면 출전권이야!', { expr: 'happy' }));
+      else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 챔피언에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
       if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게. 상대도 몸 풀고 있을 걸세.`));
       else if (d.contract && d.contract.kind === 'rival') out.push(S('서도현이 직접 와서 경기를 잡았다며? 둘이 붙으면 표가 동나지. 부둣가 특설 링, 기대하네!'));
       // the pier and the world stage
       if (worldReady(d)) out.push(S(d.harbor.called ? '배는 부두 끝에 있네. 준비가 되면 말없이 오게. 나는 벌써 짐을 쌌다네.' : '부두도 섰고, 자네 이름도 바다를 건넜어. 곧 좋은 소식을 들고 가겠네.', { expr: 'happy' }));
       else if (harborRepaired(d)) out.push(S(`부두는 섰는데, 세계는 아직 자네 이름을 몰라. 명성 ${HARBOR.fame}이면 내가 배를 띄우지. 지금은 ${d.fame}일세.`));
       else if (harborBroken(d) && d.flags.harborTalk !== d.day) { d.flags.harborTalk = d.day; out.push(S(`부두 복구 기금이 ${Math.floor(harborRatio(d) * 100)}% 찼다더군. 연맹 몫은 내가 꼬박꼬박 넣고 있네. 세계로 가는 길은 거기서 시작이야.`)); }
-      out.push(S(pick(['그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
+      out.push(S(pick([CATCHPHRASE, CATCHPHRASE, '그래, 무슨 일로 왔나? 짧게 하게, 수족관 밥 줄 시간이거든.', '그래, 무슨 일인가? 계약서는 언제나 준비돼 있네.', '오, 왔나. 무슨 일인가? 커피는 없네. 바닷바람이면 충분하지.'])));
       out.push({ choice: [
         { label: '경기 제안 보기', act: () => W.openOffers() },
+        { label: '사장님 이야기', go: bossStory(c) },
+        { label: '항구 챔피언십에 대해', go: championshipTalk(c) },
         { label: '랭킹에 대해', go: [S(`지금 자네는 ${rank}위. 위 순위를 이기면 그 자리를 빼앗고, 지면 조금 미끄러지지. 다른 놈들도 매일 싸우니 순위는 파도처럼 출렁여.`), S('1위가 되고 명성이 55를 넘으면 타이틀전이야. 14일엔 {y}만선 럼블{/}, 21일엔 {y}태그 대전{/}. 달력에 동그라미 쳐 두게.')] },
         { label: '조언 듣기', go: [S(pick(['훈련만 하다 굶을 순 없지. 계약 경기는 보수가 커. 꼬박꼬박 잡게.', '도전 경기는 위험하지만 순위를 한 번에 뛰어넘을 수 있어. 인생도 레슬링도 한 방이야… 가끔은.', '돈이 모자라면 부두 하역장에 가 보게. 장 반장이 일당을 두둑이 쳐 줄 거야.', '돈 아끼다 몸 버리네. 붕대 값은 아끼지 말게. 내 경험담이야.', '관중은 의외성을 좋아해. 늘 하던 기술만 하지 말고 가끔 깜짝 놀라게 해 주게.']))] },
         ...(canFinish(d) ? [{ label: '커리어 마무리하기', act: () => W.finishTalk() }] : []),
@@ -237,11 +244,11 @@ export function talk(id, c, W) {
         palcho: ['자네 관절 각도가 흥미롭군. 해부… 아니, 분석해 보고 싶어. 아주 조금만.', '기술은 여덟 개쯤 외워 둬야 레슬러지. 다리가 여덟 개면 더 좋고.'],
         baeksang: ['링 밖은 피 냄새가 더 진하지. …농담이야. 반만.', '물속에서 기다리는 상어처럼, 기회를 기다린다. 오래 기다리면 배고프지만.'],
         bjorn: ['한국 국밥, 최고. 북해엔 없어. 북해엔 바람만 있어.', '파도, 바위 이길 수 없다. 그런데 바위, 조금씩 깎인다. 그래서 국밥 먹는다.'],
-        baekpa: ['나도 한때는 챔피언이었지. 안개왕이 오기 전엔. 그땐 벨트도 지금보다 가벼웠어. 내가 젊었으니까.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야. 어깨는 거짓말을 못 하거든.'],
+        baekpa: ['나도 한때는 챔피언이었지. 등화가 나타나기 전엔. 그땐 벨트도 지금보다 가벼웠어. 내가 젊었으니까.', '반격은 상대를 보는 게 아니라 상대의 어깨를 보는 거야. 어깨는 거짓말을 못 하거든.'],
         galchi: ['부둣가 악동단은 의리로 뭉쳤다! …회비도 걷고.', '오늘은 기분 좋으니까 봐준다! 내일은 몰라!'],
         myeolchi: ['형님이 저보고 내일부터 다이어트래요. 근데 저 이미 멸치인데요?', '저기요, 사인 좀… 아니 아니, 형님 몰래요.'],
         gosu: ['말발도 기술이야, 신인. 경기 전에 이미 반은 이기고 들어가는 거지. 나머지 반은… 말로 안 되더라.', '철썩 짐에 온 걸 환영해. 여기선 도장 깨기 실패하면 청소 당번이야~ 걸레는 저기 있어.'],
-        ironma: ['여긴 야항 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸. 지나가려면 밟혀야 하고.'],
+        ironma: ['여긴 항구 체육관 애들이 오는 데가 아니야.', '도장 깨기? 내 앞을 지나가야 할걸. 지나가려면 밟혀야 하고.'],
       }[id] || [ch.lines.intro];
       return [S(lastLine(c, id, gossip))];
     }

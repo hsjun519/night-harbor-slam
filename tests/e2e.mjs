@@ -96,6 +96,10 @@ try {
   r = await st(); check(r.scene === 'TutorialOffer', 'a new wrestler is offered the basics', JSON.stringify(r));
   await p.shot('e2e_03a_offer');
   await tap('ArrowDown'); await tap('Enter'); await step(70);
+  // THE BIRTH OF A NEW WRESTLER plays first; Esc held skips it and the janitor's welcome follows
+  const cine0 = await ev(`return !!(__NHS.game.scene.cine || (__NHS.game.scene.cineQ && __NHS.game.scene.cineQ.length))`);
+  check(cine0, 'a new career opens with THE BIRTH OF A NEW WRESTLER', String(cine0));
+  await kd('Escape'); await step(50); await ku('Escape'); await step(50);
   r = await st();
   check(r.scene === 'WorldScene' && r.loc === 'lobby' && r.dialog, 'skipping the basics -> lobby with the janitor intro', JSON.stringify(r));
   await p.shot('e2e_03_intro');

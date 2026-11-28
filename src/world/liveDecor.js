@@ -13,7 +13,16 @@ import { HARBOR, pierStage, harborRatio, worldReady } from './harbor.js';
 // the old passenger pier (broken, then cleared, rebuilt step by step as the fund grows, then lit and flagged, and a
 // ship at its end once the world calls). W: the town scene, for the cutscene effects (sunset, belt, waves, ships).
 export function streetLive(g, c, cam, W) {
-  const d = c.d, ox = -Math.round(cam);
+  const d = c.d, ox = -Math.round(cam), cfx = (W && W.cineFx) || {};
+  if (cfx.tv) {   // the prologue: a champion raising a belt on the television in 돛대 상회's window
+    const x = 254 + ox, y = 198, t = W.t, k = Math.floor(t * 6) % 2;
+    rect(g, '#14121c', x - 2, y - 2, 46, 32); rect(g, '#2a2a3a', x - 1, y - 1, 44, 30); rect(g, '#0e1a3a', x, y, 42, 28);
+    rect(g, '#3a6ad8', x, y + 18, 42, 4); rect(g, '#f2efe4', x + 4, y + 17, 34, 1);
+    rect(g, '#ffd65a', x + 18, y + 8, 6, 9); rect(g, '#ffd65a', x + 16 - k, y + 3, 3, 6); rect(g, '#ffd65a', x + 24 + k, y + 3, 3, 6); rect(g, '#fff3b0', x + 17, y + 1 - k, 8, 3);
+    for (let i = 0; i < 5; i++) if ((Math.floor(t * 8) + i * 3) % 5 === 0) rect(g, '#ffffff', x + 3 + i * 8, y + 3 + (i % 2) * 4, 1, 1);
+    rect(g, '#0a0a12', x + 18, y + 30, 6, 4);
+  }
+  if (cfx.flyer) { const x = 306 + ox, y = 202; rect(g, '#05060f', x - 1, y - 1, 18, 24); rect(g, '#f2efe4', x, y, 16, 22); rect(g, '#c2333f', x + 2, y + 2, 12, 3); for (let i = 0; i < 4; i++) rect(g, '#5a5a6a', x + 2, y + 8 + i * 3, 12, 1); }
   if (d.ow && OW.damaged.includes(d.ow.state)) {
     const x = 2140 + ox;
     if (x > -200 && x < 900) {
@@ -179,7 +188,7 @@ function banner(c) {
   if (d.mitb && d.mitb.holder === 'player') return [`가방의 주인 ${d.name} — 언제든 노린다`, '#9be36b', '#1f3a2a'];
   if (d.record.streak >= 5) return [`${d.name} ${d.record.streak}연승 중!`, '#ff8fc4', '#3a1f4a'];
   if (d.titles.length) return [`전 챔피언 ${d.name}, 다시 정상으로!`, '#c9d4ff', '#26315f'];
-  if (d.season >= 2) return [`시즌 ${d.season} 개막 — 야항 레슬링 연맹`, '#49d6ff', '#1a2a4a'];
+  if (d.season >= 2) return [`시즌 ${d.season} 개막 — 항구 레슬링 연맹`, '#49d6ff', '#1a2a4a'];
   return null;
 }
 export function lobbyLive(g, c, cam) {

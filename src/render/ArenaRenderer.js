@@ -84,7 +84,7 @@ export class ArenaRenderer {
     const ban = [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['백파', '#5a6688'], ['비에른', '#8a6a3c']];
     ban.forEach(([name, col], i) => { const x = [20, 112, 286, 516, 690, 776][i], R = rampHex(col); rect(g, '#0a0716', x - 1, 44, 30, 66); bands(g, x, 45, 28, 60, [R[2], R[1], R[0]]); poly(g, R[1], [[x, 105], [x + 28, 105], [x + 14, 112]]); ellipse(g, R[0], x + 14, 66, 7, 8); rect(g, R[0], x + 6, 74, 16, 16); drawText(g, name.slice(0, 3), x + 14, 92, { size: 11, align: 'c', color: R[4] }); });
     // neon sign
-    neon(g, dome ? '등대 돔' : '야항', 196, 64, dome ? '#ffd65a' : '#ff5fa2', { align: 'c', scale: 2 });
+    neon(g, dome ? '등대 돔' : '항구', 196, 64, dome ? '#ffd65a' : '#ff5fa2', { align: 'c', scale: 2 });
     neon(g, dome ? '챔피언십' : '레슬링', 626, 64, dome ? '#ffd65a' : '#49d6ff', { align: 'c', scale: 2 });
     drawText(g, 'NIGHT HARBOR WRESTLING', 410, 106, { size: 11, align: 'c', color: dome ? '#ffe9a8' : '#49d6ff' });
     // stands
@@ -146,7 +146,7 @@ export class ArenaRenderer {
     rect(g, '#2f3a5e', 0, 40, 820, 190); dither(g, 0, 40, 820, 190, '#26304f', .12, 820); rect(g, '#3a4a78', 0, 40, 820, 3);
     for (let x = 0; x < 820; x += 150) truss(g, x, 14, 150, '#2a3256');
     windowPane(g, 70, 64, 60, 64, { city: 1, seed: 3 }); windowPane(g, 690, 64, 60, 64, { city: 1, seed: 9 });
-    neon(g, '야항 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
+    neon(g, '항구 체육관', 410, 44, '#ff5fa2', { scale: 2, align: 'c' });
     [['안개왕', '#4a5078'], ['강태산', '#c25a20'], ['윤하늘', '#2a7fc4'], ['네온 제이', '#c2337a'], ['비에른', '#8a6a3c']].forEach(([nm, c], i) => poster(g, 300 + i * 46, 86, 36, 50, c, nm.slice(0, 3), { figure: 1, top: i === 0 ? '챔피언' : '' }));
     rect(g, '#5a3a3a', 0, 176, 820, 54); rect(g, '#6e4848', 0, 176, 820, 2); for (let x = 0; x < 820; x += 40) rect(g, '#4a2e2e', x, 178, 1, 50);
     tiles(n, 0, 226, W, 134, '#3a3046', '#2e2638', 12);
@@ -182,7 +182,7 @@ export class ArenaRenderer {
     bands(g, L - a.apron, front + 1, R - L + a.apron * 2, a.floorY - front - 1, [skirt, shade(skirt, .08), skirt, shade(skirt, -.2)]);
     rect(g, dome ? '#ffd65a' : '#ff5fa2', L - a.apron, front + 4, R - L + a.apron * 2, 2);
     rect(g, dome ? '#e0a32e' : '#49d6ff', L - a.apron, a.floorY - 6, R - L + a.apron * 2, 1);
-    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '지하 격투장' : '야항 레슬링 연맹';
+    const title = dome ? '등대 돔 · 챔피언십' : gym ? '백 관장 체육관' : base ? '야항 레슬링 · 지하 격투장' : '항구 레슬링 연맹';
     drawText(g, title, (L + R) / 2, front + 12, { scale: 2, align: 'c', color: dome ? '#ffe9a8' : '#eef2ff', bold: true, outline: '#06070e' });
     for (const x of [L + 30, R - 30]) { ellipse(g, dome ? '#e0a32e' : '#49d6ff', x, front + 21, 7, 7); ellipse(g, skirt, x, front + 21, 4, 4); }
     // mat surface (trapezoid)

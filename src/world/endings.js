@@ -41,7 +41,7 @@ const res = e => (e.won ? '승리' : e.draw ? '무승부' : '패배');
 export function highlights(d, id) {
   const H = [], me = d.name || '신인', st = d.story || {};
   const add = (k, title, sub, o = {}) => H.push(Object.assign({ k, title, sub, when: stamp(o.s, o.day), tone: 'story' }, o));
-  add('start', '첫 발걸음', `신인 ${josa(me, '이/가')} 야항 체육관의 문을 열었다`, { s: 1, day: 1, other: 'boss', expr: 'neutral' });
+  add('start', '첫 발걸음', `신인 ${josa(me, '이/가')} 항구 체육관의 문을 열었다`, { s: 1, day: 1, other: 'boss', expr: 'neutral' });
   const fm = st.firstMatch;
   if (fm) add('first', '첫 경기', `${fm.opp || '상대'} — ${res(fm)}`, { s: fm.season, day: fm.day, other: fm.oppId, opp: fm.opp || '상대', tone: fm.won ? 'win' : fm.draw ? 'story' : 'loss', expr: fm.won ? 'happy' : 'hurt' });
   const fw = st.firstWin;

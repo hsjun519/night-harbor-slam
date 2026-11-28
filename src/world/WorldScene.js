@@ -1,6 +1,8 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
 import { Career } from './CareerManager.js';
+import { yahangSteps, yahangOf, fogClearsCine } from './yahang.js';
+import { prologueCine, bossStory, championshipTalk, CATCHPHRASE } from './prologue.js';
 import { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } from './quests.js';
 import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf, MECH_NAME, mechOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
@@ -43,10 +45,12 @@ export class WorldScene {
     this.enter(career.d.loc || 'lobby', career.d.x || 240, true);
     if (o.intro) {
       const K = a => game.input.label(a);
-      this.say([{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 야항 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
+      const janitor = [{ who: 'janitor', text: `어이, 거기! 네가 오늘 온다던 신인 ${josa(career.d.name, '이/가')}구나. 여긴 항구 체육관 로비야.` + (o.tutored ? ' 관장님 기초 훈련은 살아서 나왔군? 대단해.' : '') },
         { who: 'janitor', text: `사장님 방은 바로 오른쪽의 {y}사장실{/} 문이야. 문 앞에 서서 {y}${K('door')}{/}(또는 {y}${K('interact')}{/})를 누르면 들어가.` },
         { who: 'janitor', text: `사람 앞에 서면 머리 위에 표시가 떠. 그때 {y}${K('interact')}{/}나 {y}Enter{/}로 말을 걸면 돼. 가야 할 곳은 화면 왼쪽 위 {y}목표{/}와 노란 화살표가 알려 줄 거다.` },
-        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }]);
+        { who: 'janitor', text: `{y}${K('info')}{/}을 누르면 네 상태를 볼 수 있다. 특히 {v}부상 게이지{/}는 자주 확인하라고.` }];
+      // a new career opens with THE BIRTH OF A NEW WRESTLER (Esc skips it); the janitor's welcome comes after
+      if (!career.d.flags.prologue) this.playCine(prologueCine(this), { onEnd: W => W.say(janitor) }); else this.say(janitor);
     }
     if (o.after) this.afterMatch(o.after);
     game.screen.resetFx();
@@ -296,6 +300,9 @@ export class WorldScene {
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
     // favours: a friendly match in the basement; showing a move on them in the gym ring
+    // 야항 레슬링, in the cellar: its regulars, and its king (안개왕 walks out of the fog)
+    if (kind === 'yahang') return { mode: 'single', arena: 'basement', entrances: c.entranceOpt(kind, o, this.game.settings), entrants: [me, foe(o.opp)], career: 1, title: '야항 레슬링', introTime: 3.2, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'yahangKing') return { mode: 'single', arena: 'basement', entrances: c.entranceOpt(kind, o, this.game.settings), entrants: [me, Object.assign(foe('fogking'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 2 }, title: '야항의 왕 — 안개왕', introTime: 4.2, music: 'boss', preTalk: this.preTalk('fogking', o) };
     if (kind === 'questSpar') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, title: '연습 상대', skipIntro: false, introTime: 2.4, music: 'gym' };
     if (kind === 'questTeach') return { mode: 'practice', arena: 'gym', entrants: [Object.assign(me, { fin: 100 }), { char: o.opp, ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { move: o.move, name: '기술 알려 주기', how: `${CHARACTERS[o.opp].name}에게 '${MOVES[o.move].name}'을(를) 걸어 주자 (잡고 그 칸의 키)` } };
     // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
@@ -309,7 +316,7 @@ export class WorldScene {
     if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
     const runIn = brRunInDue(c, kind, o); if (runIn) brRunInMark(c, runIn);
     const beltHolder = d.flags.champion ? 'player' : o && o.opp && o.opp === c.champion ? o.opp : null;
-    return { beltHolder, entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    return { beltHolder, beltVacant: !!(o && o.final), entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
     const c = this.c, { kind, offer, res } = info;   // info.quiet: a cash-in follows at once (no result screen yet)
@@ -319,6 +326,8 @@ export class WorldScene {
     if (kind === 'questTeach') { if (res.lesson) this.finishQuest('teach'); else this.toast('아직 기술을 보여 주지 못했다.', '#c9d4ff'); c.save(); return; }
     if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
+    if (kind === 'yahang' && res.won) { yahangOf(c.d).wins++; c.save(); }
+    if (kind === 'yahangKing' && res.won) this.playCine(fogClearsCine(this));
     if (offer && offer.kind === 'dojo' && res.won) {
       c.d.flags['dojo_' + offer.opp] = 1;
       // "이기면 우리 기술을 가르쳐 주지": one of the winner's own moves, else one of the gym's lessons for free
@@ -568,7 +577,7 @@ export class WorldScene {
       case 'pojang': this.openFood(); break;
       case 'oldRing': this.say([{ who: null, name: '낡은 링', text: '로프가 늘어지고 매트는 꺼졌다. 그래도 누군가 매일 닦는지 먼지 한 톨 없다.' }]); break;
       case 'oldPoster': this.say([{ who: null, name: '빛바랜 포스터', text: '"검은 파도 마덕구 — 9차 방어 성공". 사진 속 얼굴은… 골목 영감이다.' }]); break;
-      case 'oldBelt': this.say([{ who: null, name: '먼지 쌓인 벨트', text: '"야항 헤비급 챔피언". 지금 벨트보다 한참 낡았지만, 금박만은 아직 빛난다.' }]); break;
+      case 'oldBelt': this.say([{ who: null, name: '먼지 쌓인 벨트', text: '"항구 헤비급 챔피언". 12년 전 한 챔피언이 반납한 벨트다. 사장이 지금껏 손수 닦아 왔는지 금박만은 아직 빛난다.' }]); break;
       case 'plaza': this.say(this.plazaLines()); break;
       case 'fountain': if (c.pay(500)) { A.sfx('coin'); this.say([{ who: 'me', text: '동전을 던졌다. "챔피언이 되게 해 주세요."' }]); d.flags.wish = (d.flags.wish || 0) + 1; } break;
       case 'job': this.say(talk('foreman', c, this)); break;
@@ -577,6 +586,7 @@ export class WorldScene {
       case 'racks': this.openShop(); break;
       case 'sale': this.openShop(); break;
       case 'dojo': this.dojoMenu(); break;
+      case 'yahangBoard': this.say(yahangSteps(this.c, this)); break;
       case 'undergroundRing': if (d.contract && d.contract.title && this.c.titleVenue.loc === 'basement') this.startMatch('title', d.contract); else if (d.revenge && d.revenge.invited) this.say(this.revengeReady()); else this.say([{ who: null, name: '지하 링', text: '먼지 쌓인 링. 밤마다 누군가 여기서 판돈을 걸고 싸운다는 소문이 있다.' }]); break;
       case 'crates': this.say([{ who: null, name: '나무 상자', text: '"취급 주의: 접이식 의자 50개" …대체 누가 이렇게 많이 쓰는 거지?' }]); break;
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;

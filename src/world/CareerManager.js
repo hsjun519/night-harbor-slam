@@ -171,11 +171,12 @@ export class Career {
       record: { w: 0, l: 0, d: 0, ko: 0, pin: 0, streak: 0, official: 0 }, season: 1, day: 1, slot: 0, contract: null, offers: [], offersDay: 0,
       items: { bandage: 1, drink: 1 }, gear: {}, owned: [], outfit: null, flags: {}, npc: {}, h2h: {}, league: [], titles: [], history: [], loc: 'lobby', x: 240,
       seasonLog: { w: 0, l: 0, earned: 0, startLv: null, startRank: null, matches: [] }, earnedTotal: 0, lastResult: null, retired: false, events: {},
-      dda: 0, ddaBoss: 0, ddaLog: [], ddaLogBoss: [], mitb: null, champ: 'fogking', mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
+      dda: 0, ddaBoss: 0, ddaLog: [], ddaLogBoss: [], mitb: null, champ: null, motive: null, yahang: { wins: 0, king: 0, met: 0 }, mastery: {}, ow: { state: 'LOCKED' }, syn: [], synBook: 0, synText: 0, synPaid: {},
     };
   }
   // old saves: 이동 속도 + 점프력 become 민첩성 (the larger level; the smaller one comes back as points), 크리티컬 starts at 0
-  migrate() { this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (!this.d.champ) this.d.champ = 'fogking'; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
+  migrate() { if (!this.d.flags.champion && this.d.champ === 'fogking') this.d.champ = null;   // 안개왕 is 야항's king now: the harbour title stands empty
+    this.d.yahang = this.d.yahang || { wins: 0, king: 0, met: 0 }; this.d.items = this.d.items || {}; this.d.gear = this.d.gear || {}; this.d.npc = this.d.npc || {}; this.d.events = this.d.events || {}; this.d.buffs = this.d.buffs || {}; if (this.d.lv && this.d.lv.brk == null) this.d.lv.brk = 0; if (this.d.lv && this.d.lv.agi == null) { const L = this.d.lv, s = L.spd || 0, j = L.jump || 0; L.agi = Math.max(s, j); this.d.points = (this.d.points || 0) + Math.floor(Math.min(s, j)); L.spd = L.jump = 0; } if (this.d.lv && this.d.lv.crit == null) this.d.lv.crit = 0; if (this.d.dda == null) this.d.dda = 0; if (this.d.mitb === undefined) this.d.mitb = null; if (this.d.champ === undefined) this.d.champ = null; if (!this.d.mastery) this.d.mastery = {}; if (!this.d.ow) { this.d.ow = { state: 'LOCKED' }; if (this.d.titles && this.d.titles.length && this.d.flags.champion) this.owBegin(); } if (this.d.ow.state === 'SIGNS' && !this.d.flags.champion) this.d.ow = { state: 'LOCKED' }; if ((this.d.ow.state === 'REBUILD' || this.d.ow.state === 'INTERNATIONAL_ROUTE_OPEN') && !this.d.harbor) harborBegin(this.d); if (!this.d.story) this.d.story = this.storyFromHistory(); this.frontOnly(); if (!this.d.syn) this.d.syn = []; if (!this.d.synPaid) this.d.synPaid = {}; }
   // rear grabs are gone: the moves from the old rear slots go to Q/E/R + K once those are open (and stay known)
   frontOnly() { const M = this.d.moves; if (!M || !M.front) return; M.career = 1; const R = M.rear || {}; for (const [s, r] of [['q', 'n'], ['e', 'b'], ['r', 'u']]) { if (M.front[s] === undefined) M.front[s] = null; if (!M.front[s] && R[r] && slotOpen(this.d, s) && !Object.values(M.front).includes(R[r])) M.front[s] = R[r]; } if (M.front.fk === undefined) M.front.fk = null; }
   // careers from before the story log: the first match, win and loss from the history if it still holds them all
@@ -197,7 +198,10 @@ export class Career {
     if (this.d && this.d.br && this.d.br.stage !== 'NONE') BR.ids.forEach((id, i) => L.push({ id, pts: 60 + (id === 'brLeader' ? 14 : 8 - i * 2), w: 0, l: 0 }));
     return L;
   }
-  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || 'fogking'); }
+  get champion() { return this.d.flags.champion ? 'player' : (this.d.champ || null); }   // null: the harbour title is vacant
+  // the harbour championship: the other finalist (서도현 if he is near the top), and the one the qualifier is against
+  finalist() { const L = this.rankList().filter(e => e.id !== 'player' && CHARACTERS[e.id] && !CHARACTERS[e.id].thug); if (!L.length) return 'dohyun'; const r = L.slice(0, 3).find(e => e.id === 'dohyun'); return (r || L[0]).id; }
+  qualifierFoe() { const fin = this.finalist(), L = this.rankList().filter(e => e.id !== 'player' && e.id !== fin && CHARACTERS[e.id] && !CHARACTERS[e.id].thug); return L.length ? L[0].id : null; }
   // Win streaks make the other wrestlers sharper and heavier, losses ease them off (B: dda range and steps).
   // strong foes have their own band: title matches, 선항 레슬링, bosses, the underground revenge
   static strongKind(kind, o) { return ['title', 'invasion', 'invasion2', 'invasion3', 'revenge'].includes(kind) || !!(o && (o.bossPhases || o.title)) || !!(o && CHARACTERS[o.opp] && CHARACTERS[o.opp].boss); }
@@ -276,7 +280,7 @@ export class Career {
       if (M.holder === 'player') msgs.push('머니 인 더 뱅크 가방의 기한이 지났다… 도전권이 사라졌다.');
       else if (!d.flags.champion && CHARACTERS[M.holder]) {
         const rr = new RNG(d.season * 77 + d.day);
-        if (rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
+        if (d.champ && rr.chance(.45) && M.holder !== d.champ) { msgs.push(`${CHARACTERS[M.holder].name}이(가) 가방을 써서 ${CHARACTERS[d.champ || 'fogking'].name}을(를) 꺾었다! 새 챔피언이다.`); d.champ = M.holder; }
         else msgs.push(`${CHARACTERS[M.holder].name}의 가방 캐시인은 실패로 끝났다.`);
       }
     }
@@ -361,7 +365,13 @@ export class Career {
     if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) { const foe = this.mitbFoe(); out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'single', special: 'ladder', arena: this.titleVenue.arena, reward: 240000 + (d.season - 1) * 40000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: `1:1 래더 매치 · 상대 ${CHARACTERS[foe].name}. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 지면 상대가 가방을 들고 네가 챔피언일 때 노린다.`, event: 'mitb' + d.season, mitb: 1, mitbFoe: foe }); }
     if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: this.titleVenue.arena, fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
     if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: this.titleVenue.arena, reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
-    if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
+    // the harbour championship while the belt has no owner: the league's qualifier (2nd or better, fame 45) or 야항's
+    // ticket (안개왕), then the final in the dome
+    if (!d.flags.champion && !d.champ) {
+      const fin = this.finalist();
+      if (d.flags.ticket && fin) out.unshift({ opp: fin, oppName: CHARACTERS[fin].name, mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `항구 챔피언십 결승 · 3판 2선승. ${d.flags.ticket === 'yahang' ? '야항 대표' : '공식 리그 대표'}로 나선다. 이기면 항구 헤비급 챔피언.`, title: 1, final: 1, falls: 2, bossPhases: 1 });
+      else if (!d.flags.ticket && me <= 2 && d.fame >= 45) { const q = this.qualifierFoe(); if (q) out.unshift({ opp: q, oppName: CHARACTERS[q].name, mode: 'single', arena: 'hall', reward: 90000, fame: 12, kind: 'official', qualifier: 1, day: d.day + 1, difficulty: 'hard', rank: this.rankOf(q), desc: '항구 챔피언십 예선. 이기면 공식 리그 대표 출전권을 얻는다.' }); }
+    }
     d.offers = out.slice(0, 4); d.offersDay = d.day;
     return d.offers;
   }
@@ -415,7 +425,9 @@ export class Career {
         if (won && opp && opp.pts >= myPts) { const gain = opp.pts - myPts + 3; d.flags.rankPts = myPts + gain; opp.pts -= 4; opp.l++; }
         else if (won) d.flags.rankPts = myPts + 3;
         else if (opp) { d.flags.rankPts = Math.max(0, myPts - 3); opp.pts += 3; opp.w++; }
-        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; this.owBegin(); d.titles.push({ name: '야항 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
+        if (c.qualifier && won && !d.flags.ticket) { d.flags.ticket = 'league'; out.lines.push('항구 챔피언십 출전권을 얻었다! (공식 리그 대표)'); }
+        if (c.title && c.final && !won && !draw && !d.flags.champion) { d.champ = c.opp; d.flags.ticket = null; out.lines.push(`${c.oppName}이(가) 항구 헤비급 챔피언이 됐다… 다시 1위에 오르면 벨트에 도전할 수 있다.`); }
+        if (c.title && won && !d.flags.champion) { d.flags.champion = true; d.flags.champDay = d.day; d.flags.ticket = null; this.owBegin(); d.titles.push({ name: '항구 헤비급 챔피언', season: d.season, day: d.day }); out.lines.push(c.cashIn === 'player' ? '가방 캐시인 성공! 새 챔피언이 탄생했다!' : '새 챔피언이 탄생했다!'); }
         else if (c.title && won) { out.lines.push(c.cashIn ? '가방 캐시인을 막아 냈다! 벨트는 그대로다.' : '방어 성공! 벨트를 지켰다.'); d.flags.lastDefense = d.day; d.flags.defenses = (d.flags.defenses || 0) + 1; }
         else if (c.title && !won && !draw && d.flags.champion) { d.flags.champion = false; d.champ = c.opp; if (d.ow && d.ow.state === 'SIGNS') d.ow = { state: 'LOCKED' };   // 선항 레슬링 only sails for the harbour's champion
           out.lines.push(c.cashIn ? `${c.oppName}이(가) 가방을 써서 벨트를 빼앗아 갔다…` : `벨트를 ${c.oppName}에게 내줬다…`); }
