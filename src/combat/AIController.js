@@ -248,7 +248,7 @@ export class AIController {
       if (ar.hasRing && f.side === 'in' && dist > 110 && (tr.rope || .3) > .2) add('ropeRun', (tr.rope || .3) * 1.6, t);
       if (t.st === 'GUARD' && dist < 70) add('shove', 3 * D.pick, t);
     }
-    if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && (hpK < .38 || stK < .2)) add('tagOut', 5 * (1 - hpK), null);
+    if (m.mode === 'tag' && f.legal && f.partner && f.partner.st === 'TAGWAIT' && (hpK < .62 || stK < .3 || m.time - (f.legalAt || 0) > 22)) add('tagOut', 6 * (1.25 - hpK) + (m.time - (f.legalAt || 0) > 22 ? 3 : 0), null);
     if (m.mode === 'tag' && m.pin && m.pin.v.team === f.team && m.pin.v !== f) add('save', 9, m.pin.a);
     if (!opts.length) add('approach', 1, t);
     // easier levels pick more randomly

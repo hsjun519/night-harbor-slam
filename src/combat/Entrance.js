@@ -14,8 +14,9 @@ export class EntranceDirector {
     const ar = m.arena, h = m.human;
     // who walks out how, and in which order: stronger tiers last; on a tie the belt holder, then you, come last
     for (const f of m.fighters) {
+      if (opt.only && !opt.only.includes(f.charId)) continue;   // the others stay where they are
       const player = f.ctrl === 'human' && !!opt.player;
-      const E = resolveEntrance(f.charId, { player, stage: player ? opt.player.stage : null, belt: opt.belt === (player ? 'player' : f.charId), seen: opt.seen && opt.seen[f.charId], short: opt.short });
+      const E = resolveEntrance(f.charId, { player, stage: player && opt.player ? opt.player.stage : null, belt: opt.belt === (player ? 'player' : f.charId), seen: opt.seen && opt.seen[f.charId], short: opt.short });
       const right = f.x > ar.mid;
       this.groups.push({ f, E, right, spot: f.x, face: f.face, rank: TIER_RANK[E.tier] + (E.belt ? .5 : 0) + (f === h ? .25 : 0), stage: 'wait', t: 0, fin0: f.fin });
     }

@@ -126,7 +126,7 @@ export function talk(id, c, W) {
       if (d.flags.champion) out.push(S('챔피언, 오늘은 무슨 일인가? 방어전 상대들이 사무실 앞에 줄을 섰다네. 번호표라도 나눠 줘야 할 판이야.', { expr: 'happy' }));
       else if (rank === 1) out.push(S(d.fame >= 55 ? '1위에 명성까지. 이제 안개왕에게 도전장을 내밀 때가 됐군. 등대 돔 예약해 두지!' : `1위라니 대단해! 그런데 명성이 아직 ${d.fame}이야. 55는 넘어야 타이틀전을 잡아 줄 수 있네. 팬 서비스 좀 하게.`));
       if (d.contract) out.push(S(`계약 경기는 ${josa(d.contract.oppName, '과/와')} ${d.contract.day}일까지야. 준비되면 대기실로 가게. 상대도 몸 풀고 있을 걸세.`));
-      else if (Math.abs(c.rankOf('dohyun') - rank) <= 3 && d.day - (d.flags.rivalDay || -9) >= 5) out.push(S('그리고… 서도현이 자네와 붙고 싶다더군. 둘이 순위가 붙어 있으니 관중이 좋아할 거야. 제안 목록에 넣어 뒀네. 표 팔리는 소리가 벌써 들려!'));
+      else if (d.contract && d.contract.kind === 'rival') out.push(S('서도현이 직접 와서 경기를 잡았다며? 둘이 붙으면 표가 동나지. 부둣가 특설 링, 기대하네!'));
       // the pier and the world stage
       if (worldReady(d)) out.push(S(d.harbor.called ? '배는 부두 끝에 있네. 준비가 되면 말없이 오게. 나는 벌써 짐을 쌌다네.' : '부두도 섰고, 자네 이름도 바다를 건넜어. 곧 좋은 소식을 들고 가겠네.', { expr: 'happy' }));
       else if (harborRepaired(d)) out.push(S(`부두는 섰는데, 세계는 아직 자네 이름을 몰라. 명성 ${HARBOR.fame}이면 내가 배를 띄우지. 지금은 ${d.fame}일세.`));

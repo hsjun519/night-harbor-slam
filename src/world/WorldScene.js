@@ -1,5 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
+import { drawBelt } from '../render/FighterRenderer.js';
 import { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } from './quests.js';
 import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
@@ -122,6 +123,14 @@ export class WorldScene {
       if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
       if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
+    // 서도현 walks up and books the rival match himself
+    if ((id === 'lobby' || id === 'street') && !instant && d.rivalCall && !d.contract && !this.endBusy) {
+      const R = d.rivalCall, x = this.player.x;
+      this.playCine([{ bars: 1 }, { music: 'rival' }, { spawn: 'dohyun', x: x - 240, face: 1 }, { walk: 'dohyun', to: x - 48, speed: 170 }, { face: 'me', dir: 'dohyun' },
+        { say: [{ who: 'dohyun', text: R.rival === 1 ? `어이, ${d.name}. 랭킹표 봤냐? 우리 둘이 붙어 있더군. 한 판 붙자.` : `${R.rival}차전이다. 도망칠 생각 마라.`, expr: 'fierce' }, { who: 'dohyun', text: `${R.day}일, 부둣가 특설 링. 사장님한테는 이미 말해 뒀다.${R.falls ? ' 이번엔 3판 2선승이다.' : ''}` }, { act: () => { c.accept(R); d.rivalCall = null; d.flags.rivalDay = d.day; c.save(); this.toast(`라이벌전 계약: 서도현 (${R.day}일까지, 부둣가 특설 링)`, '#ff6b7a'); } }] },
+        { walk: 'dohyun', to: x - 300, speed: 150 }, { bars: 0 }]);
+      return;
+    }
     // a wrestler in the lobby asks a favour (one at a time)
     if (id === 'lobby' && !instant) { const qid = questDue(d, this.npcs.map(n => n.id)), a = qid && this.npcs.find(n => n.id === qid); if (a) { const q = makeQuest(d, qid, Object.values(d.moves.front || {}).filter(Boolean)); this.approach(a, () => this.say([{ who: qid, text: questAsk(q) }, { act: () => { this.toast('부탁: ' + questText(q) + ` (${q.until}일까지)`, '#ffd65a'); c.save(); } }]), { range: 380, speed: 90 }); return; } }
     // a good customer's seller comes by the lobby with something for the next match
@@ -243,6 +252,13 @@ export class WorldScene {
       this.game.playMatch(cfg, res => {
         const W2 = new WorldScene(this.game, c, {});
         W2.enter(here, px, true);
+        // the holder of the case cashes in right there: this result is kept, the next match starts in the same ring
+        const ci = W2.cashInFor(kind, offer, res);
+        if (ci) {
+          W2.afterMatch({ kind, offer, res, quiet: true });
+          this.game.playMatch(W2.cashInConfig(ci), res2 => { const W3 = new WorldScene(this.game, c, {}); W3.enter(here, px, true); this.game.go(() => { W3.afterMatch({ kind: 'title', offer: ci, res: res2 }); return W3; }); });
+          return;
+        }
         this.game.go(() => { W2.afterMatch({ kind, offer, res }); return W2; });
       });
     };
@@ -257,9 +273,9 @@ export class WorldScene {
     const lv = o && o.difficulty || 'normal';
     const foe = id => { const e = Object.assign({ char: id, ctrl: 'ai', difficulty: lv }, kind === 'tutorial' || kind === 'practice' || kind === 'spar' ? {} : this.c.ddaFor(id)); if (isBR(id) && kind !== 'tutorial') { const M = brMods(c, id, e.stats); e.stats = M.stats; e.moves = M.moves; } return e; };
     if (kind === 'tutorial') return { mode: 'practice', arena: 'gym', entrants: [me, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, tutorial: true, career: 1, music: 'gym' };
-    if (kind === 'invasion') return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
+    if (kind === 'invasion') return { beltHolder: d.flags.champion ? 'player' : null, entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: o.arena || 'pier', entrants: [me, Object.assign(foe(o.opp), { boss: true })], career: 1, boss: true, title: '선항 레슬링 침공', music: 'boss', introTime: 4.2, events: [{ kind: 'coachChair', when: 'foeLosing', below: .5, coachName: '선항 선원' }], preTalk: this.preTalk(o.opp, o) };
     if (kind === 'invasion2') return { mode: 'tag', arena: 'pier', entrants: [me, o.partner === 'brLeader' ? Object.assign(foe('brLeader'), { team: 0 }) : { char: 'dohyun', ctrl: 'ai', difficulty: 'hard' }, foe('whiteivory'), foe('owsailor')], career: 1, title: '선항 레슬링 2차 침공 · 태그', music: 'boss', introTime: 4.2 };
-    if (kind === 'invasion3') return { entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: 'pier', entrants: [me, Object.assign(foe('godong'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 3 }, title: '선항 레슬링 3차 침공 · 선장 고동', music: 'boss', introTime: 4.8, preTalk: this.preTalk('godong', o) };
+    if (kind === 'invasion3') return { beltHolder: d.flags.champion ? 'player' : null, entrances: c.entranceOpt(kind, o, this.game.settings), mode: 'single', arena: 'pier', entrants: [me, Object.assign(foe('godong'), { boss: true })], career: 1, boss: true, bossPhases: { by: ['hp'], max: 3 }, title: '선항 레슬링 3차 침공 · 선장 고동', music: 'boss', introTime: 4.8, preTalk: this.preTalk('godong', o) };
     if (kind === 'brRaid') {
       const lu = o.lineup, crew = lu.who.map(id => Object.assign(foe(id), { team: 1, waitTurn: 4.4, difficulty: d.season >= 2 ? 'hard' : 'normal' }));
       if (lu.late) crew.push(Object.assign(foe(lu.late), { team: 1, waitTurn: 4.4, late: 50, armed: 1, difficulty: d.season >= 2 ? 'hard' : 'normal' }));
@@ -283,10 +299,11 @@ export class WorldScene {
     if (o && o.cashIn === 'player' && bossF) bossF.hpStart = .62;   // cashing in on a champion still worn from a defence
     if (o && o.cashIn && o.cashIn !== 'player') me.hpStart = Math.max(.3, o.hpLeft || .5);   // jumped right after your own match
     const runIn = brRunInDue(c, kind, o); if (runIn) brRunInMark(c, runIn);
-    return { entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
+    const beltHolder = d.flags.champion ? 'player' : o && o.opp && o.opp === c.champion ? o.opp : null;
+    return { beltHolder, entrances: c.entranceOpt(kind, o, this.game.settings), music: o && isBR(o.opp) ? 'rival' : undefined, special: sp || null, falls: o && o.falls || 0, iron: o && o.iron || 0, bossPhases: o && o.bossPhases ? { by: ['fall', 'kickout', 'hp'], max: 3 } : null, events: this.matchEvents(kind, o).concat(runIn ? [{ kind: 'rivalRunIn', who: runIn, at: 20 + (d.day % 5) * 6, noContest: .35 }] : []).concat(d.buffs && d.buffs.chair ? [{ kind: 'chairs', xs: [270] }] : [], sp === 'cell' ? [{ kind: 'chairs', xs: [80, 820] }] : []), preTalk: o && CHARACTERS[o.opp] ? this.preTalk(o.opp, o) : null, mode: o && o.mode || 'single', arena: o && o.arena || 'hall', entrants: [me, bossF || foe(o ? o.opp : 'dohyun')], career: 1, boss: o && (o.title || o.opp === 'fogking' || o.kind === 'rival'), title: o && o.title ? '챔피언 타이틀 매치' : o && o.kind === 'weekly' ? '주간 파이널' : o && o.kind === 'brmatch' ? `${BR.name} · ${o.oppName}` : o && o.kind === 'dojo' ? '도장 깨기' : o && o.kind === 'rival' ? `라이벌전 ${o.rival}차전` : null, introTime: o && (o.title || o.kind === 'rival') ? 4.2 : 3.2 };
   }
   afterMatch(info) {
-    const c = this.c, { kind, offer, res } = info;
+    const c = this.c, { kind, offer, res } = info;   // info.quiet: a cash-in follows at once (no result screen yet)
     if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
     if (kind === 'questSpar') { this.finishQuest('spar', res.won ? QUEST.sparWin : 0); c.spendSlot(1).forEach(m => this.toast(m, '#ffb347')); c.save(); return; }
@@ -346,15 +363,18 @@ export class WorldScene {
     if (res.won && (kind === 'official' || kind === 'free' || kind === 'dojo') && offer && CHARACTERS[offer.opp] && offer.opp !== 'fogking' && !c.d.revenge && Math.random() < (c.d.flags.revengeSeen ? .4 : .8)) { c.d.flags.revengeSeen = 1; c.d.revenge = { opp: offer.opp, oppName: offer.oppName || CHARACTERS[offer.opp].name, day: c.d.day + 2, until: c.d.day + 7, invited: false }; }
     else if (kind === 'official' || kind === 'event' || kind === 'title') { const msgs = c.spendSlot(1); msgs.forEach(m => this.toast(m, '#ffb347')); }
     c.save();
-    this.open(new Menus.ResultMenu(this, sum, res, kind, offer));
-    // Money in the Bank: while you are champion the holder may jump you right after the bell
-    const M = c.d.mitb;
-    if (M && M.holder !== 'player' && c.d.flags.champion && CHARACTERS[M.holder] && res.won && !res.quit && !(offer && offer.cashIn) && ['official', 'title', 'event', 'free'].includes(kind) && (c.d.day >= M.until - 1 || Math.random() < .5)) {
-      const h = res.match && res.match.human, left = h ? h.hp / h.maxHp : .5, ch = CHARACTERS[M.holder];
-      const o2 = { opp: M.holder, oppName: ch.name, mode: 'single', arena: offer && offer.arena || 'hall', reward: 80000, fame: 20, kind: 'title', title: 1, cashIn: M.holder, hpLeft: left, difficulty: c.d.season >= 2 ? 'hard' : 'normal', bossPhases: 0 };
-      this.cashInNext = o2;   // after the result screen closes
-    }
+    if (!info.quiet) this.open(new Menus.ResultMenu(this, sum, res, kind, offer));
+    else (sum.lines || []).slice(0, 2).forEach(l => this.toast(l, '#ffd65a'));
   }
+  // Money in the Bank: while you are champion the holder may jump you right after the bell (decided as the match ends)
+  cashInFor(kind, offer, res) {
+    const c = this.c, M = c.d.mitb;
+    if (!(M && M.holder !== 'player' && c.d.flags.champion && CHARACTERS[M.holder] && res.won && !res.quit && !(offer && offer.cashIn) && ['official', 'title', 'event', 'free'].includes(kind) && (c.d.day >= M.until - 1 || Math.random() < .5))) return null;
+    const h = res.match && res.match.human, left = h ? h.hp / h.maxHp : .5, ch = CHARACTERS[M.holder];
+    return { opp: M.holder, oppName: ch.name, mode: 'single', arena: (res.match && res.match.cfg.arena) || (offer && offer.arena) || 'hall', reward: 80000, fame: 20, kind: 'title', title: 1, cashIn: M.holder, hpLeft: left, difficulty: c.d.season >= 2 ? 'hard' : 'normal', bossPhases: 0 };
+  }
+  // the cash-in match: you are still in the ring; only the holder walks out, short, and the bell goes
+  cashInConfig(ci) { const cfg = this.matchConfig('title', ci); cfg.entrances = { short: 1, only: [ci.opp] }; cfg.preTalk = null; cfg.introTime = 1.4; cfg.title = '머니 인 더 뱅크 캐시인!'; cfg.cashInRun = 1; return cfg; }
   // Face to face in the ring before the bell: the opponent's line, the player's answer, a small effect.
   preTalk(id, o) {
     const c = this.c, line = PRE[id] ? PRE[id].ring : CHARACTERS[id] ? CHARACTERS[id].lines.intro : null;
@@ -746,6 +766,7 @@ export class WorldScene {
     drawBody(bc, tmp, a.dims, a.look, { expr: a.faceExpr, hand: 'fist', tails, cape: false });
     bc.finish();
     bc.drawTo(g);
+    if (a === this.player && this.c.d.flags.champion && !(this.cineFx && this.cineFx.belt)) drawBelt(g, tmp, 'waist');   // the champion wears the belt in town
   }
   lights(w, cam) {
     const L = this.L, d = this.c.d;

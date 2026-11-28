@@ -279,7 +279,8 @@ export class Career {
     msgs.push(...morningGifts(d));   // the harbour's people and the sponsor, for the pier
     const before = ((d.season || 1) - 1) * 28 + (d.day || 1) - 1;
     d.day++;
-    msgs.push(...marketMorning(d, before));   // the prices creep up, a regular's seller may come by
+    msgs.push(...marketMorning(d, before));
+    this.rivalCall();   // 서도현 may come for you today   // the prices creep up, a regular's seller may come by
     if (forced) d.fatigue = Math.min(100, d.fatigue + 10);
     if (d.br && d.br.lobby === 'damaged' && d.day >= d.br.fixAt) { brLobbyFix(this); msgs.push('김 반장이 로비 정리를 끝냈다. 훈련장도 다시 연다.'); }
     if (d.day > SEASON_DAYS) { d.flags.seasonEnd = true; }
@@ -330,16 +331,16 @@ export class Career {
     if (extra.pay) { const o = out[out.length - 1]; o.reward = Math.round(o.reward * extra.pay / 1000) * 1000; o.fame += 3; }
     // rivalry: 서도현 asks for a match when the two of you sit close in the ranking
     const rivalRank = this.rankOf('dohyun'), lastRival = d.flags.rivalDay || -9;
-    if (Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {
+    if (false && Math.abs(rivalRank - me) <= 3 && d.day - lastRival >= 5 && !out.some(o => o.opp === 'dohyun')) {   // 서도현 books it himself now (rivalCall)
       const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1;
       out.unshift(mk({ id: 'dohyun' }, 'rival', { arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.`, rival: n, falls: n >= 3 ? 2 : 0 }));
     }
     // BLACK ROPE: their special match (a rematch after a raid or a run-in, otherwise a challenge every few days)
     { const bo = brOffer(this, mk); if (bo && !out.some(o => o.opp === bo.opp)) out.unshift(bo); }
     // events
-    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 90000 + d.season * 30000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
-    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 70000 + d.season * 20000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
-    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) { const foe = this.mitbFoe(); out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'single', special: 'ladder', arena: this.titleVenue.arena, reward: 60000 + d.season * 20000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: `1:1 래더 매치 · 상대 ${CHARACTERS[foe].name}. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 지면 상대가 가방을 들고 네가 챔피언일 때 노린다.`, event: 'mitb' + d.season, mitb: 1, mitbFoe: foe }); }
+    if (d.day >= 10 && d.day <= 14 && !d.events['rumble' + d.season]) out.unshift({ opp: 'rumble', oppName: '만선 럼블', mode: 'rumble', arena: 'hall', reward: 280000 + (d.season - 1) * 50000, fame: 22, kind: 'event', day: 14, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '10인 로얄럼블. 21초마다 새 선수가 들어온다. 톱로프 너머로 떨어지면 탈락.', event: 'rumble' + d.season });
+    if (d.day >= 18 && d.day <= 21 && !d.events['tag' + d.season]) out.unshift({ opp: 'tag', oppName: '항구 태그 대전', mode: 'tag', arena: 'pier', reward: 210000 + (d.season - 1) * 40000, fame: 15, kind: 'event', day: 21, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: '2대2 태그 매치. 파트너는 서도현.', event: 'tag' + d.season });
+    if (!d.flags.champion && d.day >= 6 && d.day <= 10 && !d.events['mitb' + d.season] && !d.mitb) { const foe = this.mitbFoe(); out.unshift({ opp: 'mitb', oppName: '머니 인 더 뱅크', mode: 'single', special: 'ladder', arena: this.titleVenue.arena, reward: 240000 + (d.season - 1) * 40000, fame: 18, kind: 'event', day: 10, difficulty: d.season >= 2 ? 'hard' : 'normal', desc: `1:1 래더 매치 · 상대 ${CHARACTERS[foe].name}. 가방을 따면 7일 안에 원하는 때 챔피언에게 도전할 수 있다. 지면 상대가 가방을 들고 네가 챔피언일 때 노린다.`, event: 'mitb' + d.season, mitb: 1, mitbFoe: foe }); }
     if (d.flags.champion && !d.contract && (d.day % 3 === 0 || !d.flags.lastDefense)) { const ch = others[0] || { id: 'dohyun' }; out.unshift(mk(ch, 'official', { title: 1, defense: 1, arena: this.titleVenue.arena, fame: 14, reward: Math.round((120000 + d.season * 40000) / 1000) * 1000, desc: '챔피언 방어전. 지면 벨트를 내준다.', day: d.day + 2, falls: 0 })); }
     if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') !== 'fogking') out.unshift({ opp: d.champ, oppName: CHARACTERS[d.champ].name, mode: 'single', arena: this.titleVenue.arena, reward: 260000, fame: 36, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: `챔피언 타이틀 매치 · 3판 2선승. 벨트는 지금 ${CHARACTERS[d.champ].name}의 허리에 있다.`, title: 1, falls: 2, bossPhases: 1 });
     if (me === 1 && d.fame >= 55 && !d.flags.champion && (d.champ || 'fogking') === 'fogking') out.unshift({ opp: 'fogking', oppName: '안개왕', mode: 'single', arena: this.titleVenue.arena, reward: 300000, fame: 40, kind: 'title', day: d.day + 2, difficulty: d.season >= 2 ? 'expert' : 'hard', rank: 0, desc: d.season >= 2 ? '챔피언 타이틀 매치 · 아이언맨 4분. 폴을 더 많이 딴 쪽이 이긴다. 안개왕은 몰릴수록 강해진다.' : '챔피언 타이틀 매치 · 3판 2선승. 안개왕은 폴을 내줄수록 강해진다.', title: 1, falls: d.season >= 2 ? 0 : 2, iron: d.season >= 2 ? 240 : 0, bossPhases: 1 });
@@ -348,6 +349,14 @@ export class Career {
   }
   // the one who climbs the ladder against you: one of the top of the ranking (never the champion)
   mitbFoe() { const d = this.d, top = this.rankList().filter(e => e.id !== 'player' && e.id !== this.champion && CHARACTERS[e.id] && !CHARACTERS[e.id].thug).slice(0, 4); return top.length ? new RNG(d.day * 17 + d.season).pick(top).id : 'dohyun'; }
+  // 서도현 walks up and books the next rival match himself when the two of you sit close in the ranking
+  rivalCall() {
+    const d = this.d;
+    if (d.rivalCall || d.contract || d.day - (d.flags.rivalDay || -9) < 5 || Math.abs(this.rankOf('dohyun') - this.rank) > 3 || d.flags.champion && false) return null;
+    const n = (d.h2h.dohyun ? d.h2h.dohyun.w + d.h2h.dohyun.l : 0) + 1, rk = this.rankOf('dohyun');
+    d.rivalCall = { opp: 'dohyun', oppName: CHARACTERS.dohyun.name, mode: 'single', arena: 'pier', fame: 12, reward: Math.round((40000 + n * 8000) * (1 + (d.season - 1) * .3) / 1000) * 1000, kind: 'rival', day: d.day + 1, difficulty: d.season >= 2 ? 'hard' : 'normal', rank: rk, rival: n, falls: n >= 3 ? 2 : 0, desc: n === 1 ? '라이벌전 1차전. 서도현이 직접 도전장을 냈다. 부두 특설 링.' : n >= 3 ? `라이벌전 ${n}차전. 이번엔 3판 2선승으로 끝을 본다.` : `라이벌전 ${n}차전. 지난 승부를 기억하는 관중이 모인다.` };
+    return d.rivalCall;
+  }
   accept(o) { this.d.contract = deepClone(o); this.d.offers = []; if (o.kind === 'rival') this.d.flags.rivalDay = this.d.day; this.save(); }
   // ---- after a match ----
   applyResult(kind, res, info = {}) {

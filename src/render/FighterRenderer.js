@@ -11,6 +11,17 @@ import { ellipse, rect, poly } from './painter.js';
 const tmp = new Joints();
 const WHITE = packHex('#ffffff');
 const P = new Float32Array(16);
+// the championship belt: on the waist, over the head (a winner), or over the referee's shoulder (joints already shifted)
+export function drawBelt(g, j, mode) {
+  let x, y, w = 26;
+  if (mode === 'up') { x = (j.x(J.hN) + j.x(J.hF)) / 2; y = Math.min(j.y(J.hN), j.y(J.hF)) - 3; w = 30; }
+  else if (mode === 'shoulder') { x = j.x(J.chest); y = j.y(J.chest) - 4; w = 22; }
+  else { x = j.x(J.pelvis); y = j.y(J.pelvis) - 3; }
+  x = Math.round(x); y = Math.round(y);
+  rect(g, '#120c1e', x - w / 2 - 1, y - 4, w + 2, 9); rect(g, '#c9a22e', x - w / 2, y - 3, w, 7); rect(g, '#8a6a1a', x - w / 2, y + 2, w, 2);
+  rect(g, '#120c1e', x - 7, y - 7, 14, 14); rect(g, '#ffe9a8', x - 6, y - 6, 12, 12); rect(g, '#c9a22e', x - 4, y - 4, 8, 8); rect(g, '#fff6d0', x - 3, y - 4, 2, 2);
+}
+
 export class FighterRenderer {
   constructor() {
     this.bc = new BodyCanvas(); this.trails = []; this.pool = []; this.frame = 0;
@@ -28,6 +39,8 @@ export class FighterRenderer {
     bc.finish({ flat: f.flash > .05 ? WHITE : extra.flat });
     const blink = f.inv > 0 && f.protect > 0 && (this.frame >> 2) & 1;
     bc.drawTo(g, 0, 0, extra.alpha != null ? extra.alpha : blink ? .55 : 1);
+    const Bt = f.match && f.match.belt;
+    if (Bt && Bt.on === f && !f.hidden) drawBelt(g, jt, f.st === 'WIN' ? 'up' : 'waist');
     return bc;
   }
   shadow(g, f, camX, ground) {
@@ -116,6 +129,7 @@ export class FighterRenderer {
     drawBody(bc, j, d, this.refLook, { expr: r.act === 'count' ? 'shout' : 'neutral', hand: 'open' });
     bc.finish();
     bc.drawTo(g);
+    if (m.belt && m.belt.on === 'ref') drawBelt(g, j, 'shoulder');
     void pose;
   }
 }

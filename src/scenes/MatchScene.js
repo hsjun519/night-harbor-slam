@@ -78,6 +78,8 @@ export class MatchScene {
     m.on('slamBonus', e => { fx.word('링 충격!', e.v.x, e.v.y - 60, '#ff9a3a', 1); });
     m.on('synergy', e => { const H = this.human, own = H && e.a === H; fx.word(e.kind === 'chain' ? '연계!' : '시너지!', e.v.x, e.v.y - 110, e.kind === 'chain' ? '#49d6ff' : '#ffd65a', 2); if (own && !SIGNATURES.some(g => g.name === e.name)) hud.push(e.name, { col: '#ffd65a', y: 120, life: 1.6, sub: e.kind === 'chain' ? '연계' : e.kind === 'special' ? '특수 시너지' : '시너지' }); if (this.lesson && own && e.id === this.lesson.id && !this.lessonDone) { this.lessonDone = this.m.time; A.sfx('good'); } });
     m.on('moveStart', e => { const L = this.lesson; if (L && L.move && !this.lessonDone && e.a === this.human && (e.mv.id === L.move || (e.L && e.L.parts && e.L.parts.includes(L.move)))) { this.lessonDone = this.m.time; A.sfx('good'); } });
+    m.on('beltRef', e => { if (e.f) fx.word('벨트를 심판에게', e.f.x, e.f.y - 112, '#ffd65a', 1); });
+    m.on('beltTo', e => { if (e.f && e.title) { fx.word(e.changed ? '새 챔피언!' : '벨트를 지켰다!', e.f.x, e.f.y - 124, '#ffd65a', 2); cheer(1.2); } });
     m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
     m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
     m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });

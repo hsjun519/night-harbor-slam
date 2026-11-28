@@ -94,14 +94,19 @@ export class MatchManager extends Emitter {
       now.forEach((e, i) => this.addFighter(e, E.indexOf(e), { x: xs[i], y: ar.matY, face: xs[i] < ar.mid ? 1 : -1, side: 'in', lane: n > 2 ? (i % 3) * 3 - 3 : 0 }));
     }
     for (const f of this.fighters) { if (f.st !== 'TAGWAIT') f.fsm.set('INTRO', { force: true }); }
+    // the belt: worn by the champion until the bell, held by the referee during the match, the winner's after a title match
+    if (this.cfg.beltHolder) { const h = this.cfg.beltHolder === 'player' ? this.fighters.find(f => f.ctrl === 'human') : this.fighters.find(f => f.charId === this.cfg.beltHolder); if (h) this.belt = { on: h, owner: h, title: !!this.cfg.title }; }
     if (this.cfg.skipIntro) this.beginFight(true);
     // entrances: singles in a ring (a cage match starts with both already inside)
     else if (this.cfg.entrances && this.arena.hasRing && this.fighters.length === 2 && !['cage', 'cell'].includes(this.cfg.special)) this.entrance = new EntranceDirector(this, this.cfg.entrances);
   }
   get human() { return this.fighters.find(f => f.ctrl === 'human' && (f.legal || this.mode !== 'tag')) || this.fighters.find(f => f.ctrl === 'human'); }
+  // before the bell the champion hands the belt to the referee
+  beltToRef() { if (this.belt && this.belt.on !== 'ref') { this.belt.on = 'ref'; this.emit('beltRef', { f: this.belt.owner }); } }
   beginFight(instant) {
     if (this.entrance && !this.entrance.done) this.entrance.skipAll();
     this.phase = instant ? 'fight' : 'ready'; this.introT = 0;
+    this.beltToRef();
     for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true });
     if (instant) this.emit('bell', { start: true });
   }
@@ -152,7 +157,7 @@ export class MatchManager extends Emitter {
   introTick(dt) {
     if (this.entrance && !this.entrance.done) { if (this.phase === 'intro') this.entrance.update(dt); else this.entrance.skipAll(); }   // the bell never rings on somebody still in the aisle
     this.introT += dt;
-    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.emit('ready', {}); }
+    if (this.phase === 'intro' && this.introT > (this.cfg.introTime || 3.2) && !this.holdIntro) { this.phase = 'ready'; this.introT = 0; this.beltToRef(); this.emit('ready', {}); }
     if (this.phase === 'ready' && this.introT > 1.3) { this.phase = 'fight'; for (const f of this.fighters) if (f.st === 'INTRO') f.set('IDLE', { force: true }); this.emit('bell', { start: true }); }
   }
   practiceTick(f, dt) {
@@ -230,7 +235,7 @@ export class MatchManager extends Emitter {
   // ---- tag team ----
   tag(f) {
     const p = f.partner, ar = this.arena;
-    f.legal = false; p.legal = true;
+    f.legal = false; p.legal = true; p.legalAt = this.time;
     if (f.ctrl === 'human') { p.ctrl = 'human'; f.ctrl = 'ai'; if (!f.ai) f.ai = new AIController(f, 'normal', this.rng); p.ai = null; }
     else if (p.ctrl === 'ai' && !p.ai) p.ai = new AIController(p, this.cfg.entrants[p.idx].difficulty || 'normal', this.rng);
     f.exitTo = 'apron';
@@ -388,6 +393,7 @@ export class MatchManager extends Emitter {
     this.slowmo(.3, 1.3);
     this.emit('end', r);
     this.ref.act = 'raise'; this.ref.raise = r.winner || null;
+    if (this.belt) { const w = this.belt.title && r.winner && !r.draw ? r.winner : this.belt.owner; this.belt.on = w; this.emit('beltTo', { f: w, title: this.belt.title, changed: w !== this.belt.owner }); }
   }
   // ---- referee ----
   refTick(dt) {
