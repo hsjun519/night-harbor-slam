@@ -65,6 +65,13 @@ function muscleDetail(u, v, m, belly, fem) {
   return d;
 }
 
+// the same look wearing the championship belt (one copy per look, so its shaders are built once)
+const beltCache = new WeakMap();
+export function beltLook(look) {
+  let b = beltCache.get(look);
+  if (!b) { b = Object.assign({}, look, { titleBelt: 1 }); beltCache.set(look, b); }
+  return b;
+}
 const shaderCache = new WeakMap();
 function torsoShader(look, dims) {
   let f = shaderCache.get(look);
@@ -207,6 +214,7 @@ export function drawBody(bc, jt, dims, look, o = {}) {
     if (look.skirtBack || look.coat) skirt(bc, P, dims, look.coat || look.skirtBack, fxv, fyv, upx, upy, 9, true, o);
     bc.torso(bx, by, tx, ty, fxv, fyv, dims.prof, torsoShader(look, dims), 10, 0);
     leg(10, false, 11);
+    if (look.titleBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy);
     if (look.coat || look.skirt) skirt(bc, P, dims, look.coat || look.skirt, fxv, fyv, upx, upy, 19, false, o);
     if (look.sash) { const x = X(J.pN), y = Y(J.pN) - 4; bc.poly([[x - 3, y], [x + 3, y], [x + 3.5 + (o.sway || 0), y + 14], [x - 2 + (o.sway || 0), y + 15]], ramp(look.sash), 21, { folds: 1 }); }
     bc.capsule(X(1) + upx * 1, Y(1) + upy * 1, dims.nkR, X(2) + upx * 3, Y(2) + upy * 3, dims.nkR * .92, [{ t: 1, ramp: look.neckCol ? ramp(look.neckCol) : seg.skin }], 14, 0, dims.nkR * 1.6, .12);
@@ -219,6 +227,24 @@ export function drawBody(bc, jt, dims, look, o = {}) {
     if (o.prop && o.prop.draw) o.prop.draw(bc, jt, dims);
     arm(4, false, 24);
   }
+}
+// The championship belt, worn: drawn after the near leg (the thighs would cover a belt painted on the torso) and
+// before the near arm, as a band round the waist on the body's own axes, so it turns, leans and shades with the body:
+// leather strap with gold edges, a side plate toward the back, the big bevelled plate with a red stone on the front.
+let TBR = null;
+function titleBelt(bc, P, dims, fx, fy, ux, uy) {
+  const R = TBR || (TBR = { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') });
+  const back = dims.prof[1][1] + 1.2, front = dims.prof[1][2] + 1.4, cx = P[0] + ux * 5, cy = P[1] + uy * 5;
+  const at = (a, b) => [cx + fx * a + ux * b, cy + fy * a + uy * b];   // a: toward the front, b: up
+  const band = (a0, a1, b0, b1, r, g, o) => bc.poly([at(a0, b1), at(a1, b1), at(a1, b0), at(a0, b0)], r, g, o);
+  band(-back, front, -3, 3, R.strap, 20, { mid: .7 });
+  band(-back, front, 1.9, 3, R.gold, 20, { mid: .7, noOutline: true }); band(-back, front, -3, -1.9, R.gold, 20, { mid: .7, noOutline: true });
+  band(-back * .8, -back * .44, -4, 4, R.gold, 21, { mid: .5 });
+  const pc = front * .3, pw = 7.4;
+  band(pc - pw, pc + pw, -6.4, 6.4, R.gold, 22, { mid: .25 });
+  band(pc - pw + 1.6, pc + pw - 1.6, -4.8, 4.8, R.deep, 22, { flat: .35, noOutline: true });
+  band(pc - pw + 2.6, pc + pw - 2.6, -3.8, 3.8, R.gold, 22, { mid: .2, noOutline: true });
+  const [gx, gy] = at(pc, 0); bc.ball(gx, gy, 1.8, R.gem, 23);
 }
 function skirt(bc, P, dims, sk, fx, fy, ux, uy, grp, back, o) {
   const hx = P[0], hy = P[1], len = (sk.len || .5);

@@ -2,7 +2,7 @@
 import { Joints, JN, J, dimsFor, solveFK, toWorld, pose } from '../anim/skeleton.js';
 import { clip, sampleClip, stancePose, gaitPose } from '../anim/clips.js';
 import { BodyCanvas } from './raster.js';
-import { drawBody } from './body.js';
+import { drawBody, beltLook } from './body.js';
 import { packHex } from './palette.js';
 import { LOOKS } from '../data/looks.js';
 import { makeCanvas, ctxOf, TAU } from '../core/util.js';
@@ -11,15 +11,43 @@ import { ellipse, rect, poly } from './painter.js';
 const tmp = new Joints();
 const WHITE = packHex('#ffffff');
 const P = new Float32Array(16);
-// the championship belt: on the waist, over the head (a winner), or over the referee's shoulder (joints already shifted)
-export function drawBelt(g, j, mode) {
-  let x, y, w = 26;
-  if (mode === 'up') { x = (j.x(J.hN) + j.x(J.hF)) / 2; y = Math.min(j.y(J.hN), j.y(J.hF)) - 3; w = 30; }
-  else if (mode === 'shoulder') { x = j.x(J.chest); y = j.y(J.chest) - 4; w = 22; }
-  else { x = j.x(J.pelvis); y = j.y(J.pelvis) - 3; }
+// The championship belt when it is not worn (worn, it is part of the body: body.js titleBelt, beltLook): held up in
+// both hands by the winner, the strap running from hand to hand, or carried over the referee's shoulder before the
+// bell. Joints already shifted to the screen.
+// a leather strap 5 px across, laid across its own direction: dark rim, gold edge, leather, gold edge, dark rim
+const STRAP = [[-2.5, '#120c1e'], [2.5, '#120c1e'], [-1.5, '#d6aa32'], [1.5, '#8a6a1a'], [-.5, '#3a2c46'], [.5, '#2a2034']];
+function beltStrap(g, x0, y0, x1, y1) {
+  const L = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / L, ny = (x1 - x0) / L, n = Math.ceil(L * 1.6);
+  for (const [k, c] of STRAP) for (let i = 0; i <= n; i++) { const t = i / n; rect(g, c, Math.round(x0 + (x1 - x0) * t + nx * k), Math.round(y0 + (y1 - y0) * t + ny * k), 1, 1); }
+}
+function beltPlate(g, x, y, w = 13, h = 11) {
   x = Math.round(x); y = Math.round(y);
-  rect(g, '#120c1e', x - w / 2 - 1, y - 4, w + 2, 9); rect(g, '#c9a22e', x - w / 2, y - 3, w, 7); rect(g, '#8a6a1a', x - w / 2, y + 2, w, 2);
-  rect(g, '#120c1e', x - 7, y - 7, 14, 14); rect(g, '#ffe9a8', x - 6, y - 6, 12, 12); rect(g, '#c9a22e', x - 4, y - 4, 8, 8); rect(g, '#fff6d0', x - 3, y - 4, 2, 2);
+  const x0 = x - (w >> 1), y0 = y - (h >> 1);
+  rect(g, '#120c1e', x0 - 1, y0 - 1, w + 2, h + 2); rect(g, '#8a6a1a', x0, y0, w, h); rect(g, '#d6aa32', x0, y0, w - 1, h - 1);
+  rect(g, '#f6d877', x0 + 1, y0 + 1, w - 3, 1); rect(g, '#f6d877', x0 + 1, y0 + 1, 1, h - 3);
+  rect(g, '#a67c1e', x0 + 2, y0 + 2, w - 4, h - 4); rect(g, '#d6aa32', x0 + 3, y0 + 3, w - 6, h - 6);
+  rect(g, '#d8334a', x - 1, y - 1, 2, 2); rect(g, '#ffb0b8', x - 1, y - 1, 1, 1);
+}
+export function drawBelt(g, j, mode) {
+  if (mode === 'up') {   // raised in both hands: plate up to the hall, the strap's two ends hanging from the fists
+    const ax = j.x(J.hN), ay = j.y(J.hN), bx = j.x(J.hF), by = j.y(J.hF), mx = (ax + bx) / 2, my = Math.min(ay, by) - 4;
+    const out = Math.sign(ax - bx) || 1;
+    beltStrap(g, ax, ay, ax + out * 3, ay + 15); beltStrap(g, bx, by, bx - out * 3, by + 15);
+    beltPlate(g, ax + out * 2, ay + 10, 4, 6); beltPlate(g, bx - out * 2, by + 10, 4, 6);
+    beltStrap(g, ax, ay, mx, my); beltStrap(g, bx, by, mx, my);
+    beltPlate(g, mx, my, 15, 12);
+    return;
+  }
+  if (mode === 'shoulder') {   // slung over the near shoulder: the plate on the chest, the strap down the back
+    const f = j.face || 1, sx = j.x(J.sN) - f, sy = j.y(J.sN) - 4, cx = j.x(J.chest) + f * 4, cy = j.y(J.chest) + 4, bx = j.x(J.sN) - f * 9, by = j.y(J.pelvis) - 2;
+    beltStrap(g, sx, sy, bx, by);
+    beltStrap(g, sx, sy, cx, cy);
+    beltPlate(g, cx, cy + 3, 12, 10);
+    return;
+  }
+  // a plain flat belt (nothing calls this any more; the worn belt is drawn with the body)
+  const x = Math.round(j.x(J.pelvis)), y = Math.round(j.y(J.pelvis)) - 3;
+  beltStrap(g, x - 13, y, x + 13, y); beltPlate(g, x, y);
 }
 
 export class FighterRenderer {
@@ -35,12 +63,12 @@ export class FighterRenderer {
     if (f.hitShake > 0) { const s = (this.frame & 1 ? 1 : -1) * Math.ceil(f.hitShake * 8); for (let i = 0; i < JN; i++) tmp.p[i * 2] += s; }
     bc.begin(jt.x(0), jt.y(0) - 4);
     const tails = f.tails ? f.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - camX)), w: T.w, c: T.c, front: T.front })) : null;
-    drawBody(bc, jt, f.dims, f.look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
+    const Bt = f.match && f.match.belt, wear = Bt && Bt.on === f && !f.hidden, look = wear && f.st !== 'WIN' ? beltLook(f.look) : f.look;   // worn: part of the body
+    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
     bc.finish({ flat: f.flash > .05 ? WHITE : extra.flat });
     const blink = f.inv > 0 && f.protect > 0 && (this.frame >> 2) & 1;
     bc.drawTo(g, 0, 0, extra.alpha != null ? extra.alpha : blink ? .55 : 1);
-    const Bt = f.match && f.match.belt;
-    if (Bt && Bt.on === f && !f.hidden) drawBelt(g, jt, f.st === 'WIN' ? 'up' : 'waist');
+    if (wear && f.st === 'WIN' && layer !== 'back') drawBelt(g, jt, 'up');   // the winner holds it up
     return bc;
   }
   shadow(g, f, camX, ground) {

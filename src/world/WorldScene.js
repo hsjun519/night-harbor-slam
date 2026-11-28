@@ -1,7 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
 import { Career } from './CareerManager.js';
-import { drawBelt } from '../render/FighterRenderer.js';
 import { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } from './quests.js';
 import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
@@ -13,7 +12,7 @@ import { UI, mixHex } from '../render/palette.js';
 import { rect, glow } from '../render/painter.js';
 import { panel, gauge, icon, keycap, prompt, fade } from '../render/ui.js';
 import { BodyCanvas } from '../render/raster.js';
-import { drawBody } from '../render/body.js';
+import { drawBody, beltLook } from '../render/body.js';
 import { Joints, dimsFor, solveFK, toWorld, JN, J } from '../anim/skeleton.js';
 import { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip } from '../anim/clips.js';
 import { updateTails } from '../anim/AnimationSystem.js';
@@ -75,7 +74,14 @@ export class WorldScene {
     this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
   unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return !(d.ow && OW.damaged.includes(d.ow.state)) && ((d.contract && d.contract.title) || d.flags.champion); if (k === 'basement') return !!(d.revenge && d.revenge.invited) || !!d.flags.basementKnown || !!(d.ow && OW.damaged.includes(d.ow.state)); if (k === 'hideout') return !!d.flags.hideout; if (k === 'gymOpen') return !(d.br && d.br.lobby === 'damaged'); return true; }
-  say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
+  // A choice can open the next conversation (시너지, 훈련기구, 커리어 마무리…): the one that asked closes right after,
+  // so it only clears the slot while it is still its own, and a conversation over before it starts never takes it.
+  say(steps, o = {}) {
+    let D = null;
+    const dlg = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { if (D && this.dialog === D) this.dialog = null; if (o.after) o.after(); } }, o));
+    D = dlg;
+    if (!dlg.done) this.dialog = dlg;
+  }
   toast(text, col = '#eef2ff') { this.toasts.push({ text, col, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
   open(o) { this.overlays.push(o); this.game.input.clear(); }
   closeTop() { this.overlays.pop(); this.game.input.clear(); }
@@ -764,10 +770,10 @@ export class WorldScene {
     g.globalAlpha = .35; rect(g, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); g.globalAlpha = 1;
     bc.begin(tmp.x(0), tmp.y(0) - 4);
     const tails = a.tails ? a.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - cam)), w: T.w, c: T.c, front: T.front })) : null;
-    drawBody(bc, tmp, a.dims, a.look, { expr: a.faceExpr, hand: 'fist', tails, cape: false });
+    const d = this.c.d, wear = a === this.player && (d.flags.champion || (this.cineFx && this.cineFx.belt && (d.titles || []).length));   // the champion wears the belt in town
+    drawBody(bc, tmp, a.dims, wear ? beltLook(a.look) : a.look, { expr: a.faceExpr, hand: 'fist', tails, cape: !!a.look.capeAlways });
     bc.finish();
     bc.drawTo(g);
-    if (a === this.player && this.c.d.flags.champion && !(this.cineFx && this.cineFx.belt)) drawBelt(g, tmp, 'waist');   // the champion wears the belt in town
   }
   lights(w, cam) {
     const L = this.L, d = this.c.d;

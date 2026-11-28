@@ -2139,6 +2139,13 @@ function muscleDetail(u, v, m, belly, fem) {
   return d;
 }
 
+// the same look wearing the championship belt (one copy per look, so its shaders are built once)
+const beltCache = new WeakMap();
+function beltLook(look) {
+  let b = beltCache.get(look);
+  if (!b) { b = Object.assign({}, look, { titleBelt: 1 }); beltCache.set(look, b); }
+  return b;
+}
 const shaderCache = new WeakMap();
 function torsoShader(look, dims) {
   let f = shaderCache.get(look);
@@ -2281,6 +2288,7 @@ function drawBody(bc, jt, dims, look, o = {}) {
     if (look.skirtBack || look.coat) skirt(bc, P, dims, look.coat || look.skirtBack, fxv, fyv, upx, upy, 9, true, o);
     bc.torso(bx, by, tx, ty, fxv, fyv, dims.prof, torsoShader(look, dims), 10, 0);
     leg(10, false, 11);
+    if (look.titleBelt) titleBelt(bc, P, dims, fxv, fyv, upx, upy);
     if (look.coat || look.skirt) skirt(bc, P, dims, look.coat || look.skirt, fxv, fyv, upx, upy, 19, false, o);
     if (look.sash) { const x = X(J.pN), y = Y(J.pN) - 4; bc.poly([[x - 3, y], [x + 3, y], [x + 3.5 + (o.sway || 0), y + 14], [x - 2 + (o.sway || 0), y + 15]], ramp(look.sash), 21, { folds: 1 }); }
     bc.capsule(X(1) + upx * 1, Y(1) + upy * 1, dims.nkR, X(2) + upx * 3, Y(2) + upy * 3, dims.nkR * .92, [{ t: 1, ramp: look.neckCol ? ramp(look.neckCol) : seg.skin }], 14, 0, dims.nkR * 1.6, .12);
@@ -2293,6 +2301,24 @@ function drawBody(bc, jt, dims, look, o = {}) {
     if (o.prop && o.prop.draw) o.prop.draw(bc, jt, dims);
     arm(4, false, 24);
   }
+}
+// The championship belt, worn: drawn after the near leg (the thighs would cover a belt painted on the torso) and
+// before the near arm, as a band round the waist on the body's own axes, so it turns, leans and shades with the body:
+// leather strap with gold edges, a side plate toward the back, the big bevelled plate with a red stone on the front.
+let TBR = null;
+function titleBelt(bc, P, dims, fx, fy, ux, uy) {
+  const R = TBR || (TBR = { gold: ramp('#d6aa32'), deep: ramp('#a67c1e'), strap: ramp('#2a2034'), gem: ramp('#d8334a') });
+  const back = dims.prof[1][1] + 1.2, front = dims.prof[1][2] + 1.4, cx = P[0] + ux * 5, cy = P[1] + uy * 5;
+  const at = (a, b) => [cx + fx * a + ux * b, cy + fy * a + uy * b];   // a: toward the front, b: up
+  const band = (a0, a1, b0, b1, r, g, o) => bc.poly([at(a0, b1), at(a1, b1), at(a1, b0), at(a0, b0)], r, g, o);
+  band(-back, front, -3, 3, R.strap, 20, { mid: .7 });
+  band(-back, front, 1.9, 3, R.gold, 20, { mid: .7, noOutline: true }); band(-back, front, -3, -1.9, R.gold, 20, { mid: .7, noOutline: true });
+  band(-back * .8, -back * .44, -4, 4, R.gold, 21, { mid: .5 });
+  const pc = front * .3, pw = 7.4;
+  band(pc - pw, pc + pw, -6.4, 6.4, R.gold, 22, { mid: .25 });
+  band(pc - pw + 1.6, pc + pw - 1.6, -4.8, 4.8, R.deep, 22, { flat: .35, noOutline: true });
+  band(pc - pw + 2.6, pc + pw - 2.6, -3.8, 3.8, R.gold, 22, { mid: .2, noOutline: true });
+  const [gx, gy] = at(pc, 0); bc.ball(gx, gy, 1.8, R.gem, 23);
 }
 function skirt(bc, P, dims, sk, fx, fy, ux, uy, grp, back, o) {
   const hx = P[0], hy = P[1], len = (sk.len || .5);
@@ -2314,7 +2340,7 @@ function skirt(bc, P, dims, sk, fx, fy, ux, uy, grp, back, o) {
 }
 const FLASH_WHITE = packHex('#ffffff');
 
-return { drawBody, EMBLEMS, FLASH_WHITE };
+return { beltLook, drawBody, EMBLEMS, FLASH_WHITE };
 })();
 // ---- anim/clips.js
 __m["anim/clips.js"] = (function () {
@@ -8789,7 +8815,7 @@ __m["render/FighterRenderer.js"] = (function () {
 const { Joints, JN, J, dimsFor, solveFK, toWorld, pose } = __m["anim/skeleton.js"];
 const { clip, sampleClip, stancePose, gaitPose } = __m["anim/clips.js"];
 const { BodyCanvas } = __m["render/raster.js"];
-const { drawBody } = __m["render/body.js"];
+const { drawBody, beltLook } = __m["render/body.js"];
 const { packHex } = __m["render/palette.js"];
 const { LOOKS } = __m["data/looks.js"];
 const { makeCanvas, ctxOf, TAU } = __m["core/util.js"];
@@ -8797,15 +8823,43 @@ const { ellipse, rect, poly } = __m["render/painter.js"];
 const tmp = new Joints();
 const WHITE = packHex('#ffffff');
 const P = new Float32Array(16);
-// the championship belt: on the waist, over the head (a winner), or over the referee's shoulder (joints already shifted)
-function drawBelt(g, j, mode) {
-  let x, y, w = 26;
-  if (mode === 'up') { x = (j.x(J.hN) + j.x(J.hF)) / 2; y = Math.min(j.y(J.hN), j.y(J.hF)) - 3; w = 30; }
-  else if (mode === 'shoulder') { x = j.x(J.chest); y = j.y(J.chest) - 4; w = 22; }
-  else { x = j.x(J.pelvis); y = j.y(J.pelvis) - 3; }
+// The championship belt when it is not worn (worn, it is part of the body: body.js titleBelt, beltLook): held up in
+// both hands by the winner, the strap running from hand to hand, or carried over the referee's shoulder before the
+// bell. Joints already shifted to the screen.
+// a leather strap 5 px across, laid across its own direction: dark rim, gold edge, leather, gold edge, dark rim
+const STRAP = [[-2.5, '#120c1e'], [2.5, '#120c1e'], [-1.5, '#d6aa32'], [1.5, '#8a6a1a'], [-.5, '#3a2c46'], [.5, '#2a2034']];
+function beltStrap(g, x0, y0, x1, y1) {
+  const L = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / L, ny = (x1 - x0) / L, n = Math.ceil(L * 1.6);
+  for (const [k, c] of STRAP) for (let i = 0; i <= n; i++) { const t = i / n; rect(g, c, Math.round(x0 + (x1 - x0) * t + nx * k), Math.round(y0 + (y1 - y0) * t + ny * k), 1, 1); }
+}
+function beltPlate(g, x, y, w = 13, h = 11) {
   x = Math.round(x); y = Math.round(y);
-  rect(g, '#120c1e', x - w / 2 - 1, y - 4, w + 2, 9); rect(g, '#c9a22e', x - w / 2, y - 3, w, 7); rect(g, '#8a6a1a', x - w / 2, y + 2, w, 2);
-  rect(g, '#120c1e', x - 7, y - 7, 14, 14); rect(g, '#ffe9a8', x - 6, y - 6, 12, 12); rect(g, '#c9a22e', x - 4, y - 4, 8, 8); rect(g, '#fff6d0', x - 3, y - 4, 2, 2);
+  const x0 = x - (w >> 1), y0 = y - (h >> 1);
+  rect(g, '#120c1e', x0 - 1, y0 - 1, w + 2, h + 2); rect(g, '#8a6a1a', x0, y0, w, h); rect(g, '#d6aa32', x0, y0, w - 1, h - 1);
+  rect(g, '#f6d877', x0 + 1, y0 + 1, w - 3, 1); rect(g, '#f6d877', x0 + 1, y0 + 1, 1, h - 3);
+  rect(g, '#a67c1e', x0 + 2, y0 + 2, w - 4, h - 4); rect(g, '#d6aa32', x0 + 3, y0 + 3, w - 6, h - 6);
+  rect(g, '#d8334a', x - 1, y - 1, 2, 2); rect(g, '#ffb0b8', x - 1, y - 1, 1, 1);
+}
+function drawBelt(g, j, mode) {
+  if (mode === 'up') {   // raised in both hands: plate up to the hall, the strap's two ends hanging from the fists
+    const ax = j.x(J.hN), ay = j.y(J.hN), bx = j.x(J.hF), by = j.y(J.hF), mx = (ax + bx) / 2, my = Math.min(ay, by) - 4;
+    const out = Math.sign(ax - bx) || 1;
+    beltStrap(g, ax, ay, ax + out * 3, ay + 15); beltStrap(g, bx, by, bx - out * 3, by + 15);
+    beltPlate(g, ax + out * 2, ay + 10, 4, 6); beltPlate(g, bx - out * 2, by + 10, 4, 6);
+    beltStrap(g, ax, ay, mx, my); beltStrap(g, bx, by, mx, my);
+    beltPlate(g, mx, my, 15, 12);
+    return;
+  }
+  if (mode === 'shoulder') {   // slung over the near shoulder: the plate on the chest, the strap down the back
+    const f = j.face || 1, sx = j.x(J.sN) - f, sy = j.y(J.sN) - 4, cx = j.x(J.chest) + f * 4, cy = j.y(J.chest) + 4, bx = j.x(J.sN) - f * 9, by = j.y(J.pelvis) - 2;
+    beltStrap(g, sx, sy, bx, by);
+    beltStrap(g, sx, sy, cx, cy);
+    beltPlate(g, cx, cy + 3, 12, 10);
+    return;
+  }
+  // a plain flat belt (nothing calls this any more; the worn belt is drawn with the body)
+  const x = Math.round(j.x(J.pelvis)), y = Math.round(j.y(J.pelvis)) - 3;
+  beltStrap(g, x - 13, y, x + 13, y); beltPlate(g, x, y);
 }
 
 class FighterRenderer {
@@ -8821,12 +8875,12 @@ class FighterRenderer {
     if (f.hitShake > 0) { const s = (this.frame & 1 ? 1 : -1) * Math.ceil(f.hitShake * 8); for (let i = 0; i < JN; i++) tmp.p[i * 2] += s; }
     bc.begin(jt.x(0), jt.y(0) - 4);
     const tails = f.tails ? f.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - camX)), w: T.w, c: T.c, front: T.front })) : null;
-    drawBody(bc, jt, f.dims, f.look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
+    const Bt = f.match && f.match.belt, wear = Bt && Bt.on === f && !f.hidden, look = wear && f.st !== 'WIN' ? beltLook(f.look) : f.look;   // worn: part of the body
+    drawBody(bc, jt, f.dims, look, { expr: f.faceExpr || 'neutral', layer, hand: f.handOpen ? 'open' : 'fist', tails, cape: f.st === 'INTRO' || f.st === 'WIN', sway: Math.sin((f.poseT || 0) * 2) * 2 });
     bc.finish({ flat: f.flash > .05 ? WHITE : extra.flat });
     const blink = f.inv > 0 && f.protect > 0 && (this.frame >> 2) & 1;
     bc.drawTo(g, 0, 0, extra.alpha != null ? extra.alpha : blink ? .55 : 1);
-    const Bt = f.match && f.match.belt;
-    if (Bt && Bt.on === f && !f.hidden) drawBelt(g, jt, f.st === 'WIN' ? 'up' : 'waist');
+    if (wear && f.st === 'WIN' && layer !== 'back') drawBelt(g, jt, 'up');   // the winner holds it up
     return bc;
   }
   shadow(g, f, camX, ground) {
@@ -10620,8 +10674,8 @@ function pier(g, d, ox, cam, W) {
 function streetTop(g, c, cam, W) {
   const d = c.d, fx = (W && W.cineFx) || {};
   if (!fx.belt || !W || !W.player || !(d.flags.champion || (d.titles || []).length)) return;
-  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0)) - Math.round(cam), by = Math.round(J.y(0)) - 2, k = .6 + Math.sin(t * 5) * .4;
-  rect(g, '#120c1e', bx - 13, by - 4, 26, 8); rect(g, '#c9a22e', bx - 12, by - 3, 24, 6); rect(g, '#120c1e', bx - 6, by - 6, 12, 12); rect(g, '#ffe9a8', bx - 5, by - 5, 10, 10); rect(g, '#c9a22e', bx - 3, by - 3, 6, 6);
+  // the belt itself is drawn with the body (beltLook); this is only the light catching its plate
+  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0) + (J.face || 1) * 3) - Math.round(cam), by = Math.round(J.y(0)) - 5, k = .6 + Math.sin(t * 5) * .4;
   glow(g, bx, by, 40, '#ffd65a', .5 * k);
   rect(g, '#fff6d0', bx - Math.round(9 * k), by, Math.round(18 * k) + 1, 1); rect(g, '#fff6d0', bx, by - Math.round(9 * k), 1, Math.round(18 * k) + 1);
 }
@@ -14642,7 +14696,6 @@ __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
 const { Career } = __m["world/CareerManager.js"];
-const { drawBelt } = __m["render/FighterRenderer.js"];
 const { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } = __m["world/quests.js"];
 const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } = __m["world/gymGear.js"];
 const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
@@ -14654,7 +14707,7 @@ const { UI, mixHex } = __m["render/palette.js"];
 const { rect, glow } = __m["render/painter.js"];
 const { panel, gauge, icon, keycap, prompt, fade } = __m["render/ui.js"];
 const { BodyCanvas } = __m["render/raster.js"];
-const { drawBody } = __m["render/body.js"];
+const { drawBody, beltLook } = __m["render/body.js"];
 const { Joints, dimsFor, solveFK, toWorld, JN, J } = __m["anim/skeleton.js"];
 const { STANCES, stancePose, gaitPose, clip, hasClip, sampleClip } = __m["anim/clips.js"];
 const { updateTails } = __m["anim/AnimationSystem.js"];
@@ -14715,7 +14768,14 @@ class WorldScene {
     this.fadeT = this.fadeDur = .45; this.fadeTo = () => { this.enter(d.to, d.at); };
   }
   unlocked(k) { const d = this.c.d; if (k === 'rivalgym') return d.fame >= 40 || d.flags.champion; if (k === 'dome') return !(d.ow && OW.damaged.includes(d.ow.state)) && ((d.contract && d.contract.title) || d.flags.champion); if (k === 'basement') return !!(d.revenge && d.revenge.invited) || !!d.flags.basementKnown || !!(d.ow && OW.damaged.includes(d.ow.state)); if (k === 'hideout') return !!d.flags.hideout; if (k === 'gymOpen') return !(d.br && d.br.lobby === 'damaged'); return true; }
-  say(steps, o = {}) { this.dialog = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { this.dialog = null; if (o.after) o.after(); } }, o)); }
+  // A choice can open the next conversation (시너지, 훈련기구, 커리어 마무리…): the one that asked closes right after,
+  // so it only clears the slot while it is still its own, and a conversation over before it starts never takes it.
+  say(steps, o = {}) {
+    let D = null;
+    const dlg = new Dialogue(this.game, steps, Object.assign({ player: this.player, onEnd: () => { if (D && this.dialog === D) this.dialog = null; if (o.after) o.after(); } }, o));
+    D = dlg;
+    if (!dlg.done) this.dialog = dlg;
+  }
   toast(text, col = '#eef2ff') { this.toasts.push({ text, col, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
   open(o) { this.overlays.push(o); this.game.input.clear(); }
   closeTop() { this.overlays.pop(); this.game.input.clear(); }
@@ -15404,10 +15464,10 @@ class WorldScene {
     g.globalAlpha = .35; rect(g, '#04030a', Math.round(tmp.x(0) - 12), Math.round(a.y0) - 1, 24, 3); g.globalAlpha = 1;
     bc.begin(tmp.x(0), tmp.y(0) - 4);
     const tails = a.tails ? a.tails.map(T => ({ pts: Array.from(T.pts, (v, i) => (i % 2 ? v : v - cam)), w: T.w, c: T.c, front: T.front })) : null;
-    drawBody(bc, tmp, a.dims, a.look, { expr: a.faceExpr, hand: 'fist', tails, cape: false });
+    const d = this.c.d, wear = a === this.player && (d.flags.champion || (this.cineFx && this.cineFx.belt && (d.titles || []).length));   // the champion wears the belt in town
+    drawBody(bc, tmp, a.dims, wear ? beltLook(a.look) : a.look, { expr: a.faceExpr, hand: 'fist', tails, cape: !!a.look.capeAlways });
     bc.finish();
     bc.drawTo(g);
-    if (a === this.player && this.c.d.flags.champion && !(this.cineFx && this.cineFx.belt)) drawBelt(g, tmp, 'waist');   // the champion wears the belt in town
   }
   lights(w, cam) {
     const L = this.L, d = this.c.d;

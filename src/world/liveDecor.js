@@ -110,8 +110,8 @@ function pier(g, d, ox, cam, W) {
 export function streetTop(g, c, cam, W) {
   const d = c.d, fx = (W && W.cineFx) || {};
   if (!fx.belt || !W || !W.player || !(d.flags.champion || (d.titles || []).length)) return;
-  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0)) - Math.round(cam), by = Math.round(J.y(0)) - 2, k = .6 + Math.sin(t * 5) * .4;
-  rect(g, '#120c1e', bx - 13, by - 4, 26, 8); rect(g, '#c9a22e', bx - 12, by - 3, 24, 6); rect(g, '#120c1e', bx - 6, by - 6, 12, 12); rect(g, '#ffe9a8', bx - 5, by - 5, 10, 10); rect(g, '#c9a22e', bx - 3, by - 3, 6, 6);
+  // the belt itself is drawn with the body (beltLook); this is only the light catching its plate
+  const J = W.player.joints, t = W.t, bx = Math.round(J.x(0) + (J.face || 1) * 3) - Math.round(cam), by = Math.round(J.y(0)) - 5, k = .6 + Math.sin(t * 5) * .4;
   glow(g, bx, by, 40, '#ffd65a', .5 * k);
   rect(g, '#fff6d0', bx - Math.round(9 * k), by, Math.round(18 * k) + 1, 1); rect(g, '#fff6d0', bx, by - Math.round(9 * k), 1, Math.round(18 * k) + 1);
 }
