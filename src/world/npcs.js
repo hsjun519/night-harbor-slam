@@ -41,6 +41,7 @@ export function peopleAt(loc, c) {
       if (day % 3 !== 1) add(roster[(day * 3 + 4) % roster.length], 1000, -1, { stance: 'sit', y: -10 });
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
+      { const Q = d.quest; if (Q && !Q.done && day <= Q.until && CHARACTERS[Q.id] && !out.some(p => p.id === Q.id)) add(Q.id, 900, -1, { quest: 1 }); }   // the one who asked a favour waits here
       { const M = d.market, V = M && M.visit && M.visit !== 'done' ? M.visit : null, npc = V && { shop: 'shop', clinic: 'nurse', food: 'auntie', merchant: 'merchant' }[V]; if (npc) add(npc, 150, 1, { visitor: 1 }); }   // a regular's seller drops by
       if (day % 4 === 0) add('dohyun', 620, 1);
       if (d.flags.champion) { add('fankid', 232, 1, { stance: 'cheer' }); if (day % 2) add('reporter', 900, -1); }   // the champion's lobby: fans and the press
@@ -48,11 +49,13 @@ export function peopleAt(loc, c) {
       if (d.revenge && !d.revenge.invited && day >= d.revenge.day && day <= d.revenge.until) add(d.revenge.opp, 1080, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'basement':
+      if (d.quest && !d.quest.done && d.quest.kind === 'spar' && day <= d.quest.until) add(d.quest.id, 470, -1, { stance: 'arms', quest: 1 });
       if (d.revenge && d.revenge.invited && day <= d.revenge.until) add(d.revenge.opp, 430, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'office': add('boss', 400, -1); break;
     case 'gym':
       add('trainer', 290, 1);
+      if (d.quest && !d.quest.done && d.quest.kind === 'teach' && day <= d.quest.until) add(d.quest.id, 860, -1, { quest: 1 });
       if (day % 4 !== 0) add('dohyun', 930, -1, { stance: 'tech' });
       add(roster[(day + 5) % roster.length], 560, -1, { stance: 'cheer' });
       break;

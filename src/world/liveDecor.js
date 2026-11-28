@@ -163,6 +163,15 @@ function posterAt(g, x, y, w, h, col, top, name, look, o = {}) {
   if (top) drawText(g, top, x + w / 2, y + 1, { size: 11, align: 'c', color: o.topCol || '#ffe27a', outline: '#120c1e' });
   drawText(g, name, x + w / 2, y + h - 12, { size: 11, align: 'c', color: '#fff6dc', outline: '#120c1e' });
 }
+// the event of the day (its deadline day, or a contract for it today)
+export function eventToday(d) {
+  const ct = d.contract && d.contract.kind === 'event' && d.contract.day === d.day ? d.contract : null, day = d.day;
+  const k = ct ? ct.event || '' : '';
+  if (k.startsWith('mitb') || (!ct && day === 10)) return { title: '머니 인 더 뱅크', sub: '오늘 밤 · 1:1 래더 매치 · 가방을 잡아라', c1: '#1f5a3a', c2: '#ffd65a' };
+  if (k.startsWith('rumble') || (!ct && day === 14)) return { title: '만선 럼블', sub: '오늘 밤 · 10인 로얄럼블 · 마지막까지 남아라', c1: '#7a1f2a', c2: '#ffb347' };
+  if (k.startsWith('tag') || (!ct && day === 21)) return { title: '항구 태그 대전', sub: '오늘 밤 · 2대2 태그 매치', c1: '#1f3a7a', c2: '#bff3ff' };
+  return null;
+}
 // the banner over the boards: champion first, then the case, a streak, a new season
 function banner(c) {
   const d = c.d;
@@ -202,6 +211,15 @@ export function lobbyLive(g, c, cam) {
     const gx = 564 + ox;
     for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', gx - 6, 218 + i * 26, 48, 4); for (let k = 0; k < 48; k += 8) rect(g, '#1a1a1a', gx - 6 + k, 218 + i * 26, 4, 4); }
     rect(g, '#120c1e', gx - 8, 182, 52, 14); rect(g, '#c2333f', gx - 7, 183, 50, 12); drawText(g, '보수 중', gx + 18, 183, { size: 11, align: 'c', color: '#ffffff' });
+  }
+  // an event day: a big banner over the hall (Money in the Bank, the rumble, the tag tournament)
+  const E = eventToday(d);
+  if (E) {
+    const bx = 690 + ox, bw = 300, by = 54, t = Date.now() / 600;
+    rect(g, '#120c1e', bx - 2, by - 2, bw + 4, 38); bands(g, bx, by, bw, 34, [E.c1, shade(E.c1, -.2), shade(E.c1, -.35)]); rect(g, E.c2, bx, by, bw, 3); rect(g, E.c2, bx, by + 31, bw, 3);
+    for (let i = 0; i < 12; i++) rect(g, ['#ffd65a', '#ff5fa2', '#49d6ff', '#6be38a'][(i + Math.floor(t)) % 4], bx + 10 + i * 25, by - 6, 4, 4);
+    drawText(g, E.title, bx + bw / 2, by + 4, { size: 11, align: 'c', color: '#ffffff', bold: true, outline: '#120c1e' }); drawText(g, E.sub, bx + bw / 2, by + 18, { size: 11, align: 'c', color: E.c2 });
+    for (const dx of [8, bw - 9]) rect(g, '#5a5a6a', bx + dx, by - 20, 1, 20);
   }
   // the banner
   const B = banner(c);

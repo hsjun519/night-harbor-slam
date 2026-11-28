@@ -15,6 +15,7 @@ const GAMES = {
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
   cleanup: { name: '로비 정리', kind: '타이밍', stats: [], pose: 'carry', x: 600, mech: 'job', desc: '부서진 가구 조각을 상자에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
   scrap: { name: '고물 정리 돕기', kind: '타이밍', stats: [], pose: 'carry', x: 812, mech: 'job', desc: '영감이 주워 온 고물을 수레에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
+  fish: { name: '부두 낚시', kind: '타이밍', stats: [], pose: 'calm', x: 1736, mech: 'fish', desc: '찌가 쑥 들어가는 순간 {y}J{/}(또는 Space·E·Enter). 다섯 번 던진다. 너무 일찍 당기면 놓친다.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
 };
 
@@ -41,11 +42,13 @@ export class Training {
       case 'rhythm': { const n = this.T.notes || 22, gp = .58 / (this.T.speed || 1), lanes = this.T.lanes || 3; this.s = { lanes, keys: lanes === 4 ? ['left', 'down', 'atk', 'grab'] : ['atk', 'grab', 'dodge'], notes: Array.from({ length: n }, (_, i) => ({ t: 1.8 + i * gp + (r.next() < .2 ? gp * .5 : 0), lane: r.int(0, lanes - 1), done: 0 })), fall: 1.3 / (this.T.speed || 1), good: 0, perfect: 0, miss: 0 }; break; }
       case 'snake': { this.s = { w: 22, h: 9, body: [[5, 4], [4, 4], [3, 4]], dir: [1, 0], want: [1, 0], step: this.T.step || .15, st: 0, eaten: 0, target: this.T.target || 8, left: 30, dead: 0 }; this.newFood(); break; }
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
+      case 'fish': this.s = { cast: 0, wait: 1.2 + r.next() * 2.4, bite: 0, st: 0, small: 0, big: 0, log: [], state: 'wait' }; break;
     }
     void r;
   }
   newZone() { const s = this.s, w = (.22 - s.reps * .015) * (this.T.zone || 1), c = .2 + this.rng.next() * .6; s.zone = [clamp(c - w / 2, 0, 1 - w), clamp(c + w / 2, w, 1)]; s.speed = (.9 + s.reps * .14) * (this.T.speed || 1); }
   // typing: a word of letters to type, as many letters as you can before the time runs out
+  nextCast() { const s = this.s; s.cast++; s.state = 'wait'; s.st = 0; s.wait = 1.2 + this.rng.next() * 2.4; }
   newWord() { const A = 'ABCDFGHIJKLNORSTUVXYZ', n = this.T.len || 4 + Math.floor(this.rng.next() * 2); return Array.from({ length: n }, () => A[Math.floor(this.rng.next() * A.length)]).join(''); }
   // snake: a mitt somewhere off the body
   newFood() { const s = this.s; for (let k = 0; k < 50; k++) { const f = [1 + Math.floor(this.rng.next() * (s.w - 2)), 1 + Math.floor(this.rng.next() * (s.h - 2))]; if (!s.body.some(b => b[0] === f[0] && b[1] === f[1])) { s.food = f; return; } } s.food = [1, 1]; }
@@ -60,6 +63,7 @@ export class Training {
     this.gains = [];
     if (this.id === 'scrap') { this.helpPts = { S: 3, A: 3, B: 2, C: 1 }[grade]; d.fatigue = Math.min(100, d.fatigue + 8); }
     else if (this.id === 'cleanup') { d.fatigue = Math.min(100, d.fatigue + 8); }
+    else if (this.id === 'fish') { d.items.fish = (d.items.fish || 0) + this.s.small; d.items.bigFish = (d.items.bigFish || 0) + this.s.big; d.fatigue = Math.min(100, d.fatigue + 4); }
     else if (this.id === 'job') {
       const pay = Math.round((6000 + this.s.good * 1800 + d.season * 1000) / 500) * 500;
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
@@ -191,6 +195,13 @@ export class Training {
         if (s.dead || s.left <= 0 || s.eaten >= s.target) this.finish(s.eaten / s.target);
         break;
       }
+      case 'fish': {
+        s.st += dt;
+        if (s.state === 'wait') { if (inp.actPressed()) { this.pop('너무 일찍 당겼다', '#ff8a8a', 320, 120); A.sfx('miss'); s.log.push('-'); this.nextCast(); } else if (s.st >= s.wait) { s.state = 'bite'; s.st = 0; A.sfx('splash'); } }
+        else if (s.state === 'bite') { if (inp.actPressed()) { const k = this.rng.next(), big = k > .93, name = big ? '참치' : k > .65 ? '도미' : '고등어'; if (big) s.big++; else s.small++; s.log.push(name); this.pop(`${name}!`, big ? '#ffd65a' : '#6be38a', 320, 120); A.sfx(big ? 'good' : 'stat'); this.nextCast(); } else if (s.st > .45) { this.pop('놓쳤다…', '#ff8a8a', 320, 120); A.sfx('miss'); s.log.push('-'); this.nextCast(); } }
+        if (s.cast >= 5) this.finish((s.small + s.big * 2) / 5);
+        break;
+      }
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
@@ -220,6 +231,7 @@ export class Training {
       drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
       if (this.mech === 'typing' || this.mech === 'rhythm' || this.mech === 'snake') drawText(u, { typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.', rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.', snake: 'W A S D로 방향을 바꿔 미트를 쳐라. 벽이나 내 발에 걸리면 끝.' }[this.mech], 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
+      else if (this.id === 'fish') drawText(u, '잡은 생선은 레슬러에게 선물하면 호감도가 오른다. 시간 1칸 · 피로 +4', 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else drawText(u, this.id === 'cleanup' ? '돈은 안 되지만 로비와 훈련장이 다시 열린다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
       drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +${tireOf(this.c.d, this.id)}${this.tier ? ` · 효과 ×${gainK(this.c.d, this.id).toFixed(1)}` : ''}` : this.id === 'scrap' || this.id === 'cleanup' ? '시간 1칸 · 피로 +8' : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
       if (this.c.d.fatigue > 40) drawText(u, `피로 ${Math.round(this.c.d.fatigue)}: 훈련 효과 ${this.c.d.fatigue > 70 ? '50%' : '80%'}`, 320, 134, { size: 11, align: 'c', color: '#ff8a8a' });
@@ -231,6 +243,7 @@ export class Training {
       if (this.id === 'scrap') drawText(u, `영감이 고개를 꾸벅 숙였다. (도움 +${this.helpPts})`, 320, 140, { align: 'c', color: '#ffd65a' });
       else if (this.id === 'cleanup') drawText(u, '로비가 다시 반짝인다. 김 반장이 엄지를 들었다.', 320, 140, { align: 'c', color: '#9be36b' });
       else if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
+      else if (this.id === 'fish') drawText(u, `생선 ${this.s.small + this.s.big}마리${this.s.big ? ` (참치 ${this.s.big})` : ''} — 레슬러에게 선물할 수 있다`, 320, 140, { align: 'c', color: '#9be3ff' });
       else this.gains.forEach(([k, g], i) => drawText(u, `${STAT_GROWTH[k][1]} Lv +${g.toFixed(2)}  (Lv ${this.c.d.lv[k].toFixed(1)})`, 320, 136 + i * 16, { size: 11, align: 'c', color: '#6be38a' }));
       if (this.fatK && this.fatK < 1) drawText(u, '피곤해서 효과가 줄었다…', 320, 172, { size: 11, align: 'c', color: '#ff8a8a' });
       if (this.boosted) drawText(u, '단백질 셰이크 효과 +15%!', 320, 186, { size: 11, align: 'c', color: '#6be38a' });
@@ -296,6 +309,13 @@ export class Training {
         rect(u, '#c2333f', x0 + s.food[0] * c + 2, y0 + s.food[1] * c + 2, c - 4, c - 4); rect(u, '#ffd65a', x0 + s.food[0] * c + 5, y0 + s.food[1] * c + 5, c - 10, c - 10);
         s.body.forEach((b, i) => rect(u, i ? '#3fb0c0' : '#9be3ff', x0 + b[0] * c + 1, y0 + b[1] * c + 1, c - 2, c - 2));
         drawText(u, `미트 ${s.eaten}/${s.target} · 남은 ${Math.max(0, s.left).toFixed(0)}초 · W A S D로 방향`, 320, y0 + s.h * c + 6, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'fish': {
+        rect(u, '#10204a', 160, 92, 320, 40); for (let x = 160; x < 480; x += 8) rect(u, '#2a4a8a', x + Math.round(Math.sin(this.t * 2 + x) * 2), 96 + (x % 3) * 9, 5, 1);
+        const bob = s.state === 'bite' ? 10 : Math.round(Math.sin(this.t * 3) * 1.5); rect(u, '#05060f', 317, 96 + bob, 7, 9); rect(u, '#ff5b5b', 318, 97 + bob, 5, 4); rect(u, '#ffffff', 318, 101 + bob, 5, 3);
+        if (s.state === 'bite') drawText(u, '지금!', 320, 70, { align: 'c', color: '#ffd65a', bold: true });
+        drawText(u, `${s.cast}/5 · ${s.log.join(' ')}`, 320, 138, { size: 11, align: 'c', color: UI.dim });
         break;
       }
       case 'job': {

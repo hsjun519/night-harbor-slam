@@ -9975,7 +9975,9 @@ const SHOP_ITEMS = [
   { id: 'bookSplash', name: '기술의 서: 바디 스플래시', price: 26000, desc: '코너 위에서 누운 상대에게: 배로 내리찍는다.', kind: 'book', top: 'down', move: 'diveSplash' },
   { id: 'champBandage', name: '챔피언의 붕대', price: 42000, desc: '부상 게이지 -40. 떠돌이 상인만 판다.', kind: 'item', inj: 40, rare: 1 },
   { id: 'drink', name: '이온 음료', price: 4000, desc: '피로 -20.', kind: 'item', fat: 20 },
-  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '레슬링 기술 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
+  { id: 'rod', name: '낚싯대', price: 30000, desc: '하역장 끝 낚시터에서 낚시. 잡은 생선은 레슬러에게 선물할 수 있다.', kind: 'gear', slot: 'tool' },
+  { id: 'affGlasses', name: '호감도 안경', price: 45000, desc: '쓰고 있으면 레슬러들 머리 위에 호감도가 보인다.', kind: 'gear', slot: 'eyes' },
+  { id: 'wristTape', name: '손목 테이프', price: 36000, desc: '스킬 공격력 +3%. 장비.', kind: 'gear', slot: 'wrist', mod: { grp: .03 } },
   { id: 'kneePads', name: '무릎 보호대', price: 42000, desc: '넉백 저항 +5%, 다운 회복 +3%.', kind: 'gear', slot: 'knee', mod: { kbr: .05, down: .03 } },
   { id: 'mouthguard', name: '마우스피스', price: 30000, desc: '최대 기절 저항 +6.', kind: 'gear', slot: 'mouth', mod: { stun: 6 } },
   { id: 'proBoots', name: '프로 부츠', price: 55000, desc: '이동 속도 +3%, 점프력 +3%.', kind: 'gear', slot: 'boots', mod: { spd: .03, jump: .03 } },
@@ -10616,6 +10618,15 @@ function posterAt(g, x, y, w, h, col, top, name, look, o = {}) {
   if (top) drawText(g, top, x + w / 2, y + 1, { size: 11, align: 'c', color: o.topCol || '#ffe27a', outline: '#120c1e' });
   drawText(g, name, x + w / 2, y + h - 12, { size: 11, align: 'c', color: '#fff6dc', outline: '#120c1e' });
 }
+// the event of the day (its deadline day, or a contract for it today)
+function eventToday(d) {
+  const ct = d.contract && d.contract.kind === 'event' && d.contract.day === d.day ? d.contract : null, day = d.day;
+  const k = ct ? ct.event || '' : '';
+  if (k.startsWith('mitb') || (!ct && day === 10)) return { title: '머니 인 더 뱅크', sub: '오늘 밤 · 1:1 래더 매치 · 가방을 잡아라', c1: '#1f5a3a', c2: '#ffd65a' };
+  if (k.startsWith('rumble') || (!ct && day === 14)) return { title: '만선 럼블', sub: '오늘 밤 · 10인 로얄럼블 · 마지막까지 남아라', c1: '#7a1f2a', c2: '#ffb347' };
+  if (k.startsWith('tag') || (!ct && day === 21)) return { title: '항구 태그 대전', sub: '오늘 밤 · 2대2 태그 매치', c1: '#1f3a7a', c2: '#bff3ff' };
+  return null;
+}
 // the banner over the boards: champion first, then the case, a streak, a new season
 function banner(c) {
   const d = c.d;
@@ -10656,6 +10667,15 @@ function lobbyLive(g, c, cam) {
     for (let i = 0; i < 3; i++) { rect(g, '#ffd65a', gx - 6, 218 + i * 26, 48, 4); for (let k = 0; k < 48; k += 8) rect(g, '#1a1a1a', gx - 6 + k, 218 + i * 26, 4, 4); }
     rect(g, '#120c1e', gx - 8, 182, 52, 14); rect(g, '#c2333f', gx - 7, 183, 50, 12); drawText(g, '보수 중', gx + 18, 183, { size: 11, align: 'c', color: '#ffffff' });
   }
+  // an event day: a big banner over the hall (Money in the Bank, the rumble, the tag tournament)
+  const E = eventToday(d);
+  if (E) {
+    const bx = 690 + ox, bw = 300, by = 54, t = Date.now() / 600;
+    rect(g, '#120c1e', bx - 2, by - 2, bw + 4, 38); bands(g, bx, by, bw, 34, [E.c1, shade(E.c1, -.2), shade(E.c1, -.35)]); rect(g, E.c2, bx, by, bw, 3); rect(g, E.c2, bx, by + 31, bw, 3);
+    for (let i = 0; i < 12; i++) rect(g, ['#ffd65a', '#ff5fa2', '#49d6ff', '#6be38a'][(i + Math.floor(t)) % 4], bx + 10 + i * 25, by - 6, 4, 4);
+    drawText(g, E.title, bx + bw / 2, by + 4, { size: 11, align: 'c', color: '#ffffff', bold: true, outline: '#120c1e' }); drawText(g, E.sub, bx + bw / 2, by + 18, { size: 11, align: 'c', color: E.c2 });
+    for (const dx of [8, bw - 9]) rect(g, '#5a5a6a', bx + dx, by - 20, 1, 20);
+  }
   // the banner
   const B = banner(c);
   if (B) {
@@ -10666,7 +10686,7 @@ function lobbyLive(g, c, cam) {
   }
 }
 
-return { streetLive, plankAt, streetTop, basementLive, lobbyLive, PIER };
+return { streetLive, plankAt, streetTop, basementLive, eventToday, lobbyLive, PIER };
 })();
 // ---- world/locations.js
 __m["world/locations.js"] = (function () {
@@ -10999,7 +11019,7 @@ const LOCATIONS = {
     objects: [{ x: 505, w: 110, act: 'card', label: '오늘의 대진표' }, { x: 724, w: 110, act: 'enter', label: '입장 통로' }, { x: 190, w: 150, act: 'locker', label: '사물함' }, { x: 350, w: 100, act: 'bench', label: '벤치에 앉기' }] },
   street: { name: '부둣길', w: 2780, music: 'street', rim: '#ff5fa2', light: -.02, street: 1, live: streetLive, liveTop: streetTop,
     doors: [{ x: 210, to: 'lobby', at: 82, label: '야항 체육관' }, { x: 487, to: 'clinic', at: 60, label: '항구의원' }, { x: 737, to: 'shop', at: 60, label: '돛대 상회' }, { x: 859, to: 'hideout', at: 60, label: '좁은 골목', lock: 'hideout' }, { x: 1563, to: 'rivalgym', at: 60, label: '철썩 짐', lock: 'rivalgym' }, { x: 2170, to: 'dome', at: 60, label: '등대 돔', lock: 'dome' }],
-    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 2008, w: 56, act: 'wave', label: '웨이브 상회' },
+    objects: [{ x: 980, w: 150, act: 'pojang', label: '순덕 포차' }, { x: 1290, w: 120, act: 'plaza', label: '등대 광장' }, { x: 1830, w: 140, act: 'job', label: '하역장 아르바이트' }, { x: 1390, w: 40, act: 'fountain', label: '분수' }, { x: 1928, w: 52, act: 'academy', label: '파식대 학원' }, { x: 1736, w: 30, act: 'fishSpot', label: '낚시터' }, { x: 2008, w: 56, act: 'wave', label: '웨이브 상회' },
       { x: HARBOR.x - 22, w: 34, act: 'dockSign', label: '부두 표지판', when: d => !!d.harbor }, { x: HARBOR.end, w: 60, act: 'pierEnd', label: d => (worldReady(d) ? '세계로 가는 배' : '부두 끝'), when: d => harborRepaired(d) }] },
   clinic: { name: '항구의원', w: 640, music: 'clinic', rim: '#bfefff', light: .08, doors: [{ x: 47, to: 'street', at: 487, label: '부둣길' }], objects: [{ x: 378, w: 80, act: 'clinicBoard', label: '진료 안내판' }, { x: 520, w: 150, act: 'bed', label: '병상' }] },
   shop: { name: '돛대 상회', w: 640, music: 'shop', rim: '#ffcf8a', light: .03, doors: [{ x: 47, to: 'street', at: 737, label: '부둣길' }], objects: [{ x: 150, w: 160, act: 'racks', label: '의상 행거' }, { x: 260, w: 60, act: 'sale', label: '오늘 특가판' }] },
@@ -11321,6 +11341,7 @@ function peopleAt(loc, c) {
       if (day % 3 !== 1) add(roster[(day * 3 + 4) % roster.length], 1000, -1, { stance: 'sit', y: -10 });
       if (day % 2 === 0) add('reporter', 860, -1);
       if (d.fame >= 30 && !d.flags.sponsored) add('sponsor', 260, 1);
+      { const Q = d.quest; if (Q && !Q.done && day <= Q.until && CHARACTERS[Q.id] && !out.some(p => p.id === Q.id)) add(Q.id, 900, -1, { quest: 1 }); }   // the one who asked a favour waits here
       { const M = d.market, V = M && M.visit && M.visit !== 'done' ? M.visit : null, npc = V && { shop: 'shop', clinic: 'nurse', food: 'auntie', merchant: 'merchant' }[V]; if (npc) add(npc, 150, 1, { visitor: 1 }); }   // a regular's seller drops by
       if (day % 4 === 0) add('dohyun', 620, 1);
       if (d.flags.champion) { add('fankid', 232, 1, { stance: 'cheer' }); if (day % 2) add('reporter', 900, -1); }   // the champion's lobby: fans and the press
@@ -11328,11 +11349,13 @@ function peopleAt(loc, c) {
       if (d.revenge && !d.revenge.invited && day >= d.revenge.day && day <= d.revenge.until) add(d.revenge.opp, 1080, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'basement':
+      if (d.quest && !d.quest.done && d.quest.kind === 'spar' && day <= d.quest.until) add(d.quest.id, 470, -1, { stance: 'arms', quest: 1 });
       if (d.revenge && d.revenge.invited && day <= d.revenge.until) add(d.revenge.opp, 430, -1, { stance: 'arms', revenge: 1 });
       break;
     case 'office': add('boss', 400, -1); break;
     case 'gym':
       add('trainer', 290, 1);
+      if (d.quest && !d.quest.done && d.quest.kind === 'teach' && day <= d.quest.until) add(d.quest.id, 860, -1, { quest: 1 });
       if (day % 4 !== 0) add('dohyun', 930, -1, { stance: 'tech' });
       add(roster[(day + 5) % roster.length], 560, -1, { stance: 'cheer' });
       break;
@@ -11885,6 +11908,7 @@ class MatchScene {
     m.on('crit', e => { fx.word('크리티컬!', e.x, e.y - 24, '#ffd65a', 2); fx.spark(e.x, e.y, 1.6, '#ffd65a'); S.flash(1, .85, .3, .3); S.shake(.22); A.sfx('counter'); cheer(.7); });
     m.on('slamBonus', e => { fx.word('링 충격!', e.v.x, e.v.y - 60, '#ff9a3a', 1); });
     m.on('synergy', e => { const H = this.human, own = H && e.a === H; fx.word(e.kind === 'chain' ? '연계!' : '시너지!', e.v.x, e.v.y - 110, e.kind === 'chain' ? '#49d6ff' : '#ffd65a', 2); if (own && !SIGNATURES.some(g => g.name === e.name)) hud.push(e.name, { col: '#ffd65a', y: 120, life: 1.6, sub: e.kind === 'chain' ? '연계' : e.kind === 'special' ? '특수 시너지' : '시너지' }); if (this.lesson && own && e.id === this.lesson.id && !this.lessonDone) { this.lessonDone = this.m.time; A.sfx('good'); } });
+    m.on('moveStart', e => { const L = this.lesson; if (L && L.move && !this.lessonDone && e.a === this.human && (e.mv.id === L.move || (e.L && e.L.parts && e.L.parts.includes(L.move)))) { this.lessonDone = this.m.time; A.sfx('good'); } });
     m.on('parry', e => { fx.spark(e.x, e.y, 1.4, '#ffffff'); fx.ring(e.x, e.v.y, 50, '#9fd6ff'); fx.word('패리!', e.x, e.y - 20, '#9fd6ff', 2); A.sfx('parry'); S.flash(.6, .9, 1, .35); cheer(.6); });
     m.on('guardBreak', e => { fx.word(e.shove ? '가드 깨기!' : '가드 크래시!', e.v.x, e.v.y - 96, '#ffb347', 2); A.sfx('punch3'); S.shake(.25); });
     m.on('dodge', e => { if (isH(e.f) || isH(e.a)) fx.word('회피', e.f.x, e.f.y - 96, '#9fd6ff', 1); });
@@ -12622,6 +12646,61 @@ function allianceCine(W, o, onFight) {
 }
 
 return { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine };
+})();
+// ---- world/quests.js
+__m["world/quests.js"] = (function () {
+// The wrestlers in the lobby ask for things now and then: bring them something from a shop ("이봐, 붕대 하나 사다 줄
+// 수 있겠나?"), be their sparring partner in the underground ring, or show them one of your moves in the gym ring.
+// Doing it raises their liking (호감도, 0..100); at 30, 60 and 90 they come back with something: an item, money,
+// a move of their own. A fish from the dock is a small present too. 호감도 안경 (worn) shows the hearts in town.
+//   d.quest = { id, kind: 'item' | 'spar' | 'teach', item, move, day, until, done }   d.aff = { id: 0..100 }
+const { CHARACTERS } = __m["data/characters.js"];
+const { MOVES } = __m["data/moves.js"];
+const QUEST = { chance: .35, days: 3, gain: { item: 18, spar: 22, teach: 20 }, sparWin: 8, fish: 6, bigFish: 14, steps: [30, 60, 90] };
+const QUEST_ITEMS = [{ id: 'bandage', name: '붕대', where: '돛대 상회' }, { id: 'drink', name: '이온 음료', where: '돛대 상회' }];
+const affOf = (d, id) => (d.aff && d.aff[id]) || 0;
+function addAff(d, id, n) {
+  const A = d.aff || (d.aff = {}), before = A[id] || 0;
+  A[id] = Math.max(0, Math.min(100, before + n));
+  return QUEST.steps.filter(s => before < s && A[id] >= s);   // the thresholds crossed: gifts are due
+}
+const hash = (...a) => { let h = 2166136261; for (const x of a) { const s = String(x); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } } return ((h >>> 0) % 100003) / 100003; };
+// one of the wrestlers in the lobby today asks for something (one quest at a time)
+function questDue(d, here) {
+  const q = d.quest;
+  if (q && !q.done && d.day <= q.until) return null;
+  if (q && q.day === d.day) return null;
+  const ids = here.filter(id => CHARACTERS[id] && !CHARACTERS[id].thug && !CHARACTERS[id].boss);
+  if (!ids.length || hash(d.season, d.day, 'quest') >= QUEST.chance) return null;
+  return ids[Math.floor(hash(d.day, 'who') * ids.length) % ids.length];
+}
+function makeQuest(d, id, equipped) {
+  const r = hash(d.season, d.day, id), moves = equipped.filter(m => MOVES[m] && MOVES[m].pos !== 'dash');
+  const kind = r < .4 ? 'item' : r < .7 || !moves.length ? 'spar' : 'teach';
+  const q = { id, kind, day: d.day, until: d.day + QUEST.days, done: 0 };
+  if (kind === 'item') q.item = QUEST_ITEMS[Math.floor(hash(d.day, id, 'item') * QUEST_ITEMS.length) % QUEST_ITEMS.length].id;
+  if (kind === 'teach') q.move = moves[Math.floor(hash(d.day, id, 'move') * moves.length) % moves.length];
+  d.quest = q;
+  return q;
+}
+function questAsk(q) {
+  const it = QUEST_ITEMS.find(i => i.id === q.item);
+  if (q.kind === 'item') return `이봐, ${it.name} 하나 사다 줄 수 있겠나? ${it.where}에 있을 거야. 내가 오늘 다리가 좀 무거워서.`;
+  if (q.kind === 'spar') return '나의 연습 상대가 되어 주게. 지하 격투장에서 한 판. 승패는 상관없어, 땀이 필요하거든.';
+  return `자네의 '${MOVES[q.move].name}', 나한테도 좀 알려 주게. 훈련장 링에서 나한테 한 번만 걸어 줘.`;
+}
+const questText = q => (!q ? '' : q.kind === 'item' ? `${CHARACTERS[q.id].name}에게 ${QUEST_ITEMS.find(i => i.id === q.item).name} 갖다주기` : q.kind === 'spar' ? `지하 격투장에서 ${CHARACTERS[q.id].name}의 연습 상대` : `훈련장 링에서 ${CHARACTERS[q.id].name}에게 '${MOVES[q.move].name}' 걸어 주기`);
+// what they give back when their liking crosses 30, 60, 90
+function questReward(c, id, step) {
+  const d = c.d, ch = CHARACTERS[id];
+  if (step === 30) { d.items.bandage = (d.items.bandage || 0) + 2; return { text: '붕대 두 개를 챙겨 줬다', line: '이거 받아. 링에서 다치지 말라고.' }; }
+  if (step === 60) { const m = 30000 + (d.season || 1) * 10000; c.earn(m); return { text: `용돈 ${m.toLocaleString()}원을 받았다`, line: '지난번 고마웠어. 얼마 안 되지만 밥이나 사 먹어.' }; }
+  const pool = [...Object.values(ch.moves.front || {}), ...Object.values(ch.moves.rear || {})].filter((m, i, a) => MOVES[m] && !d.known.includes(m) && a.indexOf(m) === i);
+  if (pool.length) { const m = pool[0]; c.learn(m); return { text: `기술의 서: ${MOVES[m].name}`, line: `내 비장의 기술 '${MOVES[m].name}', 너한테만 알려 주지.`, move: m }; }
+  d.items.champBandage = (d.items.champBandage || 0) + 1; return { text: '챔피언의 붕대를 받았다', line: '가르칠 건 없지만, 이건 정말 귀한 거야.' };
+}
+
+return { addAff, questDue, makeQuest, questAsk, questReward, QUEST, QUEST_ITEMS, affOf, questText };
 })();
 // ---- world/gymGear.js
 __m["world/gymGear.js"] = (function () {
@@ -13552,7 +13631,7 @@ class WaveMenu extends Menu {
 
 // ---- vending machine: small, cheap, three a day ----
 class VendingMenu extends Menu {
-  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'vending', it.label, it.price), stock: mStock(d, 'vending', it.label) }) : it)); }
+  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'vending', it.label, it.price), stock: null }) : it)); }
   baseOpts() {
     return [
       { label: '이온 음료', price: 3000, sub: '피로 -12', fn: d => { d.fatigue = Math.max(0, d.fatigue - 12); } },
@@ -14014,6 +14093,7 @@ const GAMES = {
   breath: { name: '호흡 훈련', kind: '타이밍', stats: ['fin', 'down'], pose: 'calm', x: 410, desc: '{y}J{/}(또는 Space)를 누르고 있으면 숨이 찬다. 초록 띠에서 손을 떼자. 5번.' },
   cleanup: { name: '로비 정리', kind: '타이밍', stats: [], pose: 'carry', x: 600, mech: 'job', desc: '부서진 가구 조각을 상자에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
   scrap: { name: '고물 정리 돕기', kind: '타이밍', stats: [], pose: 'carry', x: 812, mech: 'job', desc: '영감이 주워 온 고물을 수레에 차곡차곡. 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter). 8개.' },
+  fish: { name: '부두 낚시', kind: '타이밍', stats: [], pose: 'calm', x: 1736, mech: 'fish', desc: '찌가 쑥 들어가는 순간 {y}J{/}(또는 Space·E·Enter). 다섯 번 던진다. 너무 일찍 당기면 놓친다.' },
   job: { name: '하역 아르바이트', kind: '타이밍', stats: [], pose: 'carry', x: 1830, desc: '크레인이 상자를 옮긴다. 쌓인 상자 바로 위에 왔을 때 {y}J{/}(또는 Space·E·Enter)로 내려놓자. 8개.' },
 };
 
@@ -14040,11 +14120,13 @@ class Training {
       case 'rhythm': { const n = this.T.notes || 22, gp = .58 / (this.T.speed || 1), lanes = this.T.lanes || 3; this.s = { lanes, keys: lanes === 4 ? ['left', 'down', 'atk', 'grab'] : ['atk', 'grab', 'dodge'], notes: Array.from({ length: n }, (_, i) => ({ t: 1.8 + i * gp + (r.next() < .2 ? gp * .5 : 0), lane: r.int(0, lanes - 1), done: 0 })), fall: 1.3 / (this.T.speed || 1), good: 0, perfect: 0, miss: 0 }; break; }
       case 'snake': { this.s = { w: 22, h: 9, body: [[5, 4], [4, 4], [3, 4]], dir: [1, 0], want: [1, 0], step: this.T.step || .15, st: 0, eaten: 0, target: this.T.target || 8, left: 30, dead: 0 }; this.newFood(); break; }
       case 'job': this.s = { craneX: 0, dir: 1, speed: 120, stack: [], drop: null, n: 0, good: 0, money: 0 }; break;
+      case 'fish': this.s = { cast: 0, wait: 1.2 + r.next() * 2.4, bite: 0, st: 0, small: 0, big: 0, log: [], state: 'wait' }; break;
     }
     void r;
   }
   newZone() { const s = this.s, w = (.22 - s.reps * .015) * (this.T.zone || 1), c = .2 + this.rng.next() * .6; s.zone = [clamp(c - w / 2, 0, 1 - w), clamp(c + w / 2, w, 1)]; s.speed = (.9 + s.reps * .14) * (this.T.speed || 1); }
   // typing: a word of letters to type, as many letters as you can before the time runs out
+  nextCast() { const s = this.s; s.cast++; s.state = 'wait'; s.st = 0; s.wait = 1.2 + this.rng.next() * 2.4; }
   newWord() { const A = 'ABCDFGHIJKLNORSTUVXYZ', n = this.T.len || 4 + Math.floor(this.rng.next() * 2); return Array.from({ length: n }, () => A[Math.floor(this.rng.next() * A.length)]).join(''); }
   // snake: a mitt somewhere off the body
   newFood() { const s = this.s; for (let k = 0; k < 50; k++) { const f = [1 + Math.floor(this.rng.next() * (s.w - 2)), 1 + Math.floor(this.rng.next() * (s.h - 2))]; if (!s.body.some(b => b[0] === f[0] && b[1] === f[1])) { s.food = f; return; } } s.food = [1, 1]; }
@@ -14059,6 +14141,7 @@ class Training {
     this.gains = [];
     if (this.id === 'scrap') { this.helpPts = { S: 3, A: 3, B: 2, C: 1 }[grade]; d.fatigue = Math.min(100, d.fatigue + 8); }
     else if (this.id === 'cleanup') { d.fatigue = Math.min(100, d.fatigue + 8); }
+    else if (this.id === 'fish') { d.items.fish = (d.items.fish || 0) + this.s.small; d.items.bigFish = (d.items.bigFish || 0) + this.s.big; d.fatigue = Math.min(100, d.fatigue + 4); }
     else if (this.id === 'job') {
       const pay = Math.round((6000 + this.s.good * 1800 + d.season * 1000) / 500) * 500;
       c.earn(pay); this.pay = pay; d.fatigue = Math.min(100, d.fatigue + 15);
@@ -14190,6 +14273,13 @@ class Training {
         if (s.dead || s.left <= 0 || s.eaten >= s.target) this.finish(s.eaten / s.target);
         break;
       }
+      case 'fish': {
+        s.st += dt;
+        if (s.state === 'wait') { if (inp.actPressed()) { this.pop('너무 일찍 당겼다', '#ff8a8a', 320, 120); A.sfx('miss'); s.log.push('-'); this.nextCast(); } else if (s.st >= s.wait) { s.state = 'bite'; s.st = 0; A.sfx('splash'); } }
+        else if (s.state === 'bite') { if (inp.actPressed()) { const k = this.rng.next(), big = k > .93, name = big ? '참치' : k > .65 ? '도미' : '고등어'; if (big) s.big++; else s.small++; s.log.push(name); this.pop(`${name}!`, big ? '#ffd65a' : '#6be38a', 320, 120); A.sfx(big ? 'good' : 'stat'); this.nextCast(); } else if (s.st > .45) { this.pop('놓쳤다…', '#ff8a8a', 320, 120); A.sfx('miss'); s.log.push('-'); this.nextCast(); } }
+        if (s.cast >= 5) this.finish((s.small + s.big * 2) / 5);
+        break;
+      }
       case 'job': {
         if (!s.drop) {
           s.craneX += s.dir * s.speed * dt; if (s.craneX > 140) { s.craneX = 140; s.dir = -1; } if (s.craneX < -140) { s.craneX = -140; s.dir = 1; }
@@ -14219,6 +14309,7 @@ class Training {
       drawText(u, G.desc, 320, 76, { size: 11, align: 'c', color: '#eef2ff' });
       if (this.mech === 'typing' || this.mech === 'rhythm' || this.mech === 'snake') drawText(u, { typing: '화면의 글자를 순서대로 쳐라. 제한 시간 안에 많이 칠수록 많이 든다.', rhythm: '떨어지는 박자가 선에 닿는 순간 그 줄의 키를 눌러라.', snake: 'W A S D로 방향을 바꿔 미트를 쳐라. 벽이나 내 발에 걸리면 끝.' }[this.mech], 320, 62, { size: 11, align: 'c', color: '#9be3ff' });
       if (G.stats.length) drawText(u, '오르는 능력치: ' + G.stats.map(k => STAT_GROWTH[k][1]).join(', '), 320, 98, { size: 11, align: 'c', color: '#6be38a' });
+      else if (this.id === 'fish') drawText(u, '잡은 생선은 레슬러에게 선물하면 호감도가 오른다. 시간 1칸 · 피로 +4', 320, 98, { size: 11, align: 'c', color: '#6be38a' });
       else drawText(u, this.id === 'cleanup' ? '돈은 안 되지만 로비와 훈련장이 다시 열린다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : this.id === 'scrap' ? '돈은 안 되지만 영감이 고마워한다. 시간이 한 칸 지나고 피로가 조금 쌓인다.' : '부상 없이 돈을 벌 수 있다. 피로가 쌓이고 시간이 한 칸 지난다.', 320, 98, { size: 11, align: 'c', color: '#9be36b' });
       drawText(u, this.cost ? `훈련비 ${fmtMoney(this.cost)} · 시간 1칸 · 피로 +${tireOf(this.c.d, this.id)}${this.tier ? ` · 효과 ×${gainK(this.c.d, this.id).toFixed(1)}` : ''}` : this.id === 'scrap' || this.id === 'cleanup' ? '시간 1칸 · 피로 +8' : '시간 1칸 · 피로 +15', 320, 116, { size: 11, align: 'c', color: UI.dim });
       if (this.c.d.fatigue > 40) drawText(u, `피로 ${Math.round(this.c.d.fatigue)}: 훈련 효과 ${this.c.d.fatigue > 70 ? '50%' : '80%'}`, 320, 134, { size: 11, align: 'c', color: '#ff8a8a' });
@@ -14230,6 +14321,7 @@ class Training {
       if (this.id === 'scrap') drawText(u, `영감이 고개를 꾸벅 숙였다. (도움 +${this.helpPts})`, 320, 140, { align: 'c', color: '#ffd65a' });
       else if (this.id === 'cleanup') drawText(u, '로비가 다시 반짝인다. 김 반장이 엄지를 들었다.', 320, 140, { align: 'c', color: '#9be36b' });
       else if (this.id === 'job') drawText(u, `일당 ${fmtMoney(this.pay)}을 받았다!`, 320, 140, { align: 'c', color: UI.money });
+      else if (this.id === 'fish') drawText(u, `생선 ${this.s.small + this.s.big}마리${this.s.big ? ` (참치 ${this.s.big})` : ''} — 레슬러에게 선물할 수 있다`, 320, 140, { align: 'c', color: '#9be3ff' });
       else this.gains.forEach(([k, g], i) => drawText(u, `${STAT_GROWTH[k][1]} Lv +${g.toFixed(2)}  (Lv ${this.c.d.lv[k].toFixed(1)})`, 320, 136 + i * 16, { size: 11, align: 'c', color: '#6be38a' }));
       if (this.fatK && this.fatK < 1) drawText(u, '피곤해서 효과가 줄었다…', 320, 172, { size: 11, align: 'c', color: '#ff8a8a' });
       if (this.boosted) drawText(u, '단백질 셰이크 효과 +15%!', 320, 186, { size: 11, align: 'c', color: '#6be38a' });
@@ -14295,6 +14387,13 @@ class Training {
         rect(u, '#c2333f', x0 + s.food[0] * c + 2, y0 + s.food[1] * c + 2, c - 4, c - 4); rect(u, '#ffd65a', x0 + s.food[0] * c + 5, y0 + s.food[1] * c + 5, c - 10, c - 10);
         s.body.forEach((b, i) => rect(u, i ? '#3fb0c0' : '#9be3ff', x0 + b[0] * c + 1, y0 + b[1] * c + 1, c - 2, c - 2));
         drawText(u, `미트 ${s.eaten}/${s.target} · 남은 ${Math.max(0, s.left).toFixed(0)}초 · W A S D로 방향`, 320, y0 + s.h * c + 6, { size: 11, align: 'c', color: UI.dim });
+        break;
+      }
+      case 'fish': {
+        rect(u, '#10204a', 160, 92, 320, 40); for (let x = 160; x < 480; x += 8) rect(u, '#2a4a8a', x + Math.round(Math.sin(this.t * 2 + x) * 2), 96 + (x % 3) * 9, 5, 1);
+        const bob = s.state === 'bite' ? 10 : Math.round(Math.sin(this.t * 3) * 1.5); rect(u, '#05060f', 317, 96 + bob, 7, 9); rect(u, '#ff5b5b', 318, 97 + bob, 5, 4); rect(u, '#ffffff', 318, 101 + bob, 5, 3);
+        if (s.state === 'bite') drawText(u, '지금!', 320, 70, { align: 'c', color: '#ffd65a', bold: true });
+        drawText(u, `${s.cast}/5 · ${s.log.join(' ')}`, 320, 138, { size: 11, align: 'c', color: UI.dim });
         break;
       }
       case 'job': {
@@ -14476,6 +14575,7 @@ return { newWaveCine, worldCallCine, departureCine, stayCine, mentorCine, retire
 __m["world/WorldScene.js"] = (function () {
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 const { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } = __m["world/brStory.js"];
+const { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } = __m["world/quests.js"];
 const { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } = __m["world/gymGear.js"];
 const { waveOpen, visitor, takeGift, MARKET } = __m["world/market.js"];
 const { SYNERGY, SYN_KIND, synName, needMoves } = __m["data/synergy.js"];
@@ -14596,6 +14696,8 @@ class WorldScene {
       if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
       if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
+    // a wrestler in the lobby asks a favour (one at a time)
+    if (id === 'lobby' && !instant) { const qid = questDue(d, this.npcs.map(n => n.id)), a = qid && this.npcs.find(n => n.id === qid); if (a) { const q = makeQuest(d, qid, Object.values(d.moves.front || {}).filter(Boolean)); this.approach(a, () => this.say([{ who: qid, text: questAsk(q) }, { act: () => { this.toast('부탁: ' + questText(q) + ` (${q.until}일까지)`, '#ffd65a'); c.save(); } }]), { range: 380, speed: 90 }); return; } }
     // a good customer's seller comes by the lobby with something for the next match
     if (id === 'lobby' && !instant) { const V = visitor(d), a = V && this.npcs.find(n => n.id === V.npc); if (a) { this.approach(a, () => this.say([{ who: V.npc, text: `단골손님! 다음 경기에 쓰라고 이거 가져왔어요. ${V.gift.text}.`, expr: 'happy' }, { act: () => { takeGift(d); c.save(); this.toast(`${V.who}의 선물: ${V.gift.text}`, '#9be36b'); } }]), { range: 420, speed: 95 }); return; } }
     // the next opponent comes over in the waiting room, once per contract
@@ -14742,6 +14844,9 @@ class WorldScene {
       return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), ...B2.gang], career: 1, title: B2.gang.length > 2 ? '로비 난투 1 대 3' : '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }].concat(B2.events), introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    // favours: a friendly match in the basement; showing a move on them in the gym ring
+    if (kind === 'questSpar') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, title: '연습 상대', skipIntro: false, introTime: 2.4, music: 'gym' };
+    if (kind === 'questTeach') return { mode: 'practice', arena: 'gym', entrants: [Object.assign(me, { fin: 100 }), { char: o.opp, ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { move: o.move, name: '기술 알려 주기', how: `${CHARACTERS[o.opp].name}에게 '${MOVES[o.move].name}'을(를) 걸어 주자 (잡고 그 칸의 키)` } };
     // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
     if (kind === 'synLesson') { const S = SYNERGY[o.syn], mv = JSON.parse(JSON.stringify(c.d.moves)); if (MOVES[S.a] && MOVES[S.a].pos !== 'dash' && !Object.values(mv.front).includes(S.a)) mv.front.n = S.a; if (S.seq && !Object.values(mv.front).includes('irishWhip')) mv.front.f = 'irishWhip'; if (S.seq) mv.catch = S.a; const L = Object.assign(me, { moves: mv, synergies: (c.d.syn || []).concat([o.syn]), fin: 100 }); if (MOVES[S.a] && MOVES[S.a].pos === 'dash') L.char = Object.assign({}, L.char, { dashSig: S.a }); return { mode: 'practice', arena: 'gym', entrants: [L, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { id: o.syn, name: S.name, how: S.how } }; }
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
@@ -14758,6 +14863,8 @@ class WorldScene {
     const c = this.c, { kind, offer, res } = info;
     if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
+    if (kind === 'questSpar') { this.finishQuest('spar', res.won ? QUEST.sparWin : 0); c.spendSlot(1).forEach(m => this.toast(m, '#ffb347')); c.save(); return; }
+    if (kind === 'questTeach') { if (res.lesson) this.finishQuest('teach'); else this.toast('아직 기술을 보여 주지 못했다.', '#c9d4ff'); c.save(); return; }
     if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) {
@@ -14907,6 +15014,7 @@ class WorldScene {
     if (ct && ct.title) { const V = this.c.titleVenue; return { text: `${V.name}에서 타이틀 매치 (~${ct.day}일)`, loc: V.loc, x: V.x }; }
     if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
     if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    if (d.quest && !d.quest.done && d.day <= d.quest.until) { const q = d.quest; return { text: '부탁: ' + questText(q), loc: q.kind === 'spar' ? 'basement' : q.kind === 'teach' ? 'gym' : q.kind === 'item' && (d.items[q.item] || 0) === 0 ? 'shop' : 'lobby', x: q.kind === 'spar' ? 470 : q.kind === 'teach' ? 860 : q.kind === 'item' && (d.items[q.item] || 0) === 0 ? 200 : 900, col: '#ff8fc4' }; }
     if (worldReady(d) && d.harbor.called) return { text: '부두 끝에서 세계로 가는 배에 오르기', loc: 'street', x: HARBOR.end - 10, col: '#49d6ff' };
     return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
   }
@@ -14979,8 +15087,11 @@ class WorldScene {
       const R = d.revenge;
       if (R && a.id === R.opp && this.loc === 'basement') { this.say(this.revengeReady()); return; }
       if (R && a.id === R.opp && this.loc === 'lobby' && !R.invited) { this.approachers = this.approachers.filter(ap => ap.a !== a); a.scripted = false; this.say(this.revengeInvite()); return; }
+      { const Q = d.quest; if (Q && !Q.done && Q.id === a.id && d.day <= Q.until) { this.say(this.questTalk(a.id)); return; } }
       if ((a.id === 'galchi' || a.id === 'myeolchi') && !a.leaving && this.approachers.some(ap => ap.a.id === 'galchi')) { this.approachers = this.approachers.filter(ap => ap.a.id !== 'galchi' && ap.a.id !== 'myeolchi'); for (const n of this.npcs) if (n.id === 'galchi' || n.id === 'myeolchi') n.scripted = false; this.say(this.gangLines()); return; }
-      this.say(talk(a.id, c, this));
+      const lines = talk(a.id, c, this), fish = (d.items.fish || 0) + (d.items.bigFish || 0);
+      if (NPCS[a.id] && NPCS[a.id].wrestler && fish > 0) lines.push({ choice: [{ label: `생선 선물하기 (${fish}마리)`, act: () => this.giveFish(a.id) }, { label: '그만두기', go: [] }] });
+      this.say(lines);
       return;
     }
     const o = pr.o;
@@ -15016,11 +15127,34 @@ class WorldScene {
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
       case 'academy': this.academyTalk(); break;
+      case 'fishSpot': if (!d.owned.includes('rod')) this.say([{ who: null, name: '낚시터', text: '물 밑으로 고기 그림자가 지나간다. 낚싯대가 있으면 여기서 낚시를 할 수 있겠다. (돛대 상회)' }]); else this.open(new Training(this, 'fish', 0)); break;
       case 'wave': if (waveOpen(d)) { A.sfx('ui'); this.open(new Menus.WaveMenu(this)); } else this.say([{ who: null, name: '웨이브 상회', text: `"${MARKET.waveDay}일차 입고 예정". 컨테이너 문에 큼지막한 파도 그림. 안에서 포장 뜯는 소리가 난다.` }]); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
   }
+  // ---- favours and liking ----
+  questTalk(id) {
+    const c = this.c, d = c.d, q = d.quest, it = QUEST_ITEMS.find(i => i.id === q.item);
+    if (q.kind === 'item') return (d.items[q.item] || 0) > 0 ? [{ who: id, text: `오, ${it.name}! 정말 사 왔구나. 고마워!`, expr: 'happy' }, { act: () => { d.items[q.item]--; this.finishQuest('item'); } }] : [{ who: id, text: `${it.name}, 아직이야? ${it.where}에 있을 거야. ${q.until}일까지만 부탁해.` }];
+    if (q.kind === 'spar') return this.loc === 'basement' ? [{ who: id, text: '왔구나. 봐주기 없기다!', expr: 'fierce' }, { act: () => this.startMatch('questSpar', { opp: id, oppName: CHARACTERS[id].name, kind: 'questSpar' }) }] : [{ who: id, text: '지하 격투장에서 기다릴게. 로비 끝 계단으로 내려와.' }];
+    return this.loc === 'gym' ? [{ who: id, text: `좋아, '${MOVES[q.move].name}'. 나한테 한 번 걸어 줘. 몸으로 배울게.` }, { act: () => this.startMatch('questTeach', { opp: id, move: q.move, kind: 'questTeach' }) }] : [{ who: id, text: '훈련장 링에서 기다리지. 천천히 와.' }];
+  }
+  finishQuest(kind, extra = 0) {
+    const c = this.c, d = c.d, q = d.quest;
+    if (!q || q.done) return;
+    q.done = 1;
+    this.likeUp(q.id, QUEST.gain[kind] + extra, '부탁을 들어줬다');
+  }
+  likeUp(id, n, why) {
+    const c = this.c, d = c.d, steps = addAff(d, id, n), name = CHARACTERS[id] ? CHARACTERS[id].name : id;
+    this.game.audio.sfx('good'); this.toast(`${why}: ${name} 호감도 +${n} (${affOf(d, id)}/100)`, '#ff8fc4');
+    const L = [];
+    for (const s of steps) { const R = questReward(c, id, s); L.push({ who: id, text: R.line, expr: 'happy' }, { act: () => this.toast(`${name}: ${R.text}`, '#9be36b') }); }
+    c.save();
+    if (L.length) this.say(L);
+  }
+  giveFish(id) { const d = this.c.d, big = (d.items.bigFish || 0) > 0; if (big) d.items.bigFish--; else d.items.fish--; this.likeUp(id, big ? QUEST.bigFish : QUEST.fish, big ? '참치를 선물했다' : '생선을 선물했다'); }
   // ---- training equipment: 백 관장 says when a station has been outgrown; the list of what can be bought ----
   gearPitch(id) {
     const c = this.c, d = c.d, next = gearNext(d, id), now = gearNow(d, id);
@@ -15161,6 +15295,7 @@ class WorldScene {
     const all = [...this.npcs, this.player].sort((a, b) => a.y - b.y);
     for (const a of all) if (!a.hidden) this.drawActor(w, a, cam);
     if (L.liveTop) L.liveTop(w, this.c, cam, this);
+    if (d.gear && d.gear.eyes === 'affGlasses') for (const a of this.npcs) if (!a.hidden && NPCS[a.id] && (NPCS[a.id].wrestler || (d.aff && d.aff[a.id]))) { const v = affOf(d, a.id), x = Math.round(a.x - cam), y = Math.round(a.y - (a.dims ? a.dims.height : 90) - 26); rect(w, '#05060f', x - 15, y - 1, 30, 11); rect(w, '#3a1a2a', x - 14, y, 28, 9); rect(w, '#ff5fa2', x - 13, y + 1, Math.round(26 * v / 100), 7); drawText(w, '♥' + v, x, y - 1, { size: 11, align: 'c', color: '#ffffff', outline: '#05060f' }); }   // 호감도 안경
     // lights
     this.lights(w, cam);
     if (sl === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }

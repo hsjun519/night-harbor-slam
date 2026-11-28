@@ -1,5 +1,6 @@
 // Exploration: walk the facility and the harbour street, talk, use things, go through doors, start matches.
 import { meetCine, raidCine, raidWonCine, raidLostCine, allianceCine } from './brStory.js';
+import { QUEST, QUEST_ITEMS, affOf, addAff, questDue, makeQuest, questAsk, questText, questReward } from './quests.js';
 import { GEAR, gearNow, gearNext, tierOf, feeK, buyGear, gymOf } from './gymGear.js';
 import { waveOpen, visitor, takeGift, MARKET } from './market.js';
 import { SYNERGY, SYN_KIND, synName, needMoves } from '../data/synergy.js';
@@ -121,6 +122,8 @@ export class WorldScene {
       if (harborFull(d)) { this.endBusy = true; this.playCine(newWaveCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
       if (worldReady(d) && !d.harbor.called) { this.endBusy = true; this.playCine(worldCallCine(this), { onEnd: () => { this.endBusy = false; } }); return; }
     }
+    // a wrestler in the lobby asks a favour (one at a time)
+    if (id === 'lobby' && !instant) { const qid = questDue(d, this.npcs.map(n => n.id)), a = qid && this.npcs.find(n => n.id === qid); if (a) { const q = makeQuest(d, qid, Object.values(d.moves.front || {}).filter(Boolean)); this.approach(a, () => this.say([{ who: qid, text: questAsk(q) }, { act: () => { this.toast('부탁: ' + questText(q) + ` (${q.until}일까지)`, '#ffd65a'); c.save(); } }]), { range: 380, speed: 90 }); return; } }
     // a good customer's seller comes by the lobby with something for the next match
     if (id === 'lobby' && !instant) { const V = visitor(d), a = V && this.npcs.find(n => n.id === V.npc); if (a) { this.approach(a, () => this.say([{ who: V.npc, text: `단골손님! 다음 경기에 쓰라고 이거 가져왔어요. ${V.gift.text}.`, expr: 'happy' }, { act: () => { takeGift(d); c.save(); this.toast(`${V.who}의 선물: ${V.gift.text}`, '#9be36b'); } }]), { range: 420, speed: 95 }); return; } }
     // the next opponent comes over in the waiting room, once per contract
@@ -267,6 +270,9 @@ export class WorldScene {
       return { mode: 'street', arena: 'lobby', entrants: [Object.assign({}, me, { team: 0 }), ...B2.gang], career: 1, title: B2.gang.length > 2 ? '로비 난투 1 대 3' : '로비 난투', events: [{ kind: 'chairs', xs: [250, 640] }].concat(B2.events), introTime: 3.3, music: 'rumble', preTalk: this.preTalk('galchi', o) };
     }
     if (kind === 'revenge') return { mode: 'single', arena: 'basement', special: new RNG(d.day * 3 + 1).chance(.4) ? 'cage' : null, entrants: [me, foe(o.opp)], career: 1, boss: true, title: '지하 리벤지 매치', events: [{ kind: 'chairs', xs: [262, 638] }].concat(new RNG(d.day * 5 + d.season).chance(.5) ? [{ kind: 'coachChair', when: 'foeLosing', below: .6, coachName: `${o.oppName}의 패거리` }] : []), introTime: 3.6, music: 'boss', preTalk: this.preTalk(o.opp, o) };
+    // favours: a friendly match in the basement; showing a move on them in the gym ring
+    if (kind === 'questSpar') return { mode: 'single', arena: 'basement', entrants: [me, foe(o.opp)], career: 1, title: '연습 상대', skipIntro: false, introTime: 2.4, music: 'gym' };
+    if (kind === 'questTeach') return { mode: 'practice', arena: 'gym', entrants: [Object.assign(me, { fin: 100 }), { char: o.opp, ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { move: o.move, name: '기술 알려 주기', how: `${CHARACTERS[o.opp].name}에게 '${MOVES[o.move].name}'을(를) 걸어 주자 (잡고 그 칸의 키)` } };
     // a 시너지 lesson: the gym ring, the dummy, the moves lent to the slots for the hour
     if (kind === 'synLesson') { const S = SYNERGY[o.syn], mv = JSON.parse(JSON.stringify(c.d.moves)); if (MOVES[S.a] && MOVES[S.a].pos !== 'dash' && !Object.values(mv.front).includes(S.a)) mv.front.n = S.a; if (S.seq && !Object.values(mv.front).includes('irishWhip')) mv.front.f = 'irishWhip'; if (S.seq) mv.catch = S.a; const L = Object.assign(me, { moves: mv, synergies: (c.d.syn || []).concat([o.syn]), fin: 100 }); if (MOVES[S.a] && MOVES[S.a].pos === 'dash') L.char = Object.assign({}, L.char, { dashSig: S.a }); return { mode: 'practice', arena: 'gym', entrants: [L, { char: 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym', lesson: { id: o.syn, name: S.name, how: S.how } }; }
     if (kind === 'practice' || kind === 'spar') return { mode: 'practice', arena: 'gym', entrants: [me, { char: o && o.opp || 'dohyun', ctrl: 'dummy', difficulty: 'normal' }], practice: { infinite: true }, skipIntro: true, career: 1, music: 'gym' };
@@ -283,6 +289,8 @@ export class WorldScene {
     const c = this.c, { kind, offer, res } = info;
     if (kind === 'tutorial') { if (res.completed) c.d.flags.tutored = 1; this.toast(res.completed ? '기초 훈련 수료! 백 관장: "나쁘지 않군. 땀 닦고 가."' : '기초 훈련을 중간에 그만뒀다.', res.completed ? '#9be36b' : '#c9d4ff'); c.save(); return; }
     if (res.quit && kind === 'practice') { this.toast('연습을 마쳤다.'); return; }
+    if (kind === 'questSpar') { this.finishQuest('spar', res.won ? QUEST.sparWin : 0); c.spendSlot(1).forEach(m => this.toast(m, '#ffb347')); c.save(); return; }
+    if (kind === 'questTeach') { if (res.lesson) this.finishQuest('teach'); else this.toast('아직 기술을 보여 주지 못했다.', '#c9d4ff'); c.save(); return; }
     if (kind === 'synLesson') { const S = SYNERGY[offer.syn]; if (res.lesson) { c.learnSynergy(offer.syn); c.save(); this.game.audio.sfx('good'); this.toast(`시너지 습득: ${S.name}`, '#6be38a'); this.lesson = [{ who: 'trainer', text: `그거다. ${S.name}. 몸이 기억할 때까지 링에서 써 봐라.` }]; } else this.toast('수업을 끝내지 못했다. 다시 오면 수업료 없이 가르쳐 준다.', '#c9d4ff'); return; }
     const sum = c.applyResult(kind === 'spar' ? 'practice' : kind, res, { offer });
     if (offer && offer.kind === 'dojo' && res.won) {
@@ -432,6 +440,7 @@ export class WorldScene {
     if (ct && ct.title) { const V = this.c.titleVenue; return { text: `${V.name}에서 타이틀 매치 (~${ct.day}일)`, loc: V.loc, x: V.x }; }
     if (ct) return { text: `경기장 대기실에서 계약 경기 — ${ct.oppName} (~${ct.day}일)`, loc: 'arena', x: 600, contract: 1 };
     if (d.injury >= B.injuryWarn) return { text: '부상 주의: 항구의원에 들러 치료하기', loc: 'clinic', x: 400, col: '#ffb347' };
+    if (d.quest && !d.quest.done && d.day <= d.quest.until) { const q = d.quest; return { text: '부탁: ' + questText(q), loc: q.kind === 'spar' ? 'basement' : q.kind === 'teach' ? 'gym' : q.kind === 'item' && (d.items[q.item] || 0) === 0 ? 'shop' : 'lobby', x: q.kind === 'spar' ? 470 : q.kind === 'teach' ? 860 : q.kind === 'item' && (d.items[q.item] || 0) === 0 ? 200 : 900, col: '#ff8fc4' }; }
     if (worldReady(d) && d.harbor.called) return { text: '부두 끝에서 세계로 가는 배에 오르기', loc: 'street', x: HARBOR.end - 10, col: '#49d6ff' };
     return { text: '사장실에서 다음 경기 제안 받기', loc: 'office', x: 400 };
   }
@@ -504,8 +513,11 @@ export class WorldScene {
       const R = d.revenge;
       if (R && a.id === R.opp && this.loc === 'basement') { this.say(this.revengeReady()); return; }
       if (R && a.id === R.opp && this.loc === 'lobby' && !R.invited) { this.approachers = this.approachers.filter(ap => ap.a !== a); a.scripted = false; this.say(this.revengeInvite()); return; }
+      { const Q = d.quest; if (Q && !Q.done && Q.id === a.id && d.day <= Q.until) { this.say(this.questTalk(a.id)); return; } }
       if ((a.id === 'galchi' || a.id === 'myeolchi') && !a.leaving && this.approachers.some(ap => ap.a.id === 'galchi')) { this.approachers = this.approachers.filter(ap => ap.a.id !== 'galchi' && ap.a.id !== 'myeolchi'); for (const n of this.npcs) if (n.id === 'galchi' || n.id === 'myeolchi') n.scripted = false; this.say(this.gangLines()); return; }
-      this.say(talk(a.id, c, this));
+      const lines = talk(a.id, c, this), fish = (d.items.fish || 0) + (d.items.bigFish || 0);
+      if (NPCS[a.id] && NPCS[a.id].wrestler && fish > 0) lines.push({ choice: [{ label: `생선 선물하기 (${fish}마리)`, act: () => this.giveFish(a.id) }, { label: '그만두기', go: [] }] });
+      this.say(lines);
       return;
     }
     const o = pr.o;
@@ -541,11 +553,34 @@ export class WorldScene {
       case 'domeGate': if (d.contract && d.contract.title) this.startMatch('title', d.contract); else this.say([{ who: 'staff', text: '타이틀 매치가 있는 날에만 열립니다.' }]); break;
       case 'dockSign': this.say(this.signLines()); break;
       case 'academy': this.academyTalk(); break;
+      case 'fishSpot': if (!d.owned.includes('rod')) this.say([{ who: null, name: '낚시터', text: '물 밑으로 고기 그림자가 지나간다. 낚싯대가 있으면 여기서 낚시를 할 수 있겠다. (돛대 상회)' }]); else this.open(new Training(this, 'fish', 0)); break;
       case 'wave': if (waveOpen(d)) { A.sfx('ui'); this.open(new Menus.WaveMenu(this)); } else this.say([{ who: null, name: '웨이브 상회', text: `"${MARKET.waveDay}일차 입고 예정". 컨테이너 문에 큼지막한 파도 그림. 안에서 포장 뜯는 소리가 난다.` }]); break;
       case 'pierEnd': this.pierEnd(); break;
       default: this.toast(o.label);
     }
   }
+  // ---- favours and liking ----
+  questTalk(id) {
+    const c = this.c, d = c.d, q = d.quest, it = QUEST_ITEMS.find(i => i.id === q.item);
+    if (q.kind === 'item') return (d.items[q.item] || 0) > 0 ? [{ who: id, text: `오, ${it.name}! 정말 사 왔구나. 고마워!`, expr: 'happy' }, { act: () => { d.items[q.item]--; this.finishQuest('item'); } }] : [{ who: id, text: `${it.name}, 아직이야? ${it.where}에 있을 거야. ${q.until}일까지만 부탁해.` }];
+    if (q.kind === 'spar') return this.loc === 'basement' ? [{ who: id, text: '왔구나. 봐주기 없기다!', expr: 'fierce' }, { act: () => this.startMatch('questSpar', { opp: id, oppName: CHARACTERS[id].name, kind: 'questSpar' }) }] : [{ who: id, text: '지하 격투장에서 기다릴게. 로비 끝 계단으로 내려와.' }];
+    return this.loc === 'gym' ? [{ who: id, text: `좋아, '${MOVES[q.move].name}'. 나한테 한 번 걸어 줘. 몸으로 배울게.` }, { act: () => this.startMatch('questTeach', { opp: id, move: q.move, kind: 'questTeach' }) }] : [{ who: id, text: '훈련장 링에서 기다리지. 천천히 와.' }];
+  }
+  finishQuest(kind, extra = 0) {
+    const c = this.c, d = c.d, q = d.quest;
+    if (!q || q.done) return;
+    q.done = 1;
+    this.likeUp(q.id, QUEST.gain[kind] + extra, '부탁을 들어줬다');
+  }
+  likeUp(id, n, why) {
+    const c = this.c, d = c.d, steps = addAff(d, id, n), name = CHARACTERS[id] ? CHARACTERS[id].name : id;
+    this.game.audio.sfx('good'); this.toast(`${why}: ${name} 호감도 +${n} (${affOf(d, id)}/100)`, '#ff8fc4');
+    const L = [];
+    for (const s of steps) { const R = questReward(c, id, s); L.push({ who: id, text: R.line, expr: 'happy' }, { act: () => this.toast(`${name}: ${R.text}`, '#9be36b') }); }
+    c.save();
+    if (L.length) this.say(L);
+  }
+  giveFish(id) { const d = this.c.d, big = (d.items.bigFish || 0) > 0; if (big) d.items.bigFish--; else d.items.fish--; this.likeUp(id, big ? QUEST.bigFish : QUEST.fish, big ? '참치를 선물했다' : '생선을 선물했다'); }
   // ---- training equipment: 백 관장 says when a station has been outgrown; the list of what can be bought ----
   gearPitch(id) {
     const c = this.c, d = c.d, next = gearNext(d, id), now = gearNow(d, id);
@@ -686,6 +721,7 @@ export class WorldScene {
     const all = [...this.npcs, this.player].sort((a, b) => a.y - b.y);
     for (const a of all) if (!a.hidden) this.drawActor(w, a, cam);
     if (L.liveTop) L.liveTop(w, this.c, cam, this);
+    if (d.gear && d.gear.eyes === 'affGlasses') for (const a of this.npcs) if (!a.hidden && NPCS[a.id] && (NPCS[a.id].wrestler || (d.aff && d.aff[a.id]))) { const v = affOf(d, a.id), x = Math.round(a.x - cam), y = Math.round(a.y - (a.dims ? a.dims.height : 90) - 26); rect(w, '#05060f', x - 15, y - 1, 30, 11); rect(w, '#3a1a2a', x - 14, y, 28, 9); rect(w, '#ff5fa2', x - 13, y + 1, Math.round(26 * v / 100), 7); drawText(w, '♥' + v, x, y - 1, { size: 11, align: 'c', color: '#ffffff', outline: '#05060f' }); }   // 호감도 안경
     // lights
     this.lights(w, cam);
     if (sl === 2 && L.street) { w.globalAlpha = .18; rect(w, '#0a0830', 0, 0, VIEW_W, VIEW_H); w.globalAlpha = 1; }

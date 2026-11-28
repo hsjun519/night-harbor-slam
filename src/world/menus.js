@@ -313,7 +313,7 @@ export class WaveMenu extends Menu {
 
 // ---- vending machine: small, cheap, three a day ----
 export class VendingMenu extends Menu {
-  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'vending', it.label, it.price), stock: mStock(d, 'vending', it.label) }) : it)); }
+  opts() { const d = this.c.d; return this.baseOpts().map(it => (it.price ? Object.assign({}, it, { price: mPrice(d, 'vending', it.label, it.price), stock: null }) : it)); }
   baseOpts() {
     return [
       { label: '이온 음료', price: 3000, sub: '피로 -12', fn: d => { d.fatigue = Math.max(0, d.fatigue - 12); } },
